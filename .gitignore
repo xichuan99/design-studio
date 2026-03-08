@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.*
+.yarn/
+venv/
+env/
+ENV/
+.venv/
+
+# Testing
+coverage/
+test-results/
+playwright-report/
+blob-report/
+/playwright/.cache/
+/playwright/.auth/
+
+# Next.js
+.next/
+out/
+
+# Production
+build/
+dist/
+
+# Misc
+.DS_Store
+*.pem
+*.log
+*.tsbuildinfo
+next-env.d.ts
+
+# Env files
+.env*
+!.env.example
+
+# vercel
+.vercel
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
