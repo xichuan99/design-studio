@@ -37,6 +37,8 @@ jobs:
     - name: Run Pytest
       run: |
         cd backend
+        alembic upgrade head
+        python -m scripts.seed_templates
         pytest tests/ -v
 
   frontend-build:
