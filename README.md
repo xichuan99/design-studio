@@ -30,31 +30,33 @@
 ## 🏗️ Architecture
 
 ```
-┌─────────────────────────────────┐
-│         Next.js Frontend        │
-│  (React 19, Konva.js, Zustand)  │
-│       Port :3000                │
-└──────────┬──────────────────────┘
-           │ REST API
-┌──────────▼──────────────────────┐
-│       FastAPI Backend           │
-│   (SQLAlchemy, Pydantic)        │
-│       Port :8000                │
-├─────────┬────────┬──────────────┤
-│ Celery  │ Redis  │  PostgreSQL  │
-│ Workers │ :6379  │  :5433       │
-└─────────┴────────┴──────────────┘
-           │
-    ┌──────▼──────┐
-    │  External   │
-    │  Services   │
-    ├─────────────┤
-    │ Gemini API  │
-    │ Fal.ai      │
-    │ Backblaze   │
-    │ Sentry      │
-    │ PostHog     │
-    └─────────────┘
+        Client (Browser)
+              │
+     ┌────────▼─────────┐
+     │   Nginx (SSL)    │
+     │ desain.nugroho   │
+     │  pramono.my.id   │
+     └──┬──────────┬────┘
+        │ /        │ /api/*
+┌───────▼──┐  ┌────▼──────────────┐
+│ Frontend │  │  Backend (API)    │
+│ Next.js  │  │  FastAPI          │
+│ :3000    │  │  :8000            │
+└──────────┘  ├────────┬──────────┤
+              │ Celery │  Redis   │
+              │ Worker │  :6379   │
+              └────────┴──────────┘
+                       │
+              ┌────────▼──────────┐
+              │   PostgreSQL      │
+              │   :5432           │
+              └───────────────────┘
+                       │
+              ┌────────▼──────────┐
+              │  External APIs    │
+              │  Gemini · Fal.ai  │
+              │  Backblaze · etc  │
+              └───────────────────┘
 ```
 
 ### Tech Stack
@@ -69,7 +71,8 @@
 | **Storage** | Backblaze B2 (S3-compatible) |
 | **Auth** | NextAuth.js + Google OAuth |
 | **Monitoring** | Sentry, PostHog |
-| **CI/CD** | GitHub Actions → Vercel (frontend) + Railway (backend) |
+| **Infra** | Docker Compose, Nginx (reverse proxy + SSL), Let's Encrypt |
+| **CI/CD** | GitHub Actions |
 
 ---
 
@@ -84,50 +87,49 @@
 ### 1. Clone & Setup Environment
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/design-studio.git
+git clone https://github.com/clarinovist/design-studio.git
 cd design-studio
-cp .env.example .env   # Edit with your API keys
 ```
 
-### 2. Start Infrastructure
+### 2. Configure Environment Variables
 
 ```bash
-docker compose up -d   # PostgreSQL :5433 + Redis :6379
+# Backend
+cp .env.example backend/.env
+nano backend/.env          # Fill in API keys
+
+# Frontend
+cp .env.example frontend/.env.local
+nano frontend/.env.local   # Fill in API keys & URLs
 ```
 
-### 3. Backend Setup
+### 3. Start All Services (Docker)
 
 ```bash
-cd backend
-python -m venv venv
-source venv/bin/activate   # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-
-# Run database migrations
-alembic upgrade head
-
-# Seed templates (optional)
-python scripts/seed_templates.py
-
-# Start the API server
-uvicorn app.main:app --reload --port 8000
+docker compose up -d --build
 ```
 
-### 4. Frontend Setup
+This starts **5 containers**: PostgreSQL, Redis, Backend API, Celery Worker, Frontend.
+
+### 4. Run Database Migrations
 
 ```bash
-cd frontend
-npm install --legacy-peer-deps
-npm run dev   # Opens at http://localhost:3000
+docker compose exec backend alembic upgrade head
 ```
 
-### 5. Start Celery Worker (for AI generation)
+### 5. Seed Templates (optional)
 
 ```bash
-cd backend
-source venv/bin/activate
-celery -A app.workers.celery_app worker --loglevel=info
+docker compose exec backend python scripts/seed_templates.py
 ```
+
+### Access
+
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:3000 |
+| Backend API | http://localhost:8000/api |
+| Swagger Docs | http://localhost:8000/docs |
 
 ---
 
@@ -142,8 +144,8 @@ Copy `.env.example` to `.env` and fill in the required values:
 | `GOOGLE_CLIENT_ID` | ✅ | Google OAuth client ID |
 | `GOOGLE_CLIENT_SECRET` | ✅ | Google OAuth client secret |
 | `NEXTAUTH_SECRET` | ✅ | Random secret for JWT signing |
-| `NEXTAUTH_URL` | ✅ | Frontend URL (e.g. `http://localhost:3000`) |
-| `NEXT_PUBLIC_API_URL` | ✅ | Backend API URL (e.g. `http://localhost:8000/api`) |
+| `NEXTAUTH_URL` | ✅ | Frontend URL (e.g. `https://desain.nugrohopramono.my.id`) |
+| `NEXT_PUBLIC_API_URL` | ✅ | Backend API URL (e.g. `https://desain.nugrohopramono.my.id/api`) |
 | `CORS_ORIGINS` | ✅ | Comma-separated allowed origins |
 | `GEMINI_API_KEY` | ✅ | Google Gemini API key |
 | `FAL_KEY` | ✅ | Fal.ai API key |
@@ -161,7 +163,7 @@ Copy `.env.example` to `.env` and fill in the required values:
 
 ## 📡 API Reference
 
-Base URL: `http://localhost:8000`
+Base URL: `https://desain.nugrohopramono.my.id` (production) or `http://localhost:8000` (local)
 
 ### Auth
 All endpoints except `/health`, `/docs`, and `/api/templates` require authentication via `X-User-Email` header (dev mode).
@@ -243,7 +245,7 @@ GitHub Actions automatically runs on every push/PR to `main`:
 design-studio/
 ├── .env.example                    # Environment template
 ├── .github/workflows/ci.yml       # CI/CD pipeline
-├── docker-compose.yml              # PostgreSQL + Redis
+├── docker-compose.yml              # All services (Postgres, Redis, Backend, Celery, Frontend)
 │
 ├── backend/
 │   ├── alembic/                    # Database migrations
@@ -291,22 +293,68 @@ design-studio/
 
 ---
 
-## 🚢 Deployment
+## 🚢 Deployment (VPS + Docker)
 
-### Frontend → Vercel
+**Production URL:** https://desain.nugrohopramono.my.id
 
-1. Connect GitHub repo to [Vercel](https://vercel.com)
-2. Set root directory to `frontend`
-3. Add environment variables: `NEXT_PUBLIC_API_URL`, `NEXTAUTH_*`, `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_POSTHOG_KEY`
-4. Deploy — zero config required
+### Docker Services
 
-### Backend → Railway
+| Service | Container | Host Port | Internal Port |
+|---------|-----------|-----------|---------------|
+| PostgreSQL 16 | `design-studio-postgres-1` | 5433 | 5432 |
+| Redis 7 | `design-studio-redis-1` | 6380 | 6379 |
+| Backend (FastAPI) | `design-studio-backend-1` | 8000 | 8000 |
+| Celery Worker | `design-studio-celery-1` | — | — |
+| Frontend (Next.js) | `design-studio-frontend-1` | 3000 | 3000 |
 
-1. Connect GitHub repo to [Railway](https://railway.app)
-2. Set root directory to `backend`
-3. Add PostgreSQL and Redis plugins
-4. Set environment variables: `DATABASE_URL`, `REDIS_URL`, `CORS_ORIGINS`, `GEMINI_API_KEY`, `FAL_KEY`, `S3_*`, `SENTRY_DSN`
-5. Start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+### Nginx Reverse Proxy
+
+- Config: `/etc/nginx/sites-available/desain.nugrohopramono.my.id`
+- SSL: Let's Encrypt (auto-renew via Certbot)
+- Routes:
+  - `/` → Frontend (port 3000)
+  - `/api/*` → Backend (port 8000)
+  - `/docs` → Swagger UI (port 8000)
+  - HTTP → HTTPS redirect
+
+### Google OAuth Setup
+
+In [Google Cloud Console → Credentials](https://console.cloud.google.com/apis/credentials):
+
+1. **Authorized JavaScript Origins:**
+   ```
+   https://desain.nugrohopramono.my.id
+   ```
+
+2. **Authorized Redirect URIs:**
+   ```
+   https://desain.nugrohopramono.my.id/api/auth/callback/google
+   ```
+
+3. **OAuth Consent Screen → Authorized Domains:**
+   ```
+   nugrohopramono.my.id
+   ```
+
+### Common Commands
+
+```bash
+# Rebuild and restart all services
+docker compose up -d --build
+
+# View logs
+docker compose logs -f backend
+docker compose logs -f frontend
+
+# Run migrations
+docker compose exec backend alembic upgrade head
+
+# Restart a single service
+docker compose restart backend
+
+# Reload Nginx (after config change)
+nginx -t && systemctl reload nginx
+```
 
 ---
 
