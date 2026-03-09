@@ -15,7 +15,7 @@ async def get_current_user(
 ) -> User:
     # Support X-User-Email bypass for dev mode as documented in README
     dev_email = request.headers.get("X-User-Email")
-    
+
     if not credentials:
         if dev_email:
             email = dev_email
@@ -32,10 +32,10 @@ async def get_current_user(
             payload = verify_token(token)
             email = payload.get("email")
             name = payload.get("name")
-            
+
             if not email:
                 raise HTTPException(status_code=401, detail="Invalid token payload")
-                
+
         except Exception:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -46,7 +46,7 @@ async def get_current_user(
     # Check if user exists, upsert if missing
     result = await db.execute(select(User).where(User.email == email))
     user = result.scalar_one_or_none()
-    
+
     if not user:
         user = User(
             email=email,

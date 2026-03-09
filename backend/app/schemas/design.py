@@ -41,7 +41,7 @@ class ParsedTextElements(BaseModel):
     cta: Optional[str] = None
     visual_prompt: str = Field(..., description="AI image prompt inferred from the text context")
     suggested_colors: List[str] = Field(default_factory=list)
-    
+
     # AI Layout Decisions
     headline_layout: Optional[AITextLayout] = None
     sub_headline_layout: Optional[AITextLayout] = None

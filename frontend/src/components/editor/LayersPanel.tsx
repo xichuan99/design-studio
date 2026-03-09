@@ -25,7 +25,7 @@ export const LayersPanel: React.FC = () => {
         return <Square className="h-4 w-4" />;
     };
 
-    const getLabel = (el: any) => {
+    const getLabel = (el: { label?: string; type: string; text?: string; shapeType?: string }) => {
         if (el.label) return el.label;
         if (el.type === 'text') return el.text ? `Text: ${el.text.substring(0, 10)}...` : 'Text';
         if (el.type === 'image') return 'Image';

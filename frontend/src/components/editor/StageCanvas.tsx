@@ -40,6 +40,7 @@ export const StageCanvas: React.FC<StageCanvasProps> = ({ width, height }) => {
 
     const scale = Math.min(width / logicalWidth, height / logicalHeight);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleStageClick = (e: any) => {
         // If we click on the empty stage, deselect
         if (e.target === e.target.getStage() || e.target.name() === 'background') {

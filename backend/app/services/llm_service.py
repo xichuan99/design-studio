@@ -38,12 +38,12 @@ LAYOUT RULES:
 
 async def parse_design_text(raw_text: str, integrated_text: bool = False) -> ParsedTextElements:
     """Passes raw text to Gemini and extracts structured JSON elements for graphics."""
-    
+
     # Append instructions for integrated text if requested
     prompt_modifier = ""
     if integrated_text:
         prompt_modifier = """
-        IMPORTANT INTEGRATED TEXT OVERRIDE: 
+        IMPORTANT INTEGRATED TEXT OVERRIDE:
         The user wants the text completely integrated into the image generation itself.
         Instead of asking for 'copy space', your `visual_prompt` MUST explicitly tell the image generator to render the headline and subheadline text natively in the scene.
         Example visual_prompt: "A hyper-realistic 3D render of a neon sign that spells 'MEGA SALE', vibrant cyberpunk street background, bold typography."
@@ -81,7 +81,7 @@ async def parse_design_text(raw_text: str, integrated_text: bool = False) -> Par
             response_schema=ParsedTextElements,
         ),
     )
-    
+
     # We parse the response text instead of using dynamic decoding structure, though the types are standard JSON
     data = json.loads(response.text)
     return ParsedTextElements(**data)

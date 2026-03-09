@@ -10,7 +10,7 @@ from app.core.database import get_db
 from app.api.deps import get_current_user
 from app.models.user import User
 from app.models.project import Project
-from app.schemas.project import ProjectResponse, ProjectUpdate, ProjectCanvasState
+from app.schemas.project import ProjectResponse, ProjectUpdate
 
 router = APIRouter()
 
@@ -58,10 +58,10 @@ async def get_project(
         .where(Project.id == project_id, Project.user_id == current_user.id)
     )
     project = result.scalar_one_or_none()
-    
+
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-        
+
     return project
 
 @router.put("/{project_id}", response_model=ProjectResponse)
@@ -77,17 +77,17 @@ async def update_project(
         .where(Project.id == project_id, Project.user_id == current_user.id)
     )
     project = result.scalar_one_or_none()
-    
+
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-        
+
     if project_in.title is not None:
         project.title = project_in.title
     if project_in.status is not None:
         project.status = project_in.status
     if project_in.canvas_state is not None:
         project.canvas_state = project_in.canvas_state
-        
+
     await db.commit()
     await db.refresh(project)
     return project
@@ -104,10 +104,10 @@ async def delete_project(
         .where(Project.id == project_id, Project.user_id == current_user.id)
     )
     project = result.scalar_one_or_none()
-    
+
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-        
+
     await db.delete(project)
     await db.commit()
     return None

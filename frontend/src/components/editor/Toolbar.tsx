@@ -68,7 +68,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ projectId }) => {
     };
 
     // Helper for rendering a sidebar button
-    const SidebarButton = ({ icon: Icon, label, onClick, className = "", title = "" }: { icon: any, label: string, onClick?: () => void, className?: string, title?: string }) => (
+    const SidebarButton = ({ icon: Icon, label, onClick, className = "", title = "" }: { icon: React.ComponentType<{ className?: string }>, label: string, onClick?: () => void, className?: string, title?: string }) => (
         <button
             onClick={onClick}
             title={title}

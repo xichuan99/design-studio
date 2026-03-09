@@ -16,7 +16,7 @@ async def rate_limit_dependency(current_user: User = Depends(get_current_user)):
     key = f"rate_limit:generate:{current_user.id}"
     current_time = int(time.time())
     window_start = current_time - 60
-    
+
     try:
         async with redis_client.pipeline(transaction=True) as pipe:
             pipe.zremrangebyscore(key, 0, window_start)
@@ -24,12 +24,12 @@ async def rate_limit_dependency(current_user: User = Depends(get_current_user)):
             pipe.zadd(key, {str(current_time): current_time})
             pipe.expire(key, 60)
             results = await pipe.execute()
-            
+
         request_count = results[1]
-        
+
         if request_count >= limit:
             raise HTTPException(
-                status_code=429, 
+                status_code=429,
                 detail="Too many design requests. Please wait a minute before generating again."
             )
     except redis.RedisError as e:

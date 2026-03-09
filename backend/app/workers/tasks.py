@@ -5,7 +5,7 @@ Full pipeline: LLM parse → preprocess reference → Fal.ai generate → upload
 """
 import asyncio
 from datetime import datetime, timezone
-from sqlalchemy import select, update
+from sqlalchemy import update
 from app.workers.celery_app import celery_app
 from app.core.database import AsyncSessionLocal
 from app.models.job import Job

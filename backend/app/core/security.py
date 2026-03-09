@@ -6,14 +6,14 @@ ALGORITHM = "HS256"
 
 def verify_token(token: str) -> dict:
     """Verifies the stateless NextAuth JWT from the frontend."""
-    # NextAuth uses HKDF to derive the actual encryption key from the secret, 
+    # NextAuth uses HKDF to derive the actual encryption key from the secret,
     # but for this MVP, we will rely on NextAuth handling the cookie session natively
     # via API routes.
-    # To truly verify a NextAuth v4 JWT on an external Python backend, we need the 
-    # specific HKDF decryption logic. 
+    # To truly verify a NextAuth v4 JWT on an external Python backend, we need the
+    # specific HKDF decryption logic.
     # For now, we will decode it directly if NEXTAUTH_SECRET is an exact matched key,
     # or implement a simpler decoding strategy.
-    
+
     try:
         # Note: In production NextAuth.js (JWE), tokens are encrypted not just signed.
         # A common MVP workaround is having the frontend pass the Provider-issued AccessToken

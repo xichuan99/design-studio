@@ -57,7 +57,7 @@ async def generate_background(
 
     # Enhance prompt with style suffix and copy-space instructions
     style_suffix = STYLE_SUFFIXES.get(style, STYLE_SUFFIXES["bold"])
-    
+
     if integrated_text:
         # User wants text in the image. Remove the neg prompt text blockers.
         enhanced_prompt = f"{visual_prompt}, {style_suffix}, high quality typography, readable text, clear lettering, professional graphic design"

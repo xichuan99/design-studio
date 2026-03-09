@@ -30,8 +30,8 @@ async def upload_user_image(
     content = await file.read()
     try:
         url = await upload_image(
-            image_bytes=content, 
-            content_type=file.content_type, 
+            image_bytes=content,
+            content_type=file.content_type,
             prefix=f"uploads/{current_user.id}"
         )
         return {"url": url}
@@ -65,7 +65,7 @@ async def generate_design(
 
     if current_user.credits_remaining <= 0:
         raise HTTPException(
-            status_code=402, 
+            status_code=402,
             detail="Insufficient credits. Please upgrade or wait for a refill."
         )
 
@@ -112,7 +112,7 @@ async def generate_design(
 
         # Parse text first (reuse existing logic)
         parsed = await parse_design_text(request.raw_text, integrated_text=request.integrated_text)
-        
+
         # Update job with parsed data
         job.parsed_headline = parsed.headline
         job.parsed_sub_headline = parsed.sub_headline
@@ -124,7 +124,7 @@ async def generate_design(
         # Generate image with Gemini Imagen
         from google import genai
         from google.genai import types
-        
+
         style_map = {
             "bold": "bold vibrant colors, high contrast, eye-catching",
             "minimalist": "clean minimal design, soft colors, whitespace",
@@ -132,14 +132,14 @@ async def generate_design(
             "playful": "fun colorful, happy energetic vibe, bubbly shapes",
         }
         style_suffix = style_map.get(request.style_preference, style_map["bold"])
-        
+
         # Modify the prompt based on whether we want embedded text or not
         text_instruction = (
-            f"high quality typography, clearly readable text saying '{parsed.headline}', stylized to match the scene" 
-            if request.integrated_text 
+            f"high quality typography, clearly readable text saying '{parsed.headline}', stylized to match the scene"
+            if request.integrated_text
             else "copy space area for text overlay, no text, no letters, no words"
         )
-        
+
         enhanced_prompt = (
             f"{parsed.visual_prompt}, {style_suffix}, "
             f"professional graphic design background, {text_instruction}, high quality, 4k"

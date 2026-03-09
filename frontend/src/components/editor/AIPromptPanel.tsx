@@ -45,9 +45,9 @@ export const AIPromptPanel: React.FC = () => {
             setBackgroundUrl(proxyUrl);
             setPrompt('');
 
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Generation error:', err);
-            setError(err.message || 'An error occurred during generation');
+            setError(err instanceof Error ? err.message : 'An error occurred during generation');
         } finally {
             setIsGenerating(false);
         }

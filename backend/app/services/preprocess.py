@@ -51,7 +51,7 @@ def extract_dominant_colors(image_bytes: bytes, n: int = 3) -> list[str]:
     """Extract N dominant colors from an image using K-means clustering.
     Returns a list of hex color strings."""
     img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-    
+
     # Downscale for faster processing
     img = img.resize((100, 100), Image.LANCZOS)
     pixels = np.array(img).reshape(-1, 3).astype(float)
