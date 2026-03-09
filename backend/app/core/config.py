@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     S3_SECRET_KEY: str = ""
     S3_PUBLIC_URL: str = ""  # Public CDN/URL prefix for accessing stored files
 
+    # Backend public base URL (used for local-storage fallback URLs)
+    BACKEND_BASE_URL: str = "http://localhost:8000"
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
 settings = Settings()

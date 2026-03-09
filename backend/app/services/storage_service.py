@@ -47,7 +47,8 @@ async def upload_image(
         local_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "static", "uploads", key)
         with open(local_path, "wb") as f:
             f.write(image_bytes)
-        return f"http://localhost:8000/static/uploads/{key}"
+        base = settings.BACKEND_BASE_URL.rstrip('/')
+        return f"{base}/static/uploads/{key}"
 
     ext = "png" if "png" in content_type else "jpg"
     if key is None:
@@ -79,7 +80,8 @@ async def upload_image(
         local_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "static", "uploads", key)
         with open(local_path, "wb") as f:
             f.write(image_bytes)
-        return f"http://localhost:8000/static/uploads/{key}"
+        base = settings.BACKEND_BASE_URL.rstrip('/')
+        return f"{base}/static/uploads/{key}"
 
 
 async def download_image(url: str) -> bytes:
