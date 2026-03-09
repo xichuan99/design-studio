@@ -116,8 +116,9 @@ def test_extract_dominant_colors():
     """extract_dominant_colors returns correct number of hex colors."""
     from PIL import Image
     import io
-    # Create a red image - dominant color should be red-ish
+    # Create a non-uniform test image (Red with a Blue pixel) to avoid numerical instability warnings in KMeans
     img = Image.new("RGB", (50, 50), color=(255, 0, 0))
+    img.putpixel((0, 0), (0, 0, 255))
     buf = io.BytesIO()
     img.save(buf, format="JPEG")
     
