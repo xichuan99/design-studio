@@ -29,6 +29,8 @@ export default function EditorPage() {
     const { loadState } = useCanvasStore();
 
     const [loadingStage, setLoadingStage] = useState<'project' | 'image' | 'ready' | 'error'>('project');
+    const [canvasBgReady, setCanvasBgReady] = useState(false);
+    const hasBackgroundRef = useRef(false);
     const [error, setError] = useState<string | null>(null);
 
     // Initialize auto-save hook
@@ -55,6 +57,15 @@ export default function EditorPage() {
         loadStateRef.current = loadState;
     });
 
+    // Callback from CanvasWorkspace when background image finishes loading
+    const handleBgStatusChange = (bgStatus: string) => {
+        if (bgStatus === 'loaded' || bgStatus === 'failed') {
+            setCanvasBgReady(true);
+            // Transition loading stage directly from callback
+            setLoadingStage(prev => prev === 'image' ? 'ready' : prev);
+        }
+    };
+
     useEffect(() => {
         if (status === "loading") return;
 
@@ -70,6 +81,9 @@ export default function EditorPage() {
                 const project = await getProjectRef.current(projectId as string);
 
                 if (project.canvas_state) {
+                    const hasBg = !!project.canvas_state.backgroundUrl;
+                    hasBackgroundRef.current = hasBg;
+
                     loadStateRef.current(
                         project.canvas_state.elements || [],
                         project.canvas_state.backgroundUrl || null,
@@ -77,24 +91,18 @@ export default function EditorPage() {
                         project.canvas_state.backgroundColor
                     );
 
-                    if (project.canvas_state.backgroundUrl) {
+                    if (hasBg) {
                         setLoadingStage('image');
-                        // Preload image, then mark ready
-                        const img = new window.Image();
-                        img.crossOrigin = 'anonymous';
-                        const proxyUrl = project.canvas_state.backgroundUrl.startsWith('http')
-                            ? `/api/proxy-image?url=${encodeURIComponent(project.canvas_state.backgroundUrl)}`
-                            : project.canvas_state.backgroundUrl;
-                        img.src = proxyUrl;
-                        await Promise.race([
-                            new Promise(r => { img.onload = r; img.onerror = r; }),
-                            new Promise(r => setTimeout(r, 5000))
-                        ]);
+                        // Don't mark ready here — the canvas will report when the image is actually rendered
+                    } else {
+                        setCanvasBgReady(true); // No background to wait for
+                        setLoadingStage('ready');
                     }
                 } else {
                     loadStateRef.current([], null, project.title);
+                    setCanvasBgReady(true);
+                    setLoadingStage('ready');
                 }
-                setLoadingStage('ready');
             } catch (err: unknown) {
                 setError(err instanceof Error ? err.message : "Failed to load project.");
                 setLoadingStage('error');
@@ -104,20 +112,17 @@ export default function EditorPage() {
         loadProject();
     }, [status, projectId]);
 
-    if ((loadingStage !== 'ready' && loadingStage !== 'error') || status === "loading") {
-        return (
-            <div className="flex h-screen w-full items-center justify-center bg-background">
-                <div className="flex flex-col items-center gap-6 text-muted-foreground bg-card p-10 rounded-2xl shadow-xl border">
-                    <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                    <div className="space-y-3 w-56">
-                        <StageIndicator label="Memuat project..." done={loadingStage !== 'project'} active={loadingStage === 'project'} />
-                        <StageIndicator label="Memuat gambar..." done={loadingStage === 'ready'} active={loadingStage === 'image'} />
-                        <StageIndicator label="Menyiapkan canvas..." done={false} active={loadingStage === 'ready'} />
-                    </div>
-                </div>
-            </div>
-        );
-    }
+    // Safety timeout: if image takes more than 8 seconds, proceed anyway
+    useEffect(() => {
+        if (loadingStage === 'image') {
+            const timeout = setTimeout(() => {
+                setLoadingStage('ready');
+            }, 8000);
+            return () => clearTimeout(timeout);
+        }
+    }, [loadingStage]);
+
+    const isLoading = (loadingStage !== 'ready' && loadingStage !== 'error') || status === "loading";
 
     if (error) {
         return (
@@ -127,6 +132,24 @@ export default function EditorPage() {
         );
     }
 
+    // Show loading screen only when project data hasn't loaded yet
+    if (loadingStage === 'project' || status === 'loading') {
+        return (
+            <div className="flex h-screen w-full items-center justify-center bg-background">
+                <div className="flex flex-col items-center gap-6 text-muted-foreground bg-card p-10 rounded-2xl shadow-xl border">
+                    <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                    <div className="space-y-3 w-56">
+                        <StageIndicator label="Memuat project..." done={false} active={true} />
+                        <StageIndicator label="Memuat gambar..." done={false} active={false} />
+                        <StageIndicator label="Menyiapkan canvas..." done={false} active={false} />
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Once project data is loaded, render the full editor.
+    // If image is still loading, show overlay on top of the editor (editor is mounted but hidden behind overlay).
     return (
         <div className="flex flex-col h-screen overflow-hidden bg-background">
             {/* Editor Top Bar */}
@@ -146,7 +169,7 @@ export default function EditorPage() {
                     />
                 </div>
 
-                <CanvasWorkspace />
+                <CanvasWorkspace onBgStatusChange={handleBgStatusChange} />
 
                 {/* Right Sidebar: Tabs for Props, Layers, History */}
                 <div className="hidden md:flex flex-col border-l bg-card overflow-hidden" style={{ width: 280 }}>
@@ -189,6 +212,20 @@ export default function EditorPage() {
             <div className="sm:hidden flex items-center justify-around border-t bg-card p-2">
                 <MobileToolbarActions />
             </div>
+
+            {/* Loading overlay — fades out when image is ready */}
+            {isLoading && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-background transition-opacity duration-500">
+                    <div className="flex flex-col items-center gap-6 text-muted-foreground bg-card p-10 rounded-2xl shadow-xl border">
+                        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                        <div className="space-y-3 w-56">
+                            <StageIndicator label="Memuat project..." done={true} active={false} />
+                            <StageIndicator label="Memuat gambar..." done={canvasBgReady} active={loadingStage === 'image'} />
+                            <StageIndicator label="Menyiapkan canvas..." done={false} active={loadingStage === 'ready'} />
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

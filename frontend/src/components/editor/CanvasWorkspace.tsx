@@ -13,7 +13,11 @@ const StageCanvas = dynamic(() => import('./StageCanvas').then(mod => mod.StageC
     loading: () => <div className="w-full h-full flex items-center justify-center bg-muted">Loading Canvas...</div>
 });
 
-export const CanvasWorkspace: React.FC = () => {
+interface CanvasWorkspaceProps {
+    onBgStatusChange?: (status: string) => void;
+}
+
+export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ onBgStatusChange }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const { selectedElementId, deleteElement, elements, backgroundUrl, backgroundColor } = useCanvasStore();
 
@@ -25,6 +29,13 @@ export const CanvasWorkspace: React.FC = () => {
 
     // Background Loading State
     const [bgStatus, setBgStatus] = useState<string>('loaded');
+
+    // Forward bgStatus changes to parent
+    useEffect(() => {
+        if (onBgStatusChange) {
+            onBgStatusChange(bgStatus);
+        }
+    }, [bgStatus, onBgStatusChange]);
 
     const isEmpty = elements.length === 0 && !backgroundUrl && (!backgroundColor || backgroundColor === '#ffffff');
 
