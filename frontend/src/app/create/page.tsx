@@ -441,7 +441,7 @@ export default function CreatePage() {
                                             <RadioGroupItem value="integrated" id="integrated" />
                                             <span className="font-medium text-sm">Teks Menyatu (Gaya AI)</span>
                                         </div>
-                                        <span className="text-xs text-muted-foreground ml-6">Menyatu estetik, tapii tak bisa diedit</span>
+                                        <span className="text-xs text-muted-foreground ml-6">Menyatu estetik, tapi tak bisa diedit</span>
                                     </label>
                                 </RadioGroup>
                             </div>
@@ -466,7 +466,7 @@ export default function CreatePage() {
                                     </div>
                                 </div>
                                 <button
-                                    onClick={() => setSelectedTemplate(null)}
+                                    onClick={() => { setSelectedTemplate(null); setShowManualRef(false); }}
                                     className="p-1.5 hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors shrink-0"
                                     title="Hapus preset"
                                 >
