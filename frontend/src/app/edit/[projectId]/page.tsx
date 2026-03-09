@@ -49,9 +49,11 @@ export default function EditorPage() {
 
     // Use refs to stabilize function references and prevent infinite re-fetch loop
     const getProjectRef = useRef(getProject);
-    getProjectRef.current = getProject;
     const loadStateRef = useRef(loadState);
-    loadStateRef.current = loadState;
+    useEffect(() => {
+        getProjectRef.current = getProject;
+        loadStateRef.current = loadState;
+    });
 
     useEffect(() => {
         if (status === "loading") return;
