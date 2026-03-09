@@ -42,12 +42,19 @@ async def _execute_pipeline(job_id: str, raw_text: str, aspect_ratio: str, style
         # Step 2: LLM parse the raw text
         parsed = await parse_design_text(raw_text, integrated_text=integrated_text)
 
+        # Assemble visual prompt from parts if available
+        if parsed.visual_prompt_parts:
+            assembled = ", ".join(p.value for p in parsed.visual_prompt_parts if p.enabled)
+            visual_prompt_final = assembled if assembled else parsed.visual_prompt
+        else:
+            visual_prompt_final = parsed.visual_prompt
+
         await _update_job_status(
             job_id,
             parsed_headline=parsed.headline,
             parsed_sub_headline=parsed.sub_headline,
             parsed_cta=parsed.cta,
-            visual_prompt=parsed.visual_prompt,
+            visual_prompt=visual_prompt_final,
         )
 
         # Step 3: Preprocess reference image if provided
@@ -60,7 +67,7 @@ async def _execute_pipeline(job_id: str, raw_text: str, aspect_ratio: str, style
 
         # Step 4: Generate background image via Fal.ai
         result = await generate_background(
-            visual_prompt=parsed.visual_prompt,
+            visual_prompt=visual_prompt_final,
             reference_image_url=upload_ref_url,
             style=style,
             aspect_ratio=aspect_ratio,

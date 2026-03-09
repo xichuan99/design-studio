@@ -157,15 +157,15 @@ export default function CreatePage() {
 
             // Assemble prompt from parts if available (user might have edited/toggled them since parsing)
             let assembledPrompt = rawText; // Fallback
-            if (parsedData?.visual_prompt_parts && parsedData.visual_prompt_parts.length > 0) {
-                const activeParts = parsedData.visual_prompt_parts
-                    .filter(p => p.enabled)
-                    .map(p => p.value);
+            if (parsed.visual_prompt_parts && parsed.visual_prompt_parts.length > 0) {
+                const activeParts = parsed.visual_prompt_parts
+                    .filter((p: VisualPromptPart) => p.enabled)
+                    .map((p: VisualPromptPart) => p.value);
 
                 if (activeParts.length > 0) {
                     assembledPrompt = activeParts.join(", ");
                 } else {
-                    assembledPrompt = parsedData.visual_prompt || rawText;
+                    assembledPrompt = parsed.visual_prompt || rawText;
                 }
             }
 
