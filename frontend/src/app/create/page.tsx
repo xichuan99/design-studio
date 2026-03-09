@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { LayoutTemplate, Loader2, ImagePlus, X, PanelLeftOpen, PanelLeftClose, Sparkles } from "lucide-react";
+import { LayoutTemplate, Loader2, ImagePlus, X, PanelLeftOpen, PanelLeftClose, Sparkles, Plus } from "lucide-react";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { useProjectApi, API_BASE_URL } from "@/lib/api";
@@ -48,6 +48,7 @@ export default function CreatePage() {
     const [integratedText, setIntegratedText] = useState(false);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+    const [showManualRef, setShowManualRef] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     if (status === "loading") {
@@ -252,8 +253,15 @@ export default function CreatePage() {
         // Toggle selection
         if (selectedTemplate?.id === template.id) {
             setSelectedTemplate(null);
+            setShowManualRef(false);
         } else {
             setSelectedTemplate(template);
+            setShowManualRef(false);
+
+            // Clear reference image — template replaces it
+            setReferenceFile(null);
+            setReferencePreview(null);
+
             // Optionally auto-scroll to input text to guide user
             window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -262,6 +270,9 @@ export default function CreatePage() {
             if (template.style) setStylePreference(template.style);
         }
     };
+
+    // Dynamic step numbering for Format & Gaya
+    const formatStepNumber = (!selectedTemplate || showManualRef) ? 4 : 3;
 
     return (
         <div className="flex flex-col h-screen overflow-hidden bg-background">
@@ -306,61 +317,86 @@ export default function CreatePage() {
                             />
                         </div>
 
+                        {/* Gambar Referensi - Conditional Visibility */}
                         <div className="space-y-2">
-                            <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-violet-500 text-white text-xs font-bold">3</span>
-                                Gambar Referensi (Opsional)
-                            </label>
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept="image/png,image/jpeg,image/jpg,image/webp"
-                                className="hidden"
-                                onChange={handleFileInputChange}
-                            />
-                            {referencePreview ? (
-                                <div className="relative group rounded-xl overflow-hidden border border-border">
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img
-                                        src={referencePreview}
-                                        alt="Gambar referensi"
-                                        className="w-full h-40 object-cover"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={handleRemoveFile}
-                                        className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
-                                        title="Hapus gambar"
-                                    >
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                    <div className="p-2 bg-muted/80 text-xs text-muted-foreground truncate">
-                                        {referenceFile?.name}
+                            {(!selectedTemplate || showManualRef) ? (
+                                <>
+                                    <div className="flex items-center justify-between">
+                                        <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-violet-500 text-white text-xs font-bold">3</span>
+                                            Gambar Referensi {selectedTemplate ? "(Override)" : "(Opsional)"}
+                                        </label>
+                                        {selectedTemplate && showManualRef && (
+                                            <button
+                                                onClick={() => {
+                                                    setShowManualRef(false);
+                                                    handleRemoveFile();
+                                                }}
+                                                className="text-xs text-destructive hover:underline font-medium px-2 py-1"
+                                            >
+                                                Batal
+                                            </button>
+                                        )}
                                     </div>
-                                </div>
+                                    <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        accept="image/png,image/jpeg,image/jpg,image/webp"
+                                        className="hidden"
+                                        onChange={handleFileInputChange}
+                                    />
+                                    {referencePreview ? (
+                                        <div className="relative group rounded-xl overflow-hidden border border-border">
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img
+                                                src={referencePreview}
+                                                alt="Gambar referensi"
+                                                className="w-full h-40 object-cover"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={handleRemoveFile}
+                                                className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+                                                title="Hapus gambar"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                            <div className="p-2 bg-muted/80 text-xs text-muted-foreground truncate">
+                                                {referenceFile?.name}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div
+                                            className={`border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-colors ${isDragOver
+                                                ? "border-primary bg-primary/10"
+                                                : "border-muted-foreground/25 hover:bg-muted/50"
+                                                }`}
+                                            onClick={() => fileInputRef.current?.click()}
+                                            onDragOver={handleDragOver}
+                                            onDragLeave={handleDragLeave}
+                                            onDrop={handleDrop}
+                                        >
+                                            <ImagePlus className="w-8 h-8 text-muted-foreground mb-2" />
+                                            <p className="text-sm font-medium">
+                                                {isDragOver ? "Lepaskan gambar di sini" : "Unggah Gambar"}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground mt-1">PNG, JPG up to 5MB</p>
+                                        </div>
+                                    )}
+                                </>
                             ) : (
-                                <div
-                                    className={`border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-colors ${isDragOver
-                                        ? "border-primary bg-primary/10"
-                                        : "border-muted-foreground/25 hover:bg-muted/50"
-                                        }`}
-                                    onClick={() => fileInputRef.current?.click()}
-                                    onDragOver={handleDragOver}
-                                    onDragLeave={handleDragLeave}
-                                    onDrop={handleDrop}
+                                <button
+                                    onClick={() => setShowManualRef(true)}
+                                    className="w-full text-left text-xs font-medium text-muted-foreground hover:text-primary transition-colors py-2 px-1 flex items-center gap-1.5"
                                 >
-                                    <ImagePlus className="w-8 h-8 text-muted-foreground mb-2" />
-                                    <p className="text-sm font-medium">
-                                        {isDragOver ? "Lepaskan gambar di sini" : "Unggah Gambar"}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground mt-1">PNG, JPG up to 5MB</p>
-                                </div>
+                                    <Plus className="w-3.5 h-3.5" /> Tambah gambar referensi manual (opsional)
+                                </button>
                             )}
                         </div>
 
                         <div className="space-y-2 tour-step-2">
                             <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-amber-500 text-white text-xs font-bold">4</span>
+                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-amber-500 text-white text-xs font-bold">{formatStepNumber}</span>
                                 Format & Gaya
                             </label>
                             <Select value={aspectRatio} onValueChange={setAspectRatio}>
