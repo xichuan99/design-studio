@@ -38,7 +38,7 @@ export function useProjectApi() {
         const method = projectPayload.id ? 'PUT' : 'POST';
         const url = projectPayload.id
             ? `${API_BASE_URL}/projects/${projectPayload.id}`
-            : `${API_BASE_URL}/projects`;
+            : `${API_BASE_URL}/projects/`;
 
         const res = await fetch(url, {
             method,
@@ -50,7 +50,7 @@ export function useProjectApi() {
     };
 
     const getProjects = async () => {
-        const res = await fetch(`${API_BASE_URL}/projects`, {
+        const res = await fetch(`${API_BASE_URL}/projects/`, {
             headers: getHeaders(),
         });
         if (!res.ok) throw new Error('Failed to fetch projects');
