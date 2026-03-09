@@ -39,3 +39,8 @@ app.include_router(history_router, prefix="/api/history", tags=["History"])
 async def health_check():
     return {"status": "ok"}
 
+# Always mount static files for local dev uploads (fallback when S3 fails)
+static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
+os.makedirs(os.path.join(static_dir, "uploads"), exist_ok=True)
+from fastapi.staticfiles import StaticFiles
+app.mount("/static", StaticFiles(directory=static_dir), name="static")

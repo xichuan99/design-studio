@@ -19,7 +19,12 @@ export const ImageNode: React.FC<ImageNodeProps> = ({
 }) => {
     const shapeRef = useRef<Konva.Image>(null);
     const trRef = useRef<Konva.Transformer>(null);
-    const [image] = useImage(element.url || '', 'anonymous');
+    const url = element.url || '';
+    const proxiedUrl = url.startsWith('http')
+        ? `/api/proxy-image?url=${encodeURIComponent(url)}`
+        : url;
+
+    const [image] = useImage(proxiedUrl, 'anonymous');
 
     useEffect(() => {
         if (isSelected && trRef.current && shapeRef.current) {

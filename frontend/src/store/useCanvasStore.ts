@@ -14,6 +14,15 @@ export interface CanvasElement {
     rotation: number;
     opacity?: number;
 
+    // Shape specific
+    shapeType?: 'rect' | 'circle' | 'line';
+    cornerRadius?: number;
+
+    // Layer logic
+    visible?: boolean;
+    locked?: boolean;
+    label?: string;
+
     // Text specific
     text?: string;
     fontFamily?: string;
@@ -24,6 +33,15 @@ export interface CanvasElement {
     fontStyle?: 'normal' | 'italic';
     letterSpacing?: number;
     lineHeight?: number;
+    stroke?: string;
+    strokeWidth?: number;
+
+    // Shadow properties (mostly for text on complex backgrounds)
+    shadowColor?: string;
+    shadowBlur?: number;
+    shadowOffsetX?: number;
+    shadowOffsetY?: number;
+    shadowOpacity?: number;
 
     // Image specific
     url?: string;
@@ -53,6 +71,10 @@ interface CanvasActions {
     sendBackward: (id: string) => void;
     bringToFront: (id: string) => void;
     sendToBack: (id: string) => void;
+    toggleVisibility: (id: string) => void;
+    toggleLock: (id: string) => void;
+    updateName: (id: string, name: string) => void;
+    reorderElements: (fromIndex: number, toIndex: number) => void;
 
     // Global
     setBackgroundUrl: (url: string | null) => void;
@@ -169,6 +191,37 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set) => ({
         const el = newElements.splice(elIndex, 1)[0];
         newElements.unshift(el);
 
+        return saveHistory(state, newElements);
+    }),
+
+    toggleVisibility: (id) => set((state) => {
+        const newElements = state.elements.map(el =>
+            el.id === id ? { ...el, visible: el.visible === false ? true : false } : el
+        );
+        return saveHistory(state, newElements);
+    }),
+
+    toggleLock: (id) => set((state) => {
+        const newElements = state.elements.map(el =>
+            el.id === id ? { ...el, locked: !el.locked } : el
+        );
+        return saveHistory(state, newElements);
+    }),
+
+    updateName: (id, name) => set((state) => {
+        const newElements = state.elements.map(el =>
+            el.id === id ? { ...el, label: name } : el
+        );
+        return saveHistory(state, newElements);
+    }),
+
+    reorderElements: (fromIndex, toIndex) => set((state) => {
+        if (fromIndex < 0 || fromIndex >= state.elements.length || toIndex < 0 || toIndex >= state.elements.length) {
+            return state;
+        }
+        const newElements = [...state.elements];
+        const [movedEl] = newElements.splice(fromIndex, 1);
+        newElements.splice(toIndex, 0, movedEl);
         return saveHistory(state, newElements);
     }),
 

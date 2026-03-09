@@ -107,6 +107,7 @@ export function useProjectApi() {
         style_preference: string;
         reference_image_url?: string;
         template_id?: string;
+        integrated_text?: boolean;
     }) => {
         const res = await fetch(`${API_BASE_URL}/designs/generate`, {
             method: 'POST',

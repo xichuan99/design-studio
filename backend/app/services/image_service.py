@@ -34,6 +34,7 @@ async def generate_background(
     reference_image_url: str | None = None,
     style: str = "bold",
     aspect_ratio: str = "1:1",
+    integrated_text: bool = False,
 ) -> dict:
     """
     Generates a background image using Fal.ai.
@@ -43,6 +44,7 @@ async def generate_background(
         reference_image_url: Optional reference image for style transfer.
         style: Style preference (bold, minimalist, elegant, playful).
         aspect_ratio: Target aspect ratio (1:1, 9:16, 16:9).
+        integrated_text: If True, do not block text generation in the negative prompt.
 
     Returns:
         dict with keys: image_url, width, height, seed
@@ -55,11 +57,19 @@ async def generate_background(
 
     # Enhance prompt with style suffix and copy-space instructions
     style_suffix = STYLE_SUFFIXES.get(style, STYLE_SUFFIXES["bold"])
-    enhanced_prompt = (
-        f"{visual_prompt}, {style_suffix}, "
-        "professional graphic design background, copy space area for text overlay, "
-        "no text, no letters, no words"
-    )
+    
+    if integrated_text:
+        # User wants text in the image. Remove the neg prompt text blockers.
+        enhanced_prompt = f"{visual_prompt}, {style_suffix}, high quality typography, readable text, clear lettering, professional graphic design"
+        actual_negative_prompt = "blurry, low quality, deformed, ugly, bad anatomy, misspelled words, random letters"
+    else:
+        # Standard behavior: clean background, no text
+        enhanced_prompt = (
+            f"{visual_prompt}, {style_suffix}, "
+            "professional graphic design background, copy space area for text overlay, "
+            "no text, no letters, no words, high quality, 4k"
+        )
+        actual_negative_prompt = NEGATIVE_PROMPT
 
     resolution = ASPECT_RATIO_MAP.get(aspect_ratio, ASPECT_RATIO_MAP["1:1"])
 
@@ -76,7 +86,7 @@ async def generate_background(
                 "strength": 0.70,  # How much to deviate from reference (0=identical, 1=ignore)
                 "num_inference_steps": 28,
                 "guidance_scale": 3.5,
-                "negative_prompt": NEGATIVE_PROMPT,
+                "negative_prompt": actual_negative_prompt,
             },
         )
     else:
@@ -89,7 +99,7 @@ async def generate_background(
                 "num_images": 1,
                 "num_inference_steps": 28,
                 "guidance_scale": 3.5,
-                "negative_prompt": NEGATIVE_PROMPT,
+                "negative_prompt": actual_negative_prompt,
             },
         )
 

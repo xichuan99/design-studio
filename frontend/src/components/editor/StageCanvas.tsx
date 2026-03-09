@@ -5,6 +5,7 @@ import useImage from 'use-image';
 import { useCanvasStore } from '@/store/useCanvasStore';
 import { TextNode } from './TextNode';
 import { ImageNode } from './ImageNode';
+import { ShapeNode } from './ShapeNode';
 
 interface StageCanvasProps {
     width: number;
@@ -21,7 +22,16 @@ export const StageCanvas: React.FC<StageCanvasProps> = ({ width, height }) => {
         updateElement,
     } = useCanvasStore();
 
-    const [bgImage] = useImage(backgroundUrl || '', 'anonymous');
+    // Use proxy for external images to avoid CORS tainted canvas issues
+    const proxiedBackgroundUrl = backgroundUrl && backgroundUrl.startsWith('http')
+        ? `/api/proxy-image?url=${encodeURIComponent(backgroundUrl)}`
+        : backgroundUrl;
+
+    const [bgImage, bgStatus] = useImage(proxiedBackgroundUrl || '', 'anonymous');
+
+    React.useEffect(() => {
+        // bgImage loaded
+    }, [backgroundUrl, bgStatus, bgImage]);
 
     // Calculate relative scaling based on background boundaries
     // Assuming default canvas size of 1024x1024 for 1:1, etc.
@@ -30,11 +40,20 @@ export const StageCanvas: React.FC<StageCanvasProps> = ({ width, height }) => {
 
     const scale = Math.min(width / logicalWidth, height / logicalHeight);
 
-    const checkDeselect = (e: KonvaEventObject<MouseEvent | TouchEvent>) => {
-        // deselect when clicked on empty area (the stage itself or background)
-        const clickedOnEmpty = e.target === e.target.getStage() || e.target.attrs.id === 'bgImage';
-        if (clickedOnEmpty) {
+    const handleStageClick = (e: any) => {
+        // If we click on the empty stage, deselect
+        if (e.target === e.target.getStage() || e.target.name() === 'background') {
             selectElement(null);
+            return;
+        }
+
+        // Handle case where click was on a locked element
+        const id = e.target.id();
+        if (id) {
+            const el = elements.find(el => el.id === id);
+            if (el?.locked) {
+                return; // Do not select if locked
+            }
         }
     };
 
@@ -56,8 +75,8 @@ export const StageCanvas: React.FC<StageCanvasProps> = ({ width, height }) => {
         <Stage
             width={width}
             height={height}
-            onMouseDown={checkDeselect}
-            onTouchStart={checkDeselect}
+            onMouseDown={handleStageClick}
+            onTouchStart={handleStageClick}
             ref={handleStageRef}
             style={{ background: backgroundColor || '#ffffff', margin: '0 auto', display: 'flex', justifyContent: 'center' }}
         >
@@ -69,6 +88,7 @@ export const StageCanvas: React.FC<StageCanvasProps> = ({ width, height }) => {
                         width={logicalWidth}
                         height={logicalHeight}
                         id="bgImage"
+                        name="background"
                     />
                 )}
                 {!bgImage && (
@@ -78,19 +98,22 @@ export const StageCanvas: React.FC<StageCanvasProps> = ({ width, height }) => {
                         height={logicalHeight}
                         fill={backgroundColor || "#ffffff"}
                         id="bgImage"
+                        name="background"
                     />
                 )}
 
                 {/* Dynamic Elements */}
                 {elements.map((el) => {
+                    if (el.visible === false) return null; // Don't render hidden elements
+
                     if (el.type === 'text') {
                         return (
                             <TextNode
                                 key={el.id}
                                 element={el}
-                                isSelected={el.id === selectedElementId}
-                                onSelect={() => selectElement(el.id)}
-                                onChange={(newAttrs) => updateElement(el.id, newAttrs)}
+                                isSelected={el.id === selectedElementId && !el.locked}
+                                onSelect={() => !el.locked && selectElement(el.id)}
+                                onChange={(newAttrs) => !el.locked && updateElement(el.id, newAttrs)}
                             />
                         );
                     } else if (el.type === 'image') {
@@ -98,9 +121,19 @@ export const StageCanvas: React.FC<StageCanvasProps> = ({ width, height }) => {
                             <ImageNode
                                 key={el.id}
                                 element={el}
-                                isSelected={el.id === selectedElementId}
-                                onSelect={() => selectElement(el.id)}
-                                onChange={(newAttrs) => updateElement(el.id, newAttrs)}
+                                isSelected={el.id === selectedElementId && !el.locked}
+                                onSelect={() => !el.locked && selectElement(el.id)}
+                                onChange={(newAttrs) => !el.locked && updateElement(el.id, newAttrs)}
+                            />
+                        );
+                    } else if (el.type === 'shape') {
+                        return (
+                            <ShapeNode
+                                key={el.id}
+                                element={el}
+                                isSelected={el.id === selectedElementId && !el.locked}
+                                onSelect={() => !el.locked && selectElement(el.id)}
+                                onChange={(newAttrs) => !el.locked && updateElement(el.id, newAttrs)}
                             />
                         );
                     }

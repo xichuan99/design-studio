@@ -26,6 +26,7 @@ services:
       retries: 5
 
   backend:
+    image: ${BACKEND_IMAGE:-design-studio-backend}
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -41,6 +42,7 @@ services:
     restart: unless-stopped
 
   celery:
+    image: ${BACKEND_IMAGE:-design-studio-backend}
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -55,6 +57,7 @@ services:
     restart: unless-stopped
 
   frontend:
+    image: ${FRONTEND_IMAGE:-design-studio-frontend}
     build:
       context: ./frontend
       dockerfile: Dockerfile

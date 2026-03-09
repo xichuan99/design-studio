@@ -8,13 +8,17 @@ import WebFont from 'webfontloader';
 
 import { Plus, Undo as UndoIcon, Redo as RedoIcon } from 'lucide-react';
 import { Toolbar } from "@/components/editor/Toolbar";
+import { EditorTopBar } from "@/components/editor/EditorTopBar";
 import { CanvasWorkspace } from "@/components/editor/CanvasWorkspace";
 import { StylePanel } from "@/components/editor/StylePanel";
 import { useProjectApi } from "@/lib/api";
 import { useCanvasStore } from "@/store/useCanvasStore";
 import { useAutoSave } from "@/hooks/useAutoSave";
-import { AppHeader } from "@/components/layout/AppHeader";
 import { HistoryPanel } from "@/components/editor/HistoryPanel";
+import { LayersPanel } from "@/components/editor/LayersPanel";
+import { AIPromptPanel } from "@/components/editor/AIPromptPanel";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Layers, SlidersHorizontal, History as HistoryIcon, Sparkles } from "lucide-react";
 
 const PRELOAD_FONTS = ['Inter', 'Poppins', 'Roboto', 'Playfair Display', 'Montserrat', 'Oswald'];
 
@@ -102,12 +106,12 @@ export default function EditorPage() {
 
     return (
         <div className="flex flex-col h-screen overflow-hidden bg-background">
-            <AppHeader />
-
-            {/* Editor Top Bar with Title */}
-            <div className="h-12 border-b flex items-center px-4 bg-card shrink-0 shadow-sm z-40">
-                <TitleEditor />
-            </div>
+            {/* Editor Top Bar */}
+            <EditorTopBar
+                projectId={projectId as string | undefined}
+                saveStatus={saveStatus}
+                onSave={forceSave}
+            />
 
             {/* Desktop layout: Toolbar | Canvas | StylePanel */}
             {/* Mobile layout: Stack vertically, hide StylePanel if screen too small */}
@@ -116,21 +120,45 @@ export default function EditorPage() {
                 <div className="hidden sm:flex">
                     <Toolbar
                         projectId={projectId as string | undefined}
-                        saveStatus={saveStatus}
-                        onSave={forceSave}
                     />
                 </div>
 
                 <CanvasWorkspace />
 
-                {/* Right Sidebar: StylePanel + HistoryPanel */}
-                <div className="hidden md:flex flex-col border-l bg-card overflow-y-auto" style={{ width: 280 }}>
-                    <StylePanel />
-                    {projectId && (
-                        <div className="border-t">
-                            <HistoryPanel projectId={projectId as string} />
-                        </div>
-                    )}
+                {/* Right Sidebar: Tabs for Props, Layers, History */}
+                <div className="hidden md:flex flex-col border-l bg-card overflow-hidden" style={{ width: 280 }}>
+                    <Tabs defaultValue="properties" className="w-[280px] flex flex-col h-full border-none">
+                        <TabsList className="grid w-full grid-cols-4 rounded-none border-b bg-transparent h-12 p-0">
+                            <TabsTrigger value="properties" className="rounded-none data-[state=active]:bg-muted/50 data-[state=active]:border-b-2 border-primary h-full">
+                                <SlidersHorizontal className="h-4 w-4 lg:mr-1" /> <span className="hidden lg:inline">Props</span>
+                            </TabsTrigger>
+                            <TabsTrigger value="layers" className="rounded-none data-[state=active]:bg-muted/50 data-[state=active]:border-b-2 border-primary h-full">
+                                <Layers className="h-4 w-4 lg:mr-1" /> <span className="hidden lg:inline">Layers</span>
+                            </TabsTrigger>
+                            <TabsTrigger value="ai" className="rounded-none data-[state=active]:bg-muted/50 data-[state=active]:border-b-2 border-primary h-full">
+                                <Sparkles className="h-4 w-4 lg:mr-1" /> <span className="hidden lg:inline">AI</span>
+                            </TabsTrigger>
+                            <TabsTrigger value="history" className="rounded-none data-[state=active]:bg-muted/50 data-[state=active]:border-b-2 border-primary h-full relative" disabled={!projectId} title="History">
+                                <HistoryIcon className="h-4 w-4" />
+                            </TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="properties" className="mt-0 flex-1 overflow-y-auto">
+                            <StylePanel />
+                        </TabsContent>
+
+                        <TabsContent value="layers" className="mt-0 flex-1 overflow-y-auto">
+                            <LayersPanel />
+                        </TabsContent>
+
+                        <TabsContent value="ai" className="mt-0 flex-1 overflow-y-auto">
+                            <AIPromptPanel />
+                        </TabsContent>
+
+                        <TabsContent value="history" className="mt-0 flex-1 overflow-y-auto">
+                            {projectId && <HistoryPanel projectId={projectId as string} />}
+                        </TabsContent>
+                    </Tabs>
                 </div>
             </main>
 
@@ -139,59 +167,6 @@ export default function EditorPage() {
                 <MobileToolbarActions />
             </div>
         </div>
-    );
-}
-
-// Inline Title Editor
-function TitleEditor() {
-    const { projectTitle, setProjectTitle } = useCanvasStore();
-    const [isEditing, setIsEditing] = useState(false);
-    const [tempTitle, setTempTitle] = useState(projectTitle);
-    const inputRef = useRef<HTMLInputElement>(null);
-
-    // Sync tempTitle when projectTitle changes externally (e.g., loaded)
-    useEffect(() => {
-        setTempTitle(projectTitle);
-    }, [projectTitle]);
-
-    const handleSave = () => {
-        setIsEditing(false);
-        if (tempTitle.trim()) {
-            setProjectTitle(tempTitle.trim());
-        } else {
-            setTempTitle(projectTitle); // Revert if empty
-        }
-    };
-
-    if (isEditing) {
-        return (
-            <input
-                ref={inputRef}
-                type="text"
-                autoFocus
-                className="font-jakarta font-bold text-lg bg-transparent border-b border-primary outline-none px-1 py-0.5 w-64"
-                value={tempTitle}
-                onChange={(e) => setTempTitle(e.target.value)}
-                onBlur={handleSave}
-                onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleSave();
-                    if (e.key === 'Escape') {
-                        setIsEditing(false);
-                        setTempTitle(projectTitle);
-                    }
-                }}
-            />
-        );
-    }
-
-    return (
-        <h1
-            className="font-jakarta font-bold text-lg cursor-pointer hover:bg-muted px-2 py-1 rounded transition-colors truncate max-w-xs"
-            onClick={() => setIsEditing(true)}
-            title="Click to rename project"
-        >
-            {projectTitle || "Untitled Design"}
-        </h1>
     );
 }
 

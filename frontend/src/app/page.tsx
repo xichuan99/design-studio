@@ -1,12 +1,13 @@
 "use client";
 
-import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { Sparkles, Edit3, Grid, Zap, MonitorPlay, ArrowRight, Brush } from "lucide-react";
 
 export default function LandingPage() {
+  const router = useRouter();
 
   const handleLogin = () => {
-    signIn("google", { callbackUrl: "/create" });
+    router.push("/login");
   };
 
   return (

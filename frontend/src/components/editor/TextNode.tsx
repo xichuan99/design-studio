@@ -54,10 +54,20 @@ export const TextNode: React.FC<TextNodeProps> = ({
                 fill={element.fill || '#000000'}
                 align={element.align || 'left'}
                 fontStyle={element.fontStyle || 'normal'}
+                fontWeight={element.fontWeight || 'normal'}
                 width={element.width}
                 height={element.height}
                 rotation={element.rotation || 0}
+                letterSpacing={element.letterSpacing || 0}
+                lineHeight={element.lineHeight || 1}
+                stroke={element.stroke}
+                strokeWidth={element.strokeWidth}
                 opacity={isEditing ? 0 : (element.opacity ?? 1)}
+                shadowColor={element.shadowColor}
+                shadowBlur={element.shadowBlur}
+                shadowOffsetX={element.shadowOffsetX}
+                shadowOffsetY={element.shadowOffsetY}
+                shadowOpacity={element.shadowOpacity}
                 draggable={!isEditing}
                 onDragEnd={(e) => {
                     onChange({
@@ -97,8 +107,11 @@ export const TextNode: React.FC<TextNodeProps> = ({
                             minHeight: '60px',
                             fontSize: `${element.fontSize || 24}px`,
                             fontFamily: element.fontFamily || 'Inter',
+                            fontWeight: element.fontWeight || 'normal',
                             color: element.fill || '#000000',
                             textAlign: (element.align as React.CSSProperties['textAlign']) ?? 'left',
+                            letterSpacing: `${element.letterSpacing || 0}px`,
+                            lineHeight: element.lineHeight || 1.2,
                             border: '2px solid #3b82f6',
                             borderRadius: '4px',
                             padding: '4px',
@@ -106,7 +119,6 @@ export const TextNode: React.FC<TextNodeProps> = ({
                             outline: 'none',
                             resize: 'none',
                             overflow: 'hidden',
-                            lineHeight: '1.2',
                         }}
                         onBlur={(e) => handleEditEnd(e.target.value)}
                         onKeyDown={(e) => {

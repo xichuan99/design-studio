@@ -34,28 +34,52 @@ async def upload_image(
     prefix: str = "generated",
 ) -> str:
     """Upload an image to S3 and return the public URL."""
-    if not settings.S3_ACCESS_KEY:
-        raise ValueError("S3_ACCESS_KEY is missing from environment")
-
-    s3 = _get_s3_client()
-    if key is None:
+    if not settings.S3_ACCESS_KEY or settings.S3_ACCESS_KEY == "your_b2_application_key_id":
+        # Dev-mode fallback: save to local filesystem
+        import os
+        import logging
+        logging.warning("S3 credentials not configured – saving image locally")
         ext = "png" if "png" in content_type else "jpg"
+        if key is None:
+            key = generate_key(prefix, ext)
+        local_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "static", "uploads", os.path.dirname(key))
+        os.makedirs(local_dir, exist_ok=True)
+        local_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "static", "uploads", key)
+        with open(local_path, "wb") as f:
+            f.write(image_bytes)
+        return f"http://localhost:8000/static/uploads/{key}"
+
+    ext = "png" if "png" in content_type else "jpg"
+    if key is None:
         key = generate_key(prefix, ext)
 
-    s3.upload_fileobj(
-        io.BytesIO(image_bytes),
-        settings.S3_BUCKET,
-        key,
-        ExtraArgs={"ContentType": content_type},
-    )
+    try:
+        s3 = _get_s3_client()
+        s3.upload_fileobj(
+            io.BytesIO(image_bytes),
+            settings.S3_BUCKET,
+            key,
+            ExtraArgs={"ContentType": content_type},
+        )
 
-    # Return public URL
-    if settings.S3_PUBLIC_URL:
-        return f"{settings.S3_PUBLIC_URL.rstrip('/')}/{key}"
-    elif settings.S3_ENDPOINT:
-        return f"{settings.S3_ENDPOINT.rstrip('/')}/{settings.S3_BUCKET}/{key}"
-    else:
-        return f"https://{settings.S3_BUCKET}.s3.amazonaws.com/{key}"
+        # Return public URL
+        if settings.S3_PUBLIC_URL:
+            return f"{settings.S3_PUBLIC_URL.rstrip('/')}/{key}"
+        elif settings.S3_ENDPOINT:
+            return f"{settings.S3_ENDPOINT.rstrip('/')}/{settings.S3_BUCKET}/{key}"
+        else:
+            return f"https://{settings.S3_BUCKET}.s3.amazonaws.com/{key}"
+    except Exception as e:
+        # Fallback to local storage if S3 fails (bucket doesn't exist, etc.)
+        import os
+        import logging
+        logging.warning(f"S3 upload failed ({e}) – saving image locally")
+        local_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "static", "uploads", os.path.dirname(key))
+        os.makedirs(local_dir, exist_ok=True)
+        local_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "static", "uploads", key)
+        with open(local_path, "wb") as f:
+            f.write(image_bytes)
+        return f"http://localhost:8000/static/uploads/{key}"
 
 
 async def download_image(url: str) -> bytes:

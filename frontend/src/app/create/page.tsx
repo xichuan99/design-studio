@@ -8,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { LayoutTemplate, Loader2, ImagePlus, X, PanelLeftOpen, PanelLeftClose, Sparkles } from "lucide-react";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import { AppHeader } from "@/components/layout/AppHeader";
@@ -36,12 +38,14 @@ export default function CreatePage() {
     const [aspectRatio, setAspectRatio] = useState("1:1");
     const [stylePreference, setStylePreference] = useState("bold");
     const [isParsing, setIsParsing] = useState(false);
+    const [isGeneratingImage, setIsGeneratingImage] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [parsedData, setParsedData] = useState<ParsedDesignData | null>(null);
     const [referenceFile, setReferenceFile] = useState<File | null>(null);
     const [referencePreview, setReferencePreview] = useState<string | null>(null);
     const [isDragOver, setIsDragOver] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [integratedText, setIntegratedText] = useState(false);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -117,13 +121,16 @@ export default function CreatePage() {
                     raw_text: rawText,
                     aspect_ratio: aspectRatio,
                     style_preference: stylePreference,
-                    num_variations: 2
+                    num_variations: 2,
+                    integrated_text: integratedText
                 }),
             });
 
             if (!parseRes.ok) throw new Error("Failed to parse text");
             const parsed = await parseRes.json();
             setParsedData(parsed);
+            setIsParsing(false); // Stop parsing spinner early so user can read the text
+            setIsGeneratingImage(true); // Start image generation spinner
 
             // STEP 0: Upload Reference Image
             let uploadedReferenceUrl = undefined;
@@ -149,39 +156,51 @@ export default function CreatePage() {
                 style_preference: stylePreference,
                 reference_image_url: uploadedReferenceUrl,
                 template_id: selectedTemplate?.id,
+                integrated_text: integratedText,
             });
             const jobId = jobData.job_id;
 
-            // STEP 3: Poll for Job Status
-            let isComplete = false;
-            let pollingAttempts = 0;
-            const maxAttempts = 60; // 2 minutes with 2s intervals
-
-            while (!isComplete && pollingAttempts < maxAttempts) {
-                await new Promise((resolve) => setTimeout(resolve, 2000)); // 2s delay
-
+            // Check if generation already completed synchronously (Gemini Imagen path)
+            if (jobData.status === "completed") {
                 const statusData = await getJobStatus(jobId);
-
-                if (statusData.status === "completed") {
-                    isComplete = true;
+                if (statusData.status === "completed" && statusData.result_url) {
                     setParsedData(prev => prev ? {
                         ...prev,
                         generated_image_url: statusData.result_url
                     } : null);
-                } else if (statusData.status === "failed") {
-                    throw new Error(statusData.error_message || "Design generation failed");
+                } else {
+                    throw new Error(statusData.error_message || "Generation failed");
                 }
+            } else {
+                // STEP 3: Poll for Job Status (Celery async path)
+                let isComplete = false;
+                let pollingAttempts = 0;
+                const maxAttempts = 60;
 
-                pollingAttempts++;
+                while (!isComplete && pollingAttempts < maxAttempts) {
+                    await new Promise((resolve) => setTimeout(resolve, 2000));
+                    const statusData = await getJobStatus(jobId);
+
+                    if (statusData.status === "completed") {
+                        isComplete = true;
+                        setParsedData(prev => prev ? {
+                            ...prev,
+                            generated_image_url: statusData.result_url
+                        } : null);
+                    } else if (statusData.status === "failed") {
+                        throw new Error(statusData.error_message || "Design generation failed");
+                    }
+                    pollingAttempts++;
+                }
+                if (!isComplete) throw new Error("Generation timed out");
             }
-
-            if (!isComplete) throw new Error("Generation timed out");
 
         } catch (error) {
             console.error(error);
             alert(error instanceof Error ? error.message : "Gagal memproses desain.");
         } finally {
             setIsParsing(false);
+            setIsGeneratingImage(false);
         }
     };
 
@@ -189,10 +208,12 @@ export default function CreatePage() {
         if (!parsedData) return;
         setIsSaving(true);
         try {
-            const elements = generateCanvasElementsFromTemplate(
-                parsedData,
-                selectedTemplate?.default_text_layers || []
-            );
+            const elements = integratedText
+                ? []
+                : generateCanvasElementsFromTemplate(
+                    parsedData,
+                    selectedTemplate?.default_text_layers || []
+                );
             const newProject = await saveProject({
                 title: selectedTemplate ? `AI + ${selectedTemplate.name}` : "AI Generated Design",
                 status: "draft",
@@ -240,7 +261,7 @@ export default function CreatePage() {
                 </button>
 
                 {/* Sidebar Inputs */}
-                <aside className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 absolute md:relative w-80 border-r flex flex-col bg-card overflow-y-auto shrink-0 z-20 shadow-xl h-full transition-transform duration-200`}>
+                <aside className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 absolute md:relative w-[420px] border-r flex flex-col bg-card overflow-y-auto shrink-0 z-20 shadow-xl h-full transition-transform duration-200`}>
                     <div className="p-4 space-y-6 flex-1">
                         <div className="space-y-2 tour-step-1">
                             <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
@@ -255,10 +276,23 @@ export default function CreatePage() {
                             />
                         </div>
 
+                        <div className="space-y-2 pb-2 border-b">
+                            <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-500 text-white text-xs font-bold">2</span>
+                                Template / Preset Desain
+                            </label>
+                            <TemplateBrowser
+                                onSelectTemplate={handleSelectTemplate}
+                                aspectRatio={aspectRatio}
+                                selectedTemplateId={selectedTemplate?.id}
+                                compact={true}
+                            />
+                        </div>
+
                         <div className="space-y-2">
                             <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-violet-500 text-white text-xs font-bold">2</span>
-                                Gambar Referensi
+                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-violet-500 text-white text-xs font-bold">3</span>
+                                Gambar Referensi (Opsional)
                             </label>
                             <input
                                 ref={fileInputRef}
@@ -309,7 +343,7 @@ export default function CreatePage() {
 
                         <div className="space-y-2 tour-step-2">
                             <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-amber-500 text-white text-xs font-bold">3</span>
+                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-amber-500 text-white text-xs font-bold">4</span>
                                 Format & Gaya
                             </label>
                             <Select value={aspectRatio} onValueChange={setAspectRatio}>
@@ -334,6 +368,30 @@ export default function CreatePage() {
                                     <SelectItem value="playful">Playful / Fun</SelectItem>
                                 </SelectContent>
                             </Select>
+
+                            <div className="mt-4 p-3 bg-muted/30 rounded-lg border">
+                                <Label className="text-sm font-semibold mb-3 block">Mode Teks AI</Label>
+                                <RadioGroup
+                                    value={integratedText ? "integrated" : "separated"}
+                                    onValueChange={(val) => setIntegratedText(val === "integrated")}
+                                    className="space-y-2 mt-2"
+                                >
+                                    <label htmlFor="separated" className={`flex flex-col space-y-1 p-2 border rounded-md cursor-pointer transition-colors ${!integratedText ? 'bg-primary/5 border-primary/40' : 'hover:bg-muted'}`}>
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="separated" id="separated" />
+                                            <span className="font-medium text-sm">Teks Terpisah (Canvas)</span>
+                                        </div>
+                                        <span className="text-xs text-muted-foreground ml-6">Bersih & bisa diedit sesuka hati</span>
+                                    </label>
+                                    <label htmlFor="integrated" className={`flex flex-col space-y-1 p-2 border rounded-md cursor-pointer transition-colors ${integratedText ? 'bg-primary/5 border-primary/40' : 'hover:bg-muted'}`}>
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="integrated" id="integrated" />
+                                            <span className="font-medium text-sm">Teks Menyatu (Gaya AI)</span>
+                                        </div>
+                                        <span className="text-xs text-muted-foreground ml-6">Menyatu estetik, tapii tak bisa diedit</span>
+                                    </label>
+                                </RadioGroup>
+                            </div>
                         </div>
                     </div>
 
@@ -367,102 +425,138 @@ export default function CreatePage() {
                             className="w-full font-bold shadow-lg gap-2"
                             size="lg"
                             onClick={handleGenerate}
-                            disabled={isParsing || !rawText.trim()}
+                            disabled={isParsing || isGeneratingImage || !rawText.trim()}
                         >
-                            {isParsing ? <><Loader2 className="w-4 h-4 animate-spin" /> Menganalisis...</> : <><Sparkles className="w-4 h-4" /> Buat Desain AI</>}
+                            {isParsing ? <><Loader2 className="w-4 h-4 animate-spin" /> Menganalisis...</> :
+                                isGeneratingImage ? <><Loader2 className="w-4 h-4 animate-spin" /> Sedang Menggambar...</> :
+                                    <><Sparkles className="w-4 h-4" /> Buat Desain AI</>}
                         </Button>
                     </div>
                 </aside>
 
                 {/* Main Workspace Preview (Week 1 Scope) */}
                 <main className="flex-1 bg-muted/20 relative overflow-y-auto p-8 flex justify-center items-start">
-                    {parsedData ? (
-                        <Card className="max-w-xl w-full mx-auto mt-10 shadow-xl border-primary/20 bg-card/95 backdrop-blur">
-                            <CardHeader className="bg-primary/5 border-b pb-4">
-                                <CardTitle className="flex items-center gap-2">
-                                    <LayoutTemplate className="w-5 h-5 text-primary" />
-                                    Struktur Desain AI
-                                </CardTitle>
-                                <CardDescription>
-                                    AI telah membedah teks promo Anda menjadi elemen-elemen grafis yang siap diposisikan di atas template.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="pt-6 space-y-6">
-                                <div>
-                                    <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Headline</h4>
-                                    <p className="text-3xl font-jakarta font-black leading-tight text-foreground">{parsedData.headline}</p>
+                    {parsedData && parsedData.generated_image_url ? (
+                        <div className="flex gap-8 w-full max-w-6xl mx-auto h-full">
+                            {/* Visual Preview */}
+                            <div className="flex-1 rounded-2xl overflow-hidden border bg-card shadow-2xl relative flex flex-col">
+                                <div className="absolute top-4 left-4 z-10">
+                                    <Badge variant="secondary" className="bg-black/50 text-white backdrop-blur-md shadow-lg">Preview Hasil</Badge>
                                 </div>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={parsedData.generated_image_url} alt="Generated Background" className="w-full h-full object-cover" />
 
-                                {parsedData.sub_headline && (
+                                {/* Overlay floating actions */}
+                                <div className="absolute bottom-6 right-6">
+                                    <Button
+                                        size="lg"
+                                        onClick={handleProceedToEditor}
+                                        disabled={isSaving}
+                                        className="gap-2 shadow-xl hover:shadow-2xl transition-all hover:scale-105 duration-200"
+                                    >
+                                        {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
+                                        Lanjut ke Editor <Sparkles className="w-4 h-4 ml-1" />
+                                    </Button>
+                                </div>
+                            </div>
+
+                            {/* Analysis Card */}
+                            <Card className="w-80 shrink-0 shadow-lg border-primary/10 bg-card/95 backdrop-blur h-fit max-h-full overflow-y-auto">
+                                <CardHeader className="bg-primary/5 border-b pb-4">
+                                    <CardTitle className="flex items-center gap-2 text-base">
+                                        <LayoutTemplate className="w-4 h-4 text-primary" />
+                                        Struktur Teks
+                                    </CardTitle>
+                                    <CardDescription>
+                                        AI telah membedah teks promo Anda menjadi elemen-elemen grafis yang siap diposisikan di atas template.
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="pt-6 space-y-6">
                                     <div>
-                                        <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Sub-Headline</h4>
-                                        <p className="text-lg text-muted-foreground font-medium">{parsedData.sub_headline}</p>
+                                        <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Headline</h4>
+                                        <p className="text-3xl font-jakarta font-black leading-tight text-foreground">{parsedData.headline}</p>
                                     </div>
-                                )}
 
-                                {parsedData.cta && (
-                                    <div>
-                                        <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Call To Action</h4>
-                                        <Badge variant="default" className="text-md px-4 py-1.5">{parsedData.cta}</Badge>
-                                    </div>
-                                )}
-
-                                <div className="pt-4 border-t">
-                                    <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Prompt Gambar (Background)</h4>
-                                    {parsedData.generated_image_url ? (
-                                        <div className="rounded-md overflow-hidden border">
-                                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                                            <img src={parsedData.generated_image_url} alt="Generated Background" className="w-full h-auto" />
+                                    {parsedData.sub_headline && (
+                                        <div>
+                                            <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Sub-Headline</h4>
+                                            <p className="text-lg text-muted-foreground font-medium">{parsedData.sub_headline}</p>
                                         </div>
-                                    ) : (
-                                        <p className="text-sm font-mono bg-muted p-3 rounded-md text-muted-foreground leading-relaxed">
+                                    )}
+
+                                    {parsedData.cta && (
+                                        <div>
+                                            <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Call To Action</h4>
+                                            <Badge variant="default" className="text-md px-4 py-1.5">{parsedData.cta}</Badge>
+                                        </div>
+                                    )}
+
+                                    <div className="pt-4 border-t">
+                                        <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Prompt Gambar (Background)</h4>
+                                        <p className="text-xs font-mono bg-muted p-2 rounded-md justify-between items-start text-muted-foreground h-32 overflow-y-auto leading-relaxed">
                                             {parsedData.visual_prompt}
                                         </p>
-                                    )}
-                                </div>
-
-                                {(parsedData.suggested_colors?.length ?? 0) > 0 && (
-                                    <div>
-                                        <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Rekomendasi Warna</h4>
-                                        <div className="flex gap-3">
-                                            {parsedData.suggested_colors?.map((color: string, i: number) => (
-                                                <div key={i} className="flex flex-col items-center gap-1">
-                                                    <div className="w-10 h-10 rounded-full shadow-inner border border-border" style={{ backgroundColor: color }} />
-                                                    <span className="text-[10px] text-muted-foreground font-mono uppercase">{color}</span>
-                                                </div>
-                                            ))}
-                                        </div>
                                     </div>
-                                )}
-                            </CardContent>
-                            <div className="p-6 border-t bg-muted/5 flex justify-end">
-                                <Button
-                                    size="lg"
-                                    onClick={handleProceedToEditor}
-                                    disabled={isSaving}
-                                    className="gap-2 shadow-md hover:shadow-lg transition-shadow"
-                                >
-                                    {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
-                                    Lanjut ke Editor
-                                </Button>
+
+                                    {(parsedData.suggested_colors?.length ?? 0) > 0 && (
+                                        <div>
+                                            <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Rekomendasi Warna</h4>
+                                            <div className="flex gap-3">
+                                                {parsedData.suggested_colors?.map((color: string, i: number) => (
+                                                    <div key={i} className="flex flex-col items-center gap-1">
+                                                        <div className="w-10 h-10 rounded-full shadow-inner border border-border" style={{ backgroundColor: color }} />
+                                                        <span className="text-[10px] text-muted-foreground font-mono uppercase">{color}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </div>
+                    ) : isParsing || isGeneratingImage ? (
+                        <div className="max-w-2xl w-full mx-auto h-full flex flex-col items-center justify-center">
+                            <div className="text-center mb-10 space-y-4">
+                                <div className="inline-flex relative">
+                                    <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
+                                    <div className="w-20 h-20 bg-background border-2 border-primary/20 rounded-2xl shadow-2xl flex items-center justify-center relative z-10">
+                                        <Sparkles className="w-10 h-10 text-primary animate-pulse" />
+                                    </div>
+                                </div>
+                                <h2 className="text-2xl font-bold tracking-tight">AI Sedang Bekerja ✨</h2>
+                                <p className="text-muted-foreground">
+                                    {isParsing ? "Sedang membedah struktur teks promosi Anda..." : "Sedang memecahkan pixel untuk membuat gambar super HD..."}
+                                </p>
                             </div>
-                        </Card>
+
+                            {/* Animated progress indicators */}
+                            <div className="w-full mb-4 bg-muted/50 rounded-full h-2 overflow-hidden">
+                                <div className="bg-primary h-2 rounded-full transition-all duration-500 ease-out" style={{ width: isParsing ? '35%' : '85%' }} />
+                            </div>
+                            <div className="w-full max-w-md space-y-3">
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="flex items-center gap-2"><div className={`w-2 h-2 rounded-full ${isParsing ? 'bg-primary animate-ping' : 'bg-primary'}`} /> Analisis Semantik</span>
+                                    <span className="text-muted-foreground">{isParsing ? 'Proses...' : 'Selesai ✓'}</span>
+                                </div>
+                                <div className="flex items-center justify-between text-sm opacity-80">
+                                    <span className="flex items-center gap-2"><div className={`w-2 h-2 rounded-full ${isGeneratingImage ? 'bg-primary animate-ping' : isParsing ? 'bg-muted-foreground' : 'bg-primary'}`} /> Generasi Gambar Flux</span>
+                                    <span className="text-muted-foreground">{isGeneratingImage ? 'Proses (~15 dtk)...' : isParsing ? 'Menunggu...' : 'Selesai ✓'}</span>
+                                </div>
+                            </div>
+                        </div>
                     ) : (
-                        <div className="max-w-3xl w-full mx-auto">
-                            <div className="text-center mb-8 opacity-60">
-                                <LayoutTemplate className="w-12 h-12 mx-auto mb-3" />
-                                <p className="text-lg font-medium">Area Kerja</p>
-                                <p className="text-sm">Masukkan teks promosional di sidebar, atau pilih template di bawah</p>
+                        <div className="max-w-xl w-full mx-auto h-full flex flex-col items-center justify-center opacity-60 hover:opacity-100 transition-opacity">
+                            <div className="w-24 h-24 mb-6 rounded-3xl bg-primary/5 flex items-center justify-center">
+                                <ImagePlus className="w-10 h-10 text-primary/50" />
                             </div>
-                            <TemplateBrowser
-                                onSelectTemplate={handleSelectTemplate}
-                                aspectRatio={aspectRatio}
-                                selectedTemplateId={selectedTemplate?.id}
-                            />
+                            <h2 className="text-2xl font-bold mb-2">Area Preview Desain</h2>
+                            <p className="text-center text-muted-foreground max-w-md">
+                                Hasil keajaiban AI akan muncul di sini. Silakan isi form di sebelah kiri dan klik <strong>Buat Desain AI</strong> untuk memulai.
+                            </p>
                         </div>
                     )}
                 </main>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 }

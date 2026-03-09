@@ -23,7 +23,7 @@ export const authOptions: NextAuthOptions = {
             clientId: process.env.GOOGLE_CLIENT_ID || "",
             clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
         }),
-        ...(process.env.NODE_ENV === "test" || process.env.PLAYWRIGHT_TEST === "true"
+        ...(process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test" || process.env.PLAYWRIGHT_TEST === "true"
             ? [
                 CredentialsProvider({
                     name: "Test Credentials",
@@ -64,15 +64,6 @@ export const authOptions: NextAuthOptions = {
                 extSession.user.id = extToken.id;
                 extSession.user.provider = extToken.provider;
             }
-            // For MVP: Pass the NextAuth JWT to the client so it can be sent to FastAPI.
-            // In a real prod environment, you might issue a separate custom backend token.
-            // Since we use the raw JWT to verify on the FastAPI side, we need it here.
-
-            // To be secure, we should only do this if we trust the client with the JWT.
-            // NextAuth's token object here is the DECODED payload, not the raw signed JWT string.
-            // To get the raw encoded token, we usually have to read the cookie manually or 
-            // construct our own signed token. Let's create a minimal custom signed token here
-            // using the same NEXTAUTH_SECRET that FastAPI uses to decode.
             const jose = await import("jose");
             const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET);
             const jwt = await new jose.SignJWT({
@@ -91,7 +82,7 @@ export const authOptions: NextAuthOptions = {
         },
     },
     pages: {
-        signIn: "/", // Redirect to home if sign in is required
+        signIn: "/login",
     },
 };
 

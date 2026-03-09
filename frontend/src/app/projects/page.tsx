@@ -120,11 +120,14 @@ export default function ProjectsPage() {
                                     {/* Thumbnail */}
                                     <div className="aspect-[4/3] bg-muted relative overflow-hidden">
                                         {project.canvas_state?.backgroundUrl ? (
-                                            <Image
+                                            /* eslint-disable-next-line @next/next/no-img-element */
+                                            <img
                                                 src={project.canvas_state.backgroundUrl}
                                                 alt={project.title || "Design thumbnail"}
-                                                fill
-                                                className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                onError={(e) => {
+                                                    (e.target as HTMLImageElement).style.display = 'none';
+                                                }}
                                             />
                                         ) : (
                                             <div className="w-full h-full bg-gradient-to-br from-primary/10 via-muted to-primary/5 flex flex-col items-center justify-center">

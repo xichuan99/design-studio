@@ -20,6 +20,7 @@ interface TemplateBrowserProps {
     onSelectTemplate: (template: TemplateData) => void;
     aspectRatio?: string;
     selectedTemplateId?: string;
+    compact?: boolean;
 }
 
 const CATEGORIES = ['All', 'food', 'sale', 'product', 'event', 'education', 'property', 'story', 'general', 'giveaway', 'hiring', 'testimonial', 'holiday'];
@@ -39,7 +40,7 @@ const CATEGORY_LABELS: Record<string, string> = {
     'holiday': '❄️ Hari Raya',
 };
 
-export const TemplateBrowser: React.FC<TemplateBrowserProps> = ({ onSelectTemplate, aspectRatio, selectedTemplateId }) => {
+export const TemplateBrowser: React.FC<TemplateBrowserProps> = ({ onSelectTemplate, aspectRatio, selectedTemplateId, compact = false }) => {
     const { getTemplates } = useProjectApi();
     const [templates, setTemplates] = useState<TemplateData[]>([]);
     const [loading, setLoading] = useState(true);
@@ -63,20 +64,22 @@ export const TemplateBrowser: React.FC<TemplateBrowserProps> = ({ onSelectTempla
     }, [selectedCategory, aspectRatio]);
 
     return (
-        <div className="space-y-4 mt-6">
-            <div className="flex items-center gap-2">
-                <LayoutTemplate className="w-5 h-5 text-primary" />
-                <h3 className="text-lg font-semibold font-jakarta">Template</h3>
-            </div>
+        <div className={`space-y-4 ${compact ? 'mt-0' : 'mt-6'}`}>
+            {!compact && (
+                <div className="flex items-center gap-2">
+                    <LayoutTemplate className="w-5 h-5 text-primary" />
+                    <h3 className="text-lg font-semibold font-jakarta">Template</h3>
+                </div>
+            )}
 
             {/* Category Tabs */}
-            <div className="flex gap-2 overflow-x-auto pb-2">
+            <div className={`flex gap-2 overflow-x-auto pb-2 ${compact ? 'scrollbar-hide' : ''}`}>
                 {CATEGORIES.map((cat) => (
                     <Button
                         key={cat}
                         variant={selectedCategory === cat ? 'default' : 'outline'}
-                        size="sm"
-                        className="rounded-full text-xs whitespace-nowrap"
+                        size={compact ? 'sm' : 'sm'}
+                        className={`rounded-full whitespace-nowrap ${compact ? 'text-[10px] h-7 px-3' : 'text-xs'}`}
                         onClick={() => setSelectedCategory(cat)}
                     >
                         {CATEGORY_LABELS[cat] || cat}
@@ -95,15 +98,15 @@ export const TemplateBrowser: React.FC<TemplateBrowserProps> = ({ onSelectTempla
                     <p>Belum ada template untuk kategori ini</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div className={compact ? "flex overflow-x-auto gap-3 pb-4 scrollbar-hide snap-x" : "grid grid-cols-2 md:grid-cols-3 gap-3"}>
                     {templates.map((t) => (
                         <button
                             key={t.id}
                             onClick={() => onSelectTemplate(t)}
-                            className={`group relative rounded-xl border bg-card overflow-hidden hover:ring-2 hover:ring-primary transition-all focus:outline-none focus:ring-2 focus:ring-primary text-left ${selectedTemplateId === t.id ? 'ring-2 ring-primary border-primary' : 'border-border'}`}
+                            className={`group relative rounded-xl border bg-card overflow-hidden hover:ring-2 hover:ring-primary transition-all focus:outline-none focus:ring-2 focus:ring-primary text-left shrink-0 ${compact ? 'w-24 snap-start' : ''} ${selectedTemplateId === t.id ? 'ring-2 ring-primary border-primary' : 'border-border'}`}
                         >
                             {/* Thumbnail or Placeholder */}
-                            <div className="aspect-square bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+                            <div className={`${compact ? 'aspect-square h-24 w-full' : 'aspect-square'} bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center`}>
                                 {t.thumbnail_url ? (
                                     <>
                                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -122,15 +125,17 @@ export const TemplateBrowser: React.FC<TemplateBrowserProps> = ({ onSelectTempla
                             </div>
 
                             {/* Info */}
-                            <div className="p-2.5">
-                                <p className="text-sm font-medium truncate">{t.name}</p>
-                                <p className="text-[11px] text-muted-foreground truncate">{t.aspect_ratio} · {t.style}</p>
-                            </div>
+                            {!compact && (
+                                <div className="p-2.5">
+                                    <p className="text-sm font-medium truncate">{t.name}</p>
+                                    <p className="text-[11px] text-muted-foreground truncate">{t.aspect_ratio} · {t.style}</p>
+                                </div>
+                            )}
 
                             {/* Hover / Selected Overlay */}
                             <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${selectedTemplateId === t.id ? 'bg-primary/20 opacity-100' : 'bg-primary/10 opacity-0 group-hover:opacity-100'}`}>
-                                <span className="bg-primary text-primary-foreground text-xs font-medium px-3 py-1.5 rounded-full shadow-sm">
-                                    {selectedTemplateId === t.id ? '✓ Terpilih' : 'Pilih Preset'}
+                                <span className={`bg-primary text-primary-foreground font-medium rounded-full shadow-sm ${compact ? 'text-[10px] px-2 py-1' : 'text-xs px-3 py-1.5'}`}>
+                                    {selectedTemplateId === t.id ? '✓' : (compact ? 'Pilih' : 'Pilih Preset')}
                                 </span>
                             </div>
                         </button>

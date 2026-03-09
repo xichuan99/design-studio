@@ -33,14 +33,14 @@ async def _update_job_status(job_id, **fields):
         await session.commit()
 
 
-async def _execute_pipeline(job_id: str, raw_text: str, aspect_ratio: str, style: str, reference_url: str | None):
+async def _execute_pipeline(job_id: str, raw_text: str, aspect_ratio: str, style: str, reference_url: str | None, integrated_text: bool):
     """Execute the full generation pipeline."""
     try:
         # Step 1: Update status to processing
         await _update_job_status(job_id, status="processing")
 
         # Step 2: LLM parse the raw text
-        parsed = await parse_design_text(raw_text)
+        parsed = await parse_design_text(raw_text, integrated_text=integrated_text)
 
         await _update_job_status(
             job_id,
@@ -64,6 +64,7 @@ async def _execute_pipeline(job_id: str, raw_text: str, aspect_ratio: str, style
             reference_image_url=upload_ref_url,
             style=style,
             aspect_ratio=aspect_ratio,
+            integrated_text=integrated_text,
         )
 
         # Step 5: Download the generated image from Fal.ai CDN and re-upload to our S3
@@ -93,6 +94,6 @@ async def _execute_pipeline(job_id: str, raw_text: str, aspect_ratio: str, style
 
 
 @celery_app.task(bind=True, name="generate_design")
-def generate_design_task(self, job_id: str, raw_text: str, aspect_ratio: str = "1:1", style: str = "bold", reference_url: str | None = None):
+def generate_design_task(self, job_id: str, raw_text: str, aspect_ratio: str = "1:1", style: str = "bold", reference_url: str | None = None, integrated_text: bool = False):
     """Celery task: runs the full design generation pipeline."""
-    _run_async(_execute_pipeline(job_id, raw_text, aspect_ratio, style, reference_url))
+    _run_async(_execute_pipeline(job_id, raw_text, aspect_ratio, style, reference_url, integrated_text))

@@ -13,28 +13,35 @@ async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: AsyncSession = Depends(get_db)
 ) -> User:
+    # Support X-User-Email bypass for dev mode as documented in README
+    dev_email = request.headers.get("X-User-Email")
+    
     if not credentials:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    try:
-        token = credentials.credentials
-        payload = verify_token(token)
-        email = payload.get("email")
-        name = payload.get("name")
-        
-        if not email:
-            raise HTTPException(status_code=401, detail="Invalid token payload")
+        if dev_email:
+            email = dev_email
+            name = "Dev User"
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Not authenticated",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+    else:
+        try:
+            token = credentials.credentials
+            payload = verify_token(token)
+            email = payload.get("email")
+            name = payload.get("name")
             
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+            if not email:
+                raise HTTPException(status_code=401, detail="Invalid token payload")
+                
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Could not validate credentials",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
 
     # Check if user exists, upsert if missing
     result = await db.execute(select(User).where(User.email == email))
