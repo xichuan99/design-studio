@@ -13,7 +13,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { LayoutTemplate, Loader2, ImagePlus, X, PanelLeftOpen, PanelLeftClose, Sparkles } from "lucide-react";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import { AppHeader } from "@/components/layout/AppHeader";
-import { useProjectApi } from "@/lib/api";
+import { useProjectApi, API_BASE_URL } from "@/lib/api";
 import { generateCanvasElementsFromTemplate } from "@/lib/templateEngine";
 import { TemplateBrowser } from "@/components/templates/TemplateBrowser";
 import { useRouter } from "next/navigation";
@@ -112,7 +112,7 @@ export default function CreatePage() {
 
         try {
             // STEP 1: Parse Text
-            const parseRes = await fetch("http://localhost:8000/api/designs/parse", {
+            const parseRes = await fetch(`${API_BASE_URL}/designs/parse`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
