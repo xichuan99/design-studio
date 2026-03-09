@@ -9,9 +9,10 @@ import { ShapeNode } from './ShapeNode';
 interface StageCanvasProps {
     width: number;
     height: number;
+    onBgStatusChange?: (status: string) => void;
 }
 
-export const StageCanvas: React.FC<StageCanvasProps> = ({ width, height }) => {
+export const StageCanvas: React.FC<StageCanvasProps> = ({ width, height, onBgStatusChange }) => {
     const {
         elements,
         backgroundUrl,
@@ -29,8 +30,10 @@ export const StageCanvas: React.FC<StageCanvasProps> = ({ width, height }) => {
     const [bgImage, bgStatus] = useImage(proxiedBackgroundUrl || '', 'anonymous');
 
     React.useEffect(() => {
-        // bgImage loaded
-    }, [backgroundUrl, bgStatus, bgImage]);
+        if (onBgStatusChange) {
+            onBgStatusChange(bgStatus);
+        }
+    }, [bgStatus, onBgStatusChange]);
 
     // Calculate relative scaling based on background boundaries
     // Assuming default canvas size of 1024x1024 for 1:1, etc.

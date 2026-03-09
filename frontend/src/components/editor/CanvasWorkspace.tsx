@@ -23,6 +23,9 @@ export const CanvasWorkspace: React.FC = () => {
     const handleZoomOut = () => setZoom(prev => Math.max(prev - 0.25, 0.25));
     const handleZoomReset = () => setZoom(1);
 
+    // Background Loading State
+    const [bgStatus, setBgStatus] = useState<string>('loaded');
+
     const isEmpty = elements.length === 0 && !backgroundUrl && (!backgroundColor || backgroundColor === '#ffffff');
 
     // This helps center the canvas visually when zoomed out
@@ -107,8 +110,27 @@ export const CanvasWorkspace: React.FC = () => {
                 </div>
             )}
 
+            {/* Shimmer Loading Overlay */}
+            {backgroundUrl && bgStatus === 'loading' && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+                    <div className="absolute inset-0 bg-background/50 backdrop-blur-sm" />
+                    <div className="relative flex flex-col items-center bg-card p-6 rounded-xl border shadow-lg gap-3">
+                        <div className="flex gap-2 items-center text-primary">
+                            <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span className="font-semibold">Memuat gambar...</span>
+                        </div>
+                        <div className="w-48 h-2 bg-muted rounded-full overflow-hidden">
+                            <div className="w-full h-full bg-primary/50 rounded-full animate-pulse" />
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div
-                className="shadow-lg bg-card transition-shadow hover:shadow-xl will-change-transform"
+                className="shadow-lg bg-card transition-shadow hover:shadow-xl will-change-transform relative"
                 style={{
                     width: '1080px',
                     height: '1080px',
@@ -116,7 +138,12 @@ export const CanvasWorkspace: React.FC = () => {
                 }}
                 onClick={(e) => e.stopPropagation()}
             >
-                <StageCanvas width={1080} height={1080} />
+                {backgroundUrl && bgStatus === 'loading' && (
+                    <div className="absolute inset-0 z-0 bg-muted animate-pulse" />
+                )}
+                <div className="relative z-10 w-full h-full">
+                    <StageCanvas width={1080} height={1080} onBgStatusChange={setBgStatus} />
+                </div>
             </div>
         </div>
     );

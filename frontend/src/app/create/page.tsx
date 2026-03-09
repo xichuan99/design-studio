@@ -222,6 +222,23 @@ export default function CreatePage() {
                     elements: elements
                 }
             });
+
+            // Prefetch background image through proxy so it's in browser cache
+            const bgUrl = parsedData.generated_image_url || selectedTemplate?.thumbnail_url;
+            if (bgUrl) {
+                const proxyUrl = bgUrl.startsWith('http')
+                    ? `/api/proxy-image?url=${encodeURIComponent(bgUrl)}`
+                    : bgUrl;
+                const prefetch = new window.Image();
+                prefetch.crossOrigin = 'anonymous';
+                prefetch.src = proxyUrl;
+                // Wait for it to load, but don't block for more than 3 seconds
+                await Promise.race([
+                    new Promise(r => { prefetch.onload = r; prefetch.onerror = r; }),
+                    new Promise(r => setTimeout(r, 3000))
+                ]);
+            }
+
             router.push(`/edit/${newProject.id}`);
         } catch (error) {
             console.error('Failed to create project', error);

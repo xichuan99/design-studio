@@ -28,7 +28,7 @@ export default function EditorPage() {
     const { getProject } = useProjectApi();
     const { loadState } = useCanvasStore();
 
-    const [loading, setLoading] = useState(true);
+    const [loadingStage, setLoadingStage] = useState<'project' | 'image' | 'ready' | 'error'>('project');
     const [error, setError] = useState<string | null>(null);
 
     // Initialize auto-save hook
@@ -59,12 +59,14 @@ export default function EditorPage() {
         const loadProject = async () => {
             if (!projectId) {
                 loadStateRef.current([], null);
-                setLoading(false);
+                setLoadingStage('ready');
                 return;
             }
 
             try {
+                setLoadingStage('project');
                 const project = await getProjectRef.current(projectId as string);
+
                 if (project.canvas_state) {
                     loadStateRef.current(
                         project.canvas_state.elements || [],
@@ -72,25 +74,44 @@ export default function EditorPage() {
                         project.title,
                         project.canvas_state.backgroundColor
                     );
+
+                    if (project.canvas_state.backgroundUrl) {
+                        setLoadingStage('image');
+                        // Preload image, then mark ready
+                        const img = new window.Image();
+                        img.crossOrigin = 'anonymous';
+                        const proxyUrl = project.canvas_state.backgroundUrl.startsWith('http')
+                            ? `/api/proxy-image?url=${encodeURIComponent(project.canvas_state.backgroundUrl)}`
+                            : project.canvas_state.backgroundUrl;
+                        img.src = proxyUrl;
+                        await Promise.race([
+                            new Promise(r => { img.onload = r; img.onerror = r; }),
+                            new Promise(r => setTimeout(r, 5000))
+                        ]);
+                    }
                 } else {
                     loadStateRef.current([], null, project.title);
                 }
+                setLoadingStage('ready');
             } catch (err: unknown) {
                 setError(err instanceof Error ? err.message : "Failed to load project.");
-            } finally {
-                setLoading(false);
+                setLoadingStage('error');
             }
         };
 
         loadProject();
     }, [status, projectId]);
 
-    if (loading || status === "loading") {
+    if ((loadingStage !== 'ready' && loadingStage !== 'error') || status === "loading") {
         return (
             <div className="flex h-screen w-full items-center justify-center bg-background">
-                <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                    <Loader2 className="h-8 w-8 animate-spin" />
-                    <p className="text-sm">Loading Project...</p>
+                <div className="flex flex-col items-center gap-6 text-muted-foreground bg-card p-10 rounded-2xl shadow-xl border">
+                    <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                    <div className="space-y-3 w-56">
+                        <StageIndicator label="Memuat project..." done={loadingStage !== 'project'} active={loadingStage === 'project'} />
+                        <StageIndicator label="Memuat gambar..." done={loadingStage === 'ready'} active={loadingStage === 'image'} />
+                        <StageIndicator label="Menyiapkan canvas..." done={false} active={loadingStage === 'ready'} />
+                    </div>
                 </div>
             </div>
         );
@@ -182,5 +203,16 @@ function MobileToolbarActions() {
             <button className="p-2" onClick={undo}><UndoIcon className="h-5 w-5" /></button>
             <button className="p-2" onClick={redo}><RedoIcon className="h-5 w-5" /></button>
         </>
+    );
+}
+
+// Helper component for loading screen
+function StageIndicator({ label, done, active }: { label: string, done: boolean, active: boolean }) {
+    return (
+        <div className={`flex items-center gap-3 text-sm transition-all duration-300 ${active ? 'text-primary font-medium scale-105' : done ? 'text-muted-foreground' : 'text-muted-foreground/40'}`}>
+            <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${active ? 'bg-primary animate-pulse' : done ? 'bg-primary' : 'bg-muted-foreground/30'}`} />
+            <span>{label}</span>
+            {done && <span className="ml-auto text-primary">✓</span>}
+        </div>
     );
 }
