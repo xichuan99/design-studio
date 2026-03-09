@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { Rect, Circle, Line, Transformer } from 'react-konva';
+import { Rect, Circle, Transformer } from 'react-konva';
 import Konva from 'konva';
 import { CanvasElement } from '@/store/useCanvasStore';
 

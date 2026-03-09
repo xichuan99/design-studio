@@ -3,11 +3,11 @@
 import React, { useState } from 'react';
 import { useCanvasStore } from '@/store/useCanvasStore';
 import { Button } from '@/components/ui/button';
-import { Eye, EyeOff, Lock, Unlock, GripVertical, Type, Image as ImageIcon, Square, Edit2, Layers } from 'lucide-react';
+import { Eye, EyeOff, Lock, Unlock, Type, Image as ImageIcon, Square, Edit2, Layers } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
 export const LayersPanel: React.FC = () => {
-    const { elements, selectedElementId, selectElement, reorderElements, toggleVisibility, toggleLock, updateName, deleteElement } = useCanvasStore();
+    const { elements, selectedElementId, selectElement, reorderElements, toggleVisibility, toggleLock, updateName } = useCanvasStore();
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editName, setEditName] = useState("");
 

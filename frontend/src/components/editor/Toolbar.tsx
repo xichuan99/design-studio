@@ -4,14 +4,14 @@ import React, { useState } from 'react';
 import { useCanvasStore } from '@/store/useCanvasStore';
 import { useProjectApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
-import { Type, Image as ImageIcon, Square, Circle, Minus, Wand2, Blocks, Palette, Upload } from 'lucide-react';
+import { Type, Square, Circle, Minus, Wand2, Blocks, Upload } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface ToolbarProps {
     projectId?: string;
 }
 
-export const Toolbar: React.FC<ToolbarProps> = ({ projectId }) => {
+export const Toolbar: React.FC<ToolbarProps> = ({ }) => {
     const { addElement, backgroundColor, setBackgroundColor } = useCanvasStore();
     const { uploadImage } = useProjectApi();
     const [saving, setSaving] = useState(false);

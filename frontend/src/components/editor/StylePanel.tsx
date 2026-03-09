@@ -4,8 +4,7 @@ import React from 'react';
 import { useCanvasStore } from '@/store/useCanvasStore';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Trash2, Bold, Italic, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
-import { SlidersHorizontal, Type, Layout, Image as ImageIcon, CornerDownRight, AlignJustify, MoveUp, MoveDown, Maximize, MousePointer2 } from 'lucide-react';
+import { Trash2, Bold, Italic, AlignLeft, AlignCenter, AlignRight, MousePointer2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 

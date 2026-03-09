@@ -1,6 +1,5 @@
 import React from 'react';
 import { Stage, Layer, Image as KonvaImage } from 'react-konva';
-import { KonvaEventObject } from 'konva/lib/Node';
 import useImage from 'use-image';
 import { useCanvasStore } from '@/store/useCanvasStore';
 import { TextNode } from './TextNode';
