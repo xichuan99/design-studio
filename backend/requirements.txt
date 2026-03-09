@@ -19,4 +19,5 @@ pytest-asyncio==0.*
 sentry-sdk[fastapi]==2.*
 psycopg2-binary==2.*
 passlib[bcrypt]==1.7.*
+bcrypt==4.0.1
 email-validator==2.*

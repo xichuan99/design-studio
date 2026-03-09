@@ -117,8 +117,8 @@ async def generate_design(
 
         # Assemble visual prompt from parts if available (user might have edited/toggled them)
         if parsed.visual_prompt_parts:
-            # We filter for enabled parts just in case, though the backend /generate endpoint 
-            # currently just takes raw_text and re-parses it. This is prep for when 
+            # We filter for enabled parts just in case, though the backend /generate endpoint
+            # currently just takes raw_text and re-parses it. This is prep for when
             # frontend sends the modified parsed object directly or as an assembled prompt.
             assembled = ", ".join(p.value for p in parsed.visual_prompt_parts if p.enabled)
             visual_prompt_final = assembled if assembled else parsed.visual_prompt
