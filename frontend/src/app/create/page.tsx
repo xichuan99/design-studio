@@ -6,36 +6,21 @@ import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { LayoutTemplate, Loader2, ImagePlus, X, PanelLeftOpen, PanelLeftClose, Sparkles, Plus } from "lucide-react";
+import { LayoutTemplate, Loader2, ImagePlus, X, PanelLeftOpen, PanelLeftClose, Sparkles } from "lucide-react";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { useProjectApi, API_BASE_URL } from "@/lib/api";
 import { generateCanvasElementsFromTemplate } from "@/lib/templateEngine";
 import { TemplateBrowser } from "@/components/templates/TemplateBrowser";
 import { useRouter } from "next/navigation";
+import { ParsedDesignData, VisualPromptPart, MAX_FILE_SIZE } from "@/app/create/types";
+import { ReferenceImageUpload } from "@/components/create/ReferenceImageUpload";
+import { DesignAnalysisCard } from "@/components/create/DesignAnalysisCard";
+import { GenerationProgress } from "@/components/create/GenerationProgress";
+import { DesignPreview } from "@/components/create/DesignPreview";
 
-interface VisualPromptPart {
-    category: string;
-    label: string;
-    value: string;
-    enabled: boolean;
-}
-
-interface ParsedDesignData {
-    headline?: string;
-    sub_headline?: string;
-    cta?: string;
-    visual_prompt?: string;
-    visual_prompt_parts?: VisualPromptPart[];
-    suggested_colors?: string[];
-    generated_image_url?: string;
-}
-
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 export default function CreatePage() {
     const { status } = useSession();
@@ -358,79 +343,21 @@ export default function CreatePage() {
 
                         {/* Gambar Referensi - Conditional Visibility */}
                         <div className="space-y-2">
-                            {(!selectedTemplate || showManualRef) ? (
-                                <>
-                                    <div className="flex items-center justify-between">
-                                        <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-violet-500 text-white text-xs font-bold">3</span>
-                                            Gambar Referensi {selectedTemplate ? "(Override)" : "(Opsional)"}
-                                        </label>
-                                        {selectedTemplate && showManualRef && (
-                                            <button
-                                                onClick={() => {
-                                                    setShowManualRef(false);
-                                                    handleRemoveFile();
-                                                }}
-                                                className="text-xs text-destructive hover:underline font-medium px-2 py-1"
-                                            >
-                                                Batal
-                                            </button>
-                                        )}
-                                    </div>
-                                    <input
-                                        ref={fileInputRef}
-                                        type="file"
-                                        accept="image/png,image/jpeg,image/jpg,image/webp"
-                                        className="hidden"
-                                        onChange={handleFileInputChange}
-                                    />
-                                    {referencePreview ? (
-                                        <div className="relative group rounded-xl overflow-hidden border border-border">
-                                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                                            <img
-                                                src={referencePreview}
-                                                alt="Gambar referensi"
-                                                className="w-full h-40 object-cover"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={handleRemoveFile}
-                                                className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
-                                                title="Hapus gambar"
-                                            >
-                                                <X className="w-4 h-4" />
-                                            </button>
-                                            <div className="p-2 bg-muted/80 text-xs text-muted-foreground truncate">
-                                                {referenceFile?.name}
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div
-                                            className={`border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-colors ${isDragOver
-                                                ? "border-primary bg-primary/10"
-                                                : "border-muted-foreground/25 hover:bg-muted/50"
-                                                }`}
-                                            onClick={() => fileInputRef.current?.click()}
-                                            onDragOver={handleDragOver}
-                                            onDragLeave={handleDragLeave}
-                                            onDrop={handleDrop}
-                                        >
-                                            <ImagePlus className="w-8 h-8 text-muted-foreground mb-2" />
-                                            <p className="text-sm font-medium">
-                                                {isDragOver ? "Lepaskan gambar di sini" : "Unggah Gambar"}
-                                            </p>
-                                            <p className="text-xs text-muted-foreground mt-1">PNG, JPG up to 5MB</p>
-                                        </div>
-                                    )}
-                                </>
-                            ) : (
-                                <button
-                                    onClick={() => setShowManualRef(true)}
-                                    className="w-full text-left text-xs font-medium text-muted-foreground hover:text-primary transition-colors py-2 px-1 flex items-center gap-1.5"
-                                >
-                                    <Plus className="w-3.5 h-3.5" /> Tambah gambar referensi manual (opsional)
-                                </button>
-                            )}
+                            <ReferenceImageUpload
+                                referenceFile={referenceFile}
+                                referencePreview={referencePreview}
+                                isDragOver={isDragOver}
+                                fileInputRef={fileInputRef}
+                                showManualRef={showManualRef}
+                                selectedTemplate={selectedTemplate}
+                                onFileInputChange={handleFileInputChange}
+                                onRemoveFile={handleRemoveFile}
+                                onDragOver={handleDragOver}
+                                onDragLeave={handleDragLeave}
+                                onDrop={handleDrop}
+                                onShowManualRef={() => setShowManualRef(true)}
+                                onHideManualRef={() => setShowManualRef(false)}
+                            />
                         </div>
 
                         <div className="space-y-2 tour-step-2">
@@ -528,138 +455,22 @@ export default function CreatePage() {
 
                 {/* Main Workspace Preview (Week 1 Scope) */}
                 <main className="flex-1 bg-muted/20 relative overflow-y-auto p-8 flex justify-center items-start">
-                    {parsedData && parsedData.generated_image_url ? (
-                        <div className="flex gap-8 w-full max-w-6xl mx-auto h-full">
-                            {/* Visual Preview */}
-                            <div className="flex-1 rounded-2xl overflow-hidden border bg-card shadow-2xl relative flex flex-col">
-                                <div className="absolute top-4 left-4 z-10">
-                                    <Badge variant="secondary" className="bg-black/50 text-white backdrop-blur-md shadow-lg">Preview Hasil</Badge>
-                                </div>
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={parsedData.generated_image_url} alt="Generated Background" className="w-full h-full object-cover" />
-
-                                {/* Overlay floating actions */}
-                                <div className="absolute bottom-6 right-6">
-                                    <Button
-                                        size="lg"
-                                        onClick={handleProceedToEditor}
-                                        disabled={isSaving}
-                                        className="gap-2 shadow-xl hover:shadow-2xl transition-all hover:scale-105 duration-200"
-                                    >
-                                        {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
-                                        Lanjut ke Editor <Sparkles className="w-4 h-4 ml-1" />
-                                    </Button>
-                                </div>
-                            </div>
-
+                    {parsedData ? (
+                        <div className="flex gap-4 w-full h-full justify-center">
+                            <DesignPreview
+                                imageUrl={parsedData.generated_image_url || selectedTemplate?.thumbnail_url || null}
+                                onProceedToEditor={handleProceedToEditor}
+                                isSaving={isSaving}
+                            />
                             {/* Analysis Card */}
-                            <Card className="w-80 shrink-0 shadow-lg border-primary/10 bg-card/95 backdrop-blur h-fit max-h-full overflow-y-auto">
-                                <CardHeader className="bg-primary/5 border-b pb-4">
-                                    <CardTitle className="flex items-center gap-2 text-base">
-                                        <LayoutTemplate className="w-4 h-4 text-primary" />
-                                        Struktur Teks
-                                    </CardTitle>
-                                    <CardDescription>
-                                        AI telah membedah teks promo Anda menjadi elemen-elemen grafis yang siap diposisikan di atas template.
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent className="pt-6 space-y-6">
-                                    <div>
-                                        <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Headline</h4>
-                                        <p className="text-3xl font-jakarta font-black leading-tight text-foreground">{parsedData.headline}</p>
-                                    </div>
-
-                                    {parsedData.sub_headline && (
-                                        <div>
-                                            <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Sub-Headline</h4>
-                                            <p className="text-lg text-muted-foreground font-medium">{parsedData.sub_headline}</p>
-                                        </div>
-                                    )}
-
-                                    {parsedData.cta && (
-                                        <div>
-                                            <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Call To Action</h4>
-                                            <Badge variant="default" className="text-md px-4 py-1.5">{parsedData.cta}</Badge>
-                                        </div>
-                                    )}
-
-                                    <div className="pt-4 border-t">
-                                        <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Prompt Gambar (Background)</h4>
-                                        {parsedData.visual_prompt_parts && parsedData.visual_prompt_parts.length > 0 ? (
-                                            <div className="space-y-3 bg-muted/30 p-3 rounded-lg border">
-                                                {parsedData.visual_prompt_parts.map((part, idx) => (
-                                                    <div key={idx} className={`flex flex-col gap-1.5 transition-opacity ${part.enabled ? 'opacity-100' : 'opacity-40'}`}>
-                                                        <div className="flex items-center gap-2">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={part.enabled}
-                                                                onChange={() => handleTogglePromptPart(idx)}
-                                                                className="w-3.5 h-3.5 rounded border-primary/50 text-primary focus:ring-primary/20 cursor-pointer"
-                                                            />
-                                                            <span className="text-[10px] font-bold uppercase tracking-wider text-primary">{part.label}</span>
-                                                        </div>
-                                                        <textarea
-                                                            value={part.value}
-                                                            onChange={(e) => handleEditPromptPart(idx, e.target.value)}
-                                                            disabled={!part.enabled}
-                                                            className="text-xs font-mono bg-background border border-border/50 rounded p-1.5 w-full resize-none focus:outline-none focus:ring-1 focus:ring-primary/30 h-12"
-                                                        />
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        ) : (
-                                            <p className="text-xs font-mono bg-muted p-2 rounded-md text-muted-foreground leading-relaxed">
-                                                {parsedData.visual_prompt}
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    {(parsedData.suggested_colors?.length ?? 0) > 0 && (
-                                        <div>
-                                            <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Rekomendasi Warna</h4>
-                                            <div className="flex gap-3">
-                                                {parsedData.suggested_colors?.map((color: string, i: number) => (
-                                                    <div key={i} className="flex flex-col items-center gap-1">
-                                                        <div className="w-10 h-10 rounded-full shadow-inner border border-border" style={{ backgroundColor: color }} />
-                                                        <span className="text-[10px] text-muted-foreground font-mono uppercase">{color}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
+                            <DesignAnalysisCard
+                                parsedData={parsedData}
+                                onTogglePromptPart={handleTogglePromptPart}
+                                onEditPromptPart={handleEditPromptPart}
+                            />
                         </div>
                     ) : isParsing || isGeneratingImage ? (
-                        <div className="max-w-2xl w-full mx-auto h-full flex flex-col items-center justify-center">
-                            <div className="text-center mb-10 space-y-4">
-                                <div className="inline-flex relative">
-                                    <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
-                                    <div className="w-20 h-20 bg-background border-2 border-primary/20 rounded-2xl shadow-2xl flex items-center justify-center relative z-10">
-                                        <Sparkles className="w-10 h-10 text-primary animate-pulse" />
-                                    </div>
-                                </div>
-                                <h2 className="text-2xl font-bold tracking-tight">AI Sedang Bekerja ✨</h2>
-                                <p className="text-muted-foreground">
-                                    {isParsing ? "Sedang membedah struktur teks promosi Anda..." : "Sedang memecahkan pixel untuk membuat gambar super HD..."}
-                                </p>
-                            </div>
-
-                            {/* Animated progress indicators */}
-                            <div className="w-full mb-4 bg-muted/50 rounded-full h-2 overflow-hidden">
-                                <div className="bg-primary h-2 rounded-full transition-all duration-500 ease-out" style={{ width: isParsing ? '35%' : '85%' }} />
-                            </div>
-                            <div className="w-full max-w-md space-y-3">
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="flex items-center gap-2"><div className={`w-2 h-2 rounded-full ${isParsing ? 'bg-primary animate-ping' : 'bg-primary'}`} /> Analisis Semantik</span>
-                                    <span className="text-muted-foreground">{isParsing ? 'Proses...' : 'Selesai ✓'}</span>
-                                </div>
-                                <div className="flex items-center justify-between text-sm opacity-80">
-                                    <span className="flex items-center gap-2"><div className={`w-2 h-2 rounded-full ${isGeneratingImage ? 'bg-primary animate-ping' : isParsing ? 'bg-muted-foreground' : 'bg-primary'}`} /> Generasi Gambar Flux</span>
-                                    <span className="text-muted-foreground">{isGeneratingImage ? 'Proses (~15 dtk)...' : isParsing ? 'Menunggu...' : 'Selesai ✓'}</span>
-                                </div>
-                            </div>
-                        </div>
+                        <GenerationProgress isParsing={isParsing} isGeneratingImage={isGeneratingImage} />
                     ) : (
                         <div className="max-w-xl w-full mx-auto h-full flex flex-col items-center justify-center opacity-60 hover:opacity-100 transition-opacity">
                             <div className="w-24 h-24 mb-6 rounded-3xl bg-primary/5 flex items-center justify-center">
