@@ -4,6 +4,7 @@ from sqlalchemy.sql import func
 import uuid
 from app.core.database import Base
 
+
 class User(Base):
     __tablename__ = "users"
 
@@ -12,5 +13,6 @@ class User(Base):
     name = Column(String, nullable=False)
     avatar_url = Column(String, nullable=True)
     provider = Column(String, nullable=False, default="google")
+    password_hash = Column(String, nullable=True)
     credits_remaining = Column(Integer, nullable=False, default=10)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

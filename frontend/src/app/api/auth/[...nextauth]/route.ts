@@ -23,27 +23,45 @@ export const authOptions: NextAuthOptions = {
             clientId: process.env.GOOGLE_CLIENT_ID || "",
             clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
         }),
-        ...(process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test" || process.env.PLAYWRIGHT_TEST === "true"
-            ? [
-                CredentialsProvider({
-                    name: "Test Credentials",
-                    credentials: {
-                        email: { label: "Email", type: "text" },
-                        name: { label: "Name", type: "text" },
-                    },
-                    async authorize(credentials) {
-                        if (credentials?.email === "test@example.com") {
-                            return {
-                                id: "test-user-id",
-                                email: "test@example.com",
-                                name: credentials.name || "Test User",
-                            };
-                        }
-                        return null;
-                    },
-                }),
-            ]
-            : []),
+        CredentialsProvider({
+            name: "Email/Password",
+            credentials: {
+                email: { label: "Email", type: "email" },
+                password: { label: "Password", type: "password" },
+            },
+            async authorize(credentials) {
+                if (!credentials?.email || !credentials?.password) {
+                    return null;
+                }
+
+                try {
+                    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+                    const res = await fetch(`${apiUrl}/auth/login`, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            email: credentials.email,
+                            password: credentials.password
+                        }),
+                        headers: { "Content-Type": "application/json" }
+                    });
+
+                    const user = await res.json();
+
+                    if (res.ok && user) {
+                        return {
+                            id: user.id,
+                            email: user.email,
+                            name: user.name,
+                            avatar_url: user.avatar_url
+                        };
+                    }
+                    return null;
+                } catch (error) {
+                    console.error("Auth error:", error);
+                    return null;
+                }
+            },
+        }),
     ],
     session: {
         strategy: "jwt",

@@ -2,6 +2,8 @@ import os
 import sentry_sdk
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from app.api.auth import router as auth_router
 from app.api.designs import router as designs_router
 from app.api.templates import router as templates_router
 from app.api.projects import router as projects_router
@@ -29,18 +31,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth_router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(designs_router, prefix="/api/designs", tags=["Designs"])
 app.include_router(templates_router, prefix="/api/templates", tags=["Templates"])
 app.include_router(projects_router, prefix="/api/projects", tags=["Projects"])
 app.include_router(users_router, prefix="/api/users", tags=["Users"])
 app.include_router(history_router, prefix="/api/history", tags=["History"])
 
+
 @app.get("/health")
 async def health_check():
     return {"status": "ok"}
 
+
 # Always mount static files for local dev uploads (fallback when S3 fails)
 static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
 os.makedirs(os.path.join(static_dir, "uploads"), exist_ok=True)
-from fastapi.staticfiles import StaticFiles
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
