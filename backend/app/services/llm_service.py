@@ -18,8 +18,12 @@ TEXT ELEMENTS:
 - cta: Call to action button text (max 4 words)
 
 VISUAL DESIGN:
-- visual_prompt: A detailed image generation prompt (in English) for the background.
-  Include WHERE the copy space / negative space should be. Example: "...with large empty space on the left side for text overlay". The copy space placement MUST match your layout decisions below.
+- visual_prompt_parts: An array of prompt components, each with:
+    - category: one of "subject", "setting", "lighting", "style", "colors"
+    - label: Indonesian display label (e.g., "Objek Utama", "Latar", "Pencahayaan", "Gaya Visual", "Palet Warna")
+    - value: The English prompt fragment for this aspect
+    - enabled: always true
+- visual_prompt: The full combined prompt (join all parts with ", "). Include WHERE the copy space / negative space should be. Example: "...with large empty space on the left side for text overlay". The copy space placement MUST match your layout decisions below.
 - suggested_colors: 2-3 hex colors that complement each other and the design theme.
 
 LAYOUT (proportional coordinates 0.0-1.0 on a 1024x1024 canvas):
@@ -62,6 +66,13 @@ async def parse_design_text(raw_text: str, integrated_text: bool = False) -> Par
             sub_headline=" ".join(words[5:15]) if len(words) > 5 else "Penawaran spesial untuk Anda",
             cta="Pesan Sekarang",
             visual_prompt=f"Professional product photography, {raw_text[:60]}, vibrant colors, clean composition with copy space on the right side, modern aesthetic",
+            visual_prompt_parts=[
+                {"category": "style", "label": "Gaya Visual", "value": "Professional product photography", "enabled": True},
+                {"category": "subject", "label": "Objek Utama", "value": raw_text[:60], "enabled": True},
+                {"category": "colors", "label": "Palet Warna", "value": "vibrant colors", "enabled": True},
+                {"category": "setting", "label": "Latar", "value": "clean composition with copy space on the right side", "enabled": True},
+                {"category": "extra", "label": "Estetika", "value": "modern aesthetic", "enabled": True}
+            ],
             suggested_colors=["#6C2BEE", "#F59E0B", "#10B981"],
             headline_layout={"x": 0.7, "y": 0.3, "font_family": "Montserrat", "font_size": 72, "font_weight": 700, "color": "#FFFFFF", "align": "center"},
             sub_headline_layout={"x": 0.7, "y": 0.5, "font_family": "Inter", "font_size": 36, "font_weight": 400, "color": "#FFFFFF", "align": "center"},

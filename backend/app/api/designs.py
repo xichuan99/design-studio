@@ -115,11 +115,21 @@ async def generate_design(
         # Parse text first (reuse existing logic)
         parsed = await parse_design_text(request.raw_text, integrated_text=request.integrated_text)
 
+        # Assemble visual prompt from parts if available (user might have edited/toggled them)
+        if parsed.visual_prompt_parts:
+            # We filter for enabled parts just in case, though the backend /generate endpoint 
+            # currently just takes raw_text and re-parses it. This is prep for when 
+            # frontend sends the modified parsed object directly or as an assembled prompt.
+            assembled = ", ".join(p.value for p in parsed.visual_prompt_parts if p.enabled)
+            visual_prompt_final = assembled if assembled else parsed.visual_prompt
+        else:
+            visual_prompt_final = parsed.visual_prompt
+
         # Update job with parsed data
         job.parsed_headline = parsed.headline
         job.parsed_sub_headline = parsed.sub_headline
         job.parsed_cta = parsed.cta
-        job.visual_prompt = parsed.visual_prompt
+        job.visual_prompt = visual_prompt_final
         job.status = "processing"
         await db.commit()
 
@@ -143,7 +153,7 @@ async def generate_design(
         )
 
         enhanced_prompt = (
-            f"{parsed.visual_prompt}, {style_suffix}, "
+            f"{visual_prompt_final}, {style_suffix}, "
             f"professional graphic design background, {text_instruction}, high quality, 4k"
         )
 

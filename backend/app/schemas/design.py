@@ -35,11 +35,18 @@ class AITextLayout(BaseModel):
     color: str = Field("#FFFFFF", description="Hex color")
     align: str = Field("center", description="Text alignment: left, center, right")
 
+class VisualPromptPart(BaseModel):
+    category: str = Field(..., description="one of: subject, setting, lighting, style, colors")
+    label: str = Field(..., description="Indonesian label for this part")
+    value: str = Field(..., description="The English prompt fragment")
+    enabled: bool = Field(True, description="Whether this part is active")
+
 class ParsedTextElements(BaseModel):
     headline: str
     sub_headline: Optional[str] = None
     cta: Optional[str] = None
-    visual_prompt: str = Field(..., description="AI image prompt inferred from the text context")
+    visual_prompt: str = Field(..., description="The full combined AI image prompt inferred from the text context")
+    visual_prompt_parts: List[VisualPromptPart] = Field(default_factory=list, description="Categorized parts of the visual prompt for granular editing")
     suggested_colors: List[str] = Field(default_factory=list)
 
     # AI Layout Decisions

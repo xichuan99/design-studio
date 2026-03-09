@@ -18,11 +18,19 @@ import { generateCanvasElementsFromTemplate } from "@/lib/templateEngine";
 import { TemplateBrowser } from "@/components/templates/TemplateBrowser";
 import { useRouter } from "next/navigation";
 
+interface VisualPromptPart {
+    category: string;
+    label: string;
+    value: string;
+    enabled: boolean;
+}
+
 interface ParsedDesignData {
     headline?: string;
     sub_headline?: string;
     cta?: string;
     visual_prompt?: string;
+    visual_prompt_parts?: VisualPromptPart[];
     suggested_colors?: string[];
     generated_image_url?: string;
 }
@@ -50,6 +58,20 @@ export default function CreatePage() {
     const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
     const [showManualRef, setShowManualRef] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleTogglePromptPart = (index: number) => {
+        if (!parsedData || !parsedData.visual_prompt_parts) return;
+        const newParts = [...parsedData.visual_prompt_parts];
+        newParts[index].enabled = !newParts[index].enabled;
+        setParsedData({ ...parsedData, visual_prompt_parts: newParts });
+    };
+
+    const handleEditPromptPart = (index: number, newValue: string) => {
+        if (!parsedData || !parsedData.visual_prompt_parts) return;
+        const newParts = [...parsedData.visual_prompt_parts];
+        newParts[index].value = newValue;
+        setParsedData({ ...parsedData, visual_prompt_parts: newParts });
+    };
 
     if (status === "loading") {
         return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin w-8 h-8 text-primary" /></div>;
@@ -133,6 +155,20 @@ export default function CreatePage() {
             setIsParsing(false); // Stop parsing spinner early so user can read the text
             setIsGeneratingImage(true); // Start image generation spinner
 
+            // Assemble prompt from parts if available (user might have edited/toggled them since parsing)
+            let assembledPrompt = rawText; // Fallback
+            if (parsedData?.visual_prompt_parts && parsedData.visual_prompt_parts.length > 0) {
+                const activeParts = parsedData.visual_prompt_parts
+                    .filter(p => p.enabled)
+                    .map(p => p.value);
+
+                if (activeParts.length > 0) {
+                    assembledPrompt = activeParts.join(", ");
+                } else {
+                    assembledPrompt = parsedData.visual_prompt || rawText;
+                }
+            }
+
             // STEP 0: Upload Reference Image
             let uploadedReferenceUrl = undefined;
             if (referenceFile) {
@@ -145,12 +181,15 @@ export default function CreatePage() {
                 }
             }
 
-            // Add template-specific prompt suffix to rawText if available
+            // Add template-specific prompt suffix to prompt if available
             const finalPrompt = selectedTemplate?.prompt_suffix
-                ? `${rawText.trim()}. ${selectedTemplate.prompt_suffix}`
-                : rawText;
+                ? `${assembledPrompt.trim()}. ${selectedTemplate.prompt_suffix}`
+                : assembledPrompt;
 
             // STEP 2: Generate Design (Background Image)
+            // We pass the assembled final prompt as raw_text. The backend normally parses raw_text again,
+            // but since we are overriding here, Gemini will just parse our assembled English prompt 
+            // and pass it mostly unchanged to Flux/Imagen.
             const jobData = await generateDesign({
                 raw_text: finalPrompt,
                 aspect_ratio: aspectRatio,
@@ -546,9 +585,33 @@ export default function CreatePage() {
 
                                     <div className="pt-4 border-t">
                                         <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Prompt Gambar (Background)</h4>
-                                        <p className="text-xs font-mono bg-muted p-2 rounded-md justify-between items-start text-muted-foreground h-32 overflow-y-auto leading-relaxed">
-                                            {parsedData.visual_prompt}
-                                        </p>
+                                        {parsedData.visual_prompt_parts && parsedData.visual_prompt_parts.length > 0 ? (
+                                            <div className="space-y-3 bg-muted/30 p-3 rounded-lg border">
+                                                {parsedData.visual_prompt_parts.map((part, idx) => (
+                                                    <div key={idx} className={`flex flex-col gap-1.5 transition-opacity ${part.enabled ? 'opacity-100' : 'opacity-40'}`}>
+                                                        <div className="flex items-center gap-2">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={part.enabled}
+                                                                onChange={() => handleTogglePromptPart(idx)}
+                                                                className="w-3.5 h-3.5 rounded border-primary/50 text-primary focus:ring-primary/20 cursor-pointer"
+                                                            />
+                                                            <span className="text-[10px] font-bold uppercase tracking-wider text-primary">{part.label}</span>
+                                                        </div>
+                                                        <textarea
+                                                            value={part.value}
+                                                            onChange={(e) => handleEditPromptPart(idx, e.target.value)}
+                                                            disabled={!part.enabled}
+                                                            className="text-xs font-mono bg-background border border-border/50 rounded p-1.5 w-full resize-none focus:outline-none focus:ring-1 focus:ring-primary/30 h-12"
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p className="text-xs font-mono bg-muted p-2 rounded-md text-muted-foreground leading-relaxed">
+                                                {parsedData.visual_prompt}
+                                            </p>
+                                        )}
                                     </div>
 
                                     {(parsedData.suggested_colors?.length ?? 0) > 0 && (
