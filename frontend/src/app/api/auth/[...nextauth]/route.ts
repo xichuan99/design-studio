@@ -35,7 +35,7 @@ export const authOptions: NextAuthOptions = {
                 }
 
                 try {
-                    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+                    const apiUrl = process.env.INTERNAL_API_URL || 'http://backend:8000/api';
                     const res = await fetch(`${apiUrl}/auth/login`, {
                         method: 'POST',
                         body: JSON.stringify({

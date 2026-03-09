@@ -36,6 +36,8 @@ async def upload_user_image(
         )
         return {"url": url}
     except Exception as e:
+        import logging
+        logging.exception("Upload endpoint failed")
         raise HTTPException(status_code=500, detail=f"Failed to upload image: {str(e)}")
 
 
