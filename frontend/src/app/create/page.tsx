@@ -4,19 +4,13 @@ import { useState, useRef, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { LayoutTemplate, Loader2, ImagePlus, X, PanelLeftOpen, PanelLeftClose, Sparkles, ArrowLeft, ArrowRight, Beaker, ChevronDown, Check } from "lucide-react";
+import { Loader2, PanelLeftOpen, PanelLeftClose, X, ImagePlus } from "lucide-react";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { useProjectApi, API_BASE_URL } from "@/lib/api";
 import { generateCanvasElementsFromTemplate } from "@/lib/templateEngine";
-import { TemplateBrowser } from "@/components/templates/TemplateBrowser";
 import { useRouter } from "next/navigation";
 import { ParsedDesignData, VisualPromptPart, MAX_FILE_SIZE } from "@/app/create/types";
-import { ReferenceImageUpload } from "@/components/create/ReferenceImageUpload";
 
 import { GenerationProgress } from "@/components/create/GenerationProgress";
 import { SidebarInputForm } from "@/components/create/SidebarInputForm";
@@ -524,8 +518,6 @@ export default function CreatePage() {
                                     indonesian_translation: newTranslation || prev.indonesian_translation
                                 } : null);
                             }}
-                            onGenerate={handleGenerateImage}
-                            isGeneratingImage={isGeneratingImage}
                         />
                     ) : currentStep === 'generating' ? (
                         <GenerationProgress />

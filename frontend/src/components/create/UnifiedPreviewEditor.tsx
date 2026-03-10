@@ -1,5 +1,5 @@
 import React from "react";
-import { Loader2, ArrowRight, Check, Sparkles } from "lucide-react";
+import { Loader2, ArrowRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ParsedDesignData } from "@/app/create/types";
 import { DesignPreview } from "@/components/create/DesignPreview";
@@ -17,8 +17,6 @@ interface UnifiedPreviewEditorProps {
     onTogglePromptPart: (index: number) => void;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onModifyPromptParts: (newParts: any, newCombined: string, newTranslation?: string) => void;
-    onGenerate: () => void;
-    isGeneratingImage: boolean;
 }
 
 export function UnifiedPreviewEditor({
@@ -30,9 +28,7 @@ export function UnifiedPreviewEditor({
     isSaving,
     onProceedToEditor,
     onTogglePromptPart,
-    onModifyPromptParts,
-    onGenerate,
-    isGeneratingImage
+    onModifyPromptParts
 }: UnifiedPreviewEditorProps) {
     return (
         <div className="flex flex-col md:flex-row w-full h-full overflow-hidden bg-background">

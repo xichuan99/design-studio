@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Beaker, Sparkles, Loader2, Undo2, ChevronDown, Check } from "lucide-react";
+import { Loader2, Undo2, ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
