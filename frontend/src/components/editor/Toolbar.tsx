@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useCanvasStore } from '@/store/useCanvasStore';
 import { useProjectApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
-import { Type, Square, Circle, Minus, Wand2, Blocks, Upload } from 'lucide-react';
+import { Type, Square, Circle, Minus, Blocks, Upload } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface ToolbarProps {
@@ -117,19 +117,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ }) => {
                 </div>
             </label>
 
-            <div className="w-10 h-px bg-border my-2" />
 
-            <SidebarButton
-                icon={Wand2}
-                label="AI BG"
-                className="text-amber-500 hover:text-amber-600 hover:bg-amber-500/10"
-                onClick={() => {
-                    const tabsList = document.querySelector('[role="tablist"]');
-                    const aiTab = tabsList?.querySelector('[value="ai"]') as HTMLButtonElement | null;
-                    if (aiTab) aiTab.click();
-                }}
-                title="Generate AI Background"
-            />
 
             <div className="flex-1" />
 
