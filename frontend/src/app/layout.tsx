@@ -19,6 +19,8 @@ export const metadata: Metadata = {
   description: "Desain Grafis Instan untuk UMKM",
 };
 
+import { Toaster } from 'sonner';
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -32,6 +34,7 @@ export default function RootLayout({
         <CSPostHogProvider>
           <AuthProvider>{children}</AuthProvider>
         </CSPostHogProvider>
+        <Toaster theme="dark" position="bottom-center" />
       </body>
 
     </html>

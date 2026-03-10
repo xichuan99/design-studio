@@ -46,6 +46,7 @@ class ParsedTextElements(BaseModel):
     sub_headline: Optional[str] = None
     cta: Optional[str] = None
     visual_prompt: str = Field(..., description="The full combined AI image prompt inferred from the text context")
+    indonesian_translation: str = Field(..., description="A simple, friendly Indonesian explanation/translation of the visual_prompt")
     visual_prompt_parts: List[VisualPromptPart] = Field(default_factory=list, description="Categorized parts of the visual prompt for granular editing")
     suggested_colors: List[str] = Field(default_factory=list)
 
@@ -53,6 +54,15 @@ class ParsedTextElements(BaseModel):
     headline_layout: Optional[AITextLayout] = None
     sub_headline_layout: Optional[AITextLayout] = None
     cta_layout: Optional[AITextLayout] = None
+
+class ModifyPromptRequest(BaseModel):
+    original_prompt_parts: List[VisualPromptPart]
+    user_instruction: str = Field(..., description="User's instruction in Indonesian to modify the prompt")
+
+class ModifyPromptResponse(BaseModel):
+    modified_prompt_parts: List[VisualPromptPart]
+    modified_visual_prompt: str = Field(..., description="The combined updated visual prompt")
+    indonesian_translation: str = Field(..., description="A simple, friendly Indonesian explanation/translation of the modified_visual_prompt")
 
 # --- Future Week 2/3 Response Models ---
 class TextLayer(BaseModel):

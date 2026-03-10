@@ -185,22 +185,22 @@ export default function EditorPage() {
                 <div className={`
                     fixed md:relative right-0 top-14 bottom-[57px] md:bottom-0 md:top-0 z-40 md:z-auto
                     w-[85vw] max-w-[320px] md:w-[280px]
-                    flex flex-col border-l bg-card overflow-hidden shadow-2xl md:shadow-none
+                    flex flex-col border-l border-border/40 bg-background/80 backdrop-blur-xl overflow-hidden shadow-2xl md:shadow-none
                     transition-transform duration-300 transform
                     ${mobilePanelOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}
                 `}>
                     <Tabs defaultValue="properties" className="w-full flex flex-col h-full border-none">
-                        <TabsList className="grid w-full grid-cols-4 rounded-none border-b bg-transparent h-12 p-0">
-                            <TabsTrigger value="properties" className="rounded-none data-[state=active]:bg-muted/50 data-[state=active]:border-b-2 border-primary h-full px-1">
-                                <SlidersHorizontal className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline text-xs">Props</span>
+                        <TabsList className="grid w-full grid-cols-4 rounded-none border-b border-border/40 bg-transparent h-12 p-0">
+                            <TabsTrigger value="properties" className="rounded-none data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-300 h-full px-1">
+                                <SlidersHorizontal className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline text-xs font-semibold">Props</span>
                             </TabsTrigger>
-                            <TabsTrigger value="layers" className="rounded-none data-[state=active]:bg-muted/50 data-[state=active]:border-b-2 border-primary h-full px-1">
-                                <Layers className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline text-xs">Layers</span>
+                            <TabsTrigger value="layers" className="rounded-none data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-300 h-full px-1">
+                                <Layers className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline text-xs font-semibold">Layers</span>
                             </TabsTrigger>
-                            <TabsTrigger value="ai" className="rounded-none data-[state=active]:bg-muted/50 data-[state=active]:border-b-2 border-primary h-full px-1">
-                                <Sparkles className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline text-xs">AI</span>
+                            <TabsTrigger value="ai" className="rounded-none data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-300 h-full px-1">
+                                <Sparkles className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline text-xs font-semibold">AI</span>
                             </TabsTrigger>
-                            <TabsTrigger value="history" className="rounded-none data-[state=active]:bg-muted/50 data-[state=active]:border-b-2 border-primary h-full relative" disabled={!projectId} title="History">
+                            <TabsTrigger value="history" className="rounded-none data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-300 h-full relative" disabled={!projectId} title="History">
                                 <HistoryIcon className="h-4 w-4" />
                             </TabsTrigger>
                         </TabsList>

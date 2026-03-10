@@ -9,7 +9,8 @@
 ## ✨ Features
 
 - **AI Text Parsing** — Tulis deskripsi bisnis, AI (Gemini Flash) otomatis menghasilkan headline, tagline, CTA, dan rekomendasi warna
-- **AI Image Generation** — Generate background visual profesional via Fal.ai (SDXL/Flux)
+- **4-Step Create Flow** — Flow UI intuitif: 1) Input Text, 2) Visual Prompt Review (dengan terjemahan bahasa Indonesia), 3) Generating, 4) Split-view Preview & Tweak.
+- **AI Image Generation** — Generate background visual profesional via Fal.ai (SDXL/Flux) dengan fitur Tweak Prompt di panel terpisah
 - **Canvas Editor** — Editor drag-and-drop berbasis Konva.js dengan:
   - Text & image elements, resize, rotate, drag
   - Layer management: Bring Forward/Backward, Bring to Front/Back (+ keyboard shortcuts `⌘]` `⌘[` `⌘⇧]` `⌘⇧[`)

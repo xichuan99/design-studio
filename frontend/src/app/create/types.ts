@@ -10,6 +10,7 @@ export interface ParsedDesignData {
     sub_headline?: string;
     cta?: string;
     visual_prompt?: string;
+    indonesian_translation?: string;
     visual_prompt_parts?: VisualPromptPart[];
     suggested_colors?: string[];
     generated_image_url?: string;

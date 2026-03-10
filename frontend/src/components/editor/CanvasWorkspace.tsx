@@ -80,10 +80,10 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ onBgStatusChan
     return (
         <div
             ref={containerRef}
-            className="w-full h-full relative overflow-auto bg-muted/20 flex-1 flex items-center justify-center min-h-[500px]"
+            className="w-full h-full relative overflow-auto bg-[#0a0f1d] flex-1 flex items-center justify-center min-h-[500px]"
             style={{
-                backgroundImage: 'radial-gradient(circle, hsl(var(--foreground) / 0.1) 1px, transparent 1px)',
-                backgroundSize: '24px 24px'
+                backgroundImage: 'radial-gradient(circle, hsl(var(--primary) / 0.15) 1px, transparent 1px)',
+                backgroundSize: '32px 32px'
             }}
             onClick={() => useCanvasStore.getState().selectElement(null)}
         >
@@ -141,7 +141,7 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ onBgStatusChan
             )}
 
             <div
-                className="shadow-lg bg-card transition-shadow hover:shadow-xl will-change-transform relative"
+                className="shadow-[0_0_50px_rgba(0,0,0,0.5)] ring-1 ring-border/50 bg-card transition-shadow will-change-transform relative z-10"
                 style={{
                     width: '1080px',
                     height: '1080px',

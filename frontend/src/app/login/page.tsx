@@ -3,7 +3,7 @@
 import { signIn, signOut, useSession } from "next-auth/react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense, useState } from "react";
-import { Brush, LogIn, Mail, Loader2, AlertCircle, Lock } from "lucide-react";
+import { Brush, LogIn, Mail, Loader2, AlertCircle, Lock, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 
 function LoginForm() {
@@ -18,6 +18,7 @@ function LoginForm() {
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [localError, setLocalError] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
 
     const handleCredentialsLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -126,13 +127,21 @@ function LoginForm() {
                     <div className="relative group">
                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500 group-focus-within:text-purple-400 transition-colors" />
                         <input
-                            type="password"
+                            type={showPassword ? "text" : "password"}
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             placeholder="Password"
                             required
-                            className="w-full h-12 pl-11 pr-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-slate-500 text-sm focus:outline-none focus:border-purple-500/50 focus:bg-white/10 transition-all"
+                            className="w-full h-12 pl-11 pr-12 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-slate-500 text-sm focus:outline-none focus:border-purple-500/50 focus:bg-white/10 transition-all"
                         />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-purple-400 transition-colors focus:outline-none"
+                            aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                        >
+                            {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        </button>
                     </div>
 
                     <button

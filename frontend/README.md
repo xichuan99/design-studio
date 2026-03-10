@@ -23,7 +23,7 @@ npx tsc --noEmit # TypeScript type check
 | Route | Description |
 |-------|-------------|
 | `/` | Landing page (dark mode, glassmorphism) |
-| `/create` | AI generation form + onboarding tour |
+| `/create` | 4-step AI generation flow (Input → Review → Generate → Split-view Tweak) |
 | `/edit/[projectId]` | Konva.js canvas editor |
 | `/projects` | Saved projects gallery |
 

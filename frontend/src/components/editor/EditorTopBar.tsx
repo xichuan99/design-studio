@@ -100,7 +100,7 @@ export const EditorTopBar: React.FC<EditorTopBarProps> = ({ projectId, saveStatu
     };
 
     return (
-        <div className="h-14 border-b flex items-center justify-between px-4 bg-card shrink-0 shadow-sm z-40">
+        <div className="h-14 border-b border-border/40 flex items-center justify-between px-4 bg-background/80 backdrop-blur-xl shrink-0 z-40 relative">
             {/* Left section: Back button & Title */}
             <div className="flex items-center gap-4">
                 <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-muted-foreground">
@@ -157,12 +157,12 @@ export const EditorTopBar: React.FC<EditorTopBarProps> = ({ projectId, saveStatu
                 <Button
                     variant="default"
                     size="sm"
-                    className="gap-2"
+                    className="gap-2 shadow-[0_0_15px_rgba(var(--primary),0.2)] bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all"
                     onClick={() => setExportOpen(true)}
                     disabled={!stageRef}
                 >
-                    <DownloadIcon className="h-4 w-4" />
-                    <span className="hidden sm:inline">Export</span>
+                    <DownloadIcon className="h-4 w-4 drop-shadow-sm" />
+                    <span className="hidden sm:inline font-semibold">Export</span>
                 </Button>
 
                 <ExportDialog

@@ -1,190 +1,201 @@
-import React, { useMemo } from "react";
-import { Sparkles, ArrowLeft, ArrowRight, Beaker, Check, ImageIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import React, { useState } from "react";
+import { Beaker, Sparkles, Loader2, Undo2, ChevronDown, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { ParsedDesignData } from "@/app/create/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { ParsedDesignData, VisualPromptPart } from "@/app/create/types";
+import { API_BASE_URL } from "@/lib/api";
+import { toast } from "sonner";
 
 interface VisualPromptEditorProps {
     parsedData: ParsedDesignData;
     onTogglePromptPart: (index: number) => void;
-    onEditPromptPart: (index: number, newValue: string) => void;
-    onGenerateImage: () => void;
-    onBack: () => void;
-    isGenerating: boolean;
+    onModifyPromptParts: (newParts: VisualPromptPart[], newCombined: string, newTranslation?: string) => void;
+    compact?: boolean;
 }
+
+const SUGGESTIONS = [
+    "Buat lebih terang", 
+    "Warna lebih hangat", 
+    "Lebih dramatis",
+    "Gaya minimalis", 
+    "Latar belakang polos", 
+    "Efek sinematik"
+];
 
 export function VisualPromptEditor({
     parsedData,
     onTogglePromptPart,
-    onEditPromptPart,
-    onGenerateImage,
-    onBack,
-    isGenerating
+    onModifyPromptParts,
+    compact = false
 }: VisualPromptEditorProps) {
-    // Merakit prompt yang sedang aktif
-    const assembledPrompt = useMemo(() => {
-        if (!parsedData.visual_prompt_parts || parsedData.visual_prompt_parts.length === 0) {
-            return parsedData.visual_prompt || "";
+    const [instruction, setInstruction] = useState("");
+    const [isModifying, setIsModifying] = useState(false);
+    
+    // Keep track of the initially parsed parts so we can undo
+    const [originalParts] = useState<VisualPromptPart[]>(parsedData.visual_prompt_parts || []);
+    const [originalCombined] = useState<string>(parsedData.visual_prompt || "");
+    const [hasModified, setHasModified] = useState(false);
+
+    const handleApplyModification = async () => {
+        if (!instruction.trim()) return;
+        
+        setIsModifying(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/designs/modify-prompt`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    original_prompt_parts: parsedData.visual_prompt_parts,
+                    user_instruction: instruction
+                })
+            });
+
+            if (!res.ok) throw new Error("Gagal memodifikasi prompt");
+            
+            const data = await res.json();
+            onModifyPromptParts(data.modified_prompt_parts, data.modified_visual_prompt, data.indonesian_translation);
+            setHasModified(true);
+            setInstruction("");
+            toast.success("Perubahan berhasil diterapkan!");
+        } catch (error) {
+            console.error(error);
+            toast.error("Gagal menerapkan perubahan. Silakan coba lagi.");
+        } finally {
+            setIsModifying(false);
         }
-        return parsedData.visual_prompt_parts
-            .filter(part => part.enabled)
-            .map(part => part.value)
-            .join(", ");
-    }, [parsedData.visual_prompt_parts, parsedData.visual_prompt]);
+    };
+
+    const handleUndo = () => {
+        onModifyPromptParts(originalParts, originalCombined);
+        setHasModified(false);
+        toast.info("Perubahan dibatalkan");
+    };
 
     return (
-        <div className="flex flex-col h-full w-full max-w-5xl mx-auto animation-fade-in relative">
+        <div className={`flex flex-col w-full mx-auto animation-fade-in gap-5 ${compact ? 'pb-4' : 'max-w-3xl pb-20'}`}>
             
-            {/* Header / Nav */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 pb-4 border-b gap-4">
-                <div>
-                    <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-                        <Beaker className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
-                        AI Lab: Review Visual Prompt
+            {/* Header */}
+            {!compact && (
+                <div className="text-center space-y-2">
+                    <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
+                        Sempurnakan Prompt AI
                     </h2>
-                    <p className="text-sm sm:text-base text-muted-foreground mt-1">
-                        Sempurnakan elemen gambar sebelum AI mulai menggambar. Centang untuk mengaktifkan/menonaktifkan, atau edit teksnya.
+                    <p className="text-sm text-muted-foreground max-w-lg mx-auto">
+                        Ketik apa yang ingin Anda ubah, atau aktif/nonaktifkan elemen tertentu.
                     </p>
                 </div>
-                <div className="flex flex-wrap items-center gap-3">
-                    <Button variant="outline" onClick={onBack} disabled={isGenerating}>
-                        <ArrowLeft className="w-4 h-4 mr-2" />
-                        Kembali
-                    </Button>
+            )}
+
+            {/* Translation Box */}
+            {parsedData.indonesian_translation && (
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 text-center">
+                    <p className="text-sm font-medium text-primary">Maksud AI saat ini:</p>
+                    <p className="text-sm text-muted-foreground mt-1">&quot;{parsedData.indonesian_translation}&quot;</p>
+                </div>
+            )}
+
+            {/* Prompt Parts Toggles */}
+            <div className="space-y-3 mt-2">
+                <div className="flex items-center justify-between px-2">
+                    <h3 className="font-semibold text-foreground/80 text-sm tracking-wide uppercase">Opsi Visual Aktif</h3>
+                    {hasModified && (
+                        <Button variant="ghost" size="sm" onClick={handleUndo} className="h-8 text-muted-foreground hover:text-foreground">
+                            <Undo2 className="w-3.5 h-3.5 mr-1.5" /> Batal Perubahan
+                        </Button>
+                    )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {parsedData.visual_prompt_parts?.map((part, idx) => (
+                        <div 
+                            key={idx} 
+                            className={`rounded-xl border transition-all duration-300 p-4 flex flex-col gap-3 group
+                                ${part.enabled 
+                                    ? 'bg-card border-border/50 shadow-sm' 
+                                    : 'bg-muted/30 opacity-60 hover:opacity-80 border-border/20'}`}
+                        >
+                            <div className="flex items-center justify-between">
+                                <label 
+                                    htmlFor={`switch-${idx}`}
+                                    className={`text-sm font-bold tracking-wide cursor-pointer select-none transition-all
+                                        ${part.enabled ? 'text-foreground' : 'text-muted-foreground'}`}
+                                >
+                                    {part.label}
+                                </label>
+                                <Switch 
+                                    checked={part.enabled}
+                                    onCheckedChange={() => onTogglePromptPart(idx)}
+                                    id={`switch-${idx}`}
+                                />
+                            </div>
+                            
+                            {/* Hide English prompt behind details for clean UI */}
+                            {part.enabled && (
+                                <details className="group/details">
+                                    <summary className="text-[10px] text-muted-foreground hover:text-foreground cursor-pointer list-none [&::-webkit-details-marker]:hidden flex items-center gap-1 w-fit transition-colors">
+                                        <ChevronDown className="w-3 h-3 transition-transform duration-200 group-open/details:rotate-180" />
+                                        Lihat English AI Prompt
+                                    </summary>
+                                    <div className="mt-2 text-xs font-mono text-muted-foreground/80 bg-muted/40 p-2 rounded-md break-words">
+                                        {part.value}
+                                    </div>
+                                </details>
+                            )}
+                        </div>
+                    ))}
+                </div>
+                
+                {(!parsedData.visual_prompt_parts || parsedData.visual_prompt_parts.length === 0) && (
+                    <div className="w-full text-sm rounded-lg p-4 bg-muted/30 border border-border text-muted-foreground">
+                        {parsedData.visual_prompt}
+                    </div>
+                )}
+            </div>
+
+            {/* AI Modification Box - Moved to bottom */}
+            <div className="bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-2xl p-5 sm:p-6 shadow-[0_0_30px_rgba(var(--primary),0.05)] mt-4">
+                <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="relative flex-1">
+                        <Input 
+                            placeholder="Apa yang ingin diubah? (Contoh: Buat lebih gelap)"
+                            className="h-12 bg-background/80 backdrop-blur-sm border-primary/20 focus:border-primary/50 text-foreground"
+                            value={instruction}
+                            onChange={(e) => setInstruction(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleApplyModification()}
+                            disabled={isModifying}
+                        />
+                    </div>
                     <Button 
-                        onClick={onGenerateImage} 
-                        disabled={isGenerating || !assembledPrompt.trim()}
-                        className="font-bold shadow-md bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 flex-1 sm:flex-none"
+                        onClick={handleApplyModification} 
+                        disabled={isModifying || !instruction.trim()}
+                        className="h-12 px-6 shadow-md"
                     >
-                        {isGenerating ? (
-                            <><Sparkles className="w-4 h-4 mr-2 animate-spin" /> Sedang Menggambar...</>
+                        {isModifying ? (
+                            <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Memproses...</>
                         ) : (
-                            <>Terapkan & Generate <ArrowRight className="w-4 h-4 ml-2" /></>
+                            "Terapkan"
                         )}
                     </Button>
                 </div>
-            </div>
 
-            <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-0">
-                
-                {/* Panel Kiri: Text Summary & Assembled Preview */}
-                <div className="flex flex-col gap-4 lg:w-1/3 shrink-0">
-                    <Card className="bg-card shadow-sm overflow-hidden border-primary/10">
-                        <div className="bg-primary/5 px-4 py-3 border-b flex items-center justify-between">
-                            <h3 className="font-semibold text-sm flex items-center gap-2">
-                                <Check className="w-4 h-4 text-emerald-500" />
-                                Teks Ditemukan
-                            </h3>
-                        </div>
-                        <CardContent className="p-4 space-y-4">
-                            <div>
-                                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">Headline</span>
-                                <p className="font-jakarta font-bold text-lg leading-tight">{parsedData.headline || "-"}</p>
-                            </div>
-                            {parsedData.sub_headline && (
-                                <div>
-                                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">Sub-Headline</span>
-                                    <p className="text-sm text-muted-foreground">{parsedData.sub_headline}</p>
-                                </div>
-                            )}
-                            {parsedData.cta && (
-                                <div>
-                                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">Call to Action</span>
-                                    <Badge variant="secondary" className="text-xs">{parsedData.cta}</Badge>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-
-                    <Card className="bg-muted/30 shadow-sm border-blue-500/20 flex-1 flex flex-col">
-                        <div className="bg-blue-500/5 px-4 py-3 border-b flex items-center justify-between">
-                            <h3 className="font-semibold text-sm flex items-center gap-2 text-blue-700 dark:text-blue-400">
-                                <ImageIcon className="w-4 h-4" />
-                                Prompt Final
-                            </h3>
-                        </div>
-                        <CardContent className="p-4 flex-1 flex flex-col">
-                            <p className="text-xs text-muted-foreground mb-3">
-                                Ini adalah instruksi yang akan dikirim ke &quot;otak&quot; AI untuk menggambar background Anda:
-                            </p>
-                            <div className="bg-background border rounded-lg p-3 font-mono text-xs leading-relaxed text-foreground/80 flex-1 overflow-y-auto whitespace-pre-wrap break-words min-h-[150px]">
-                                {assembledPrompt || <span className="italic text-muted-foreground">Tidak ada prompt yang aktif...</span>}
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {(parsedData.suggested_colors?.length ?? 0) > 0 && (
-                        <div className="bg-card rounded-xl border p-4 shadow-sm flex items-center justify-between">
-                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Palet Warna</span>
-                            <div className="flex gap-2">
-                                {parsedData.suggested_colors?.map((color: string, i: number) => (
-                                    <div 
-                                        key={i} 
-                                        className="w-6 h-6 rounded-full shadow-inner border border-border/50" 
-                                        style={{ backgroundColor: color }} 
-                                        title={color}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-                    )}
+                {/* Suggestions */}
+                <div className="mt-4 flex flex-wrap gap-2">
+                    {SUGGESTIONS.map((sug, i) => (
+                        <Badge 
+                            key={i} 
+                            variant="secondary" 
+                            className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors py-1.5 px-3 bg-background/50 text-muted-foreground border-border/50 font-normal"
+                            onClick={() => {
+                                setInstruction(sug);
+                            }}
+                        >
+                            {sug}
+                        </Badge>
+                    ))}
                 </div>
-
-                {/* Panel Kanan: Editable Prompt Parts */}
-                <div className="flex-1 bg-card rounded-xl border shadow-inner p-6 overflow-y-auto">
-                    <h3 className="text-lg font-bold mb-4">Detail Visual Background</h3>
-                    
-                    {parsedData.visual_prompt_parts && parsedData.visual_prompt_parts.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {parsedData.visual_prompt_parts.map((part, idx) => (
-                                <div 
-                                    key={idx} 
-                                    className={`relative p-4 rounded-xl border-2 transition-all duration-200 bg-background
-                                        ${part.enabled 
-                                            ? 'border-primary/40 shadow-sm ring-1 ring-primary/10' 
-                                            : 'border-muted opacity-60 bg-muted/20'}`}
-                                >
-                                    <div className="flex items-center justify-between mb-3">
-                                        <div className="flex items-center gap-2">
-                                            <input
-                                                type="checkbox"
-                                                checked={part.enabled}
-                                                onChange={() => onTogglePromptPart(idx)}
-                                                className="w-4 h-4 rounded border-primary/50 text-primary focus:ring-primary/20 cursor-pointer"
-                                                id={`part-${idx}`}
-                                            />
-                                            <label 
-                                                htmlFor={`part-${idx}`}
-                                                className={`text-xs font-bold uppercase tracking-wider cursor-pointer select-none transition-colors
-                                                    ${part.enabled ? 'text-primary' : 'text-muted-foreground'}`}
-                                            >
-                                                {part.label}
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <textarea
-                                        value={part.value}
-                                        onChange={(e) => onEditPromptPart(idx, e.target.value)}
-                                        disabled={!part.enabled}
-                                        placeholder={`Masukkan detail ${part.label.toLowerCase()}...`}
-                                        className={`w-full text-sm resize-y rounded-lg p-2.5 min-h-[120px] transition-colors
-                                            focus:outline-none focus:ring-2 focus:ring-primary/40
-                                            ${part.enabled 
-                                                ? 'bg-muted/30 border-muted placeholder:text-muted-foreground/50' 
-                                                : 'bg-transparent border-transparent cursor-not-allowed'}`}
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                         <div className="w-full text-sm resize-y rounded-lg p-4 min-h-[120px] bg-muted/30 border border-muted focus:outline-none focus:ring-2 focus:ring-primary/40 overflow-y-auto whitespace-pre-wrap break-words">
-                             {parsedData.visual_prompt}
-                         </div>
-                    )}
-                </div>
-            </div>
-            
+            </div>            
         </div>
     );
 }

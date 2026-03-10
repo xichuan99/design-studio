@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.core.database import get_db
-from app.schemas.design import DesignGenerationRequest, ParsedTextElements
+from app.schemas.design import DesignGenerationRequest, ParsedTextElements, ModifyPromptRequest
 from app.services.llm_service import parse_design_text
 from app.models.job import Job
 from app.api.deps import get_current_user
@@ -52,6 +52,20 @@ async def parse_text(request: DesignGenerationRequest) -> ParsedTextElements:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to parse text: {str(e)}")
 
+@router.post("/modify-prompt")
+async def modify_prompt(request: ModifyPromptRequest) -> dict:
+    """Modifies visual prompt parts via Gemini based on Indonesian text instructions."""
+    from app.services.llm_service import modify_visual_prompt
+    try:
+        result = await modify_visual_prompt(
+            original_parts=request.original_prompt_parts,
+            instruction=request.user_instruction
+        )
+        return result
+    except Exception as e:
+        import logging
+        logging.exception("Failed to modify prompt")
+        raise HTTPException(status_code=500, detail=f"Failed to modify prompt: {str(e)}")
 
 @router.post("/generate")
 async def generate_design(

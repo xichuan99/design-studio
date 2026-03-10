@@ -24,6 +24,7 @@ VISUAL DESIGN:
     - value: The English prompt fragment for this aspect
     - enabled: always true
 - visual_prompt: The full combined prompt (join all parts with ", "). Include WHERE the copy space / negative space should be. Example: "...with large empty space on the left side for text overlay". The copy space placement MUST match your layout decisions below.
+- indonesian_translation: A natural, friendly Indonesian sentence explaining what the `visual_prompt` describes. (e.g., "Gambar fotorealistik secangkir kopi susu di atas meja kayu dengan pencahayaan hangat dari jendela dan area kosong di kiri untuk teks.")
 - suggested_colors: 2-3 hex colors that complement each other and the design theme.
 
 LAYOUT (proportional coordinates 0.0-1.0 on a 1024x1024 canvas):
@@ -66,6 +67,7 @@ async def parse_design_text(raw_text: str, integrated_text: bool = False) -> Par
             sub_headline=" ".join(words[5:15]) if len(words) > 5 else "Penawaran spesial untuk Anda",
             cta="Pesan Sekarang",
             visual_prompt=f"Professional product photography, {raw_text[:60]}, vibrant colors, clean composition with copy space on the right side, modern aesthetic",
+            indonesian_translation=f"Fotografi produk profesional bertema '{raw_text[:40]}' dengan warna cerah, komposisi bersih, dan ruang kosong di sisi kanan untuk teks.",
             visual_prompt_parts=[
                 {"category": "style", "label": "Gaya Visual", "value": "Professional product photography", "enabled": True},
                 {"category": "subject", "label": "Objek Utama", "value": raw_text[:60], "enabled": True},
@@ -96,3 +98,68 @@ async def parse_design_text(raw_text: str, integrated_text: bool = False) -> Par
     # We parse the response text instead of using dynamic decoding structure, though the types are standard JSON
     data = json.loads(response.text)
     return ParsedTextElements(**data)
+
+MODIFY_PROMPT_SYSTEM = """
+You are an expert AI prompt engineer and bilingual assistant (Indonesian & English).
+The user is adjusting an existing AI image generation prompt. They will give you:
+1. The ORIGINAL English prompt parts.
+2. An INSTRUCTION in Indonesian describing what they want to change.
+
+YOUR TASK:
+Update the English prompt parts to reflect the user's Indonesian instruction. 
+If they want to change the style, update the "style" part. If they want a different mood/lighting, update the "lighting" part. Add or remove details organically.
+Return ONLY the modified prompt parts and the final combined prompt.
+
+Output JSON must match:
+{
+  "modified_prompt_parts": [
+     { "category": "...", "label": "...", "value": "..._UPDATED_ENGLISH_VALUE_...", "enabled": true }
+  ],
+  "modified_visual_prompt": "The new combined full English prompt...",
+  "indonesian_translation": "A natural, friendly Indonesian sentence explaining what the new `modified_visual_prompt` describes."
+}
+"""
+
+async def modify_visual_prompt(original_parts: list, instruction: str) -> dict:
+    """Modifies existing English prompt parts based on an Indonesian user instruction."""
+    from app.schemas.design import ModifyPromptResponse
+    
+    if not settings.GEMINI_API_KEY:
+        import logging
+        logging.warning("GEMINI_API_KEY is missing – returning mock modified data")
+        # simple mock
+        new_parts = []
+        for p in original_parts:
+            # We copy because dicts are mutable
+            copied = dict(p) if isinstance(p, dict) else p.model_dump()
+            if copied["category"] == "style" or copied["category"] == "extra":
+                copied["value"] += f" ({instruction} applied)"
+            new_parts.append(copied)
+        
+        combined = ", ".join(p["value"] for p in new_parts if p.get("enabled", True))
+        return ModifyPromptResponse(
+            modified_prompt_parts=new_parts,
+            modified_visual_prompt=combined,
+            indonesian_translation=f"Terjemahan mock untuk: {combined}"
+        ).model_dump()
+
+    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    
+    # Send the original parts as a JSON dumped string for Gemini to read easily
+    # Ensure parts are dicts
+    parts_dicts = [p.model_dump() if hasattr(p, 'model_dump') else dict(p) for p in original_parts]
+    
+    input_text = f"ORIGINAL PROMPT PARTS:\n{json.dumps(parts_dicts, indent=2)}\n\nUSER INSTRUCTION (ID):\n{instruction}"
+
+    response = client.models.generate_content(
+        model='gemini-2.5-flash',
+        contents=[input_text],
+        config=types.GenerateContentConfig(
+            system_instruction=MODIFY_PROMPT_SYSTEM,
+            response_mime_type="application/json",
+            response_schema=ModifyPromptResponse,
+        ),
+    )
+
+    data = json.loads(response.text)
+    return data

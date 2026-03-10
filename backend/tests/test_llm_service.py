@@ -41,3 +41,19 @@ async def test_parse_english_text():
     assert isinstance(result, ParsedTextElements)
     assert result.headline
     assert result.visual_prompt
+
+@pytest.mark.asyncio
+async def test_modify_visual_prompt():
+    from app.services.llm_service import modify_visual_prompt
+    original_parts = [
+        {"category": "subject", "label": "Objek Utama", "value": "A cup of coffee", "enabled": True},
+        {"category": "style", "label": "Gaya", "value": "minimalist", "enabled": True}
+    ]
+    instruction = "Buat lebih gelap dan dramatis"
+    
+    result = await modify_visual_prompt(original_parts, instruction)
+    
+    assert "modified_prompt_parts" in result
+    assert "modified_visual_prompt" in result
+    assert isinstance(result["modified_prompt_parts"], list)
+    assert len(result["modified_prompt_parts"]) > 0

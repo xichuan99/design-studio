@@ -6,7 +6,7 @@ import Joyride, { CallBackProps, STATUS } from "react-joyride";
 const TOUR_STEPS = [
     {
         target: ".tour-step-1",
-        content: "Selamat datang! Masukkan teks promosi Anda di sini (misal: Diskon 50% Baju Lebaran).",
+        content: "Selamat datang! Masukkan deskripsi desain atau teks pengumuman Anda di sini (misal: Banner Kopi Susu Diskon 50%).",
         disableBeacon: true,
     },
     {

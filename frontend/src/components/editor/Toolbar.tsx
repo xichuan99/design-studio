@@ -99,13 +99,13 @@ export const Toolbar: React.FC<ToolbarProps> = ({ }) => {
             title={title}
             className={`flex flex-col items-center justify-center w-full h-16 rounded-xl transition-all duration-200 hover:bg-muted text-muted-foreground hover:text-foreground group ${className}`}
         >
-            <Icon className="h-6 w-6 mb-1.5 transition-transform group-hover:scale-110" />
+            <Icon className="h-6 w-6 mb-1.5 transition-transform group-hover:scale-110 drop-shadow-sm" />
             <span className="text-[10px] font-medium tracking-wide">{label}</span>
         </button>
     );
 
     return (
-        <div className="flex flex-col gap-2 p-3 border-r bg-card h-full w-[88px] items-center shrink-0 shadow-sm z-30">
+        <div className="flex flex-col gap-2 p-3 border-r border-border/40 bg-background/80 backdrop-blur-xl h-full w-[88px] items-center shrink-0 z-30 relative">
             <SidebarButton icon={Type} label="Text" onClick={handleAddText} />
 
             <Popover>
@@ -136,8 +136,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({ }) => {
                     onChange={handleImageUpload}
                     disabled={saving}
                 />
-                <div className={`flex flex-col items-center justify-center w-full h-16 rounded-xl transition-all duration-200 ${saving ? 'opacity-50 cursor-not-allowed' : 'hover:bg-muted text-muted-foreground hover:text-foreground group'}`}>
-                    <Upload className="h-6 w-6 mb-1.5 transition-transform group-hover:scale-110" />
+                <div className={`flex flex-col items-center justify-center w-full h-16 rounded-xl transition-all duration-200 ${saving ? 'opacity-50 cursor-not-allowed' : 'hover:bg-primary/10 hover:shadow-[0_0_10px_rgba(var(--primary),0.1)] text-muted-foreground hover:text-primary group'}`}>
+                    <Upload className="h-6 w-6 mb-1.5 transition-transform group-hover:scale-110 drop-shadow-sm" />
                     <span className="text-[10px] font-medium tracking-wide">Uploads</span>
                 </div>
             </label>
