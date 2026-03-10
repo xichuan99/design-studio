@@ -51,10 +51,35 @@ export const Toolbar: React.FC<ToolbarProps> = ({ }) => {
         setSaving(true);
         try {
             const { url } = await uploadImage(file);
+
+            // Cap the image size so it doesn't cover the entire canvas
+            const img = new window.Image();
+            const proxyUrl = url.startsWith('http')
+                ? `/api/proxy-image?url=${encodeURIComponent(url)}`
+                : url;
+            img.src = proxyUrl;
+
+            await new Promise((resolve) => {
+                img.onload = resolve;
+                img.onerror = resolve;
+            });
+
+            // Logical canvas is 1024. Use max 400.
+            const maxSize = 400;
+            const originalWidth = img.naturalWidth || 800;
+            const originalHeight = img.naturalHeight || 800;
+            const scale = Math.min(
+                maxSize / originalWidth,
+                maxSize / originalHeight,
+                1 // Don't scale up small images
+            );
+
             addElement({
                 type: 'image',
                 x: 100,
                 y: 100,
+                width: originalWidth * scale,
+                height: originalHeight * scale,
                 url: url,
                 rotation: 0,
             });

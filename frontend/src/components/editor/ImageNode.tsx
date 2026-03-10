@@ -46,6 +46,9 @@ export const ImageNode: React.FC<ImageNodeProps> = ({
                 height={element.height || (image ? image.height / 2 : 100)}
                 rotation={element.rotation || 0}
                 opacity={element.opacity ?? 1}
+                cornerRadius={element.cornerRadius || 0}
+                stroke={element.stroke}
+                strokeWidth={element.strokeWidth || 0}
                 draggable
                 onDragEnd={(e) => {
                     onChange({

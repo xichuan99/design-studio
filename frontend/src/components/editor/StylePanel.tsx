@@ -239,8 +239,50 @@ export const StylePanel: React.FC = () => {
                         </AccordionItem>
                     )}
 
-                    {/* Shared Effects Section (Text & Shapes) */}
-                    {(selectedElement.type === 'text' || selectedElement.type === 'shape') && (
+                    {/* Image Specific Sections */}
+                    {selectedElement.type === 'image' && (
+                        <AccordionItem value="image-appearance" className="border-none bg-muted/30 rounded-lg px-3">
+                            <AccordionTrigger className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hover:no-underline py-3">Appearance</AccordionTrigger>
+                            <AccordionContent className="flex flex-col gap-4 pb-3">
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-[10px] font-medium text-muted-foreground">Width</label>
+                                        <Input
+                                            type="number"
+                                            className="h-8 text-xs bg-background"
+                                            value={Math.round(selectedElement.width || 0)}
+                                            onChange={(e) => updateAttr('width', Math.max(10, parseInt(e.target.value) || 10))}
+                                        />
+                                    </div>
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-[10px] font-medium text-muted-foreground">Height</label>
+                                        <Input
+                                            type="number"
+                                            className="h-8 text-xs bg-background"
+                                            value={Math.round(selectedElement.height || 0)}
+                                            onChange={(e) => updateAttr('height', Math.max(10, parseInt(e.target.value) || 10))}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex flex-col gap-2 pt-2">
+                                    <label className="text-[10px] font-medium flex justify-between">
+                                        <span>Corner Radius</span>
+                                        <span className="text-muted-foreground">{selectedElement.cornerRadius || 0}px</span>
+                                    </label>
+                                    <input
+                                        type="range"
+                                        min="0" max="100"
+                                        value={selectedElement.cornerRadius || 0}
+                                        onChange={(e) => updateAttr('cornerRadius', parseInt(e.target.value) || 0)}
+                                        className="w-full h-1 bg-muted rounded-lg appearance-none cursor-pointer"
+                                    />
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                    )}
+
+                    {/* Shared Effects Section (Text, Shapes, & Images) */}
+                    {(selectedElement.type === 'text' || selectedElement.type === 'shape' || selectedElement.type === 'image') && (
                         <AccordionItem value="effects" className="border-none bg-muted/30 rounded-lg px-3">
                             <AccordionTrigger className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hover:no-underline py-3">Effects</AccordionTrigger>
                             <AccordionContent className="flex flex-col gap-5 pb-3">

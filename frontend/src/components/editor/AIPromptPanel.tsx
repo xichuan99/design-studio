@@ -83,12 +83,37 @@ export const AIPromptPanel: React.FC = () => {
         setPrompt('');
     };
 
-    const handleAddAsElement = () => {
+    const handleAddAsElement = async () => {
         if (!generatedUrl) return;
+
+        // Cap the image size
+        const img = new window.Image();
+        const proxyUrl = generatedUrl.startsWith('http')
+            ? `/api/proxy-image?url=${encodeURIComponent(generatedUrl)}`
+            : generatedUrl;
+        img.src = proxyUrl;
+        
+        // Wait for image to load to get dimensions
+        await new Promise((resolve) => {
+            img.onload = resolve;
+            img.onerror = resolve;
+        });
+
+        const maxSize = 400;
+        const originalWidth = img.naturalWidth || 1024;
+        const originalHeight = img.naturalHeight || 1024;
+        const scale = Math.min(
+            maxSize / originalWidth,
+            maxSize / originalHeight,
+            1
+        );
+
         addElement({
             type: 'image',
             x: 100,
             y: 100,
+            width: originalWidth * scale,
+            height: originalHeight * scale,
             url: generatedUrl,
             rotation: 0,
             label: 'AI Generated',
