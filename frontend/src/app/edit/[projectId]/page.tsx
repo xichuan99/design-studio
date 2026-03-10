@@ -32,6 +32,7 @@ export default function EditorPage() {
     const [canvasBgReady, setCanvasBgReady] = useState(false);
     const hasBackgroundRef = useRef(false);
     const [error, setError] = useState<string | null>(null);
+    const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
 
     // Initialize auto-save hook
     const { saveStatus, forceSave } = useAutoSave(projectId as string | undefined);
@@ -171,37 +172,52 @@ export default function EditorPage() {
 
                 <CanvasWorkspace onBgStatusChange={handleBgStatusChange} />
 
+                {/* Mobile Right Sidebar Backdrop */}
+                {mobilePanelOpen && (
+                    <div 
+                        className="md:hidden fixed inset-0 bg-background/80 backdrop-blur-sm z-30"
+                        onClick={() => setMobilePanelOpen(false)}
+                        aria-hidden="true"
+                    />
+                )}
+
                 {/* Right Sidebar: Tabs for Props, Layers, History */}
-                <div className="hidden md:flex flex-col border-l bg-card overflow-hidden" style={{ width: 280 }}>
-                    <Tabs defaultValue="properties" className="w-[280px] flex flex-col h-full border-none">
+                <div className={`
+                    fixed md:relative right-0 top-14 bottom-[57px] md:bottom-0 md:top-0 z-40 md:z-auto
+                    w-[85vw] max-w-[320px] md:w-[280px]
+                    flex flex-col border-l bg-card overflow-hidden shadow-2xl md:shadow-none
+                    transition-transform duration-300 transform
+                    ${mobilePanelOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}
+                `}>
+                    <Tabs defaultValue="properties" className="w-full flex flex-col h-full border-none">
                         <TabsList className="grid w-full grid-cols-4 rounded-none border-b bg-transparent h-12 p-0">
-                            <TabsTrigger value="properties" className="rounded-none data-[state=active]:bg-muted/50 data-[state=active]:border-b-2 border-primary h-full">
-                                <SlidersHorizontal className="h-4 w-4 lg:mr-1" /> <span className="hidden lg:inline">Props</span>
+                            <TabsTrigger value="properties" className="rounded-none data-[state=active]:bg-muted/50 data-[state=active]:border-b-2 border-primary h-full px-1">
+                                <SlidersHorizontal className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline text-xs">Props</span>
                             </TabsTrigger>
-                            <TabsTrigger value="layers" className="rounded-none data-[state=active]:bg-muted/50 data-[state=active]:border-b-2 border-primary h-full">
-                                <Layers className="h-4 w-4 lg:mr-1" /> <span className="hidden lg:inline">Layers</span>
+                            <TabsTrigger value="layers" className="rounded-none data-[state=active]:bg-muted/50 data-[state=active]:border-b-2 border-primary h-full px-1">
+                                <Layers className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline text-xs">Layers</span>
                             </TabsTrigger>
-                            <TabsTrigger value="ai" className="rounded-none data-[state=active]:bg-muted/50 data-[state=active]:border-b-2 border-primary h-full">
-                                <Sparkles className="h-4 w-4 lg:mr-1" /> <span className="hidden lg:inline">AI</span>
+                            <TabsTrigger value="ai" className="rounded-none data-[state=active]:bg-muted/50 data-[state=active]:border-b-2 border-primary h-full px-1">
+                                <Sparkles className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline text-xs">AI</span>
                             </TabsTrigger>
                             <TabsTrigger value="history" className="rounded-none data-[state=active]:bg-muted/50 data-[state=active]:border-b-2 border-primary h-full relative" disabled={!projectId} title="History">
                                 <HistoryIcon className="h-4 w-4" />
                             </TabsTrigger>
                         </TabsList>
 
-                        <TabsContent value="properties" className="mt-0 flex-1 overflow-y-auto">
+                        <TabsContent value="properties" className="mt-0 flex-1 overflow-y-auto w-full">
                             <StylePanel />
                         </TabsContent>
 
-                        <TabsContent value="layers" className="mt-0 flex-1 overflow-y-auto">
+                        <TabsContent value="layers" className="mt-0 flex-1 overflow-y-auto w-full">
                             <LayersPanel />
                         </TabsContent>
 
-                        <TabsContent value="ai" className="mt-0 flex-1 overflow-y-auto">
+                        <TabsContent value="ai" className="mt-0 flex-1 overflow-y-auto w-full">
                             <AIPromptPanel />
                         </TabsContent>
 
-                        <TabsContent value="history" className="mt-0 flex-1 overflow-y-auto">
+                        <TabsContent value="history" className="mt-0 flex-1 overflow-y-auto w-full">
                             {projectId && <HistoryPanel projectId={projectId as string} />}
                         </TabsContent>
                     </Tabs>
@@ -209,8 +225,8 @@ export default function EditorPage() {
             </main>
 
             {/* Mobile bottom bar */}
-            <div className="sm:hidden flex items-center justify-around border-t bg-card p-2">
-                <MobileToolbarActions />
+            <div className="md:hidden flex items-center justify-around border-t bg-card h-[57px] shrink-0 pb-safe">
+                <MobileToolbarActions togglePanel={() => setMobilePanelOpen(!mobilePanelOpen)} isPanelOpen={mobilePanelOpen} />
             </div>
 
             {/* Loading overlay — fades out when image is ready */}
@@ -230,18 +246,42 @@ export default function EditorPage() {
     );
 }
 
-// Simplified mobile toolbar actions
-function MobileToolbarActions() {
+// Simplified mobile toolbar actions with expanded features
+function MobileToolbarActions({ togglePanel, isPanelOpen }: { togglePanel: () => void, isPanelOpen: boolean }) {
     const { addElement, undo, redo } = useCanvasStore();
 
     return (
-        <>
-            <button className="p-2" onClick={() => addElement({ type: 'text', x: 100, y: 100, text: 'Text', fontSize: 36, fontFamily: 'Inter', fill: '#000', rotation: 0 })}>
-                <Plus className="h-5 w-5" />
+        <div className="flex w-full justify-evenly items-center px-2 py-1">
+            <button className="flex flex-col items-center justify-center p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground" onClick={() => addElement({ type: 'text', x: 50, y: 50, text: 'Text', fontSize: 36, fontFamily: 'Inter', fill: '#000', rotation: 0 })}>
+                <Plus className="h-5 w-5 mb-0.5" />
+                <span className="text-[9px]">Text</span>
             </button>
-            <button className="p-2" onClick={undo}><UndoIcon className="h-5 w-5" /></button>
-            <button className="p-2" onClick={redo}><RedoIcon className="h-5 w-5" /></button>
-        </>
+            <button className="flex flex-col items-center justify-center p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground" onClick={() => addElement({ type: 'shape', shapeType: 'rect', x: 50, y: 50, width: 100, height: 100, fill: '#e2e8f0', stroke: '#0f172a', strokeWidth: 0, rotation: 0 })}>
+                <div className="w-4 h-4 border-2 border-current rounded-sm mb-1" />
+                <span className="text-[9px]">Shape</span>
+            </button>
+            
+            <div className="w-px h-8 bg-border mx-1" />
+
+            <button className="flex flex-col items-center justify-center p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground" onClick={undo}>
+                <UndoIcon className="h-5 w-5 mb-0.5" />
+                <span className="text-[9px]">Undo</span>
+            </button>
+            <button className="flex flex-col items-center justify-center p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground" onClick={redo}>
+                <RedoIcon className="h-5 w-5 mb-0.5" />
+                <span className="text-[9px]">Redo</span>
+            </button>
+
+            <div className="w-px h-8 bg-border mx-1" />
+
+            <button 
+                className={`flex flex-col items-center justify-center p-1.5 rounded-lg hover:bg-muted transition-colors ${isPanelOpen ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground'}`} 
+                onClick={togglePanel}
+            >
+                <SlidersHorizontal className="h-5 w-5 mb-0.5" />
+                <span className="text-[9px]">Settings</span>
+            </button>
+        </div>
     );
 }
 

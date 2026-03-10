@@ -6,17 +6,13 @@ import { ParsedDesignData } from "@/app/create/types";
 
 interface DesignAnalysisCardProps {
     parsedData: ParsedDesignData;
-    onTogglePromptPart: (index: number) => void;
-    onEditPromptPart: (index: number, newValue: string) => void;
 }
 
 export function DesignAnalysisCard({
     parsedData,
-    onTogglePromptPart,
-    onEditPromptPart
 }: DesignAnalysisCardProps) {
     return (
-        <Card className="w-80 shrink-0 shadow-lg border-primary/10 bg-card/95 backdrop-blur h-fit max-h-full overflow-y-auto">
+        <Card className="w-full shadow-lg border-primary/10 bg-card/95 backdrop-blur h-fit max-h-full overflow-y-auto">
             <CardHeader className="bg-primary/5 border-b pb-4">
                 <CardTitle className="flex items-center gap-2 text-base">
                     <LayoutTemplate className="w-4 h-4 text-primary" />
@@ -46,36 +42,6 @@ export function DesignAnalysisCard({
                     </div>
                 )}
 
-                <div className="pt-4 border-t">
-                    <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Prompt Gambar (Background)</h4>
-                    {parsedData.visual_prompt_parts && parsedData.visual_prompt_parts.length > 0 ? (
-                        <div className="space-y-3 bg-muted/30 p-3 rounded-lg border">
-                            {parsedData.visual_prompt_parts.map((part, idx) => (
-                                <div key={idx} className={`flex flex-col gap-1.5 transition-opacity ${part.enabled ? 'opacity-100' : 'opacity-40'}`}>
-                                    <div className="flex items-center gap-2">
-                                        <input
-                                            type="checkbox"
-                                            checked={part.enabled}
-                                            onChange={() => onTogglePromptPart(idx)}
-                                            className="w-3.5 h-3.5 rounded border-primary/50 text-primary focus:ring-primary/20 cursor-pointer"
-                                        />
-                                        <span className="text-[10px] font-bold uppercase tracking-wider text-primary">{part.label}</span>
-                                    </div>
-                                    <textarea
-                                        value={part.value}
-                                        onChange={(e) => onEditPromptPart(idx, e.target.value)}
-                                        disabled={!part.enabled}
-                                        className="text-xs font-mono bg-background border border-border/50 rounded p-1.5 w-full resize-none focus:outline-none focus:ring-1 focus:ring-primary/30 h-12"
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <p className="text-xs font-mono bg-muted p-2 rounded-md text-muted-foreground leading-relaxed">
-                            {parsedData.visual_prompt}
-                        </p>
-                    )}
-                </div>
 
                 {(parsedData.suggested_colors?.length ?? 0) > 0 && (
                     <div>

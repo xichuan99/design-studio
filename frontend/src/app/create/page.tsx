@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { LayoutTemplate, Loader2, ImagePlus, X, PanelLeftOpen, PanelLeftClose, Sparkles } from "lucide-react";
+import { LayoutTemplate, Loader2, ImagePlus, X, PanelLeftOpen, PanelLeftClose, Sparkles, ArrowLeft, Beaker } from "lucide-react";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { useProjectApi, API_BASE_URL } from "@/lib/api";
@@ -20,8 +20,9 @@ import { ReferenceImageUpload } from "@/components/create/ReferenceImageUpload";
 import { DesignAnalysisCard } from "@/components/create/DesignAnalysisCard";
 import { GenerationProgress } from "@/components/create/GenerationProgress";
 import { DesignPreview } from "@/components/create/DesignPreview";
+import { VisualPromptEditor } from "@/components/create/VisualPromptEditor";
 
-
+type CreateStep = 'input' | 'prompt-editor' | 'generating' | 'preview';
 export default function CreatePage() {
     const { status } = useSession();
     const router = useRouter();
@@ -30,6 +31,7 @@ export default function CreatePage() {
     const [rawText, setRawText] = useState("");
     const [aspectRatio, setAspectRatio] = useState("1:1");
     const [stylePreference, setStylePreference] = useState("bold");
+    const [currentStep, setCurrentStep] = useState<CreateStep>('input');
     const [isParsing, setIsParsing] = useState(false);
     const [isGeneratingImage, setIsGeneratingImage] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -57,6 +59,8 @@ export default function CreatePage() {
         newParts[index].value = newValue;
         setParsedData({ ...parsedData, visual_prompt_parts: newParts });
     };
+
+    const isInputLocked = currentStep !== 'input';
 
     if (status === "loading") {
         return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin w-8 h-8 text-primary" /></div>;
@@ -113,13 +117,13 @@ export default function CreatePage() {
         if (file) handleFileSelect(file);
     };
 
-    const handleGenerate = async () => {
+    const handleAnalyze = async () => {
         if (!rawText.trim()) return;
         setIsParsing(true);
         setParsedData(null);
 
         try {
-            // STEP 1: Parse Text
+            // STEP 1: Parse Text ONLY
             const parseRes = await fetch(`${API_BASE_URL}/designs/parse`, {
                 method: "POST",
                 headers: {
@@ -137,20 +141,34 @@ export default function CreatePage() {
             if (!parseRes.ok) throw new Error("Failed to parse text");
             const parsed = await parseRes.json();
             setParsedData(parsed);
-            setIsParsing(false); // Stop parsing spinner early so user can read the text
-            setIsGeneratingImage(true); // Start image generation spinner
+            setCurrentStep('prompt-editor');
 
-            // Assemble prompt from parts if available (user might have edited/toggled them since parsing)
+        } catch (error) {
+            console.error(error);
+            alert(error instanceof Error ? error.message : "Gagal menganalisis teks.");
+        } finally {
+            setIsParsing(false);
+        }
+    };
+
+    const handleGenerateImage = async () => {
+        if (!parsedData) return;
+        
+        setIsGeneratingImage(true);
+        setCurrentStep('generating');
+
+        try {
+            // Assemble prompt from parts
             let assembledPrompt = rawText; // Fallback
-            if (parsed.visual_prompt_parts && parsed.visual_prompt_parts.length > 0) {
-                const activeParts = parsed.visual_prompt_parts
+            if (parsedData.visual_prompt_parts && parsedData.visual_prompt_parts.length > 0) {
+                const activeParts = parsedData.visual_prompt_parts
                     .filter((p: VisualPromptPart) => p.enabled)
                     .map((p: VisualPromptPart) => p.value);
 
                 if (activeParts.length > 0) {
                     assembledPrompt = activeParts.join(", ");
                 } else {
-                    assembledPrompt = parsed.visual_prompt || rawText;
+                    assembledPrompt = parsedData.visual_prompt || rawText;
                 }
             }
 
@@ -172,9 +190,6 @@ export default function CreatePage() {
                 : assembledPrompt;
 
             // STEP 2: Generate Design (Background Image)
-            // We pass the assembled final prompt as raw_text. The backend normally parses raw_text again,
-            // but since we are overriding here, Gemini will just parse our assembled English prompt 
-            // and pass it mostly unchanged to Flux/Imagen.
             const jobData = await generateDesign({
                 raw_text: finalPrompt,
                 aspect_ratio: aspectRatio,
@@ -193,6 +208,7 @@ export default function CreatePage() {
                         ...prev,
                         generated_image_url: statusData.result_url
                     } : null);
+                    setCurrentStep('preview');
                 } else {
                     throw new Error(statusData.error_message || "Generation failed");
                 }
@@ -212,6 +228,7 @@ export default function CreatePage() {
                             ...prev,
                             generated_image_url: statusData.result_url
                         } : null);
+                        setCurrentStep('preview');
                     } else if (statusData.status === "failed") {
                         throw new Error(statusData.error_message || "Design generation failed");
                     }
@@ -223,8 +240,9 @@ export default function CreatePage() {
         } catch (error) {
             console.error(error);
             alert(error instanceof Error ? error.message : "Gagal memproses desain.");
+            // Revert back to editor on failure so they can try again
+            setCurrentStep('prompt-editor');
         } finally {
-            setIsParsing(false);
             setIsGeneratingImage(false);
         }
     };
@@ -312,8 +330,17 @@ export default function CreatePage() {
                     {sidebarOpen ? <PanelLeftClose className="w-5 h-5" /> : <PanelLeftOpen className="w-5 h-5" />}
                 </button>
 
+                {/* Mobile Backdrop Overlay */}
+                {sidebarOpen && (
+                    <div 
+                        className="md:hidden fixed inset-0 bg-background/80 backdrop-blur-sm z-10"
+                        onClick={() => setSidebarOpen(false)}
+                        aria-hidden="true"
+                    />
+                )}
+
                 {/* Sidebar Inputs */}
-                <aside className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 absolute md:relative w-[420px] border-r flex flex-col bg-card overflow-y-auto shrink-0 z-20 shadow-xl h-full transition-transform duration-200`}>
+                <aside className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 absolute md:relative w-full max-w-[420px] md:w-[420px] border-r flex flex-col bg-card overflow-y-auto shrink-0 z-20 shadow-xl h-full transition-transform duration-200`}>
                     <div className="p-4 space-y-6 flex-1">
                         <div className="space-y-2 tour-step-1">
                             <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
@@ -322,13 +349,14 @@ export default function CreatePage() {
                             </label>
                             <Textarea
                                 placeholder="Contoh: Promo Seblak Pedas, Diskon 50% khusus Jumat"
-                                className="resize-none h-32 focus-visible:ring-primary"
+                                className={`resize-none h-32 focus-visible:ring-primary ${isInputLocked ? 'opacity-60 cursor-not-allowed bg-muted/50' : ''}`}
                                 value={rawText}
                                 onChange={(e) => setRawText(e.target.value)}
+                                disabled={isInputLocked || isParsing}
                             />
                         </div>
 
-                        <div className="space-y-2 pb-2 border-b">
+                        <div className={`space-y-2 pb-2 border-b ${isInputLocked ? 'opacity-60 pointer-events-none' : ''}`}>
                             <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
                                 <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-500 text-white text-xs font-bold">2</span>
                                 Template / Preset Desain
@@ -341,8 +369,7 @@ export default function CreatePage() {
                             />
                         </div>
 
-                        {/* Gambar Referensi - Conditional Visibility */}
-                        <div className="space-y-2">
+                        <div className={`space-y-2 pb-4 border-b ${isInputLocked ? 'opacity-60 pointer-events-none' : ''}`}>
                             <ReferenceImageUpload
                                 referenceFile={referenceFile}
                                 referencePreview={referencePreview}
@@ -360,12 +387,12 @@ export default function CreatePage() {
                             />
                         </div>
 
-                        <div className="space-y-2 tour-step-2">
+                        <div className={`space-y-2 tour-step-2 ${isInputLocked ? 'opacity-60 pointer-events-none' : ''}`}>
                             <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
                                 <span className="flex items-center justify-center w-6 h-6 rounded-full bg-amber-500 text-white text-xs font-bold">{formatStepNumber}</span>
                                 Format & Gaya
                             </label>
-                            <Select value={aspectRatio} onValueChange={setAspectRatio}>
+                            <Select value={aspectRatio} onValueChange={setAspectRatio} disabled={isInputLocked}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Format" />
                                 </SelectTrigger>
@@ -376,7 +403,7 @@ export default function CreatePage() {
                                 </SelectContent>
                             </Select>
 
-                            <Select value={stylePreference} onValueChange={setStylePreference}>
+                            <Select value={stylePreference} onValueChange={setStylePreference} disabled={isInputLocked}>
                                 <SelectTrigger className="mt-2">
                                     <SelectValue placeholder="Gaya Desain" />
                                 </SelectTrigger>
@@ -394,6 +421,7 @@ export default function CreatePage() {
                                     value={integratedText ? "integrated" : "separated"}
                                     onValueChange={(val) => setIntegratedText(val === "integrated")}
                                     className="space-y-2 mt-2"
+                                    disabled={isInputLocked}
                                 >
                                     <label htmlFor="separated" className={`flex flex-col space-y-1 p-2 border rounded-md cursor-pointer transition-colors ${!integratedText ? 'bg-primary/5 border-primary/40' : 'hover:bg-muted'}`}>
                                         <div className="flex items-center space-x-2">
@@ -443,34 +471,80 @@ export default function CreatePage() {
                         <Button
                             className="w-full font-bold shadow-lg gap-2"
                             size="lg"
-                            onClick={handleGenerate}
-                            disabled={isParsing || isGeneratingImage || !rawText.trim()}
+                            onClick={
+                                currentStep === 'input' ? handleAnalyze :
+                                currentStep === 'prompt-editor' ? handleGenerateImage :
+                                () => setCurrentStep('input')
+                            }
+                            disabled={isParsing || isGeneratingImage || (!rawText.trim() && currentStep === 'input')}
+                            variant={isInputLocked && !isGeneratingImage ? "outline" : "default"}
                         >
                             {isParsing ? <><Loader2 className="w-4 h-4 animate-spin" /> Menganalisis...</> :
                                 isGeneratingImage ? <><Loader2 className="w-4 h-4 animate-spin" /> Sedang Menggambar...</> :
-                                    <><Sparkles className="w-4 h-4" /> Buat Desain AI</>}
+                                    currentStep === 'input' ? <><Sparkles className="w-4 h-4" /> Analisis Teks AI</> :
+                                    currentStep === 'prompt-editor' ? <><Sparkles className="w-4 h-4" /> Generate Gambar Ai</> :
+                                        <><ArrowLeft className="w-4 h-4 mr-2" /> Kembali ke Input teks asli</>}
                         </Button>
                     </div>
                 </aside>
 
                 {/* Main Workspace Preview (Week 1 Scope) */}
-                <main className="flex-1 bg-muted/20 relative overflow-y-auto p-8 flex justify-center items-start">
-                    {parsedData ? (
-                        <div className="flex gap-4 w-full h-full justify-center">
-                            <DesignPreview
-                                imageUrl={parsedData.generated_image_url || selectedTemplate?.thumbnail_url || null}
-                                onProceedToEditor={handleProceedToEditor}
-                                isSaving={isSaving}
-                            />
-                            {/* Analysis Card */}
-                            <DesignAnalysisCard
-                                parsedData={parsedData}
-                                onTogglePromptPart={handleTogglePromptPart}
-                                onEditPromptPart={handleEditPromptPart}
-                            />
+                <main className="flex-1 bg-muted/20 relative overflow-y-auto p-4 md:p-8 flex justify-center items-start">
+                    {currentStep === 'prompt-editor' && parsedData ? (
+                        <VisualPromptEditor
+                            parsedData={parsedData}
+                            onTogglePromptPart={handleTogglePromptPart}
+                            onEditPromptPart={handleEditPromptPart}
+                            onGenerateImage={handleGenerateImage}
+                            onBack={() => setCurrentStep('input')}
+                            isGenerating={isGeneratingImage}
+                        />
+                    ) : currentStep === 'preview' && parsedData ? (
+                        <div className="flex flex-col gap-6 w-full h-full justify-center max-w-6xl mx-auto animation-fade-in relative pt-10">
+                            {/* Toolbar actions for Preview */}
+                            <div className="absolute top-0 right-0 flex max-sm:flex-col gap-3 z-10 w-full justify-between sm:items-center bg-background/50 backdrop-blur pb-3 border-b mb-4">
+                                <div>
+                                    <h3 className="font-bold text-lg">Hasil Generasi</h3>
+                                    <p className="text-sm text-muted-foreground">Preview gambar final sebelum masuk ke editor.</p>
+                                </div>
+                                <Button 
+                                    variant="outline" 
+                                    onClick={() => setCurrentStep('prompt-editor')}
+                                    className="bg-card shadow-sm hover:text-primary hover:border-primary/50 transition-colors shrink-0"
+                                >
+                                    <Beaker className="w-4 h-4 mr-2" />
+                                    Tweak Prompt & Regenerate
+                                </Button>
+                            </div>
+
+                            <div className="flex flex-col xl:flex-row gap-4 w-full h-full justify-center xl:items-center overflow-y-auto pb-8 pt-6 sm:pt-0">
+                                <div className="w-full xl:w-2/3 shrink-0">
+                                    <DesignPreview
+                                        imageUrl={parsedData.generated_image_url || selectedTemplate?.thumbnail_url || null}
+                                        onProceedToEditor={handleProceedToEditor}
+                                        isSaving={isSaving}
+                                    />
+                                </div>
+                                {/* Analysis Card */}
+                                <div className="w-full xl:w-1/3 shrink-0">
+                                    <DesignAnalysisCard
+                                        parsedData={parsedData}
+                                    />
+                                </div>
+                            </div>
                         </div>
-                    ) : isParsing || isGeneratingImage ? (
-                        <GenerationProgress isParsing={isParsing} isGeneratingImage={isGeneratingImage} />
+                    ) : currentStep === 'generating' ? (
+                        <GenerationProgress />
+                    ) : isParsing ? (
+                        <div className="max-w-2xl w-full mx-auto h-full flex flex-col items-center justify-center animation-fade-in">
+                            <div className="text-center space-y-4">
+                                <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto opacity-80" />
+                                <h2 className="text-2xl font-bold tracking-tight">AI Sedang Fokus 👀</h2>
+                                <p className="text-muted-foreground max-w-sm">
+                                    Menganalisis kalimat promosi Anda untuk menentukan struktur desain yang paling pas secara semantik...
+                                </p>
+                            </div>
+                        </div>
                     ) : (
                         <div className="max-w-xl w-full mx-auto h-full flex flex-col items-center justify-center opacity-60 hover:opacity-100 transition-opacity">
                             <div className="w-24 h-24 mb-6 rounded-3xl bg-primary/5 flex items-center justify-center">
