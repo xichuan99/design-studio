@@ -277,8 +277,7 @@ export default function CreatePage() {
                 if (statusData.status === "completed" && statusData.result_url) {
                     const newUrl = statusData.result_url;
                     setImageHistory(prev => [...prev, { url: newUrl, prompt: finalPrompt }]);
-                    // Use functional update to ensure we get the latest length
-                    setActiveImageIndex(prev => imageHistory.length); 
+                    setActiveImageIndex(imageHistory.length);
 
                     setParsedData(prev => prev ? {
                         ...prev,
@@ -302,7 +301,7 @@ export default function CreatePage() {
                         isComplete = true;
                         const newUrl = statusData.result_url;
                         setImageHistory(prev => [...prev, { url: newUrl, prompt: finalPrompt }]);
-                        setActiveImageIndex(prev => imageHistory.length);
+                        setActiveImageIndex(imageHistory.length);
 
                         setParsedData(prev => prev ? {
                             ...prev,
@@ -397,8 +396,7 @@ export default function CreatePage() {
         }
     };
 
-    // Dynamic step numbering for Format & Gaya
-    const formatStepNumber = (!selectedTemplate || showManualRef) ? 4 : 3;
+    // Dynamic step numbering for Format & Gaya (Removed, handled in SidebarInputForm now)
 
     return (
         <div className="flex flex-col h-screen overflow-hidden bg-background">
