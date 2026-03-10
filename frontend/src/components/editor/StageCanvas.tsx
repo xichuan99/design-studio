@@ -1,7 +1,7 @@
 import React from 'react';
-import { Stage, Layer, Image as KonvaImage } from 'react-konva';
+import { Stage, Layer, Image as KonvaImage, Group } from 'react-konva';
 import useImage from 'use-image';
-import { useCanvasStore } from '@/store/useCanvasStore';
+import { useCanvasStore, CanvasElement } from '@/store/useCanvasStore';
 import { TextNode } from './TextNode';
 import { ImageNode } from './ImageNode';
 import { ShapeNode } from './ShapeNode';
@@ -17,9 +17,11 @@ export const StageCanvas: React.FC<StageCanvasProps> = ({ width, height, onBgSta
         elements,
         backgroundUrl,
         backgroundColor,
-        selectedElementId,
+        selectedElementIds,
+        highlightElementId,
         selectElement,
         updateElement,
+        stageRef,
     } = useCanvasStore();
 
     // Use proxy for external images to avoid CORS tainted canvas issues
@@ -34,6 +36,26 @@ export const StageCanvas: React.FC<StageCanvasProps> = ({ width, height, onBgSta
             onBgStatusChange(bgStatus);
         }
     }, [bgStatus, onBgStatusChange]);
+
+    // Blink highlight effect
+    React.useEffect(() => {
+        if (highlightElementId && stageRef) {
+            const node = stageRef.findOne(`#${highlightElementId}`);
+            if (node) {
+                const originalOpacity = node.opacity() || 1;
+                node.to({
+                    opacity: 0.2,
+                    duration: 0.15,
+                    onFinish: () => {
+                        node.to({
+                            opacity: originalOpacity,
+                            duration: 0.25,
+                        });
+                    }
+                });
+            }
+        }
+    }, [highlightElementId, stageRef]);
 
     // Calculate relative scaling based on background boundaries
     // Assuming default canvas size of 1024x1024 for 1:1, etc.
@@ -74,6 +96,107 @@ export const StageCanvas: React.FC<StageCanvasProps> = ({ width, height, onBgSta
         []
     );
 
+    const renderNode = (el: CanvasElement) => {
+        if (el.visible === false) return null;
+
+        if (el.type === 'text') {
+            return (
+                <TextNode
+                    key={el.id}
+                    element={el}
+                    isSelected={selectedElementIds.includes(el.id) && !el.locked}
+                    onSelect={(e) => {
+                        if (el.locked) return;
+                        const evt = e?.evt as MouseEvent;
+                        if (evt?.shiftKey || evt?.ctrlKey || evt?.metaKey) {
+                            useCanvasStore.getState().toggleSelectElement(el.id);
+                        } else {
+                            selectElement(el.id);
+                        }
+                    }}
+                    onChange={(newAttrs) => !el.locked && updateElement(el.id, newAttrs)}
+                />
+            );
+        } else if (el.type === 'image') {
+            return (
+                <ImageNode
+                    key={el.id}
+                    element={el}
+                    isSelected={selectedElementIds.includes(el.id) && !el.locked}
+                    onSelect={(e) => {
+                        if (el.locked) return;
+                        const evt = e?.evt as MouseEvent;
+                        if (evt?.shiftKey || evt?.ctrlKey || evt?.metaKey) {
+                            useCanvasStore.getState().toggleSelectElement(el.id);
+                        } else {
+                            selectElement(el.id);
+                        }
+                    }}
+                    onChange={(newAttrs) => !el.locked && updateElement(el.id, newAttrs)}
+                />
+            );
+        } else if (el.type === 'shape') {
+            return (
+                <ShapeNode
+                    key={el.id}
+                    element={el}
+                    isSelected={selectedElementIds.includes(el.id) && !el.locked}
+                    onSelect={(e) => {
+                        if (el.locked) return;
+                        const evt = e?.evt as MouseEvent;
+                        if (evt?.shiftKey || evt?.ctrlKey || evt?.metaKey) {
+                            useCanvasStore.getState().toggleSelectElement(el.id);
+                        } else {
+                            selectElement(el.id);
+                        }
+                    }}
+                    onChange={(newAttrs) => !el.locked && updateElement(el.id, newAttrs)}
+                />
+            );
+        } else if (el.type === 'group') {
+            const children = elements.filter(child => child.parentId === el.id);
+            return (
+                <Group
+                    key={el.id}
+                    x={el.x}
+                    y={el.y}
+                    rotation={el.rotation}
+                    draggable={!el.locked}
+                    onClick={(e) => {
+                        e.cancelBubble = true;
+                        if (el.locked) return;
+                        const evt = e.evt as MouseEvent;
+                        if (evt.shiftKey || evt.ctrlKey || evt.metaKey) {
+                            useCanvasStore.getState().toggleSelectElement(el.id);
+                        } else {
+                            selectElement(el.id);
+                        }
+                    }}
+                    onTap={(e) => {
+                        e.cancelBubble = true;
+                        if (el.locked) return;
+                        const evt = e.evt as TouchEvent;
+                        if (evt.shiftKey || evt.ctrlKey || evt.metaKey) {
+                            useCanvasStore.getState().toggleSelectElement(el.id);
+                        } else {
+                            selectElement(el.id);
+                        }
+                    }}
+                    onDragEnd={(e) => {
+                        if (el.locked) return;
+                        updateElement(el.id, {
+                            x: e.target.x(),
+                            y: e.target.y()
+                        });
+                    }}
+                >
+                    {children.map(child => renderNode(child))}
+                </Group>
+            );
+        }
+        return null;
+    };
+
     return (
         <Stage
             width={width}
@@ -107,40 +230,8 @@ export const StageCanvas: React.FC<StageCanvasProps> = ({ width, height, onBgSta
 
                 {/* Dynamic Elements */}
                 {elements.map((el) => {
-                    if (el.visible === false) return null; // Don't render hidden elements
-
-                    if (el.type === 'text') {
-                        return (
-                            <TextNode
-                                key={el.id}
-                                element={el}
-                                isSelected={el.id === selectedElementId && !el.locked}
-                                onSelect={() => !el.locked && selectElement(el.id)}
-                                onChange={(newAttrs) => !el.locked && updateElement(el.id, newAttrs)}
-                            />
-                        );
-                    } else if (el.type === 'image') {
-                        return (
-                            <ImageNode
-                                key={el.id}
-                                element={el}
-                                isSelected={el.id === selectedElementId && !el.locked}
-                                onSelect={() => !el.locked && selectElement(el.id)}
-                                onChange={(newAttrs) => !el.locked && updateElement(el.id, newAttrs)}
-                            />
-                        );
-                    } else if (el.type === 'shape') {
-                        return (
-                            <ShapeNode
-                                key={el.id}
-                                element={el}
-                                isSelected={el.id === selectedElementId && !el.locked}
-                                onSelect={() => !el.locked && selectElement(el.id)}
-                                onChange={(newAttrs) => !el.locked && updateElement(el.id, newAttrs)}
-                            />
-                        );
-                    }
-                    return null;
+                    if (el.parentId) return null; // Rendered by parents
+                    return renderNode(el);
                 })}
             </Layer>
         </Stage>

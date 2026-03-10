@@ -19,7 +19,7 @@ interface CanvasWorkspaceProps {
 
 export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ onBgStatusChange }) => {
     const containerRef = useRef<HTMLDivElement>(null);
-    const { selectedElementId, deleteElement, elements, backgroundUrl, backgroundColor } = useCanvasStore();
+    const { selectedElementIds, deleteSelectedElements, duplicateSelectedElements, elements, backgroundUrl, backgroundColor } = useCanvasStore();
 
     // Zoom State
     const [zoom, setZoom] = useState(1);
@@ -52,8 +52,8 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ onBgStatusChan
                 const target = e.target as HTMLElement;
                 // Avoid deleting when user is typing in an input or textarea
                 if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA' && !target.isContentEditable) {
-                    if (selectedElementId) {
-                        deleteElement(selectedElementId);
+                    if (selectedElementIds.length > 0) {
+                        deleteSelectedElements();
                     }
                 }
             } else if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
@@ -64,8 +64,8 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ onBgStatusChan
                 }
             } else if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
                 e.preventDefault();
-                if (selectedElementId) {
-                    useCanvasStore.getState().duplicateElement(selectedElementId);
+                if (selectedElementIds.length > 0) {
+                    duplicateSelectedElements();
                 }
             }
         };
@@ -75,7 +75,7 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ onBgStatusChan
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [selectedElementId, deleteElement]);
+    }, [selectedElementIds, deleteSelectedElements, duplicateSelectedElements]);
 
     return (
         <div

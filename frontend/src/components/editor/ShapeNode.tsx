@@ -6,7 +6,7 @@ import { CanvasElement } from '@/store/useCanvasStore';
 interface ShapeNodeProps {
     element: CanvasElement;
     isSelected: boolean;
-    onSelect: () => void;
+    onSelect: (e?: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void;
     onChange: (newAttrs: Partial<CanvasElement>) => void;
 }
 

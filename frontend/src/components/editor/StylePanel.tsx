@@ -4,23 +4,75 @@ import React from 'react';
 import { useCanvasStore } from '@/store/useCanvasStore';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Trash2, Bold, Italic, AlignLeft, AlignCenter, AlignRight, MousePointer2 } from 'lucide-react';
+import { Trash2, Bold, Italic, AlignLeft, AlignCenter, AlignRight, MousePointer2, Layers } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 
 export const StylePanel: React.FC = () => {
-    const { elements, selectedElementId, updateElement, deleteElement, duplicateElement, bringForward, sendBackward, bringToFront, sendToBack } = useCanvasStore();
+    const { elements, selectedElementIds, updateElement, deleteSelectedElements, duplicateSelectedElements, bringForward, sendBackward, bringToFront, sendToBack, deleteElement, duplicateElement, groupElements, ungroupElements } = useCanvasStore();
 
-    const selectedElement = elements.find((el) => el.id === selectedElementId);
-
-    if (!selectedElement) {
+    if (selectedElementIds.length === 0) {
         return (
             <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground p-6 text-center bg-card">
                 <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
                     <MousePointer2 className="h-5 w-5 opacity-50" />
                 </div>
                 <p className="text-sm font-medium">No element selected</p>
-                <p className="text-xs opacity-70 mt-1">Click on an element in the canvas to edit its properties.</p>
+                <p className="text-xs opacity-70 mt-1">Click on an element in the canvas or layers panel to edit properties.</p>
+            </div>
+        );
+    }
+
+    if (selectedElementIds.length > 1) {
+        return (
+            <div className="w-64 border-l bg-card flex flex-col h-full overflow-y-auto">
+                <div className="p-4 border-b font-medium flex flex-col gap-2">
+                    <span className="capitalize">{selectedElementIds.length} Elements Selected</span>
+                    <div className="flex flex-col gap-2 w-full mt-2">
+                        <Button variant="outline" className="w-full text-foreground hover:bg-muted" onClick={groupElements} title="Group Elements">
+                            <span className="text-xs">Group Elements</span>
+                        </Button>
+                        <div className="flex gap-2 w-full">
+                            <Button variant="outline" className="flex-1 text-blue-500 hover:text-blue-600 hover:bg-blue-50" onClick={duplicateSelectedElements} title="Duplicate All">
+                                <span className="text-xs">Duplicate All</span>
+                            </Button>
+                            <Button variant="outline" className="flex-1 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={deleteSelectedElements} title="Delete All">
+                                <span className="text-xs">Delete All</span>
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+                <div className="p-4 flex flex-col items-center text-center text-muted-foreground">
+                    <Layers className="h-8 w-8 opacity-50 mb-2 mt-4" />
+                    <p className="text-sm">Multiple elements selected.</p>
+                    <p className="text-xs opacity-70 mt-2">Bulk style editing is not available. Group them or select one by one to edit styles.</p>
+                </div>
+            </div>
+        );
+    }
+
+    const selectedElement = elements.find((el) => el.id === selectedElementIds[0]);
+    if (!selectedElement) return null;
+
+    if (selectedElement.type === 'group') {
+        return (
+            <div className="w-64 border-l bg-card flex flex-col h-full overflow-y-auto">
+                <div className="p-4 border-b font-medium flex justify-between items-center">
+                    <span className="capitalize">Group</span>
+                    <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-600 hover:bg-blue-50" onClick={() => duplicateElement(selectedElement.id)} title="Duplicate">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></svg>
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => deleteElement(selectedElement.id)} title="Delete">
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    </div>
+                </div>
+                <div className="p-4">
+                    <Button variant="outline" className="w-full text-foreground hover:bg-muted" onClick={ungroupElements}>
+                        Ungroup
+                    </Button>
+                </div>
             </div>
         );
     }

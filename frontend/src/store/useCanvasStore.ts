@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 import Konva from 'konva';
 
-export type ElementType = 'text' | 'image' | 'shape';
+export type ElementType = 'text' | 'image' | 'shape' | 'group';
 
 export interface CanvasElement {
     id: string;
@@ -22,6 +22,8 @@ export interface CanvasElement {
     visible?: boolean;
     locked?: boolean;
     label?: string;
+    parentId?: string;
+    colorTag?: string;
 
     // Text specific
     text?: string;
@@ -49,7 +51,8 @@ export interface CanvasElement {
 
 export interface CanvasState {
     elements: CanvasElement[];
-    selectedElementId: string | null;
+    selectedElementIds: string[];
+    highlightElementId: string | null;
     backgroundUrl: string | null;
     backgroundColor: string;
     projectTitle: string;
@@ -63,8 +66,14 @@ interface CanvasActions {
     addElement: (element: Omit<CanvasElement, 'id'>) => void;
     updateElement: (id: string, attrs: Partial<CanvasElement>) => void;
     deleteElement: (id: string) => void;
+    deleteSelectedElements: () => void;
     duplicateElement: (id: string) => void;
+    duplicateSelectedElements: () => void;
     selectElement: (id: string | null) => void;
+    toggleSelectElement: (id: string) => void;
+    setHighlightElementId: (id: string | null) => void;
+    groupElements: () => void;
+    ungroupElements: () => void;
 
     // Layers
     bringForward: (id: string) => void;
@@ -73,6 +82,7 @@ interface CanvasActions {
     sendToBack: (id: string) => void;
     toggleVisibility: (id: string) => void;
     toggleLock: (id: string) => void;
+    setColorTag: (id: string, color: string | null) => void;
     updateName: (id: string, name: string) => void;
     reorderElements: (fromIndex: number, toIndex: number) => void;
 
@@ -100,13 +110,23 @@ const saveHistory = (state: CanvasState, newElements: CanvasElement[]) => {
 
 export const useCanvasStore = create<CanvasState & CanvasActions>((set) => ({
     elements: [],
-    selectedElementId: null,
+    selectedElementIds: [],
+    highlightElementId: null,
     backgroundUrl: null,
     backgroundColor: '#ffffff',
     projectTitle: 'Untitled Design',
     history: [[]],
     historyIndex: 0,
     stageRef: null,
+
+    setHighlightElementId: (id) => {
+        set({ highlightElementId: id });
+        if (id) {
+            setTimeout(() => {
+                set((state) => state.highlightElementId === id ? { highlightElementId: null } : state);
+            }, 600);
+        }
+    },
 
     addElement: (element) => set((state) => {
         const newElement = { ...element, id: uuidv4() };
@@ -127,7 +147,16 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set) => ({
         const newElements = state.elements.filter(el => el.id !== id);
         return {
             ...saveHistory(state, newElements),
-            selectedElementId: state.selectedElementId === id ? null : state.selectedElementId
+            selectedElementIds: state.selectedElementIds.filter(selectedId => selectedId !== id)
+        };
+    }),
+
+    deleteSelectedElements: () => set((state) => {
+        if (state.selectedElementIds.length === 0) return state;
+        const newElements = state.elements.filter(el => !state.selectedElementIds.includes(el.id));
+        return {
+            ...saveHistory(state, newElements),
+            selectedElementIds: []
         };
     }),
 
@@ -144,11 +173,87 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set) => ({
         const newElements = [...state.elements, newElement];
         return {
             ...saveHistory(state, newElements),
-            selectedElementId: newElement.id
+            selectedElementIds: [newElement.id]
         };
     }),
 
-    selectElement: (id) => set({ selectedElementId: id }),
+    duplicateSelectedElements: () => set((state) => {
+        if (state.selectedElementIds.length === 0) return state;
+        const elsToDuplicate = state.elements.filter(el => state.selectedElementIds.includes(el.id));
+        const newElementsToAdd = elsToDuplicate.map(el => ({
+            ...el,
+            id: uuidv4(),
+            x: el.x + 20,
+            y: el.y + 20
+        }));
+        const newElements = [...state.elements, ...newElementsToAdd];
+        return {
+            ...saveHistory(state, newElements),
+            selectedElementIds: newElementsToAdd.map(el => el.id)
+        };
+    }),
+
+    selectElement: (id) => set({ selectedElementIds: id ? [id] : [] }),
+
+    toggleSelectElement: (id) => set((state) => ({
+        selectedElementIds: state.selectedElementIds.includes(id) 
+            ? state.selectedElementIds.filter(selId => selId !== id)
+            : [...state.selectedElementIds, id]
+    })),
+
+    groupElements: () => set((state) => {
+        if (state.selectedElementIds.length < 2) return state;
+        
+        const groupId = uuidv4();
+        const newGroup: CanvasElement = {
+            id: groupId,
+            type: 'group',
+            x: 0,
+            y: 0,
+            rotation: 0,
+            label: 'Group',
+        };
+        
+        let newElements = [...state.elements];
+        // Remove selected elements from their current position
+        const selectedEls = newElements.filter(el => state.selectedElementIds.includes(el.id));
+        newElements = newElements.filter(el => !state.selectedElementIds.includes(el.id));
+        
+        // Add them as contiguous block with the parent
+        const updatedSelectedEls = selectedEls.map(el => ({ ...el, parentId: groupId }));
+        newElements.push(newGroup, ...updatedSelectedEls);
+
+        return {
+            ...saveHistory(state, newElements),
+            selectedElementIds: [groupId],
+        };
+    }),
+
+    ungroupElements: () => set((state) => {
+        if (state.selectedElementIds.length === 0) return state;
+        
+        let newElements = [...state.elements];
+        const selectedIds = new Set(state.selectedElementIds);
+        const groupsToUngroup = state.elements.filter(el => selectedIds.has(el.id) && el.type === 'group');
+        
+        if (groupsToUngroup.length === 0) return state;
+        
+        const groupIds = new Set(groupsToUngroup.map(g => g.id));
+        
+        newElements = newElements.map(el => {
+            if (el.parentId && groupIds.has(el.parentId)) {
+                return { ...el, parentId: undefined };
+            }
+            return el;
+        });
+        
+        newElements = newElements.filter(el => !groupIds.has(el.id));
+        
+        return {
+            ...saveHistory(state, newElements),
+            selectedElementIds: [],
+        };
+    }),
 
     bringForward: (id) => set((state) => {
         const elIndex = state.elements.findIndex(el => el.id === id);
@@ -215,6 +320,13 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set) => ({
         return saveHistory(state, newElements);
     }),
 
+    setColorTag: (id, color) => set((state) => {
+        const newElements = state.elements.map(el =>
+            el.id === id ? { ...el, colorTag: color || undefined } : el
+        );
+        return saveHistory(state, newElements);
+    }),
+
     reorderElements: (fromIndex, toIndex) => set((state) => {
         if (fromIndex < 0 || fromIndex >= state.elements.length || toIndex < 0 || toIndex >= state.elements.length) {
             return state;
@@ -236,7 +348,7 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set) => ({
         backgroundUrl,
         backgroundColor: backgroundColor || '#ffffff',
         projectTitle: title || 'Untitled Design',
-        selectedElementId: null,
+        selectedElementIds: [],
         history: [elements],
         historyIndex: 0
     }),
@@ -249,7 +361,7 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set) => ({
             return {
                 elements: state.history[newIndex],
                 historyIndex: newIndex,
-                selectedElementId: null
+                selectedElementIds: []
             };
         }
         return state;
@@ -261,7 +373,7 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set) => ({
             return {
                 elements: state.history[newIndex],
                 historyIndex: newIndex,
-                selectedElementId: null
+                selectedElementIds: []
             };
         }
         return state;
