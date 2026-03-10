@@ -106,7 +106,7 @@ The user is adjusting an existing AI image generation prompt. They will give you
 2. An INSTRUCTION in Indonesian describing what they want to change.
 
 YOUR TASK:
-Update the English prompt parts to reflect the user's Indonesian instruction. 
+Update the English prompt parts to reflect the user's Indonesian instruction.
 If they want to change the style, update the "style" part. If they want a different mood/lighting, update the "lighting" part. Add or remove details organically.
 Return ONLY the modified prompt parts and the final combined prompt.
 
@@ -123,7 +123,7 @@ Output JSON must match:
 async def modify_visual_prompt(original_parts: list, instruction: str) -> dict:
     """Modifies existing English prompt parts based on an Indonesian user instruction."""
     from app.schemas.design import ModifyPromptResponse
-    
+
     if not settings.GEMINI_API_KEY:
         import logging
         logging.warning("GEMINI_API_KEY is missing – returning mock modified data")
@@ -135,7 +135,7 @@ async def modify_visual_prompt(original_parts: list, instruction: str) -> dict:
             if copied["category"] == "style" or copied["category"] == "extra":
                 copied["value"] += f" ({instruction} applied)"
             new_parts.append(copied)
-        
+
         combined = ", ".join(p["value"] for p in new_parts if p.get("enabled", True))
         return ModifyPromptResponse(
             modified_prompt_parts=new_parts,
@@ -144,11 +144,11 @@ async def modify_visual_prompt(original_parts: list, instruction: str) -> dict:
         ).model_dump()
 
     client = genai.Client(api_key=settings.GEMINI_API_KEY)
-    
+
     # Send the original parts as a JSON dumped string for Gemini to read easily
     # Ensure parts are dicts
     parts_dicts = [p.model_dump() if hasattr(p, 'model_dump') else dict(p) for p in original_parts]
-    
+
     input_text = f"ORIGINAL PROMPT PARTS:\n{json.dumps(parts_dicts, indent=2)}\n\nUSER INSTRUCTION (ID):\n{instruction}"
 
     response = client.models.generate_content(
