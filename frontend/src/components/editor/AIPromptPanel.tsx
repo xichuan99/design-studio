@@ -2,12 +2,14 @@
 
 import React, { useState } from 'react';
 import { useCanvasStore } from '@/store/useCanvasStore';
+import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Wand2, Image as ImageIcon } from 'lucide-react';
 
 export const AIPromptPanel: React.FC = () => {
     const { setBackgroundUrl } = useCanvasStore();
+    const { data: session } = useSession();
     const [prompt, setPrompt] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -19,9 +21,9 @@ export const AIPromptPanel: React.FC = () => {
         setError(null);
 
         try {
-            const tokenResponse = await fetch('/api/auth/token');
-            const data = await tokenResponse.json();
-            const token = data.token;
+            // Use session token directly (same as useProjectApi)
+            // @ts-expect-error - accessToken is extended on the session object
+            const token = session?.accessToken;
 
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
             const response = await fetch(`${apiUrl}/api/v1/generate/image`, {
@@ -40,9 +42,8 @@ export const AIPromptPanel: React.FC = () => {
 
             const result = await response.json();
 
-            // Use proxy to avoid CORS
-            const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(result.image_url)}`;
-            setBackgroundUrl(proxyUrl);
+            // Store the original URL — StageCanvas handles proxying
+            setBackgroundUrl(result.image_url);
             setPrompt('');
 
         } catch (err: unknown) {
