@@ -28,6 +28,9 @@ jobs:
       packages: write
 
     steps:
+      - name: Force Actions to use Node 24
+        run: echo "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true" >> $GITHUB_ENV
+
       - name: Checkout code
         uses: actions/checkout@v5
 
@@ -77,6 +80,9 @@ jobs:
     needs: build-and-push
 
     steps:
+      - name: Force Actions to use Node 24
+        run: echo "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true" >> $GITHUB_ENV
+
       - name: Checkout code (untuk docker-compose.yml terbaru)
         uses: actions/checkout@v5
 

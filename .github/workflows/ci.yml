@@ -52,6 +52,9 @@ jobs:
       S3_PUBLIC_URL: ${{ secrets.S3_PUBLIC_URL }}
 
     steps:
+      - name: Force Actions to use Node 24
+        run: echo "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true" >> $GITHUB_ENV
+
       - uses: actions/checkout@v5
 
       - name: Set up Python 3.9
@@ -87,6 +90,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Force Actions to use Node 24
+        run: echo "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true" >> $GITHUB_ENV
+
       - uses: actions/checkout@v5
 
       - name: Setup Node.js
