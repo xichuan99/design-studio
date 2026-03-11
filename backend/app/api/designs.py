@@ -2,6 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy import desc
 from app.core.database import get_db
 from app.schemas.design import DesignGenerationRequest, ParsedTextElements, ModifyPromptRequest
 from app.services.llm_service import parse_design_text
@@ -211,6 +212,39 @@ async def generate_design(
         job.error_message = str(e)
         await db.commit()
         raise HTTPException(status_code=500, detail=f"Image generation failed: {str(e)}")
+
+
+@router.get("/my-generations")
+async def get_my_generations(
+    limit: int = 20,
+    offset: int = 0,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Fetch completed AI design generations for the current user."""
+    result = await db.execute(
+        select(Job)
+        .where(
+            Job.user_id == current_user.id,
+            Job.status == "completed",
+            Job.result_url.isnot(None)
+        )
+        .order_by(desc(Job.created_at))
+        .offset(offset)
+        .limit(limit)
+    )
+    jobs = result.scalars().all()
+
+    return [
+        {
+            "id": str(job.id),
+            "result_url": job.result_url,
+            "visual_prompt": job.visual_prompt,
+            "raw_text": job.raw_text,
+            "created_at": job.created_at.isoformat() if job.created_at else None,
+        }
+        for job in jobs
+    ]
 
 
 @router.get("/jobs/{job_id}")

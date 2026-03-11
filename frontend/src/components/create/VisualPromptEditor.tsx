@@ -55,7 +55,22 @@ export function VisualPromptEditor({
             if (!res.ok) throw new Error("Gagal memodifikasi prompt");
             
             const data = await res.json();
-            onModifyPromptParts(data.modified_prompt_parts, data.modified_visual_prompt, data.indonesian_translation);
+            
+            // Merge logic: in case the AI didn't return all parts, we keep the ones that are missing
+            const newParts: VisualPromptPart[] = [...(parsedData.visual_prompt_parts || originalParts)];
+            const modifiedParts = data.modified_prompt_parts as VisualPromptPart[];
+            
+            modifiedParts.forEach(modPart => {
+                const idx = newParts.findIndex(p => p.category === modPart.category);
+                if (idx >= 0) {
+                    newParts[idx] = modPart;
+                } else {
+                    // In case AI added a totally new category
+                    newParts.push(modPart);
+                }
+            });
+
+            onModifyPromptParts(newParts, data.modified_visual_prompt, data.indonesian_translation);
             setHasModified(true);
             setInstruction("");
             toast.success("Perubahan berhasil diterapkan!");
@@ -156,6 +171,10 @@ export function VisualPromptEditor({
 
             {/* AI Modification Box - Moved to bottom */}
             <div className="bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-2xl p-5 sm:p-6 shadow-[0_0_30px_rgba(var(--primary),0.05)] mt-4">
+                <div className="mb-3">
+                    <h4 className="text-sm font-semibold text-foreground">✏️ Revisi Prompt</h4>
+                    <p className="text-xs text-muted-foreground mt-0.5">Ingin mengubah hasil gambar? Tulis revisi Anda di bawah, lalu klik Terapkan.</p>
+                </div>
                 <div className="flex flex-col sm:flex-row gap-3">
                     <div className="relative flex-1">
                         <Input 

@@ -1,8 +1,6 @@
 """Integration tests for the Templates — uses sync DB connection to avoid async conflicts."""
 from __future__ import annotations
-import pytest
-from sqlalchemy import create_engine, select, text
-from sqlalchemy.orm import Session
+from sqlalchemy import create_engine, text
 from app.core.config import settings
 
 # Use synchronous connection for tests (replace asyncpg with psycopg2)

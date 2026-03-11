@@ -151,6 +151,15 @@ export function useProjectApi() {
         return res.json();
     };
 
+    const getMyGenerations = async (limit: number = 20, offset: number = 0) => {
+        const qs = new URLSearchParams({ limit: limit.toString(), offset: offset.toString() }).toString();
+        const res = await fetch(`${API_BASE_URL}/designs/my-generations?${qs}`, {
+            headers: getHeaders(),
+        });
+        if (!res.ok) throw new Error('Failed to fetch AI generations');
+        return res.json();
+    };
+
     const getTemplates = async (category?: string, aspectRatio?: string) => {
         const params = new URLSearchParams();
         if (category) params.set('category', category);
@@ -181,5 +190,5 @@ export function useProjectApi() {
         return res.json();
     };
 
-    return { getProject, saveProject, getProjects, deleteProject, getUserProfile, updateProfile, deleteAccount, generateDesign, uploadImage, getJobStatus, getTemplates, getHistory, createHistory };
+    return { getProject, saveProject, getProjects, deleteProject, getUserProfile, updateProfile, deleteAccount, generateDesign, uploadImage, getJobStatus, getMyGenerations, getTemplates, getHistory, createHistory };
 }

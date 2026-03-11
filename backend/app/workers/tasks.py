@@ -1,8 +1,8 @@
-from __future__ import annotations
 """
 Celery tasks for async design generation.
 Full pipeline: LLM parse → preprocess reference → Fal.ai generate → upload to S3.
 """
+from __future__ import annotations
 import asyncio
 from datetime import datetime, timezone
 from sqlalchemy import update

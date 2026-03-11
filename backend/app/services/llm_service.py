@@ -108,12 +108,12 @@ The user is adjusting an existing AI image generation prompt. They will give you
 YOUR TASK:
 Update the English prompt parts to reflect the user's Indonesian instruction.
 If they want to change the style, update the "style" part. If they want a different mood/lighting, update the "lighting" part. Add or remove details organically.
-Return ONLY the modified prompt parts and the final combined prompt.
+Return ALL prompt parts in full — both the ones you modified AND the ones left unchanged — so the complete original structure is preserved. Also return the final combined prompt.
 
 Output JSON must match:
 {
   "modified_prompt_parts": [
-     { "category": "...", "label": "...", "value": "..._UPDATED_ENGLISH_VALUE_...", "enabled": true }
+     { "category": "...", "label": "...", "value": "..._UPDATED_OR_ORIGINAL_ENGLISH_VALUE_...", "enabled": true }
   ],
   "modified_visual_prompt": "The new combined full English prompt...",
   "indonesian_translation": "A natural, friendly Indonesian sentence explaining what the new `modified_visual_prompt` describes."

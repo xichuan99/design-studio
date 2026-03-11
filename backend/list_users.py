@@ -1,6 +1,4 @@
 import asyncio
-import os
-import sys
 
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import text

@@ -1,8 +1,8 @@
-from __future__ import annotations
 """
 Cloud storage service for uploading/downloading images to S3-compatible storage
 (Backblaze B2, Cloudflare R2, AWS S3).
 """
+from __future__ import annotations
 import io
 import uuid
 import boto3

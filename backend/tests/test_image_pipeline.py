@@ -1,7 +1,7 @@
 """Integration tests for the image generation pipeline (with mocked external services)."""
 from __future__ import annotations
 import pytest
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import patch, AsyncMock
 from app.services.image_service import generate_background, ASPECT_RATIO_MAP, STYLE_SUFFIXES
 from app.services.preprocess import resize_to_aspect, extract_dominant_colors
 from app.services.storage_service import generate_key

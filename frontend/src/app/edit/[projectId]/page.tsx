@@ -17,8 +17,9 @@ import { useAutoSave } from "@/hooks/useAutoSave";
 import { HistoryPanel } from "@/components/editor/HistoryPanel";
 import { LayersPanel } from "@/components/editor/LayersPanel";
 import { AIPromptPanel } from "@/components/editor/AIPromptPanel";
+import { AIAssetsPanel } from "@/components/editor/AIAssetsPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Layers, SlidersHorizontal, History as HistoryIcon, Sparkles } from "lucide-react";
+import { Layers, SlidersHorizontal, History as HistoryIcon, Sparkles, Image as ImageIcon } from "lucide-react";
 
 const PRELOAD_FONTS = ['Inter', 'Poppins', 'Roboto', 'Playfair Display', 'Montserrat', 'Oswald'];
 
@@ -190,15 +191,18 @@ export default function EditorPage() {
                     ${mobilePanelOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}
                 `}>
                     <Tabs defaultValue="properties" className="w-full flex flex-col h-full border-none">
-                        <TabsList className="grid w-full grid-cols-4 rounded-none border-b border-border/40 bg-transparent h-12 p-0">
-                            <TabsTrigger value="properties" className="rounded-none data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-300 h-full px-1">
+                        <TabsList className="grid w-full grid-cols-5 rounded-none border-b border-border/40 bg-transparent h-12 p-0">
+                            <TabsTrigger value="properties" className="rounded-none data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-300 h-full px-1" title="Properties">
                                 <SlidersHorizontal className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline text-xs font-semibold">Props</span>
                             </TabsTrigger>
-                            <TabsTrigger value="layers" className="rounded-none data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-300 h-full px-1">
+                            <TabsTrigger value="layers" className="rounded-none data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-300 h-full px-1" title="Layers">
                                 <Layers className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline text-xs font-semibold">Layers</span>
                             </TabsTrigger>
-                            <TabsTrigger value="ai" className="rounded-none data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-300 h-full px-1">
+                            <TabsTrigger value="ai" className="rounded-none data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-300 h-full px-1" title="Generate AI">
                                 <Sparkles className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline text-xs font-semibold">AI</span>
+                            </TabsTrigger>
+                            <TabsTrigger value="assets" className="rounded-none data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-300 h-full px-1" title="Aset/Galeri">
+                                <ImageIcon className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline text-xs font-semibold">Aset</span>
                             </TabsTrigger>
                             <TabsTrigger value="history" className="rounded-none data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-300 h-full relative" disabled={!projectId} title="History">
                                 <HistoryIcon className="h-4 w-4" />
@@ -215,6 +219,10 @@ export default function EditorPage() {
 
                         <TabsContent value="ai" className="mt-0 flex-1 overflow-y-auto w-full">
                             <AIPromptPanel />
+                        </TabsContent>
+
+                        <TabsContent value="assets" className="mt-0 flex-1 overflow-y-auto w-full">
+                            <AIAssetsPanel />
                         </TabsContent>
 
                         <TabsContent value="history" className="mt-0 flex-1 overflow-y-auto w-full">

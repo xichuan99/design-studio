@@ -1,5 +1,4 @@
 import asyncio
-import os
 import sys
 
 sys.path.append("/Users/nugroho/Documents/design-studio/backend")

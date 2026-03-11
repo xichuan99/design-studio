@@ -3,6 +3,7 @@ import asyncio
 import uuid
 from app.core.database import AsyncSessionLocal
 from app.models.template import Template
+from sqlalchemy.future import select
 
 TEMPLATES = [
     # 🍔 Food & Beverage
@@ -354,7 +355,6 @@ TEMPLATES = [
 ]
 
 
-from sqlalchemy.future import select
 
 async def seed():
     """Insert all seed templates into the database."""
