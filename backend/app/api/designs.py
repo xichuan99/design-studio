@@ -94,6 +94,7 @@ async def magic_text_layout(
     try:
         image_base64 = request.get("image_base64")
         text = request.get("text")
+        style_hint = request.get("style_hint")
         if not image_base64 or not text:
             raise HTTPException(status_code=400, detail="Missing image_base64 or text")
 
@@ -101,7 +102,7 @@ async def magic_text_layout(
         if len(image_base64) > 30_000_000:
             raise HTTPException(status_code=400, detail="Image too large. Max ~20MB.")
 
-        result = await generate_magic_text_layout(image_base64=image_base64, text=text)
+        result = await generate_magic_text_layout(image_base64=image_base64, text=text, style_hint=style_hint)
         return result
     except HTTPException:
         raise

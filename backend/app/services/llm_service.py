@@ -1,4 +1,5 @@
 import json
+from typing import Optional
 from google import genai
 from google.genai import types
 from app.core.config import settings
@@ -237,23 +238,30 @@ async def modify_visual_prompt(original_parts: list, instruction: str) -> dict:
     return data
 
 MAGIC_TEXT_SYSTEM = """
-You are an expert graphic designer and typographer.
-The user wants to overlay text onto the provided image.
-Analyze the image carefully:
-1. Identify the 'negative space' or empty areas where text will be legible and not cover the main subject.
-2. Break the user's raw text into a logical hierarchy (e.g., headline, sub-headline, body, CTA).
-3. Assign an appropriate font_family, font_weight, font_size, color (hex code), and text alignment.
-   - Allowed fonts: Inter, Poppins, Roboto, Playfair Display, Montserrat, Oswald.
-   - Ensure the text color contrasts well against the background area you chose.
-4. Provide the exact coordinates (x, y) where each piece of text should be placed.
-   - Coordinates must be proportional floats between 0.0 and 1.0 (e.g., x: 0.5, y: 0.2).
-   - x: 0.0 is left, 1.0 is right.
-   - y: 0.0 is top, 1.0 is bottom.
+You are an expert graphic designer and world-class typographer.
+The user wants to overlay promotional text onto the provided image.
+Your goal is to make the text look seamlessly integrated and highly professional, NOT just "tacked on".
 
+CRITICAL HEURISTICS:
+1. NEGATIVE SPACE: Find the largest area of negative space (empty/quiet areas) that won't cover main subjects (people's faces, key products). Use the Rule of Thirds for placement.
+2. HIERARCHY: Break the raw text into logical layers (Headline, Sub-headline, Body, CTA).
+3. TYPOGRAPHY PAIRING:
+   - For bold/modern: "Inter" or "Oswald" headline + "Inter" body.
+   - For elegant/premium: "Playfair Display" headline + "Inter" or "Montserrat" body.
+   - For fun/casual: "Poppins" everywhere.
+4. SPACING & LEADING:
+   - Headlines: tighter line_height (1.0 - 1.1), uppercase or capitalize.
+   - Sub-headlines/Body: looser letter_spacing (0.1 - 0.2 em) and looser line_height (1.4 - 1.5).
+5. CONTRAST & SHADOW:
+   - Text MUST be highly legible. If the background is complex or light, add a `text_shadow` (e.g., "2px 2px 12px rgba(0,0,0,0.8)").
+   - If the background is very clean and dark, use pure white text with no shadow.
+6. OPACITY: Use slight transparency (opacity: 0.8 to 0.9) for secondary text so it blends into the image context.
+
+Coordinates must be proportional floats between 0.0 and 1.0 (x: 0.0 is left, y: 0.0 is top).
 Return the result STRICTLY as a JSON object matching the requested schema.
 """
 
-async def generate_magic_text_layout(image_base64: str, text: str) -> dict:
+async def generate_magic_text_layout(image_base64: str, text: str, style_hint: Optional[str] = None) -> dict:
     from app.schemas.design import MagicTextResponse
     import base64
 
@@ -270,7 +278,13 @@ async def generate_magic_text_layout(image_base64: str, text: str) -> dict:
                     "color": "#FFFFFF",
                     "align": "center",
                     "x": 0.5,
-                    "y": 0.3
+                    "y": 0.3,
+                    "letter_spacing": 0.0,
+                    "line_height": 1.1,
+                    "text_transform": "uppercase",
+                    "text_shadow": "2px 2px 8px rgba(0,0,0,0.6)",
+                    "opacity": 1.0,
+                    "rotation": 0.0
                 }
             ]
         ).model_dump()
@@ -283,11 +297,14 @@ async def generate_magic_text_layout(image_base64: str, text: str) -> dict:
 
     image_bytes = base64.b64decode(image_base64)
 
+    # Inject style hint context if provided
+    style_context = f"\nUSER STYLE PREFERENCE: [{style_hint}]\nAdapt your font choices, colors, and layout to strongly match this style vibe." if style_hint else ""
+
     response = client.models.generate_content(
         model='gemini-2.5-flash',
         contents=[
             types.Part.from_bytes(data=image_bytes, mime_type='image/png'),
-            f"Here is the text I want to place on this image: {text}"
+            f"Here is the text I want to place on this image: {text}{style_context}"
         ],
         config=types.GenerateContentConfig(
             system_instruction=MAGIC_TEXT_SYSTEM,

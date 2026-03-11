@@ -111,6 +111,7 @@ class MagicTextRequest(BaseModel):
     text: str = Field(..., description="The raw promotional text to lay out")
     canvas_width: int = Field(1024, description="Width of the canvas")
     canvas_height: int = Field(1024, description="Height of the canvas")
+    style_hint: Optional[str] = Field(None, description="Optional style preset direction (e.g., 'Bold & Impactful', 'Elegant & Clean')")
 
 class MagicTextElement(BaseModel):
     text: str = Field(...)
@@ -121,6 +122,13 @@ class MagicTextElement(BaseModel):
     align: str = Field("center")
     x: float = Field(..., description="Proportional x-coordinate (0.0-1.0)")
     y: float = Field(..., description="Proportional y-coordinate (0.0-1.0)")
+    # Advanced Typography Fields
+    letter_spacing: float = Field(0.0, description="Letter spacing in em (e.g., 0.05, 0.2). Use larger for elegant/serif headlines.")
+    line_height: float = Field(1.2, description="Line height multiplier (e.g., 1.1 for headlines, 1.5 for body).")
+    text_transform: str = Field("none", description="Text transform: 'none', 'uppercase', or 'capitalize'")
+    text_shadow: Optional[str] = Field(None, description="CSS-like text shadow (e.g., '2px 2px 8px rgba(0,0,0,0.6)') for better contrast")
+    opacity: float = Field(1.0, description="Opacity from 0.0 to 1.0. Use for subtle sub-headlines.")
+    rotation: float = Field(0.0, description="Rotation in degrees. Usually 0, but can be slight for playful styles.")
 
 class MagicTextResponse(BaseModel):
     elements: List[MagicTextElement] = Field(default_factory=list)

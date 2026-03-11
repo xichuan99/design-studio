@@ -5,14 +5,22 @@ import { useCanvasStore } from '@/store/useCanvasStore';
 import { useProjectApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Sparkles, Wand2, AlertTriangle } from 'lucide-react';
+import { Loader2, Sparkles, Wand2, AlertTriangle, Type, Crown, Smile } from 'lucide-react';
 import WebFont from 'webfontloader';
+import { cn } from '@/lib/utils';
+
+const STYLE_PRESETS = [
+    { id: 'Bold & Impactful', label: 'Bold', icon: Type, description: 'Loud & clear' },
+    { id: 'Elegant & Clean', label: 'Elegant', icon: Crown, description: 'Premium feel' },
+    { id: 'Fun & Playful', label: 'Playful', icon: Smile, description: 'Casual & popping' }
+];
 
 export const MagicTextPanel: React.FC = () => {
     const { stageRef, addMagicTextElements, backgroundUrl, elements } = useCanvasStore();
     const { generateMagicTextLayout } = useProjectApi();
 
     const [text, setText] = useState('');
+    const [styleHint, setStyleHint] = useState<string>(STYLE_PRESETS[0].id);
     const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [warning, setWarning] = useState<string | null>(null);
@@ -20,7 +28,7 @@ export const MagicTextPanel: React.FC = () => {
     const handleGenerate = async () => {
         if (!text.trim()) return;
         
-        if (!backgroundUrl && elements.length === 0) {
+        if (!backgroundUrl && (elements.length === 0)) {
             setWarning("Disarankan untuk menambahkan gambar background atau elemen lain dulu agar AI punya konteks desain.");
         } else {
             setWarning(null);
@@ -42,6 +50,7 @@ export const MagicTextPanel: React.FC = () => {
             const apiCall = generateMagicTextLayout({
                 image_base64: dataUrl,
                 text: text,
+                style_hint: styleHint,
             });
 
             const timeoutPromise = new Promise((_, reject) => {
@@ -59,6 +68,12 @@ export const MagicTextPanel: React.FC = () => {
                     align: string;
                     x: number;
                     y: number;
+                    letter_spacing?: number;
+                    line_height?: number;
+                    text_transform?: string;
+                    text_shadow?: string;
+                    opacity?: number;
+                    rotation?: number;
                 }>;
             }
 
@@ -100,9 +115,29 @@ export const MagicTextPanel: React.FC = () => {
                         width = absX;
                     }
 
+                    // Parse CSS-like text_shadow roughly
+                    let shadowColor, shadowBlur, shadowOffsetX, shadowOffsetY;
+                    if (el.text_shadow) {
+                        const parts = el.text_shadow.split(' ');
+                        if (parts.length >= 4) {
+                            shadowOffsetX = parseFloat(parts[0]);
+                            shadowOffsetY = parseFloat(parts[1]);
+                            shadowBlur = parseFloat(parts[2]);
+                            shadowColor = parts.slice(3).join(' '); // e.g. rgba(0,0,0,0.5)
+                        }
+                    }
+
+                    // Handle text transform
+                    let final_text = el.text;
+                    if (el.text_transform === "uppercase") {
+                        final_text = el.text.toUpperCase();
+                    } else if (el.text_transform === "capitalize") {
+                       final_text = el.text.replace(/\b\w/g, l => l.toUpperCase());
+                    }
+
                     return {
                         type: 'text' as const,
-                        text: el.text,
+                        text: final_text,
                         x: absX,
                         y: el.y * logicalHeight,
                         width: Math.max(width, 100), // minimal 100px
@@ -111,7 +146,14 @@ export const MagicTextPanel: React.FC = () => {
                         fontWeight: (el.font_weight >= 700 ? 'bold' : 'normal') as 'bold' | 'normal',
                         fill: el.color,
                         align: (['left', 'center', 'right'].includes(el.align) ? el.align : 'center') as 'left' | 'center' | 'right',
-                        rotation: 0,
+                        rotation: el.rotation || 0,
+                        opacity: el.opacity ?? 1.0,
+                        letterSpacing: (el.letter_spacing || 0) * el.font_size,
+                        lineHeight: el.line_height || 1.2,
+                        shadowColor,
+                        shadowBlur,
+                        shadowOffsetX,
+                        shadowOffsetY,
                         label: `Magic Text ${idx + 1}`,
                     };
                 });
@@ -138,21 +180,48 @@ export const MagicTextPanel: React.FC = () => {
                 <h2 className="font-semibold text-sm">Magic Text Layouting</h2>
             </div>
 
-            <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+            <div className="flex-1 overflow-y-auto space-y-6 pr-1 pb-4">
+                {/* Textarea Section */}
                 <div className="space-y-2">
-                    <label className="text-xs font-semibold text-muted-foreground uppercase">Masukkan Text/Copy</label>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                        Ketikkan tulisan untuk desain Anda (mis. &quot;Diskon 50% Khusus Hari Ini&quot;). 
-                        AI akan membaca tata letak *canvas* saat ini dan meletakkan teks 
-                        dengan ukuran, font, dan warna yang pas di area yang kosong.
-                    </p>
+                    <div className="flex items-center justify-between">
+                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Teks Promosi</label>
+                        <span className="text-[10px] text-muted-foreground">{text.length}/500</span>
+                    </div>
                     <Textarea
-                        placeholder="Ketik teks promo / headline Anda di sini..."
-                        className="h-32 resize-none text-sm"
+                        placeholder="Contoh: Diskon 50% Khusus Hari Ini! Dapatkan sekarang sebelum kehabisan."
+                        className="min-h-[80px] max-h-[240px] resize-y text-sm focus-visible:ring-primary/50"
                         value={text}
-                        onChange={(e) => setText(e.target.value)}
+                        onChange={(e) => setText(e.target.value.slice(0, 500))}
                         disabled={isGenerating}
                     />
+                </div>
+
+                {/* Style Presets Section */}
+                <div className="space-y-3">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Gaya Visual</label>
+                    <div className="grid grid-cols-3 gap-2">
+                        {STYLE_PRESETS.map((preset) => {
+                            const Icon = preset.icon;
+                            const isSelected = styleHint === preset.id;
+                            return (
+                                <button
+                                    key={preset.id}
+                                    onClick={() => setStyleHint(preset.id)}
+                                    disabled={isGenerating}
+                                    className={cn(
+                                        "flex flex-col items-center justify-center p-2 rounded-lg border bg-card text-center transition-all",
+                                        "hover:border-primary/50 hover:bg-muted/50",
+                                        isSelected ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border",
+                                        isGenerating && "opacity-50 cursor-not-allowed"
+                                    )}
+                                >
+                                    <Icon className={cn("h-4 w-4 mb-1.5", isSelected ? "text-primary" : "text-muted-foreground")} />
+                                    <span className={cn("text-[10px] font-medium block w-full truncate", isSelected ? "text-foreground" : "text-muted-foreground")}>{preset.label}</span>
+                                    <span className="text-[9px] text-muted-foreground/70 hidden sm:block truncate w-full">{preset.description}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
 
                 {warning && !error && (

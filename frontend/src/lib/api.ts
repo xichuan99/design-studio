@@ -190,7 +190,7 @@ export function useProjectApi() {
         return res.json();
     };
 
-    const generateMagicTextLayout = async (payload: { image_base64: string; text: string; canvas_width?: number; canvas_height?: number }) => {
+    const generateMagicTextLayout = async (payload: { image_base64: string; text: string; canvas_width?: number; canvas_height?: number; style_hint?: string }) => {
         const res = await fetch(`${API_BASE_URL}/designs/magic-text`, {
             method: 'POST',
             headers: getHeaders(),
