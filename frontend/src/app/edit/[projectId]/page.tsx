@@ -6,8 +6,7 @@ import { useSession } from "next-auth/react";
 import { Loader2 } from "lucide-react";
 import WebFont from 'webfontloader';
 
-import { Plus, Undo as UndoIcon, Redo as RedoIcon } from 'lucide-react';
-import { Toolbar } from "@/components/editor/Toolbar";
+import { Undo as UndoIcon, Redo as RedoIcon } from 'lucide-react';
 import { EditorTopBar } from "@/components/editor/EditorTopBar";
 import { CanvasWorkspace } from "@/components/editor/CanvasWorkspace";
 import { StylePanel } from "@/components/editor/StylePanel";
@@ -16,12 +15,10 @@ import { useCanvasStore } from "@/store/useCanvasStore";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { HistoryPanel } from "@/components/editor/HistoryPanel";
 import { LayersPanel } from "@/components/editor/LayersPanel";
-import { AIPromptPanel } from "@/components/editor/AIPromptPanel";
-import { AIAssetsPanel } from "@/components/editor/AIAssetsPanel";
-import { MagicTextPanel } from "@/components/editor/MagicTextPanel";
+import { LeftSidebar } from "@/components/editor/LeftSidebar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Layers, SlidersHorizontal, History as HistoryIcon, Sparkles, Image as ImageIcon, Wand2 } from "lucide-react";
+import { Layers, SlidersHorizontal, History as HistoryIcon, PanelLeft, PanelRight } from "lucide-react";
 
 const PRELOAD_FONTS = ['Inter', 'Poppins', 'Roboto', 'Playfair Display', 'Montserrat', 'Oswald'];
 
@@ -35,7 +32,8 @@ export default function EditorPage() {
     const [canvasBgReady, setCanvasBgReady] = useState(false);
     const hasBackgroundRef = useRef(false);
     const [error, setError] = useState<string | null>(null);
-    const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
+    const [rightPanelOpen, setRightPanelOpen] = useState(false);
+    const [leftPanelOpen, setLeftPanelOpen] = useState(false);
 
     // Initialize auto-save hook
     const { saveStatus, forceSave } = useAutoSave(projectId as string | undefined);
@@ -163,23 +161,29 @@ export default function EditorPage() {
                 onSave={forceSave}
             />
 
-            {/* Desktop layout: Toolbar | Canvas | StylePanel */}
-            {/* Mobile layout: Stack vertically, hide StylePanel if screen too small */}
+            {/* Desktop layout: LeftSidebar (creation) | Canvas | RightSidebar (editing) */}
+            {/* Mobile layout: Stack vertically, sidebars are slide-ins */}
             <main className="flex flex-1 overflow-hidden relative">
-                {/* Toolbar — hidden on very small screens */}
-                <div className="hidden sm:flex">
-                    <Toolbar
-                        projectId={projectId as string | undefined}
-                    />
+                
+                {/* Left Sidebar (AI & Tools) - Hidden on mobile by default */}
+                <div className={`
+                    fixed md:relative left-0 top-14 bottom-[57px] md:bottom-0 md:top-0 z-40 md:z-auto
+                    h-full transition-transform duration-300 transform
+                    ${leftPanelOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+                `}>
+                    <LeftSidebar />
                 </div>
 
                 <CanvasWorkspace onBgStatusChange={handleBgStatusChange} />
 
-                {/* Mobile Right Sidebar Backdrop */}
-                {mobilePanelOpen && (
+                {/* Mobile Sidebar Backdrops */}
+                {(rightPanelOpen || leftPanelOpen) && (
                     <div 
                         className="md:hidden fixed inset-0 bg-background/80 backdrop-blur-sm z-30"
-                        onClick={() => setMobilePanelOpen(false)}
+                        onClick={() => {
+                            setRightPanelOpen(false);
+                            setLeftPanelOpen(false);
+                        }}
                         aria-hidden="true"
                     />
                 )}
@@ -190,13 +194,13 @@ export default function EditorPage() {
                     w-[85vw] max-w-[320px] md:w-[280px]
                     flex flex-col border-l border-border/40 bg-background/80 backdrop-blur-xl overflow-hidden shadow-2xl md:shadow-none
                     transition-transform duration-300 transform
-                    ${mobilePanelOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}
+                    ${rightPanelOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}
                 `}>
                     <Tabs defaultValue="properties" className="w-full flex flex-col h-full border-none">
                             <TabsList className="flex w-full overflow-x-auto no-scrollbar rounded-none border-b border-border/40 bg-transparent h-12 p-0 items-center justify-evenly shrink-0">
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <TabsTrigger value="properties" className="shrink-0 rounded-none hover:bg-muted/50 data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-300 h-full px-4" title="Properties">
+                                        <TabsTrigger value="properties" className="flex-1 rounded-none hover:bg-muted/50 data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-300 h-full px-4" title="Properties">
                                             <SlidersHorizontal className="h-[18px] w-[18px]" />
                                         </TabsTrigger>
                                     </TooltipTrigger>
@@ -205,7 +209,7 @@ export default function EditorPage() {
 
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <TabsTrigger value="layers" className="shrink-0 rounded-none hover:bg-muted/50 data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-300 h-full px-4" title="Layers">
+                                        <TabsTrigger value="layers" className="flex-1 rounded-none hover:bg-muted/50 data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-300 h-full px-4" title="Layers">
                                             <Layers className="h-[18px] w-[18px]" />
                                         </TabsTrigger>
                                     </TooltipTrigger>
@@ -214,34 +218,7 @@ export default function EditorPage() {
 
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <TabsTrigger value="ai" className="shrink-0 rounded-none hover:bg-muted/50 data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-300 h-full px-4" title="Generate AI">
-                                            <Sparkles className="h-[18px] w-[18px]" />
-                                        </TabsTrigger>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="bottom" className="text-xs">AI Base</TooltipContent>
-                                </Tooltip>
-
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <TabsTrigger value="magictext" className="shrink-0 rounded-none hover:bg-muted/50 data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-300 h-full px-4" title="Magic Text">
-                                            <Wand2 className="h-[18px] w-[18px]" />
-                                        </TabsTrigger>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="bottom" className="text-xs">Magic Teks</TooltipContent>
-                                </Tooltip>
-
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <TabsTrigger value="assets" className="shrink-0 rounded-none hover:bg-muted/50 data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-300 h-full px-4" title="Aset/Galeri">
-                                            <ImageIcon className="h-[18px] w-[18px]" />
-                                        </TabsTrigger>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="bottom" className="text-xs">Aset</TooltipContent>
-                                </Tooltip>
-
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <TabsTrigger value="history" className="shrink-0 rounded-none hover:bg-muted/50 data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-300 h-full px-4 relative ml-auto" disabled={!projectId} title="History">
+                                        <TabsTrigger value="history" className="flex-1 rounded-none hover:bg-muted/50 data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-300 h-full px-4" disabled={!projectId} title="History">
                                             <HistoryIcon className="h-[18px] w-[18px]" />
                                         </TabsTrigger>
                                     </TooltipTrigger>
@@ -257,18 +234,6 @@ export default function EditorPage() {
                             <LayersPanel />
                         </TabsContent>
 
-                        <TabsContent value="ai" className="mt-0 flex-1 overflow-y-auto w-full">
-                            <AIPromptPanel />
-                        </TabsContent>
-
-                        <TabsContent value="magictext" className="mt-0 flex-1 overflow-y-auto w-full">
-                            <MagicTextPanel />
-                        </TabsContent>
-
-                        <TabsContent value="assets" className="mt-0 flex-1 overflow-y-auto w-full">
-                            <AIAssetsPanel />
-                        </TabsContent>
-
                         <TabsContent value="history" className="mt-0 flex-1 overflow-y-auto w-full">
                             {projectId && <HistoryPanel projectId={projectId as string} />}
                         </TabsContent>
@@ -277,8 +242,13 @@ export default function EditorPage() {
             </main>
 
             {/* Mobile bottom bar */}
-            <div className="md:hidden flex items-center justify-around border-t bg-card h-[57px] shrink-0 pb-safe">
-                <MobileToolbarActions togglePanel={() => setMobilePanelOpen(!mobilePanelOpen)} isPanelOpen={mobilePanelOpen} />
+            <div className="md:hidden flex items-center justify-around border-t bg-card h-[57px] shrink-0 pb-safe z-50 relative">
+                <MobileToolbarActions 
+                    toggleLeftPanel={() => { setLeftPanelOpen(!leftPanelOpen); setRightPanelOpen(false); }}
+                    isLeftOpen={leftPanelOpen}
+                    toggleRightPanel={() => { setRightPanelOpen(!rightPanelOpen); setLeftPanelOpen(false); }}
+                    isRightOpen={rightPanelOpen} 
+                />
             </div>
 
             {/* Loading overlay — fades out when image is ready */}
@@ -299,27 +269,32 @@ export default function EditorPage() {
 }
 
 // Simplified mobile toolbar actions with expanded features
-function MobileToolbarActions({ togglePanel, isPanelOpen }: { togglePanel: () => void, isPanelOpen: boolean }) {
-    const { addElement, undo, redo } = useCanvasStore();
+function MobileToolbarActions({ 
+    toggleLeftPanel, isLeftOpen,
+    toggleRightPanel, isRightOpen 
+}: { 
+    toggleLeftPanel: () => void, isLeftOpen: boolean,
+    toggleRightPanel: () => void, isRightOpen: boolean 
+}) {
+    const { undo, redo } = useCanvasStore();
 
     return (
         <div className="flex w-full justify-evenly items-center px-2 py-1">
-            <button className="flex flex-col items-center justify-center p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground" onClick={() => addElement({ type: 'text', x: 50, y: 50, text: 'Text', fontSize: 36, fontFamily: 'Inter', fill: '#000', rotation: 0 })}>
-                <Plus className="h-5 w-5 mb-0.5" />
-                <span className="text-[9px]">Text</span>
-            </button>
-            <button className="flex flex-col items-center justify-center p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground" onClick={() => addElement({ type: 'shape', shapeType: 'rect', x: 50, y: 50, width: 100, height: 100, fill: '#e2e8f0', stroke: '#0f172a', strokeWidth: 0, rotation: 0 })}>
-                <div className="w-4 h-4 border-2 border-current rounded-sm mb-1" />
-                <span className="text-[9px]">Shape</span>
+            <button 
+                className={`flex flex-col items-center justify-center p-1.5 rounded-lg hover:bg-muted transition-colors w-16 ${isLeftOpen ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground'}`} 
+                onClick={toggleLeftPanel}
+            >
+                <PanelLeft className="h-5 w-5 mb-0.5" />
+                <span className="text-[9px]">Tools & AI</span>
             </button>
             
             <div className="w-px h-8 bg-border mx-1" />
 
-            <button className="flex flex-col items-center justify-center p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground" onClick={undo}>
+            <button className="flex flex-col items-center justify-center p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground w-14" onClick={undo}>
                 <UndoIcon className="h-5 w-5 mb-0.5" />
                 <span className="text-[9px]">Undo</span>
             </button>
-            <button className="flex flex-col items-center justify-center p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground" onClick={redo}>
+            <button className="flex flex-col items-center justify-center p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground w-14" onClick={redo}>
                 <RedoIcon className="h-5 w-5 mb-0.5" />
                 <span className="text-[9px]">Redo</span>
             </button>
@@ -327,11 +302,11 @@ function MobileToolbarActions({ togglePanel, isPanelOpen }: { togglePanel: () =>
             <div className="w-px h-8 bg-border mx-1" />
 
             <button 
-                className={`flex flex-col items-center justify-center p-1.5 rounded-lg hover:bg-muted transition-colors ${isPanelOpen ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground'}`} 
-                onClick={togglePanel}
+                className={`flex flex-col items-center justify-center p-1.5 rounded-lg hover:bg-muted transition-colors w-16 ${isRightOpen ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground'}`} 
+                onClick={toggleRightPanel}
             >
-                <SlidersHorizontal className="h-5 w-5 mb-0.5" />
-                <span className="text-[9px]">Settings</span>
+                <PanelRight className="h-5 w-5 mb-0.5" />
+                <span className="text-[9px]">Properties</span>
             </button>
         </div>
     );
