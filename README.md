@@ -14,6 +14,7 @@
 - **AI Image Generation** — Generate background visual profesional via Fal.ai (SDXL/Flux) atau Gemini Imagen sebagai fallback
 - **Canvas Editor** — Editor drag-and-drop berbasis Konva.js dengan:
   - Text & image elements, resize, rotate, drag
+  - Fit-to-screen auto-zoom (otomatis menyesuaikan ukuran layar)
   - Layer management: Bring Forward/Backward, Bring to Front/Back (+ keyboard shortcuts `⌘]` `⌘[` `⌘⇧]` `⌘⇧[`)
   - Duplicate element (button + `⌘D`)
   - Opacity slider per-element
