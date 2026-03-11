@@ -237,7 +237,7 @@ async def generate_design(
             job.completed_at = datetime.now(timezone.utc)
         else:
             job.status = "failed"
-            job.error_message = "Gemini Imagen returned no images"
+            job.error_message = "Prompt rejected by Gemini safety filters (e.g. contains minors, sensitive topics). Please try rephrasing the prompt."
             job.completed_at = datetime.now(timezone.utc)
 
         await db.commit()
