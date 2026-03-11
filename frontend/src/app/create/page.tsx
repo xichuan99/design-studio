@@ -10,15 +10,16 @@ import { AppHeader } from "@/components/layout/AppHeader";
 import { useProjectApi, API_BASE_URL } from "@/lib/api";
 import { generateCanvasElementsFromTemplate } from "@/lib/templateEngine";
 import { useRouter } from "next/navigation";
-import { ParsedDesignData, VisualPromptPart, MAX_FILE_SIZE } from "@/app/create/types";
+import { ParsedDesignData, VisualPromptPart, BriefQuestion, MAX_FILE_SIZE } from "@/app/create/types";
 
 import { GenerationProgress } from "@/components/create/GenerationProgress";
 import { SidebarInputForm } from "@/components/create/SidebarInputForm";
+import { DesignBriefInterview } from "@/components/create/DesignBriefInterview";
 import { SidebarActionBar } from "@/components/create/SidebarActionBar";
 import { UnifiedPreviewEditor } from "@/components/create/UnifiedPreviewEditor";
 import { VisualPromptEditor } from "@/components/create/VisualPromptEditor";
 
-type CreateStep = 'input' | 'prompt-review' | 'generating' | 'preview';
+type CreateStep = 'input' | 'brief' | 'prompt-review' | 'generating' | 'preview';
 
 interface SavedCreateState {
     rawText: string;
@@ -31,6 +32,8 @@ interface SavedCreateState {
     integratedText: boolean;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     selectedTemplate: any;
+    briefQuestions: BriefQuestion[];
+    briefAnswers: Record<string, string>;
 }
 
 export default function CreatePage() {
@@ -53,6 +56,8 @@ export default function CreatePage() {
     const [integratedText, setIntegratedText] = useState(false);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+    const [briefQuestions, setBriefQuestions] = useState<BriefQuestion[]>([]);
+    const [briefAnswers, setBriefAnswers] = useState<Record<string, string>>({});
 
     // Image History State
     const [imageHistory, setImageHistory] = useState<{ url: string; prompt: string }[]>([]);
@@ -80,6 +85,8 @@ export default function CreatePage() {
                 setActiveImageIndex(parsed.activeImageIndex || 0);
                 setIntegratedText(parsed.integratedText || false);
                 setSelectedTemplate(parsed.selectedTemplate || null);
+                setBriefQuestions(parsed.briefQuestions || []);
+                setBriefAnswers(parsed.briefAnswers || {});
             } catch (e) {
                 console.error("Failed to parse saved state", e);
             }
@@ -100,12 +107,15 @@ export default function CreatePage() {
             imageHistory,
             activeImageIndex,
             integratedText,
-            selectedTemplate
+            selectedTemplate,
+            briefQuestions,
+            briefAnswers
         };
         localStorage.setItem('smartdesign_create_state', JSON.stringify(stateToSave));
     }, [
         isInitialized, rawText, aspectRatio, stylePreference, currentStep, 
-        parsedData, imageHistory, activeImageIndex, integratedText, selectedTemplate
+        parsedData, imageHistory, activeImageIndex, integratedText, selectedTemplate,
+        briefQuestions, briefAnswers
     ]);
 
     const handleTogglePromptPart = (index: number) => {
@@ -127,8 +137,9 @@ export default function CreatePage() {
             setParsedData(null);
             setImageHistory([]);
             setActiveImageIndex(0);
-            setIntegratedText(false);
             setSelectedTemplate(null);
+            setBriefQuestions([]);
+            setBriefAnswers({});
             setReferenceFile(null);
             setReferencePreview(null);
         }
@@ -193,10 +204,12 @@ export default function CreatePage() {
         if (!rawText.trim()) return;
         setIsParsing(true);
         setParsedData(null);
+        setBriefQuestions([]);
+        setBriefAnswers({});
 
         try {
-            // STEP 1: Parse Text ONLY
-            const parseRes = await fetch(`${API_BASE_URL}/designs/parse`, {
+            // STEP 1a: Get Clarification Questions
+            const clarifyRes = await fetch(`${API_BASE_URL}/designs/clarify`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -210,6 +223,45 @@ export default function CreatePage() {
                 }),
             });
 
+            if (!clarifyRes.ok) throw new Error("Failed to generate clarification questions");
+            const clarifyData = await clarifyRes.json();
+            
+            if (clarifyData.questions && clarifyData.questions.length > 0) {
+                setBriefQuestions(clarifyData.questions);
+                setCurrentStep('brief');
+            } else {
+                // Fallback to direct parse if no questions generated
+                await handleGeneratePrompt({});
+            }
+
+        } catch (error) {
+            console.error(error);
+            alert(error instanceof Error ? error.message : "Gagal menganalisis teks.");
+        } finally {
+            setIsParsing(false);
+        }
+    };
+
+    const handleGeneratePrompt = async (answers: Record<string, string>) => {
+        setIsParsing(true);
+        setBriefAnswers(answers);
+        try {
+            // STEP 1b: Parse Text with Clarifications
+            const parseRes = await fetch(`${API_BASE_URL}/designs/parse`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    raw_text: rawText,
+                    aspect_ratio: aspectRatio,
+                    style_preference: stylePreference,
+                    num_variations: 2,
+                    integrated_text: integratedText,
+                    clarification_answers: answers
+                }),
+            });
+
             if (!parseRes.ok) throw new Error("Failed to parse text");
             const parsed = await parseRes.json();
             setParsedData(parsed);
@@ -217,7 +269,7 @@ export default function CreatePage() {
 
         } catch (error) {
             console.error(error);
-            alert(error instanceof Error ? error.message : "Gagal menganalisis teks.");
+            alert(error instanceof Error ? error.message : "Gagal menghasilkan prompt.");
         } finally {
             setIsParsing(false);
         }
@@ -373,28 +425,6 @@ export default function CreatePage() {
         }
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handleSelectTemplate = (template: any) => {
-        // Toggle selection
-        if (selectedTemplate?.id === template.id) {
-            setSelectedTemplate(null);
-            setShowManualRef(false);
-        } else {
-            setSelectedTemplate(template);
-            setShowManualRef(false);
-
-            // Clear reference image — template replaces it
-            setReferenceFile(null);
-            setReferencePreview(null);
-
-            // Optionally auto-scroll to input text to guide user
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-
-            // Auto-fill format and style from template
-            if (template.aspect_ratio) setAspectRatio(template.aspect_ratio);
-            if (template.style) setStylePreference(template.style);
-        }
-    };
 
     // Dynamic step numbering for Format & Gaya (Removed, handled in SidebarInputForm now)
 
@@ -449,8 +479,6 @@ export default function CreatePage() {
                             setStylePreference={setStylePreference}
                             integratedText={integratedText}
                             setIntegratedText={setIntegratedText}
-                            selectedTemplate={selectedTemplate}
-                            handleSelectTemplate={handleSelectTemplate}
                             showManualRef={showManualRef}
                             setShowManualRef={setShowManualRef}
                             referenceFile={referenceFile}
@@ -466,13 +494,11 @@ export default function CreatePage() {
                     </div>
 
                     <SidebarActionBar
-                        selectedTemplate={selectedTemplate}
                         currentStep={currentStep}
                         isParsing={isParsing}
                         isGeneratingImage={isGeneratingImage}
                         rawText={rawText}
                         isInputLocked={isInputLocked}
-                        onClearTemplate={() => { setSelectedTemplate(null); setShowManualRef(false); }}
                         onAnalyze={handleAnalyze}
                         onGenerate={handleGenerateImage}
                         onBackToInput={() => setCurrentStep('input')}
@@ -481,7 +507,14 @@ export default function CreatePage() {
 
                 {/* Main Workspace Preview (Week 1 Scope) */}
                 <main className={`flex-1 bg-muted/20 relative flex justify-center items-start ${currentStep === 'preview' ? 'overflow-hidden p-0' : 'overflow-y-auto p-4 md:p-8'}`}>
-                    {currentStep === 'prompt-review' && parsedData ? (
+                    {currentStep === 'brief' && briefQuestions.length > 0 ? (
+                        <DesignBriefInterview 
+                            questions={briefQuestions}
+                            onComplete={(answers) => handleGeneratePrompt(answers)}
+                            onSkip={() => handleGeneratePrompt({})}
+                            isGeneratingPrompt={isParsing}
+                        />
+                    ) : currentStep === 'prompt-review' && parsedData ? (
                         <div className="w-full max-w-4xl mx-auto animation-fade-in shadow-xl rounded-2xl overflow-hidden border border-border/50">
                             <VisualPromptEditor
                                 parsedData={parsedData}

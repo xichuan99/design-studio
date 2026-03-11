@@ -30,31 +30,57 @@ Requires PostgreSQL and Redis. Start via Docker Compose from the project root:
 docker compose up -d
 ```
 
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/designs/clarify` | Generate pertanyaan klarifikasi AI dari teks singkat |
+| `POST` | `/api/designs/parse` | Parse teks + `clarification_answers` → prompt & layout JSON |
+| `POST` | `/api/designs/generate` | Generate gambar (credit + rate-limited) |
+| `POST` | `/api/designs/modify-prompt` | Modifikasi prompt via instruksi bahasa Indonesia |
+| `GET`  | `/api/designs/jobs/{job_id}` | Poll job status |
+| `GET`  | `/api/designs/my-generations` | Riwayat generasi user |
+| `POST` | `/api/designs/upload` | Upload gambar referensi |
+| `GET`  | `/api/templates/` | List semua template |
+| `GET`  | `/api/projects/` | List project user |
+| `GET`  | `/api/users/me` | Profil + kredit user |
+
+## AI Design Flow
+
+```
+POST /clarify  →  3-4 pertanyaan klarifikasi dari Gemini
+POST /parse    →  Prompt visual + layout JSON (dengan context jawaban)
+POST /generate →  Background image generation (Fal.ai / Gemini Imagen)
+```
+
+Jika `GEMINI_API_KEY` tidak disetel, semua endpoint AI mengembalikan **mock data** sehingga aplikasi tetap bisa dijalankan untuk development.
+
 ## Testing
 
 ```bash
 pytest tests/ -v
 ```
 
-## API Documentation
-
-Interactive Swagger docs available at: `http://localhost:8000/docs`
-
 ## Project Structure
 
 ```
 app/
-├── api/            # Route handlers
-│   ├── deps.py     # Auth + user dependency injection
-│   ├── designs.py  # AI generation endpoints
-│   ├── projects.py # Project CRUD
-│   ├── rate_limit.py # Redis rate limiter
-│   ├── templates.py  # Template endpoints
-│   └── users.py    # User profile + credits
-├── core/           # Config, database, security
-├── models/         # SQLAlchemy ORM models
-├── schemas/        # Pydantic request/response schemas
-├── services/       # Business logic (LLM, image, storage)
-├── workers/        # Celery async tasks
-└── main.py         # FastAPI app entry point
+├── api/
+│   ├── deps.py         # Auth + user dependency injection
+│   ├── designs.py      # AI generation endpoints (/clarify, /parse, /generate, dll)
+│   ├── projects.py     # Project CRUD
+│   ├── rate_limit.py   # Redis rate limiter
+│   ├── templates.py    # Template endpoints
+│   └── users.py        # User profile + credits
+├── core/               # Config, database, security
+├── models/             # SQLAlchemy ORM models
+├── schemas/
+│   └── design.py       # Pydantic schemas (BriefQuestion, DesignGenerationRequest, dll)
+├── services/
+│   ├── llm_service.py  # Gemini Flash integration (clarify + parse + modify)
+│   ├── image_service.py
+│   ├── preprocess.py
+│   └── storage_service.py
+├── workers/            # Celery async tasks
+└── main.py             # FastAPI app entry point
 ```

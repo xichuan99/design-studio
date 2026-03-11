@@ -16,4 +16,17 @@ export interface ParsedDesignData {
     generated_image_url?: string;
 }
 
+export interface BriefQuestion {
+    id: string;
+    question: string;
+    type: 'choice' | 'text' | 'color_picker';
+    options?: string[];
+    default?: string;
+}
+
+export interface BriefQuestionsResponse {
+    questions: BriefQuestion[];
+}
+
+
 export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB

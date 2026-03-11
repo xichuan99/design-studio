@@ -23,6 +23,18 @@ class DesignGenerationRequest(BaseModel):
     color_palette_override: Optional[List[str]] = Field(None, json_schema_extra={"example": ["#FF5733", "#1A1A2E"]})
     num_variations: int = Field(2, ge=1, le=4)
     integrated_text: bool = Field(False, description="Whether to instruct the image AI to render text directly into the pixels")
+    clarification_answers: Optional[dict] = Field(None, description="User's answers to the clarification questions")
+
+# --- Clarification Interview Models ---
+class BriefQuestion(BaseModel):
+    id: str = Field(..., description="Unique identifier for the question")
+    question: str = Field(..., description="The question text in Indonesian")
+    type: str = Field(..., description="Question type: 'choice', 'text', or 'color_picker'")
+    options: Optional[List[str]] = Field(None, description="List of options if type is 'choice'")
+    default: Optional[str] = Field(None, description="Suggested default answer")
+
+class BriefQuestionsResponse(BaseModel):
+    questions: List[BriefQuestion] = Field(..., description="List of 3-4 clarification questions")
 
 # --- LLM Response Structure ---
 class AITextLayout(BaseModel):

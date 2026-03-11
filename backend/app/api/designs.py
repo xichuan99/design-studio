@@ -48,10 +48,26 @@ async def parse_text(request: DesignGenerationRequest) -> ParsedTextElements:
     try:
         # Use simple caching (or direct pass-through) to not over-query the LLM
         # For this prototype we'll just call the LLM directly
-        parsed = await parse_design_text(request.raw_text, integrated_text=request.integrated_text)
+        parsed = await parse_design_text(
+            raw_text=request.raw_text, 
+            integrated_text=request.integrated_text,
+            clarification_answers=request.clarification_answers
+        )
         return parsed
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to parse text: {str(e)}")
+
+@router.post("/clarify")
+async def clarify_design_brief(request: DesignGenerationRequest) -> dict:
+    """Analyze raw text and return 3-4 specific clarifying questions."""
+    from app.services.llm_service import generate_design_brief_questions
+    try:
+        result = await generate_design_brief_questions(request.raw_text)
+        return result
+    except Exception as e:
+        import logging
+        logging.exception("Failed to generate clarification questions")
+        raise HTTPException(status_code=500, detail=f"Failed to generate clarification questions: {str(e)}")
 
 @router.post("/modify-prompt")
 async def modify_prompt(request: ModifyPromptRequest) -> dict:

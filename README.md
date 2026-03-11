@@ -8,9 +8,10 @@
 
 ## ✨ Features
 
-- **AI Text Parsing** — Tulis deskripsi bisnis, AI (Gemini Flash) otomatis menghasilkan headline, tagline, CTA, dan rekomendasi warna
-- **4-Step Create Flow** — Flow UI intuitif: 1) Input Text, 2) Visual Prompt Review (dengan terjemahan bahasa Indonesia), 3) Generating, 4) Split-view Preview & Tweak.
-- **AI Image Generation** — Generate background visual profesional via Fal.ai (SDXL/Flux) dengan fitur Tweak Prompt di panel terpisah
+- **AI Design Brief Interview** — Sebelum generate, AI mengajukan 3–4 pertanyaan klarifikasi (mood, warna, objek utama) sehingga prompt yang dihasilkan jauh lebih akurat
+- **5-Step Create Flow** — Flow UI intuitif: 1) Input Teks, 2) **AI Interview** (pilihan ganda/teks), 3) Visual Prompt Review, 4) Generating, 5) Split-view Preview & Editor
+- **AI Text Parsing** — Gemini Flash menghasilkan headline, tagline, CTA, rekomendasi warna, dan layout JSON dari deskripsi teks
+- **AI Image Generation** — Generate background visual profesional via Fal.ai (SDXL/Flux) atau Gemini Imagen sebagai fallback
 - **Canvas Editor** — Editor drag-and-drop berbasis Konva.js dengan:
   - Text & image elements, resize, rotate, drag
   - Layer management: Bring Forward/Backward, Bring to Front/Back (+ keyboard shortcuts `⌘]` `⌘[` `⌘⇧]` `⌘⇧[`)
@@ -19,7 +20,6 @@
   - Solid background color picker
   - Undo/Redo history
   - Delete element (`⌫`)
-- **Template System** — 8+ template siap pakai yang bisa langsung diaplikasikan ke desain
 - **Export Multi-Format** — Download hasil ke PNG, JPG, atau PDF dengan kualitas tinggi
 - **Credit System** — 10 kredit gratis untuk generasi AI, dengan rate limiting (10 req/menit)
 - **Responsive** — Optimized untuk desktop dan mobile
@@ -176,9 +176,13 @@ All endpoints except `/health`, `/docs`, and `/api/templates` require authentica
 | `GET` | `/health` | Health check |
 | `GET` | `/docs` | Swagger UI documentation |
 | **Designs** | | |
-| `POST` | `/api/designs/parse` | Parse text → structured design elements |
-| `POST` | `/api/designs/generate` | Generate full design (credit + rate-limited) |
+| `POST` | `/api/designs/clarify` | Generate AI clarification questions dari teks singkat |
+| `POST` | `/api/designs/parse` | Parse teks + jawaban interview → prompt & layout JSON |
+| `POST` | `/api/designs/generate` | Generate full design/gambar (credit + rate-limited) |
+| `POST` | `/api/designs/modify-prompt` | Modifikasi prompt via instruksi bahasa Indonesia |
 | `GET` | `/api/designs/jobs/{job_id}` | Poll job status |
+| `GET` | `/api/designs/my-generations` | Riwayat generasi user |
+| `POST` | `/api/designs/upload` | Upload gambar referensi |
 | **Templates** | | |
 | `GET` | `/api/templates/` | List all templates |
 | `GET` | `/api/templates/{id}` | Get template details |
@@ -276,11 +280,19 @@ design-studio/
 │   ├── src/
 │   │   ├── app/                    # Next.js App Router pages
 │   │   │   ├── page.tsx            # Landing page
-│   │   │   ├── create/page.tsx     # AI generation page
+│   │   │   ├── create/
+│   │   │   │   ├── page.tsx        # AI generation page (5-step flow)
+│   │   │   │   └── types.ts        # Shared types (BriefQuestion, dll)
 │   │   │   ├── edit/[id]/page.tsx  # Canvas editor
 │   │   │   ├── projects/page.tsx   # Project list
 │   │   │   └── providers.tsx       # PostHog provider
 │   │   ├── components/
+│   │   │   ├── create/             # Komponen halaman Create
+│   │   │   │   ├── DesignBriefInterview.tsx  # AI interview form (BARU)
+│   │   │   │   ├── SidebarInputForm.tsx      # Form teks + referensi
+│   │   │   │   ├── SidebarActionBar.tsx      # Tombol aksi sidebar
+│   │   │   │   ├── VisualPromptEditor.tsx    # Prompt review editor
+│   │   │   │   └── GenerationProgress.tsx   # Loading state
 │   │   │   ├── editor/             # Canvas + Toolbar + StylePanel
 │   │   │   ├── credits/            # CreditBadge
 │   │   │   ├── onboarding/         # OnboardingTour

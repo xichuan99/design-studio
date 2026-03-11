@@ -3,7 +3,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { TemplateBrowser } from "@/components/templates/TemplateBrowser";
 import { ReferenceImageUpload } from "@/components/create/ReferenceImageUpload";
 
 interface SidebarInputFormProps {
@@ -17,10 +16,6 @@ interface SidebarInputFormProps {
     setStylePreference: (val: string) => void;
     integratedText: boolean;
     setIntegratedText: (val: boolean) => void;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    selectedTemplate: any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    handleSelectTemplate: (template: any) => void;
     showManualRef: boolean;
     setShowManualRef: (val: boolean) => void;
     referenceFile: File | null;
@@ -37,11 +32,11 @@ interface SidebarInputFormProps {
 export function SidebarInputForm({
     rawText, setRawText, isInputLocked, isParsing,
     aspectRatio, setAspectRatio, stylePreference, setStylePreference,
-    integratedText, setIntegratedText, selectedTemplate, handleSelectTemplate,
+    integratedText, setIntegratedText,
     showManualRef, setShowManualRef, referenceFile, referencePreview, isDragOver,
     fileInputRef, handleFileInputChange, handleRemoveFile, handleDragOver, handleDragLeave, handleDrop
 }: SidebarInputFormProps) {
-    const formatStepNumber = (!selectedTemplate || showManualRef) ? 4 : 3;
+    const formatStepNumber = showManualRef ? 3 : 2;
 
     return (
         <div className="space-y-6 pt-4">
@@ -59,19 +54,6 @@ export function SidebarInputForm({
                 />
             </div>
 
-            <div className={`space-y-2 pb-2 border-b ${isInputLocked ? 'opacity-60 pointer-events-none' : ''}`}>
-                <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-500 text-white text-xs font-bold">2</span>
-                    Template / Preset Desain
-                </label>
-                <TemplateBrowser
-                    onSelectTemplate={handleSelectTemplate}
-                    aspectRatio={aspectRatio}
-                    selectedTemplateId={selectedTemplate?.id}
-                    compact={true}
-                />
-            </div>
-
             <div className={`space-y-2 pb-4 border-b ${isInputLocked ? 'opacity-60 pointer-events-none' : ''}`}>
                 <ReferenceImageUpload
                     referenceFile={referenceFile}
@@ -79,7 +61,7 @@ export function SidebarInputForm({
                     isDragOver={isDragOver}
                     fileInputRef={fileInputRef}
                     showManualRef={showManualRef}
-                    selectedTemplate={selectedTemplate}
+                    selectedTemplate={null}
                     onFileInputChange={handleFileInputChange}
                     onRemoveFile={handleRemoveFile}
                     onDragOver={handleDragOver}

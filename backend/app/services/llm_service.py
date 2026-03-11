@@ -38,10 +38,74 @@ LAYOUT RULES:
 3. Available fonts: Inter, Poppins, Roboto, Playfair Display, Montserrat, Oswald.
 4. Headline: 60-96px. Sub-headline: 32-48px. CTA: 24-36px.
 5. Keep text within safe margins (x: 0.1-0.9, y: 0.1-0.9).
-6. Group related elements close together for readability.
+    group related elements close together for readability.
 """
 
-async def parse_design_text(raw_text: str, integrated_text: bool = False) -> ParsedTextElements:
+BRIEF_QUESTIONS_SYSTEM = """
+You are an expert design director. The user wants to create a visual design for their business but only provided a short, vague description.
+Your task is to ask 3 to 4 hyper-specific clarifying questions to figure out EXACTLY what to generate.
+
+Questions should focus on things that affect the visual output:
+- Mood / Vibe (e.g., minimalist, energetic, premium, cozy)
+- Color palette
+- Specific objects to feature (if they just said "promo kopi", ask what kind of coffee, what background)
+- The target platform (Instagram feed, poster, story) if not obvious
+
+Format each question to allow quick multiple-choice answers, but also allow text.
+Keep questions friendly and in Indonesian.
+
+Example options for Mood: "Minimalis & Bersih", "Hangat & Cozy", "Elegan & Mewah", "Ceria & Colorful".
+Example options for Color: "Warna Bumi (Mocca/Cokelat)", "Warna Cerah (Kuning/Merah)", "Monokrom", "Bebas, AI pilihkan".
+"""
+
+async def generate_design_brief_questions(raw_text: str) -> dict:
+    """Generates clarifying questions based on the user's initial raw text."""
+    from app.schemas.design import BriefQuestionsResponse
+
+    if not settings.GEMINI_API_KEY:
+        import logging
+        logging.warning("GEMINI_API_KEY is missing – returning mock brief questions")
+        return {
+            "questions": [
+                {
+                    "id": "mood",
+                    "question": "Seperti apa nuansa/mood yang Anda inginkan untuk desain ini?",
+                    "type": "choice",
+                    "options": ["Elegan & Premium", "Ceria & Fun", "Minimalis & Bersih", "Hangat & Cozy"],
+                    "default": "Minimalis & Bersih"
+                },
+                {
+                    "id": "color_palette",
+                    "question": "Ada preferensi warna utama?",
+                    "type": "choice",
+                    "options": ["Warna bumi (Coklat/Krem)", "Warna pastel lembut", "Warna mencolok/Terang", "Bebas, pilihin AI"],
+                    "default": "Bebas, pilihin AI"
+                },
+                {
+                    "id": "specific_elements",
+                    "question": "Apakah ada objek spesifik yang harus muncul di gambar? (misal: 'cangkir kopi di meja kayu')",
+                    "type": "text",
+                    "options": [],
+                    "default": "Sesuai konteks saja"
+                }
+            ]
+        }
+
+    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    
+    response = client.models.generate_content(
+        model='gemini-2.5-flash',
+        contents=[f"Buatkan pertanyaan klarifikasi desain untuk deskripsi ini:\n{raw_text}"],
+        config=types.GenerateContentConfig(
+            system_instruction=BRIEF_QUESTIONS_SYSTEM,
+            response_mime_type="application/json",
+            response_schema=BriefQuestionsResponse,
+            temperature=0.7,
+        ),
+    )
+    return json.loads(response.text)
+
+async def parse_design_text(raw_text: str, integrated_text: bool = False, clarification_answers: dict = None) -> ParsedTextElements:
     """Passes raw text to Gemini and extracts structured JSON elements for graphics."""
 
     # Append instructions for integrated text if requested
@@ -54,7 +118,15 @@ async def parse_design_text(raw_text: str, integrated_text: bool = False) -> Par
         Example visual_prompt: "A hyper-realistic 3D render of a neon sign that spells 'MEGA SALE', vibrant cyberpunk street background, bold typography."
         """
 
-    final_prompt = SYSTEM_PROMPT + prompt_modifier
+    clarification_modifier = ""
+    if clarification_answers:
+        clarification_modifier = f"""
+        USER'S CLARIFICATION ANSWERS:
+        The user has provided the following specific details for the design. YOU MUST incorporate these into your visual_prompt and visual_prompt_parts.
+        {json.dumps(clarification_answers, indent=2)}
+        """
+
+    final_prompt = SYSTEM_PROMPT + prompt_modifier + clarification_modifier
 
     if not settings.GEMINI_API_KEY:
         # Dev-mode mock: return sample parsed elements so the app is usable without an API key
