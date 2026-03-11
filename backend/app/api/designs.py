@@ -209,8 +209,20 @@ async def generate_design(
             else "copy space area for text overlay, no text, no letters, no words"
         )
 
+        import re
+        def sanitize_prompt_for_imagen(prompt: str) -> str:
+            replacements = {
+                r'\b(child|children|kid|kids|boy|girl|toddler|baby|infant|teen|teenager|young student|school child)(s)?\b': 'person',
+                r'\b(young singer)\b': 'singer',
+                r'\b(elementary school)\b': '', # remove specific young age contexts
+            }
+            sanitized = prompt
+            for pattern, replacement in replacements.items():
+                sanitized = re.sub(pattern, replacement, sanitized, flags=re.IGNORECASE)
+            return sanitized.strip()
+
         enhanced_prompt = (
-            f"{visual_prompt_final}, {style_suffix}, "
+            f"{sanitize_prompt_for_imagen(visual_prompt_final)}, {style_suffix}, "
             f"professional graphic design background, {text_instruction}, high quality, 4k"
         )
 
