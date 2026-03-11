@@ -23,9 +23,48 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ onBgStatusChan
 
     // Zoom State
     const [zoom, setZoom] = useState(1);
+    
+    // Auto-fit zoom logic
+    const calculateFitZoom = React.useCallback(() => {
+        if (!containerRef.current) return 1;
+        
+        const containerWidth = containerRef.current.clientWidth;
+        const containerHeight = containerRef.current.clientHeight;
+        
+        // Add some padding so it doesn't touch the window controls or edges
+        const PADDING = 80;
+        const CANVAS_SIZE = 1080;
+        
+        const scaleX = (containerWidth - PADDING) / CANVAS_SIZE;
+        const scaleY = (containerHeight - PADDING) / CANVAS_SIZE;
+        
+        return Math.min(scaleX, scaleY, 1); // Don't scale above 100% implicitly
+    }, []);
+
     const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.25, 3));
     const handleZoomOut = () => setZoom(prev => Math.max(prev - 0.25, 0.25));
-    const handleZoomReset = () => setZoom(1);
+    const handleZoomReset = () => setZoom(calculateFitZoom());
+
+    // Auto-fit on mount and resize
+    useEffect(() => {
+        if (!containerRef.current) return;
+        
+        // Use requestAnimationFrame to avoid synchronous setState warning
+        const rafId = requestAnimationFrame(() => {
+            setZoom(calculateFitZoom());
+        });
+        
+        const observer = new ResizeObserver(() => {
+            // Recalculate zoom when container size changes
+            setZoom(calculateFitZoom());
+        });
+        
+        observer.observe(containerRef.current);
+        return () => {
+            cancelAnimationFrame(rafId);
+            observer.disconnect();
+        };
+    }, [calculateFitZoom]);
 
     // Background Loading State
     const [bgStatus, setBgStatus] = useState<string>('loaded');
