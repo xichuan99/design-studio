@@ -235,3 +235,66 @@ async def modify_visual_prompt(original_parts: list, instruction: str) -> dict:
 
     data = json.loads(response.text)
     return data
+
+MAGIC_TEXT_SYSTEM = """
+You are an expert graphic designer and typographer.
+The user wants to overlay text onto the provided image.
+Analyze the image carefully:
+1. Identify the 'negative space' or empty areas where text will be legible and not cover the main subject.
+2. Break the user's raw text into a logical hierarchy (e.g., headline, sub-headline, body, CTA).
+3. Assign an appropriate font_family, font_weight, font_size, color (hex code), and text alignment.
+   - Allowed fonts: Inter, Poppins, Roboto, Playfair Display, Montserrat, Oswald.
+   - Ensure the text color contrasts well against the background area you chose.
+4. Provide the exact coordinates (x, y) where each piece of text should be placed.
+   - Coordinates must be proportional floats between 0.0 and 1.0 (e.g., x: 0.5, y: 0.2).
+   - x: 0.0 is left, 1.0 is right.
+   - y: 0.0 is top, 1.0 is bottom.
+
+Return the result STRICTLY as a JSON object matching the requested schema.
+"""
+
+async def generate_magic_text_layout(image_base64: str, text: str) -> dict:
+    from app.schemas.design import MagicTextResponse
+    import base64
+
+    if not settings.GEMINI_API_KEY:
+        import logging
+        logging.warning("GEMINI_API_KEY is missing – returning mock magic text")
+        return MagicTextResponse(
+            elements=[
+                {
+                    "text": text.split()[0] if text else "PROMO",
+                    "font_family": "Montserrat",
+                    "font_size": 72,
+                    "font_weight": 700,
+                    "color": "#FFFFFF",
+                    "align": "center",
+                    "x": 0.5,
+                    "y": 0.3
+                }
+            ]
+        ).model_dump()
+
+    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    
+    # Pre-process base64 if it has data URI prefix
+    if "," in image_base64:
+        image_base64 = image_base64.split(",")[1]
+    
+    image_bytes = base64.b64decode(image_base64)
+    
+    response = client.models.generate_content(
+        model='gemini-2.5-flash',
+        contents=[
+            types.Part.from_bytes(data=image_bytes, mime_type='image/png'),
+            f"Here is the text I want to place on this image: {text}"
+        ],
+        config=types.GenerateContentConfig(
+            system_instruction=MAGIC_TEXT_SYSTEM,
+            response_mime_type="application/json",
+            response_schema=MagicTextResponse,
+        ),
+    )
+
+    return json.loads(response.text)
+

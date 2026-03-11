@@ -15,6 +15,8 @@ interface UnifiedPreviewEditorProps {
     onTogglePromptPart: (index: number) => void;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onModifyPromptParts: (newParts: any, newCombined: string, newTranslation?: string) => void;
+    onGenerate: () => void;
+    isGeneratingImage: boolean;
 }
 
 export function UnifiedPreviewEditor({
@@ -25,7 +27,9 @@ export function UnifiedPreviewEditor({
     isSaving,
     onProceedToEditor,
     onTogglePromptPart,
-    onModifyPromptParts
+    onModifyPromptParts,
+    onGenerate,
+    isGeneratingImage
 }: UnifiedPreviewEditorProps) {
     return (
         <div className="flex flex-col md:flex-row w-full h-full overflow-hidden bg-background">
@@ -66,18 +70,33 @@ export function UnifiedPreviewEditor({
                         ))}
                     </div>
                     
-                    <Button
-                        size="sm"
-                        className="font-bold shadow-lg h-10 px-6 shrink-0"
-                        onClick={onProceedToEditor}
-                        disabled={isSaving}
-                    >
-                        {isSaving ? (
-                            <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Masuk Editor...</>
-                        ) : (
-                            <>Lanjut ke Editor <ArrowRight className="w-4 h-4 ml-2" /></>
-                        )}
-                    </Button>
+                    <div className="flex items-center gap-3 shrink-0">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="font-bold h-10 px-4 shrink-0 transition-opacity"
+                            onClick={onGenerate}
+                            disabled={isGeneratingImage || isSaving}
+                        >
+                            {isGeneratingImage ? (
+                                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generate...</>
+                            ) : (
+                                "🔄 Generate Ulang"
+                            )}
+                        </Button>
+                        <Button
+                            size="sm"
+                            className="font-bold shadow-lg h-10 px-6 shrink-0"
+                            onClick={onProceedToEditor}
+                            disabled={isSaving || isGeneratingImage}
+                        >
+                            {isSaving ? (
+                                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Masuk Editor...</>
+                            ) : (
+                                <>Lanjut ke Editor <ArrowRight className="w-4 h-4 ml-2" /></>
+                            )}
+                        </Button>
+                    </div>
                 </div>
             </div>
 

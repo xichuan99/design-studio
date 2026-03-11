@@ -484,11 +484,9 @@ export default function CreatePage() {
                     <SidebarActionBar
                         currentStep={currentStep}
                         isParsing={isParsing}
-                        isGeneratingImage={isGeneratingImage}
                         rawText={rawText}
                         isInputLocked={isInputLocked}
                         onAnalyze={handleAnalyze}
-                        onGenerate={handleGenerateImage}
                         onBackToInput={() => setCurrentStep('input')}
                     />
                 </aside>
@@ -503,7 +501,7 @@ export default function CreatePage() {
                             isGeneratingPrompt={isParsing}
                         />
                     ) : currentStep === 'prompt-review' && parsedData ? (
-                        <div className="w-full max-w-4xl mx-auto animation-fade-in shadow-xl rounded-2xl overflow-hidden border border-border/50">
+                        <div className="w-full max-w-4xl mx-auto animation-fade-in bg-card p-6 md:p-10 shadow-xl rounded-2xl overflow-hidden border border-border/50">
                             <VisualPromptEditor
                                 parsedData={parsedData}
                                 onTogglePromptPart={handleTogglePromptPart}
@@ -516,6 +514,8 @@ export default function CreatePage() {
                                         indonesian_translation: newTranslation || prev.indonesian_translation
                                     } : null);
                                 }}
+                                onGenerate={handleGenerateImage}
+                                isGeneratingImage={isGeneratingImage}
                             />
                         </div>
                     ) : currentStep === 'preview' && parsedData ? (
@@ -536,6 +536,8 @@ export default function CreatePage() {
                                     indonesian_translation: newTranslation || prev.indonesian_translation
                                 } : null);
                             }}
+                            onGenerate={handleGenerateImage}
+                            isGeneratingImage={isGeneratingImage}
                         />
                     ) : currentStep === 'generating' ? (
                         <GenerationProgress />
@@ -556,7 +558,7 @@ export default function CreatePage() {
                             </div>
                             <h2 className="text-2xl font-bold mb-2">Area Preview Desain</h2>
                             <p className="text-center text-muted-foreground max-w-md">
-                                Hasil keajaiban AI akan muncul di sini. Silakan isi form di sebelah kiri dan klik <strong>Buat Desain AI</strong> untuk memulai.
+                                Hasil keajaiban AI akan muncul di sini. Silakan jelaskan desain yang Anda inginkan di samping kiri untuk memulai.
                             </p>
                         </div>
                     )}

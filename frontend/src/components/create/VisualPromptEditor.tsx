@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Loader2, Undo2, ChevronDown } from "lucide-react";
+import { Loader2, Undo2, ChevronDown, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,8 @@ interface VisualPromptEditorProps {
     onTogglePromptPart: (index: number) => void;
     onModifyPromptParts: (newParts: VisualPromptPart[], newCombined: string, newTranslation?: string) => void;
     compact?: boolean;
+    onGenerate?: () => void;
+    isGeneratingImage?: boolean;
 }
 
 const SUGGESTIONS = [
@@ -28,7 +30,9 @@ export function VisualPromptEditor({
     parsedData,
     onTogglePromptPart,
     onModifyPromptParts,
-    compact = false
+    compact = false,
+    onGenerate,
+    isGeneratingImage
 }: VisualPromptEditorProps) {
     const [instruction, setInstruction] = useState("");
     const [isModifying, setIsModifying] = useState(false);
@@ -215,6 +219,24 @@ export function VisualPromptEditor({
                     ))}
                 </div>
             </div>            
+
+            {/* Generate AI Button - Only in non-compact mode */}
+            {!compact && onGenerate && (
+                <div className="mt-6">
+                    <Button 
+                        onClick={onGenerate} 
+                        disabled={isGeneratingImage}
+                        className="w-full h-14 text-lg font-bold shadow-xl gap-2 rounded-xl"
+                        size="lg"
+                    >
+                        {isGeneratingImage ? (
+                            <><Loader2 className="w-5 h-5 animate-spin" /> Sedang Menggambar...</>
+                        ) : (
+                            <><Sparkles className="w-5 h-5" /> Generate Gambar AI</>
+                        )}
+                    </Button>
+                </div>
+            )}
         </div>
     );
 }

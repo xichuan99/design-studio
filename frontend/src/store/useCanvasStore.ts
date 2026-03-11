@@ -64,6 +64,7 @@ export interface CanvasState {
 interface CanvasActions {
     // Elements
     addElement: (element: Omit<CanvasElement, 'id'>) => void;
+    addMagicTextElements: (elements: Omit<CanvasElement, 'id'>[]) => void;
     updateElement: (id: string, attrs: Partial<CanvasElement>) => void;
     deleteElement: (id: string) => void;
     deleteSelectedElements: () => void;
@@ -132,6 +133,19 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set) => ({
         const newElement = { ...element, id: uuidv4() };
         const newElements = [...state.elements, newElement];
         return saveHistory(state, newElements);
+    }),
+
+    addMagicTextElements: (elementsToAdd) => set((state) => {
+        // Remove any previous Magic Text elements before adding new ones
+        const filteredElements = state.elements.filter(el => !(el.label && el.label.startsWith('Magic Text ')));
+        
+        const newElementsWithId = elementsToAdd.map(el => ({ ...el, id: uuidv4() }));
+        const newElements = [...filteredElements, ...newElementsWithId];
+        
+        return {
+            ...saveHistory(state, newElements),
+            selectedElementIds: newElementsWithId.map(el => el.id)
+        };
     }),
 
     updateElement: (id, attrs) => set((state) => {

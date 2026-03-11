@@ -105,3 +105,22 @@ class DesignGenerationResponse(BaseModel):
     credits_used: int = 0
     credits_remaining: int = 0
     generation_time_ms: Optional[int] = None
+
+class MagicTextRequest(BaseModel):
+    image_base64: str = Field(..., description="Base64 encoded string of the current canvas image")
+    text: str = Field(..., description="The raw promotional text to lay out")
+    canvas_width: int = Field(1024, description="Width of the canvas")
+    canvas_height: int = Field(1024, description="Height of the canvas")
+
+class MagicTextElement(BaseModel):
+    text: str = Field(...)
+    font_family: str = Field("Inter")
+    font_size: int = Field(48)
+    font_weight: int = Field(700)
+    color: str = Field("#FFFFFF")
+    align: str = Field("center")
+    x: float = Field(..., description="Proportional x-coordinate (0.0-1.0)")
+    y: float = Field(..., description="Proportional y-coordinate (0.0-1.0)")
+
+class MagicTextResponse(BaseModel):
+    elements: List[MagicTextElement] = Field(default_factory=list)

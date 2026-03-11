@@ -190,5 +190,18 @@ export function useProjectApi() {
         return res.json();
     };
 
-    return { getProject, saveProject, getProjects, deleteProject, getUserProfile, updateProfile, deleteAccount, generateDesign, uploadImage, getJobStatus, getMyGenerations, getTemplates, getHistory, createHistory };
+    const generateMagicTextLayout = async (payload: { image_base64: string; text: string; canvas_width?: number; canvas_height?: number }) => {
+        const res = await fetch(`${API_BASE_URL}/designs/magic-text`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+            const errBase = await res.json().catch(() => ({}));
+            throw new Error(errBase.detail || 'Failed to generate magic text layout');
+        }
+        return res.json();
+    };
+
+    return { getProject, saveProject, getProjects, deleteProject, getUserProfile, updateProfile, deleteAccount, generateDesign, uploadImage, getJobStatus, getMyGenerations, getTemplates, getHistory, createHistory, generateMagicTextLayout };
 }

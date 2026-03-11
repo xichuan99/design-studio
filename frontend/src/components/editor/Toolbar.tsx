@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useCanvasStore } from '@/store/useCanvasStore';
 import { useProjectApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
-import { Type, Square, Circle, Minus, Blocks, Upload } from 'lucide-react';
+import { Type, Square, Circle, Minus, Blocks, Upload, Trash2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface ToolbarProps {
@@ -157,6 +157,20 @@ export const Toolbar: React.FC<ToolbarProps> = ({ }) => {
                     />
                 </div>
                 <span className="text-[9px] font-medium text-muted-foreground mt-2 uppercase tracking-wider">Bg Color</span>
+            </div>
+
+            {/* Remove Background Option */}
+            <div className="w-full px-2 pb-2">
+                <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="w-full flex-col h-14 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive group"
+                    onClick={() => useCanvasStore.getState().setBackgroundUrl(null)}
+                    title="Remove Image Background"
+                >
+                    <Trash2 className="h-5 w-5 mb-1 opacity-70 group-hover:opacity-100 transition-opacity" />
+                    <span className="text-[9.5px] font-medium leading-none">Del Bg</span>
+                </Button>
             </div>
         </div>
     );

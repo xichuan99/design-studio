@@ -84,6 +84,32 @@ async def modify_prompt(request: ModifyPromptRequest) -> dict:
         logging.exception("Failed to modify prompt")
         raise HTTPException(status_code=500, detail=f"Failed to modify prompt: {str(e)}")
 
+@router.post("/magic-text")
+async def magic_text_layout(
+    request: dict,
+    current_user: User = Depends(rate_limit_dependency),
+) -> dict:
+    """Uses Vision AI to layout user text onto an existing canvas image."""
+    from app.services.llm_service import generate_magic_text_layout
+    try:
+        image_base64 = request.get("image_base64")
+        text = request.get("text")
+        if not image_base64 or not text:
+            raise HTTPException(status_code=400, detail="Missing image_base64 or text")
+
+        # Validate base64 is not unreasonably large (>20MB decoded ≈ ~27MB base64)
+        if len(image_base64) > 30_000_000:
+            raise HTTPException(status_code=400, detail="Image too large. Max ~20MB.")
+
+        result = await generate_magic_text_layout(image_base64=image_base64, text=text)
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        import logging
+        logging.exception("Failed to generate magic text layout")
+        raise HTTPException(status_code=500, detail=f"Failed to generate layout: {str(e)}")
+
 @router.post("/generate")
 async def generate_design(
     request: DesignGenerationRequest,
