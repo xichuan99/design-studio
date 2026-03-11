@@ -276,13 +276,13 @@ async def generate_magic_text_layout(image_base64: str, text: str) -> dict:
         ).model_dump()
 
     client = genai.Client(api_key=settings.GEMINI_API_KEY)
-    
+
     # Pre-process base64 if it has data URI prefix
     if "," in image_base64:
         image_base64 = image_base64.split(",")[1]
-    
+
     image_bytes = base64.b64decode(image_base64)
-    
+
     response = client.models.generate_content(
         model='gemini-2.5-flash',
         contents=[
