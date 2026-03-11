@@ -44,7 +44,7 @@ export const LeftSidebar: React.FC = () => {
             height: shapeType === 'line' ? 4 : 150,
             fill: '#e2e8f0',
             stroke: '#0f172a',
-            strokeWidth: shapeType === 'line' ? 0 : 0,
+            strokeWidth: 0,
             rotation: 0,
         });
     };
