@@ -13,6 +13,8 @@ env:
   REGISTRY: ghcr.io
   BACKEND_IMAGE: ghcr.io/clarinovist/design-studio-backend
   FRONTEND_IMAGE: ghcr.io/clarinovist/design-studio-frontend
+  # Force all actions to use Node 24 to fix Node 20 deprecation warnings
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   # ─────────────────────────────────────────────
