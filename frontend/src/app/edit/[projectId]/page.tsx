@@ -19,6 +19,7 @@ import { LayersPanel } from "@/components/editor/LayersPanel";
 import { AIPromptPanel } from "@/components/editor/AIPromptPanel";
 import { AIAssetsPanel } from "@/components/editor/AIAssetsPanel";
 import { MagicTextPanel } from "@/components/editor/MagicTextPanel";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Layers, SlidersHorizontal, History as HistoryIcon, Sparkles, Image as ImageIcon, Wand2 } from "lucide-react";
 
@@ -192,26 +193,61 @@ export default function EditorPage() {
                     ${mobilePanelOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}
                 `}>
                     <Tabs defaultValue="properties" className="w-full flex flex-col h-full border-none">
-                        <TabsList className="grid w-full grid-cols-6 rounded-none border-b border-border/40 bg-transparent h-12 p-0">
-                            <TabsTrigger value="properties" className="rounded-none data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-300 h-full px-1" title="Properties">
-                                <SlidersHorizontal className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline text-xs font-semibold">Props</span>
-                            </TabsTrigger>
-                            <TabsTrigger value="layers" className="rounded-none data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-300 h-full px-1" title="Layers">
-                                <Layers className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline text-xs font-semibold">Layers</span>
-                            </TabsTrigger>
-                            <TabsTrigger value="ai" className="rounded-none data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-300 h-full px-1" title="Generate AI">
-                                <Sparkles className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline text-xs font-semibold">AI Base</span>
-                            </TabsTrigger>
-                            <TabsTrigger value="magictext" className="rounded-none data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-300 h-full px-1" title="Magic Text">
-                                <Wand2 className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline text-xs font-semibold">Magic Teks</span>
-                            </TabsTrigger>
-                            <TabsTrigger value="assets" className="rounded-none data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-300 h-full px-1" title="Aset/Galeri">
-                                <ImageIcon className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline text-xs font-semibold">Aset</span>
-                            </TabsTrigger>
-                            <TabsTrigger value="history" className="rounded-none data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-300 h-full relative" disabled={!projectId} title="History">
-                                <HistoryIcon className="h-4 w-4" />
-                            </TabsTrigger>
-                        </TabsList>
+                            <TabsList className="flex w-full overflow-x-auto no-scrollbar rounded-none border-b border-border/40 bg-transparent h-12 p-0 items-center justify-evenly shrink-0">
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <TabsTrigger value="properties" className="shrink-0 rounded-none hover:bg-muted/50 data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-300 h-full px-4" title="Properties">
+                                            <SlidersHorizontal className="h-[18px] w-[18px]" />
+                                        </TabsTrigger>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="bottom" className="text-xs">Props</TooltipContent>
+                                </Tooltip>
+
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <TabsTrigger value="layers" className="shrink-0 rounded-none hover:bg-muted/50 data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-300 h-full px-4" title="Layers">
+                                            <Layers className="h-[18px] w-[18px]" />
+                                        </TabsTrigger>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="bottom" className="text-xs">Layers</TooltipContent>
+                                </Tooltip>
+
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <TabsTrigger value="ai" className="shrink-0 rounded-none hover:bg-muted/50 data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-300 h-full px-4" title="Generate AI">
+                                            <Sparkles className="h-[18px] w-[18px]" />
+                                        </TabsTrigger>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="bottom" className="text-xs">AI Base</TooltipContent>
+                                </Tooltip>
+
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <TabsTrigger value="magictext" className="shrink-0 rounded-none hover:bg-muted/50 data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-300 h-full px-4" title="Magic Text">
+                                            <Wand2 className="h-[18px] w-[18px]" />
+                                        </TabsTrigger>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="bottom" className="text-xs">Magic Teks</TooltipContent>
+                                </Tooltip>
+
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <TabsTrigger value="assets" className="shrink-0 rounded-none hover:bg-muted/50 data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-300 h-full px-4" title="Aset/Galeri">
+                                            <ImageIcon className="h-[18px] w-[18px]" />
+                                        </TabsTrigger>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="bottom" className="text-xs">Aset</TooltipContent>
+                                </Tooltip>
+
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <TabsTrigger value="history" className="shrink-0 rounded-none hover:bg-muted/50 data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-300 h-full px-4 relative ml-auto" disabled={!projectId} title="History">
+                                            <HistoryIcon className="h-[18px] w-[18px]" />
+                                        </TabsTrigger>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="bottom" className="text-xs">History</TooltipContent>
+                                </Tooltip>
+                            </TabsList>
 
                         <TabsContent value="properties" className="mt-0 flex-1 overflow-y-auto w-full">
                             <StylePanel />
