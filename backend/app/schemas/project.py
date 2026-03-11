@@ -29,6 +29,8 @@ class ProjectUpdate(BaseModel):
     title: Optional[str] = None
     canvas_state: Optional[Dict[str, Any]] = None
     status: Optional[str] = None
+    aspect_ratio: Optional[str] = None
+
 
 class ProjectResponse(BaseModel):
     id: UUID

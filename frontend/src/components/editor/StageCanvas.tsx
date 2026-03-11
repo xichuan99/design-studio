@@ -57,12 +57,10 @@ export const StageCanvas: React.FC<StageCanvasProps> = ({ width, height, onBgSta
         }
     }, [highlightElementId, stageRef]);
 
-    // Calculate relative scaling based on background boundaries
-    // Assuming default canvas size of 1024x1024 for 1:1, etc.
-    const logicalWidth = 1024;
-    const logicalHeight = bgImage ? (bgImage.height / bgImage.width) * logicalWidth : 1024;
-
-    const scale = Math.min(width / logicalWidth, height / logicalHeight);
+    // Logical dimensions are now precisely the width and height provided
+    const logicalWidth = width;
+    const logicalHeight = height;
+    const scale = 1;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleStageClick = (e: any) => {
@@ -206,7 +204,7 @@ export const StageCanvas: React.FC<StageCanvasProps> = ({ width, height, onBgSta
             ref={handleStageRef}
             style={{ background: backgroundColor || '#ffffff', margin: '0 auto', display: 'flex', justifyContent: 'center' }}
         >
-            <Layer scaleX={scale} scaleY={scale} x={(width - logicalWidth * scale) / 2} y={(height - logicalHeight * scale) / 2}>
+            <Layer scaleX={scale} scaleY={scale} x={0} y={0}>
                 {/* Background Image */}
                 {bgImage && (
                     <KonvaImage

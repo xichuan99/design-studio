@@ -19,7 +19,7 @@ interface CanvasWorkspaceProps {
 
 export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ onBgStatusChange }) => {
     const containerRef = useRef<HTMLDivElement>(null);
-    const { selectedElementIds, deleteSelectedElements, duplicateSelectedElements, elements, backgroundUrl, backgroundColor } = useCanvasStore();
+    const { selectedElementIds, deleteSelectedElements, duplicateSelectedElements, elements, backgroundUrl, backgroundColor, canvasWidth, canvasHeight } = useCanvasStore();
 
     // Zoom State
     const [zoom, setZoom] = useState(1);
@@ -33,13 +33,12 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ onBgStatusChan
         
         // Add some padding so it doesn't touch the window controls or edges
         const PADDING = 80;
-        const CANVAS_SIZE = 1080;
         
-        const scaleX = (containerWidth - PADDING) / CANVAS_SIZE;
-        const scaleY = (containerHeight - PADDING) / CANVAS_SIZE;
+        const scaleX = (containerWidth - PADDING) / canvasWidth;
+        const scaleY = (containerHeight - PADDING) / canvasHeight;
         
         return Math.min(scaleX, scaleY, 1); // Don't scale above 100% implicitly
-    }, []);
+    }, [canvasWidth, canvasHeight]);
 
     const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.25, 3));
     const handleZoomOut = () => setZoom(prev => Math.max(prev - 0.25, 0.25));
@@ -182,8 +181,8 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ onBgStatusChan
             <div
                 className="shadow-[0_0_50px_rgba(0,0,0,0.5)] ring-1 ring-border/50 bg-card transition-shadow will-change-transform relative z-10"
                 style={{
-                    width: '1080px',
-                    height: '1080px',
+                    width: `${canvasWidth}px`,
+                    height: `${canvasHeight}px`,
                     ...transformStyle
                 }}
                 onClick={(e) => e.stopPropagation()}
@@ -192,7 +191,7 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ onBgStatusChan
                     <div className="absolute inset-0 z-0 bg-muted animate-pulse" />
                 )}
                 <div className="relative z-10 w-full h-full">
-                    <StageCanvas width={1080} height={1080} onBgStatusChange={setBgStatus} />
+                    <StageCanvas width={canvasWidth} height={canvasHeight} onBgStatusChange={setBgStatus} />
                 </div>
             </div>
         </div>

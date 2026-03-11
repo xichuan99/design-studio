@@ -8,6 +8,7 @@ interface ProjectPayload {
     title: string;
     canvas_state: object;
     status: string;
+    aspect_ratio?: string;
 }
 
 export function useProjectApi() {

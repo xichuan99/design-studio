@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useCanvasStore } from '@/store/useCanvasStore';
 import { useProjectApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
-import { Undo, Redo, Download as DownloadIcon, Save, Loader2, ChevronLeft } from 'lucide-react';
+import { Undo, Redo, Download as DownloadIcon, Save, Loader2, ChevronLeft, Cloud, CloudOff, CloudAlert, Check } from 'lucide-react';
 import { ExportDialog } from './ExportDialog';
 import { SaveStatus } from '@/hooks/useAutoSave';
 import Link from 'next/link';
@@ -69,34 +69,45 @@ export const EditorTopBar: React.FC<EditorTopBarProps> = ({ projectId, saveStatu
     const renderSaveContent = () => {
         if (saveStatus === 'saving' || (saveStatus === 'idle' && saving)) {
             return (
-                <div className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">Saving...</span>
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-muted/50 cursor-default">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                    <span className="text-xs font-medium text-muted-foreground hidden sm:inline-block">Menyimpan...</span>
                 </div>
             );
         }
         if (saveStatus === 'saved') {
             return (
-                <div className="flex items-center gap-1">
-                    <svg className="h-4 w-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded-full text-green-600/80 cursor-default animation-fade-in transition-all">
+                    <div className="relative flex items-center justify-center">
+                        <Cloud className="h-4 w-4" />
+                        <Check className="h-2 w-2 absolute mt-0.5 text-background font-bold drop-shadow-sm" strokeWidth={4} />
+                    </div>
+                    <span className="text-xs font-medium hidden sm:inline-block">Tersimpan</span>
                 </div>
             );
         }
         if (saveStatus === 'error') {
             return (
-                <div className="flex items-center gap-1">
-                    <Save className="h-4 w-4 text-red-500" />
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded-full text-destructive bg-destructive/10 cursor-default">
+                    <CloudAlert className="h-4 w-4" />
+                    <span className="text-xs font-medium hidden sm:inline-block">Gagal menyimpan</span>
+                </div>
+            );
+        }
+        if (saveStatus === 'unsaved') {
+            return (
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded-full group cursor-pointer hover:bg-muted" onClick={handleSaveProject}>
+                    <div className="relative flex h-2 w-2 mt-0.5 mr-0.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/40 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                    </div>
+                    <span className="text-xs font-medium text-muted-foreground group-hover:text-primary transition-colors hidden sm:inline-block">Perubahan belum tersimpan</span>
                 </div>
             );
         }
 
-        return (
-            <div className="flex items-center gap-1 group cursor-pointer" onClick={handleSaveProject}>
-                <Save className={`h-4 w-4 ${saveStatus === 'unsaved' ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`} />
-            </div>
-        );
+        // Idle and pristine state
+        return null;
     };
 
     return (

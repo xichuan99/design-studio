@@ -56,6 +56,8 @@ export interface CanvasState {
     backgroundUrl: string | null;
     backgroundColor: string;
     projectTitle: string;
+    canvasWidth: number;
+    canvasHeight: number;
     history: CanvasElement[][];
     historyIndex: number;
     stageRef: Konva.Stage | null; // Ref to the Konva Stage for exports
@@ -91,6 +93,7 @@ interface CanvasActions {
     setBackgroundUrl: (url: string | null) => void;
     setBackgroundColor: (color: string) => void;
     setProjectTitle: (title: string) => void;
+    setCanvasDimensions: (width: number, height: number) => void;
     loadState: (elements: CanvasElement[], backgroundUrl: string | null, title?: string, backgroundColor?: string) => void;
     setStageRef: (ref: Konva.Stage) => void;
 
@@ -116,9 +119,13 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set) => ({
     backgroundUrl: null,
     backgroundColor: '#ffffff',
     projectTitle: 'Untitled Design',
+    canvasWidth: 1080,
+    canvasHeight: 1080,
     history: [[]],
     historyIndex: 0,
     stageRef: null,
+
+    setCanvasDimensions: (width, height) => set({ canvasWidth: width, canvasHeight: height }),
 
     setHighlightElementId: (id) => {
         set({ highlightElementId: id });

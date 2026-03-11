@@ -86,6 +86,14 @@ export default function EditorPage() {
                     const hasBg = !!project.canvas_state.backgroundUrl;
                     hasBackgroundRef.current = hasBg;
 
+                    // Support dynamic aspect ratios
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const ar = (project as any).aspect_ratio || '1:1';
+                    type Dimensions = [number, number];
+                    const dims: Record<string, Dimensions> = { '1:1': [1080, 1080], '9:16': [1080, 1920], '16:9': [1920, 1080] };
+                    const [w, h] = dims[ar] || [1080, 1080];
+                    useCanvasStore.getState().setCanvasDimensions(w, h);
+
                     loadStateRef.current(
                         project.canvas_state.elements || [],
                         project.canvas_state.backgroundUrl || null,

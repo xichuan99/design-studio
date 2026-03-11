@@ -39,7 +39,7 @@ async def create_project(
         title=project_in.title or "Untitled Design",
         status=project_in.status or "draft",
         canvas_state=project_in.canvas_state,
-        aspect_ratio="1:1" # Will update later if aspect ratio passed in canvas state or directly
+        aspect_ratio=project_in.aspect_ratio or "1:1"
     )
     db.add(db_project)
     await db.commit()
@@ -87,6 +87,8 @@ async def update_project(
         project.status = project_in.status
     if project_in.canvas_state is not None:
         project.canvas_state = project_in.canvas_state
+    if project_in.aspect_ratio is not None:
+        project.aspect_ratio = project_in.aspect_ratio
 
     await db.commit()
     await db.refresh(project)

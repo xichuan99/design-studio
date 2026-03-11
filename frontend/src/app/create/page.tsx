@@ -383,6 +383,7 @@ export default function CreatePage() {
             const newProject = await saveProject({
                 title: "AI Generated Design",
                 status: "draft",
+                aspect_ratio: aspectRatio,
                 canvas_state: {
                     backgroundUrl: activeImageUrl || null,
                     elements: elements
