@@ -49,7 +49,7 @@ async def parse_text(request: DesignGenerationRequest) -> ParsedTextElements:
         # Use simple caching (or direct pass-through) to not over-query the LLM
         # For this prototype we'll just call the LLM directly
         parsed = await parse_design_text(
-            raw_text=request.raw_text, 
+            raw_text=request.raw_text,
             integrated_text=request.integrated_text,
             clarification_answers=request.clarification_answers
         )

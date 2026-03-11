@@ -30,8 +30,6 @@ interface SavedCreateState {
     imageHistory: { url: string; prompt: string }[];
     activeImageIndex: number;
     integratedText: boolean;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    selectedTemplate: any;
     briefQuestions: BriefQuestion[];
     briefAnswers: Record<string, string>;
 }
@@ -54,8 +52,6 @@ export default function CreatePage() {
     const [isDragOver, setIsDragOver] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [integratedText, setIntegratedText] = useState(false);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
     const [briefQuestions, setBriefQuestions] = useState<BriefQuestion[]>([]);
     const [briefAnswers, setBriefAnswers] = useState<Record<string, string>>({});
 
@@ -84,7 +80,6 @@ export default function CreatePage() {
                 setImageHistory(parsed.imageHistory || []);
                 setActiveImageIndex(parsed.activeImageIndex || 0);
                 setIntegratedText(parsed.integratedText || false);
-                setSelectedTemplate(parsed.selectedTemplate || null);
                 setBriefQuestions(parsed.briefQuestions || []);
                 setBriefAnswers(parsed.briefAnswers || {});
             } catch (e) {
@@ -107,14 +102,13 @@ export default function CreatePage() {
             imageHistory,
             activeImageIndex,
             integratedText,
-            selectedTemplate,
             briefQuestions,
             briefAnswers
         };
         localStorage.setItem('smartdesign_create_state', JSON.stringify(stateToSave));
     }, [
-        isInitialized, rawText, aspectRatio, stylePreference, currentStep, 
-        parsedData, imageHistory, activeImageIndex, integratedText, selectedTemplate,
+        isInitialized, rawText, aspectRatio, stylePreference, currentStep,
+        parsedData, imageHistory, activeImageIndex, integratedText,
         briefQuestions, briefAnswers
     ]);
 
@@ -136,8 +130,6 @@ export default function CreatePage() {
             setCurrentStep('input');
             setParsedData(null);
             setImageHistory([]);
-            setActiveImageIndex(0);
-            setSelectedTemplate(null);
             setBriefQuestions([]);
             setBriefAnswers({});
             setReferenceFile(null);
@@ -308,10 +300,7 @@ export default function CreatePage() {
                 }
             }
 
-            // Add template-specific prompt suffix to prompt if available
-            const finalPrompt = selectedTemplate?.prompt_suffix
-                ? `${assembledPrompt.trim()}. ${selectedTemplate.prompt_suffix}`
-                : assembledPrompt;
+            const finalPrompt = assembledPrompt;
 
             // STEP 2: Generate Design (Background Image)
             const jobData = await generateDesign({
@@ -319,7 +308,6 @@ export default function CreatePage() {
                 aspect_ratio: aspectRatio,
                 style_preference: stylePreference,
                 reference_image_url: uploadedReferenceUrl,
-                template_id: selectedTemplate?.id,
                 integrated_text: integratedText,
             });
             const jobId = jobData.job_id;
@@ -382,7 +370,7 @@ export default function CreatePage() {
         if (!parsedData) return;
         
         // Use active image from history if available
-        const activeImageUrl = imageHistory[activeImageIndex]?.url || parsedData.generated_image_url || selectedTemplate?.thumbnail_url;
+        const activeImageUrl = imageHistory[activeImageIndex]?.url || parsedData.generated_image_url;
         
         setIsSaving(true);
         try {
@@ -390,10 +378,10 @@ export default function CreatePage() {
                 ? []
                 : generateCanvasElementsFromTemplate(
                     parsedData,
-                    selectedTemplate?.default_text_layers || []
+                    []
                 );
             const newProject = await saveProject({
-                title: selectedTemplate ? `AI + ${selectedTemplate.name}` : "AI Generated Design",
+                title: "AI Generated Design",
                 status: "draft",
                 canvas_state: {
                     backgroundUrl: activeImageUrl || null,
@@ -536,7 +524,6 @@ export default function CreatePage() {
                             imageHistory={imageHistory}
                             activeImageIndex={activeImageIndex}
                             setActiveImageIndex={setActiveImageIndex}
-                            selectedTemplate={selectedTemplate}
                             isSaving={isSaving}
                             onProceedToEditor={handleProceedToEditor}
                             onTogglePromptPart={handleTogglePromptPart}

@@ -10,8 +10,6 @@ interface UnifiedPreviewEditorProps {
     imageHistory: { url: string; prompt: string }[];
     activeImageIndex: number;
     setActiveImageIndex: (idx: number) => void;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    selectedTemplate: any;
     isSaving: boolean;
     onProceedToEditor: () => void;
     onTogglePromptPart: (index: number) => void;
@@ -24,7 +22,6 @@ export function UnifiedPreviewEditor({
     imageHistory,
     activeImageIndex,
     setActiveImageIndex,
-    selectedTemplate,
     isSaving,
     onProceedToEditor,
     onTogglePromptPart,
@@ -36,7 +33,7 @@ export function UnifiedPreviewEditor({
             <div className="flex-1 flex flex-col min-w-0 border-r md:h-full h-[60vh]">
                 <div className="flex-1 flex items-center justify-center p-4 min-h-0 overflow-hidden bg-muted/20 relative">
                     <DesignPreview
-                        imageUrl={imageHistory[activeImageIndex]?.url || parsedData.generated_image_url || selectedTemplate?.thumbnail_url || null}
+                        imageUrl={imageHistory[activeImageIndex]?.url || parsedData.generated_image_url || null}
                     />
                 </div>
 
