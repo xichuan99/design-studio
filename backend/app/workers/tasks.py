@@ -100,7 +100,7 @@ async def _execute_pipeline(job_id: str, raw_text: str, aspect_ratio: str, style
         raise
 
 
-@celery_app.task(bind=True, name="generate_design")
+@celery_app.task(bind=True, name="generate_design", time_limit=300, soft_time_limit=270)
 def generate_design_task(self, job_id: str, raw_text: str, aspect_ratio: str = "1:1", style: str = "bold", reference_url: str | None = None, integrated_text: bool = False):
     """Celery task: runs the full design generation pipeline."""
     _run_async(_execute_pipeline(job_id, raw_text, aspect_ratio, style, reference_url, integrated_text))

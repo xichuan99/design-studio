@@ -331,7 +331,7 @@ export default function CreatePage() {
                 // STEP 3: Poll for Job Status (Celery async path)
                 let isComplete = false;
                 let pollingAttempts = 0;
-                const maxAttempts = 60;
+                const maxAttempts = 90; // 90 × 2s = 3 min, to accommodate Fal.ai delays
 
                 while (!isComplete && pollingAttempts < maxAttempts) {
                     await new Promise((resolve) => setTimeout(resolve, 2000));
