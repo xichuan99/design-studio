@@ -127,18 +127,19 @@ export function UnifiedResultsView({
                 <div className="lg:col-span-7 flex flex-col gap-3">
                     <div className="flex items-center gap-2 mb-1">
                         <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-white font-bold text-xs shadow-sm">2</div>
-                        <h3 className="font-semibold text-base">Sesuaikan Arahan Visual</h3>
+                        <div>
+                            <h3 className="font-semibold text-base">Sesuaikan Arahan Visual</h3>
+                            <p className="text-xs text-muted-foreground">Aktif/nonaktifkan elemen, atau tulis revisi di bawah.</p>
+                        </div>
                     </div>
 
-                    <div className="bg-card shadow-lg rounded-2xl overflow-hidden border border-border/50">
-                        <VisualPromptEditor
-                            parsedData={parsedData}
-                            onTogglePromptPart={onTogglePromptPart}
-                            onModifyPromptParts={onModifyPromptParts}
-                            onGenerate={onGenerate}
-                            isGeneratingImage={isGeneratingImage}
-                        />
-                    </div>
+                    <VisualPromptEditor
+                        parsedData={parsedData}
+                        onTogglePromptPart={onTogglePromptPart}
+                        onModifyPromptParts={onModifyPromptParts}
+                        onGenerate={onGenerate}
+                        isGeneratingImage={isGeneratingImage}
+                    />
                 </div>
 
             </div>

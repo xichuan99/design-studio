@@ -96,17 +96,6 @@ export function VisualPromptEditor({
     return (
         <div className={`flex flex-col w-full mx-auto animation-fade-in gap-5 ${compact ? 'pb-4' : 'max-w-3xl pb-20'}`}>
             
-            {/* Header */}
-            {!compact && (
-                <div className="text-center space-y-2">
-                    <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
-                        Sempurnakan Prompt AI
-                    </h2>
-                    <p className="text-sm text-muted-foreground max-w-lg mx-auto">
-                        Ketik apa yang ingin Anda ubah, atau aktif/nonaktifkan elemen tertentu.
-                    </p>
-                </div>
-            )}
 
             {/* Translation Box */}
             {parsedData.indonesian_translation && (
