@@ -93,18 +93,18 @@ RULES:
 - cta max 4 kata
 - Bahasa Indonesia
 - Output HARUS JSON valid format:
-  {
+  {{
     "variations": [
-      {
+      {{
         "style": "FOMO",
         "headline": "...",
         "subline": "...",
         "cta": "...",
         "full_text": "[headline]\\n[subline]\\n[cta]"
-      },
+      }},
       ...
     ]
-  }
+  }}
 
 {tone_instruction}
 {brand_instruction}
