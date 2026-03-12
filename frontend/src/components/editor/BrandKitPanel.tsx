@@ -12,6 +12,9 @@ interface BrandKitPanelProps {
 
 export default function BrandKitPanel({ onClose, onApplyColors }: BrandKitPanelProps) {
     const api = useProjectApi();
+    const apiRef = useRef(api);
+    apiRef.current = api;
+
     const [kits, setKits] = useState<BrandKit[]>([]);
     const [activeKitId, setActiveKitId] = useState<string | null>(null);
     const [isLoadingKits, setIsLoadingKits] = useState(true);
@@ -36,8 +39,8 @@ export default function BrandKitPanel({ onClose, onApplyColors }: BrandKitPanelP
 
             const [allKits, active] = await Promise.race([
                 Promise.all([
-                    api.getBrandKits(),
-                    api.getActiveBrandKit()
+                    apiRef.current.getBrandKits(),
+                    apiRef.current.getActiveBrandKit()
                 ]),
                 timeoutPromise as Promise<[BrandKit[], BrandKit | null]>
             ]);
@@ -46,10 +49,11 @@ export default function BrandKitPanel({ onClose, onApplyColors }: BrandKitPanelP
             if (active) setActiveKitId(active.id);
         } catch (err: unknown) {
             console.error(err);
+            setIsLoadingKits(false);
         } finally {
             setIsLoadingKits(false);
         }
-    }, [api]);
+    }, []);
 
     useEffect(() => {
         loadKits();
