@@ -87,8 +87,8 @@ export default function ToolsHubPage() {
               <h3 className="text-lg font-semibold flex items-center gap-2"><Wand2 className="w-5 h-5 text-blue-500" /> AI Background Swap</h3>
               <div className="aspect-[4/3] rounded-xl overflow-hidden shadow-lg border">
                 <BeforeAfterSlider 
-                  beforeImage="https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1000&auto=format&fit=crop" 
-                  afterImage="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=1000&auto=format&fit=crop" 
+                  beforeImage="https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=1000&auto=format&fit=crop" 
+                  afterImage="https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?q=80&w=1000&auto=format&fit=crop"
                 />
               </div>
             </div>
