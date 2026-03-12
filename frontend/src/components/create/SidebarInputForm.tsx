@@ -5,8 +5,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ReferenceImageUpload } from "@/components/create/ReferenceImageUpload";
 import { BrandKit } from "@/lib/api";
-import { Palette, Sparkles } from "lucide-react";
-import CopywritingPanel from "./CopywritingPanel";
+import { Palette } from "lucide-react";
 
 interface SidebarInputFormProps {
     rawText: string;
@@ -45,7 +44,6 @@ export function SidebarInputForm({
     activeBrandKit
 }: SidebarInputFormProps) {
     const formatStepNumber = showManualRef ? 3 : 2;
-    const [showCopywriting, setShowCopywriting] = React.useState(false);
 
     return (
         <div className="space-y-6 pt-4">
@@ -61,38 +59,6 @@ export function SidebarInputForm({
                     onChange={(e) => setRawText(e.target.value)}
                     disabled={isInputLocked || isParsing}
                 />
-                
-                {/* AI Copywriting Integration */}
-                <div className="flex flex-col items-end mt-2 gap-1.5">
-                    <button
-                        onClick={() => setShowCopywriting(!showCopywriting)}
-                        disabled={isInputLocked || isParsing || rawText.length < 3}
-                        className={`flex items-center gap-1.5 px-3 py-2 sm:py-1.5 text-xs font-medium rounded-lg transition-colors
-                            ${showCopywriting 
-                                ? 'bg-primary text-primary-foreground' 
-                                : 'bg-primary/10 text-primary hover:bg-primary/20'
-                            }
-                            disabled:opacity-50 disabled:cursor-not-allowed`}
-                    >
-                        <Sparkles className="w-3.5 h-3.5" />
-                        AI Copywriting
-                    </button>
-                    <span className="text-[10px] text-muted-foreground mr-1">
-                        AI akan membuatkan 3 variasi teks promosi untuk deskripsi Anda
-                    </span>
-                </div>
-
-                {showCopywriting && (
-                    <CopywritingPanel
-                        productDescription={rawText}
-                        activeBrandKitName={activeBrandKit?.name}
-                        onSelectCopy={(fullText) => {
-                            setRawText(fullText);
-                            setShowCopywriting(false); // Automagically close on select
-                        }}
-                        onClose={() => setShowCopywriting(false)}
-                    />
-                )}
 
                 {/* Brand Kit Passive Badge */}
                 {activeBrandKit && (
