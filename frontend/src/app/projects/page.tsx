@@ -3,11 +3,19 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { redirect, useRouter } from "next/navigation";
-import { Loader2, Plus, PenSquare, Trash2, Layers } from "lucide-react";
+import { Loader2, Plus, PenSquare, Trash2, Layers, MoreVertical, Copy, Edit2, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardFooter } from "@/components/ui/card";
 import { useProjectApi } from "@/lib/api";
 import { AppHeader } from "@/components/layout/AppHeader";
+import { Input } from "@/components/ui/input";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+    DropdownMenuSeparator
+} from "@/components/ui/dropdown-menu";
 
 interface Project {
     id: string;
@@ -19,10 +27,13 @@ interface Project {
 export default function ProjectsPage() {
     const { status } = useSession();
     const router = useRouter();
-    const { getProjects, deleteProject } = useProjectApi();
+    const { getProjects, deleteProject, duplicateProject, saveProject } = useProjectApi();
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editingTitle, setEditingTitle] = useState("");
 
     if (status === "unauthenticated") {
         redirect("/");
@@ -57,6 +68,43 @@ export default function ProjectsPage() {
             alert('Gagal menghapus proyek. Coba lagi.');
         } finally {
             setDeletingId(null);
+        }
+    };
+
+    const handleDuplicateProject = async (e: React.MouseEvent, projectId: string) => {
+        e.stopPropagation();
+        setDuplicatingId(projectId);
+        try {
+            const newProject = await duplicateProject(projectId);
+            setProjects([newProject, ...projects]);
+        } catch (err) {
+            console.error('Failed to duplicate project', err);
+            alert('Gagal menduplikasi proyek. Coba lagi.');
+        } finally {
+            setDuplicatingId(null);
+        }
+    };
+
+    const handleRenameSubmit = async (e: React.FormEvent, project: Project) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!editingTitle.trim() || editingTitle === project.title) {
+            setEditingId(null);
+            return;
+        }
+
+        try {
+            await saveProject({
+                id: project.id,
+                title: editingTitle,
+                canvas_state: project.canvas_state || {},
+                status: 'draft'
+            });
+            setProjects(projects.map(p => p.id === project.id ? { ...p, title: editingTitle } : p));
+            setEditingId(null);
+        } catch (err) {
+            console.error('Failed to rename project', err);
+            alert('Gagal mengubah nama proyek.');
         }
     };
 
@@ -121,7 +169,11 @@ export default function ProjectsPage() {
                                         {project.canvas_state?.backgroundUrl ? (
                                             /* eslint-disable-next-line @next/next/no-img-element */
                                             <img
-                                                src={project.canvas_state.backgroundUrl}
+                                                src={
+                                                    project.canvas_state.backgroundUrl.startsWith('http')
+                                                        ? `/api/proxy-image?url=${encodeURIComponent(project.canvas_state.backgroundUrl)}`
+                                                        : project.canvas_state.backgroundUrl
+                                                }
                                                 alt={project.title || "Design thumbnail"}
                                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                                 onError={(e) => {
@@ -152,23 +204,52 @@ export default function ProjectsPage() {
                                     </div>
 
                                     {/* Info */}
-                                    <CardHeader className="p-3.5 pb-0 flex-1">
-                                        <CardTitle className="text-sm font-semibold truncate">{project.title || "Desain Tanpa Judul"}</CardTitle>
-                                    </CardHeader>
+                                    <div className="p-3.5 pb-0 flex-1 flex flex-col justify-center">
+                                        {editingId === project.id ? (
+                                            <form onSubmit={(e) => handleRenameSubmit(e, project)} className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                                                <Input
+                                                    autoFocus
+                                                    value={editingTitle}
+                                                    onChange={e => setEditingTitle(e.target.value)}
+                                                    className="h-7 text-sm px-2 bg-background/50"
+                                                />
+                                                <Button type="submit" size="icon" variant="ghost" className="h-7 w-7 text-green-600 hover:text-green-700 hover:bg-green-50 shrink-0">
+                                                    <Check className="h-4 w-4" />
+                                                </Button>
+                                                <Button type="button" size="icon" variant="ghost" className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50 shrink-0" onClick={(e) => { e.stopPropagation(); setEditingId(null); }}>
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            </form>
+                                        ) : (
+                                            <h3 className="text-sm font-semibold truncate" title={project.title}>{project.title || "Desain Tanpa Judul"}</h3>
+                                        )}
+                                    </div>
 
-                                    <CardFooter className="p-3.5 pt-2 flex justify-between items-center text-xs text-muted-foreground">
+                                    <CardFooter className="p-3.5 pt-2 flex justify-between items-center text-xs text-muted-foreground border-t mt-2">
                                         <span>{formatDate(project.updated_at)}</span>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-7 w-7 text-muted-foreground/60 hover:text-red-500 transition-colors"
-                                            disabled={deletingId === project.id}
-                                            onClick={(e) => handleDeleteProject(e, project.id)}
-                                        >
-                                            {deletingId === project.id
-                                                ? <Loader2 className="w-4 h-4 animate-spin" />
-                                                : <Trash2 className="w-4 h-4" />}
-                                        </Button>
+                                        <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground transition-colors">
+                                                        <MoreVertical className="w-4 h-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="w-40 rounded-xl shadow-lg border-border/50">
+                                                    <DropdownMenuItem className="cursor-pointer gap-2" onClick={(e) => { e.stopPropagation(); setEditingId(project.id); setEditingTitle(project.title || ''); }}>
+                                                        <Edit2 className="w-4 h-4 text-muted-foreground" /> Rename
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem className="cursor-pointer gap-2" onClick={(e) => handleDuplicateProject(e, project.id)} disabled={duplicatingId === project.id}>
+                                                        {duplicatingId === project.id ? <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /> : <Copy className="w-4 h-4 text-muted-foreground" />}
+                                                        Duplicate
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem className="cursor-pointer gap-2 text-destructive focus:bg-destructive/10 focus:text-destructive" onClick={(e) => handleDeleteProject(e, project.id)} disabled={deletingId === project.id}>
+                                                        {deletingId === project.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                                                        Delete
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
                                     </CardFooter>
                                 </Card>
                             ))}

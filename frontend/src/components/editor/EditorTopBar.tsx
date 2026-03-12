@@ -4,8 +4,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useCanvasStore } from '@/store/useCanvasStore';
 import { useProjectApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
-import { Undo, Redo, Download as DownloadIcon, Save, Loader2, ChevronLeft, Cloud, CloudOff, CloudAlert, Check } from 'lucide-react';
+import { Undo, Redo, Download as DownloadIcon, Loader2, ChevronLeft, Cloud, CloudAlert, Check, Keyboard } from 'lucide-react';
 import { ExportDialog } from './ExportDialog';
+import { KeyboardShortcutsDialog } from './KeyboardShortcutsDialog';
 import { SaveStatus } from '@/hooks/useAutoSave';
 import Link from 'next/link';
 
@@ -20,6 +21,7 @@ export const EditorTopBar: React.FC<EditorTopBarProps> = ({ projectId, saveStatu
     const { saveProject } = useProjectApi();
     const [saving, setSaving] = useState(false);
     const [exportOpen, setExportOpen] = useState(false);
+    const [shortcutsOpen, setShortcutsOpen] = useState(false);
 
     // Title Editor State
     const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -153,6 +155,9 @@ export const EditorTopBar: React.FC<EditorTopBarProps> = ({ projectId, saveStatu
             {/* Right section: History, Save status, Export */}
             <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1 mr-2 border-r pr-3">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => setShortcutsOpen(true)} title="Keyboard Shortcuts">
+                        <Keyboard className="h-4 w-4" />
+                    </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={undo} disabled={historyIndex === 0} title="Undo (Ctrl+Z)">
                         <Undo className="h-4 w-4" />
                     </Button>
@@ -180,6 +185,10 @@ export const EditorTopBar: React.FC<EditorTopBarProps> = ({ projectId, saveStatu
                     open={exportOpen}
                     onOpenChange={setExportOpen}
                     title={projectTitle || (projectId ? "Smart_Design_Project" : "Untitled_Design")}
+                />
+                <KeyboardShortcutsDialog
+                    open={shortcutsOpen}
+                    onOpenChange={setShortcutsOpen}
                 />
             </div>
         </div>

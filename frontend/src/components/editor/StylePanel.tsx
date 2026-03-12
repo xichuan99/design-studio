@@ -160,12 +160,12 @@ export const StylePanel: React.FC = () => {
                                                 <SelectValue placeholder="Font Family" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="Inter">Inter</SelectItem>
-                                                <SelectItem value="Poppins">Poppins</SelectItem>
-                                                <SelectItem value="Roboto">Roboto</SelectItem>
-                                                <SelectItem value="Playfair Display">Playfair Display</SelectItem>
-                                                <SelectItem value="Montserrat">Montserrat</SelectItem>
-                                                <SelectItem value="Oswald">Oswald</SelectItem>
+                                                <SelectItem value="Inter" style={{ fontFamily: 'Inter' }}>Inter</SelectItem>
+                                                <SelectItem value="Poppins" style={{ fontFamily: 'Poppins' }}>Poppins</SelectItem>
+                                                <SelectItem value="Roboto" style={{ fontFamily: 'Roboto' }}>Roboto</SelectItem>
+                                                <SelectItem value="Playfair Display" style={{ fontFamily: '"Playfair Display", serif' }}>Playfair Display</SelectItem>
+                                                <SelectItem value="Montserrat" style={{ fontFamily: 'Montserrat' }}>Montserrat</SelectItem>
+                                                <SelectItem value="Oswald" style={{ fontFamily: 'Oswald' }}>Oswald</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>

@@ -87,6 +87,13 @@ export function useAutoSave(projectId?: string | null) {
         const handleBeforeUnload = (event: BeforeUnloadEvent) => {
             if (hasUnsaved) {
                 event.returnValue = 'You have unsaved changes.';
+                if (debounceTimer) {
+                    clearTimeout(debounceTimer);
+                    debounceTimer = null;
+                }
+                // Try to perform a synchronous-like save before closing
+                // Modern browsers might still cancel this, but it's better than dropping it completely.
+                performSave();
             }
         };
 

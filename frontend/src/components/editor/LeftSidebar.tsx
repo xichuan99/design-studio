@@ -21,11 +21,20 @@ export const LeftSidebar: React.FC = () => {
     const { uploadImage } = useProjectApi();
     const [saving, setSaving] = useState(false);
 
+    const getSmartPosition = () => {
+        const { elements, canvasWidth, canvasHeight } = useCanvasStore.getState();
+        const baseX = canvasWidth ? canvasWidth / 2 - 100 : 300;
+        const baseY = canvasHeight ? canvasHeight / 2 - 50 : 300;
+        const offset = (elements.length % 5) * 30; // stagger
+        return { x: baseX + offset, y: baseY + offset };
+    };
+
     const handleAddText = () => {
+        const pos = getSmartPosition();
         addElement({
             type: 'text',
-            x: 300,
-            y: 300,
+            x: pos.x,
+            y: pos.y,
             text: 'Heading',
             fontSize: 64,
             fontFamily: 'Inter',
@@ -35,11 +44,12 @@ export const LeftSidebar: React.FC = () => {
     };
 
     const handleAddShape = (shapeType: 'rect' | 'circle' | 'line') => {
+        const pos = getSmartPosition();
         addElement({
             type: 'shape',
             shapeType: shapeType,
-            x: 200,
-            y: 200,
+            x: pos.x,
+            y: pos.y,
             width: shapeType === 'line' ? 200 : 150,
             height: shapeType === 'line' ? 4 : 150,
             fill: '#e2e8f0',
@@ -77,10 +87,11 @@ export const LeftSidebar: React.FC = () => {
                 1
             );
 
+            const pos = getSmartPosition();
             addElement({
                 type: 'image',
-                x: 100,
-                y: 100,
+                x: pos.x,
+                y: pos.y,
                 width: originalWidth * scale,
                 height: originalHeight * scale,
                 url: url,

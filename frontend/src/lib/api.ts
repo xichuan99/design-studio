@@ -66,6 +66,16 @@ export function useProjectApi() {
         if (!res.ok) throw new Error('Failed to delete project');
     };
 
+    const duplicateProject = async (sourceId: string) => {
+        const source = await getProject(sourceId);
+        return saveProject({
+            title: `Copy of ${source.title || 'Untitled Design'}`,
+            canvas_state: source.canvas_state,
+            status: 'draft',
+            aspect_ratio: source.aspect_ratio || '1:1',
+        });
+    };
+
     const getUserProfile = async () => {
         const res = await fetch(`${API_BASE_URL}/users/me`, {
             headers: getHeaders(),
@@ -204,5 +214,5 @@ export function useProjectApi() {
         return res.json();
     };
 
-    return { getProject, saveProject, getProjects, deleteProject, getUserProfile, updateProfile, deleteAccount, generateDesign, uploadImage, getJobStatus, getMyGenerations, getTemplates, getHistory, createHistory, generateMagicTextLayout };
+    return { getProject, saveProject, getProjects, deleteProject, duplicateProject, getUserProfile, updateProfile, deleteAccount, generateDesign, uploadImage, getJobStatus, getMyGenerations, getTemplates, getHistory, createHistory, generateMagicTextLayout };
 }

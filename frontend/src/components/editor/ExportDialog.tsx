@@ -39,9 +39,13 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({ open, onOpenChange, 
 
             const stage = stageRef;
 
+            // Adaptive pixel ratio: limit to max 4096px on longest side
+            const maxDim = Math.max(stage.width(), stage.height());
+            const adaptiveRatio = maxDim > 0 && maxDim * 2 > 4096 ? Math.floor(4096 / maxDim) : 2;
+
             // Temporarily set pixel ratio for higher quality export
             const dataUrl = stage.toDataURL({
-                pixelRatio: 2,
+                pixelRatio: adaptiveRatio,
                 mimeType: `image/${format === "pdf" ? "jpeg" : format}`,
                 quality: 0.92
             });
