@@ -1,7 +1,8 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional, List, Any, Dict
 from datetime import datetime
 from uuid import UUID
+
 
 class CanvasElementSchema(BaseModel):
     id: str
@@ -16,14 +17,16 @@ class CanvasElementSchema(BaseModel):
     fontSize: Optional[int] = None
     fill: Optional[str] = None
     align: Optional[str] = None
-    # Add other flexible properties using extra fields if necessary, or keep as a generic dict
+    # Add other flexible properties using extra fields if necessary
     model_config = {
         "extra": "allow"
     }
 
+
 class ProjectCanvasState(BaseModel):
     elements: List[Dict[str, Any]]
     backgroundUrl: Optional[str] = None
+
 
 class ProjectUpdate(BaseModel):
     title: Optional[str] = None
@@ -33,6 +36,8 @@ class ProjectUpdate(BaseModel):
 
 
 class ProjectResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: UUID
     user_id: UUID
     title: str
@@ -41,6 +46,3 @@ class ProjectResponse(BaseModel):
     canvas_state: Optional[Dict[str, Any]] = None
     created_at: datetime
     updated_at: datetime
-
-    class Config:
-        from_attributes = True

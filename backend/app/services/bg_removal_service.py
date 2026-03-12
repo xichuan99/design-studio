@@ -108,3 +108,66 @@ async def composite_product_on_background(
             f"Failed to composite product on background: {str(e)}"
         )
         raise
+
+async def composite_with_shadow(
+    product_png_bytes: bytes,
+    background_bytes: bytes,
+    scale_factor: float = 0.7,
+    offset_x_ratio: float = 0.5,
+    offset_y_ratio: float = 0.55,
+    add_shadow: bool = True
+) -> bytes:
+    """
+    Advanced compositing: overlays product on background with scale, offset, and optional drop shadow.
+    """
+    try:
+        from PIL import ImageFilter
+        product_img = Image.open(io.BytesIO(product_png_bytes)).convert("RGBA")
+        background_img = Image.open(io.BytesIO(background_bytes)).convert("RGBA")
+
+        bg_w, bg_h = background_img.size
+
+        # Scale product
+        max_dim = int(min(bg_w, bg_h) * scale_factor)
+        product_img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
+        p_w, p_h = product_img.size
+
+        # Calc offset
+        offset_x = int((bg_w - p_w) * offset_x_ratio)
+        offset_y = int((bg_h - p_h) * offset_y_ratio)
+
+        if add_shadow:
+            shadow = Image.new("RGBA", (int(p_w * 1.5), int(p_h * 1.5)), (0, 0, 0, 0))
+            
+            # Create black shadow from alpha mask
+            product_alpha = product_img.split()[-1]
+            black_mask = Image.new("RGBA", (p_w, p_h), (0, 0, 0, 160)) # semi-transparent black
+            black_mask.putalpha(product_alpha)
+            
+            # Paste to padded shadow image to avoid cropping when blurring
+            pad_x = int(p_w * 0.25)
+            pad_y = int(p_h * 0.25)
+            shadow.paste(black_mask, (pad_x, pad_y), black_mask)
+            
+            # Apply blur
+            shadow = shadow.filter(ImageFilter.GaussianBlur(radius=int(max_dim * 0.04)))
+            
+            # Offset shadow slightly down
+            shadow_x = offset_x - pad_x + int(p_w * 0.05)
+            shadow_y = offset_y - pad_y + int(p_h * 0.08)
+            
+            # Paste shadow first using its own alpha as mask
+            background_img.paste(shadow, (shadow_x, shadow_y), shadow)
+
+        # Paste product
+        background_img.paste(product_img, (offset_x, offset_y), product_img)
+
+        final_img = background_img.convert("RGB")
+        output_buffer = io.BytesIO()
+        final_img.save(output_buffer, format="JPEG", quality=95)
+
+        return output_buffer.getvalue()
+
+    except Exception as e:
+        logger.exception(f"Failed to composite product with shadow: {str(e)}")
+        raise

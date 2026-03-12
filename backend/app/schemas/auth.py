@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from typing import Optional
 import uuid
 
@@ -17,11 +17,10 @@ class LoginRequest(BaseModel):
 
 
 class AuthResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: uuid.UUID
     email: str
     name: str
     avatar_url: Optional[str] = None
     credits_remaining: int
-
-    class Config:
-        from_attributes = True

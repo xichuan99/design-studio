@@ -49,9 +49,10 @@ async def test_modify_visual_prompt():
         {"category": "subject", "label": "Objek Utama", "value": "A cup of coffee", "enabled": True},
         {"category": "style", "label": "Gaya", "value": "minimalist", "enabled": True}
     ]
+    original_visual_prompt = "A cup of coffee, minimalist"
     instruction = "Buat lebih gelap dan dramatis"
-    
-    result = await modify_visual_prompt(original_parts, instruction)
+
+    result = await modify_visual_prompt(original_parts, original_visual_prompt, instruction)
     
     assert "modified_prompt_parts" in result
     assert "modified_visual_prompt" in result

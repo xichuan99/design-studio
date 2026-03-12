@@ -213,8 +213,8 @@ async def generate_copywriting_questions(raw_text: str) -> dict:
 async def generate_ai_copywriting(
     product_description: str,
     tone: str = "persuasive",
-    brand_name: str | None = None,
-    clarification_answers: dict | None = None
+    brand_name: Optional[str] = None,
+    clarification_answers: Optional[dict] = None
 ) -> dict:
     """Generates 3 variations of copywriting using Gemini."""
     from app.schemas.design import CopywritingResponse

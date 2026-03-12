@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 from typing import Optional
 import uuid
 
@@ -22,12 +22,10 @@ class UserUpdate(BaseModel):
 
 
 class UserResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: uuid.UUID
     email: str
     name: str
     avatar_url: Optional[str]
     credits_remaining: int
-
-    class Config:
-        from_attributes = True
-

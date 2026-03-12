@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from typing import List, Optional
 from uuid import UUID
 from datetime import datetime
@@ -14,7 +14,9 @@ class ColorSwatch(BaseModel):
 
 
 class BrandKitBase(BaseModel):
-    name: str = Field(..., example="Brand Kit Utama")
+    name: str = Field(
+        ..., json_schema_extra={"example": "Brand Kit Utama"}
+    )
     logo_url: Optional[str] = Field(
         None,
         description="URL of the uploaded logo"
@@ -34,13 +36,12 @@ class BrandKitUpdate(BaseModel):
 
 
 class BrandKitResponse(BrandKitBase):
+    model_config = ConfigDict(from_attributes=True)
+
     id: UUID
     user_id: UUID
     is_active: bool
     created_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 class ColorExtractionResponse(BaseModel):

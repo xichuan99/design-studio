@@ -12,6 +12,7 @@
 - **5-Step Create Flow** — Flow UI intuitif: 1) Input Teks, 2) **AI Interview** (pilihan ganda/teks), 3) Visual Prompt Review, 4) Generating, 5) Split-view Preview & Editor
 - **AI Text Parsing** — Gemini Flash menghasilkan headline, tagline, CTA, rekomendasi warna, dan layout JSON dari deskripsi teks
 - **AI Image Generation** — Generate background visual profesional via Fal.ai (SDXL/Flux) atau Gemini Imagen sebagai fallback
+- **AI Photo Tools (Stand Alone)** — Hapus background foto produk & integrasikan ke latar profesional baru dengan presisi tinggi, serta Fitur Image Upscaler untuk menjernihkan & memperbesar foto hingga 4x resolusi.
 - **AI Background Removal** — Hapus latar belakang foto produk secara instan menggunakan model U<sup>2</sup>-Net (rembg)
 - **Brand Kit (AI Color Palette)** — Upload logo UMKM, Gemini Vision otomatis mengekstrak 5 warna dominan. Simpan sebagai palet warna utama yang akan otomatis dipakai di setiap desain berikutnya.
 - **AI Copywriting / Headline Generator** — Generate 3 variasi teks promosi (FOMO, Benefit, Social Proof) dari deskripsi produk. Dilengkapi mini-interview klarifikasi, pilihan tone (Persuasif/Kasual/Profesional/Lucu), integrasi Brand Kit, dan re-generate.
