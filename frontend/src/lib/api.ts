@@ -186,6 +186,21 @@ export function useProjectApi() {
         return res.json();
     };
 
+    const clarifyUnified = async (payload: {
+        raw_text: string;
+    }) => {
+        const res = await fetch(`${API_BASE_URL}/designs/clarify-unified`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+            const errBase = await res.json().catch(() => ({}));
+            throw new Error(errBase.detail || 'Failed to generate unified clarification questions');
+        }
+        return res.json();
+    };
+
     const generateCopywriting = async (payload: {
         product_description: string;
         tone?: string;
@@ -379,6 +394,6 @@ export function useProjectApi() {
         getJobStatus, getMyGenerations, getTemplates, getHistory, createHistory, 
         generateMagicTextLayout, removeBackground,
         extractBrandColors, saveBrandKit, getBrandKits, getActiveBrandKit, updateBrandKit, deleteBrandKit,
-        clarifyCopywriting, generateCopywriting
+        clarifyCopywriting, generateCopywriting, clarifyUnified
     };
 }

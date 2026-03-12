@@ -210,6 +210,82 @@ async def generate_copywriting_questions(raw_text: str) -> dict:
         logging.exception("Error extracting copywriting questions via LLM")
         raise e
 
+UNIFIED_BRIEF_SYSTEM = """
+Kamu adalah AI Creative Director. Tugasmu adalah menanyakan 3-4 pertanyaan klarifikasi SPESIFIK 
+berdasarkan deskripsi singkat user untuk menghasilkan teks promosi (copywriting) DAN arahan visual (desain) sekaligus.
+
+Pertanyaan harus mencakup aspek-aspek berikut secara natural:
+1. Target pelanggan & Tone bahasa (kombinasi)
+2. Nuansa visual / Mood desain (elegan, ceria, dll)
+3. Detail promo / Keunggulan utama produk
+4. Objek spesifik di gambar (opsional, jika perlu dipertegas)
+
+Format setiap pertanyaan sebagai objek JSON dengan `type` "choice" atau "text".
+Gunakan Bahasa Indonesia yang friendly dan profesional.
+Pastikan opsi "choice" relevan dengan konteks deskripsi user.
+"""
+
+async def generate_unified_brief_questions(raw_text: str) -> dict:
+    """Generates combined clarifying questions for both design and copywriting."""
+    from app.schemas.design import BriefQuestionsResponse
+    if not settings.GEMINI_API_KEY:
+        import logging
+        logging.warning("GEMINI_API_KEY is missing – returning mock unified questions")
+        return {
+            "questions": [
+                {
+                    "id": "audience_tone",
+                    "question": "Siapakah target audiens Anda & gaya bahasa apa yang cocok?",
+                    "type": "choice",
+                    "options": ["Anak Muda (Kasual & Santai)", "Profesional (Formal & Elegan)", "Ibu Rumah Tangga (Ramah & Hangat)", "Umum (Persuasif)"],
+                    "default": "Umum (Persuasif)"
+                },
+                {
+                    "id": "design_mood",
+                    "question": "Nuansa visual seperti apa yang Anda bayangkan untuk desainnya?",
+                    "type": "choice",
+                    "options": ["Elegan & Mewah", "Ceria & Colorful", "Minimalis & Modern", "Estetik & Kalem"],
+                    "default": "Minimalis & Modern"
+                },
+                {
+                    "id": "promo_benefit",
+                    "question": "Apa keunggulan utama atau promo khusus yang ingin ditonjolkan?",
+                    "type": "text",
+                    "options": [],
+                    "default": ""
+                },
+                {
+                    "id": "specific_objects",
+                    "question": "Apakah ada objek tertentu yang wajib ada di gambar? (misal: 'gelas es kopi di meja')",
+                    "type": "text",
+                    "options": [],
+                    "default": ""
+                }
+            ]
+        }
+
+    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+
+    response = client.models.generate_content(
+        model='gemini-2.5-flash',
+        contents=[f"Buatkan pertanyaan klarifikasi desain & copywriting untuk deskripsi ini:\n{raw_text}"],
+        config=types.GenerateContentConfig(
+            system_instruction=UNIFIED_BRIEF_SYSTEM,
+            response_mime_type="application/json",
+            response_schema=BriefQuestionsResponse.model_json_schema(),
+            temperature=0.7,
+        ),
+    )
+
+    try:
+        parsed = BriefQuestionsResponse.model_validate_json(response.text)
+        return parsed.model_dump()
+    except Exception as e:
+        import logging
+        logging.exception("Error extracting unified questions via LLM")
+        raise e
+
+
 async def generate_ai_copywriting(
     product_description: str,
     tone: str = "persuasive",

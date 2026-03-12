@@ -17,9 +17,10 @@ import { SidebarInputForm } from "@/components/create/SidebarInputForm";
 import { DesignBriefInterview } from "@/components/create/DesignBriefInterview";
 import { SidebarActionBar } from "@/components/create/SidebarActionBar";
 import { UnifiedPreviewEditor } from "@/components/create/UnifiedPreviewEditor";
-import { VisualPromptEditor } from "@/components/create/VisualPromptEditor";
+import { UnifiedResultsView } from "@/components/create/UnifiedResultsView";
+import { CopywritingVariation } from "@/lib/api";
 
-type CreateStep = 'input' | 'brief' | 'prompt-review' | 'generating' | 'preview';
+type CreateStep = 'input' | 'brief' | 'results' | 'generating' | 'preview';
 
 interface SavedCreateState {
     rawText: string;
@@ -33,6 +34,7 @@ interface SavedCreateState {
     briefQuestions: BriefQuestion[];
     briefAnswers: Record<string, string>;
     removeProductBg: boolean;
+    copyVariations: CopywritingVariation[];
 }
 
 export default function CreatePage() {
@@ -56,6 +58,7 @@ export default function CreatePage() {
     const [briefQuestions, setBriefQuestions] = useState<BriefQuestion[]>([]);
     const [briefAnswers, setBriefAnswers] = useState<Record<string, string>>({});
     const [removeProductBg, setRemoveProductBg] = useState(false);
+    const [copyVariations, setCopyVariations] = useState<CopywritingVariation[]>([]);
     
     // Brand Kit State
     const [activeBrandKit, setActiveBrandKit] = useState<BrandKit | null>(null);
@@ -124,13 +127,14 @@ export default function CreatePage() {
             integratedText,
             removeProductBg,
             briefQuestions,
-            briefAnswers
+            briefAnswers,
+            copyVariations
         };
         localStorage.setItem('smartdesign_create_state', JSON.stringify(stateToSave));
     }, [
         isInitialized, rawText, aspectRatio, stylePreference, currentStep,
         parsedData, imageHistory, activeImageIndex, integratedText, removeProductBg,
-        briefQuestions, briefAnswers
+        briefQuestions, briefAnswers, copyVariations
     ]);
 
     const handleTogglePromptPart = (index: number) => {
@@ -154,6 +158,7 @@ export default function CreatePage() {
             setActiveImageIndex(0);
             setBriefQuestions([]);
             setBriefAnswers({});
+            setCopyVariations([]);
             setReferenceFile(null);
             setReferencePreview(null);
             setRemoveProductBg(false);
@@ -223,18 +228,15 @@ export default function CreatePage() {
         setBriefAnswers({});
 
         try {
-            // STEP 1a: Get Clarification Questions
-            const clarifyRes = await fetch(`${API_BASE_URL}/designs/clarify`, {
+            // STEP 1a: Get Unified Clarification Questions
+            const { clarifyUnified } = useProjectApi(); // We'll just call api directly using fetch since it's already implemented like that below
+            const clarifyRes = await fetch(`${API_BASE_URL}/designs/clarify-unified`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
                     raw_text: rawText,
-                    aspect_ratio: aspectRatio,
-                    style_preference: stylePreference,
-                    num_variations: 2,
-                    integrated_text: integratedText
                 }),
             });
 
@@ -244,6 +246,7 @@ export default function CreatePage() {
             if (clarifyData.questions && clarifyData.questions.length > 0) {
                 setBriefQuestions(clarifyData.questions);
                 setCurrentStep('brief');
+                if (window.innerWidth < 768) setSidebarOpen(false); // Close sidebar on mobile
             } else {
                 // Fallback to direct parse if no questions generated
                 await handleGeneratePrompt({});
@@ -261,12 +264,17 @@ export default function CreatePage() {
         setIsParsing(true);
         setBriefAnswers(answers);
         try {
-            // STEP 1b: Parse Text with Clarifications
-            const parseRes = await fetch(`${API_BASE_URL}/designs/parse`, {
+            // Use session token for auth
+            const token = document.cookie.split('; ').find(row => row.startsWith('next-auth.session-token='))?.split('=')[1] 
+                || document.cookie.split('; ').find(row => row.startsWith('__Secure-next-auth.session-token='))?.split('=')[1];
+            
+            const headers: Record<string, string> = { "Content-Type": "application/json" };
+            // In a deeper real implementation we'd use useProjectApi fully, but sticking to existing patterns here
+            
+            // STEP 1b: Parallel Parse Text and Generate Copywriting
+            const parsePromise = fetch(`${API_BASE_URL}/designs/parse`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
+                headers,
                 body: JSON.stringify({
                     raw_text: rawText,
                     aspect_ratio: aspectRatio,
@@ -277,10 +285,33 @@ export default function CreatePage() {
                 }),
             });
 
-            if (!parseRes.ok) throw new Error("Failed to parse text");
+            const copywritingPromise = fetch(`${API_BASE_URL}/designs/generate-copywriting`, {
+                method: "POST",
+                headers,
+                body: JSON.stringify({
+                    product_description: rawText,
+                    tone: "persuasive", // Handled inside or derived
+                    brand_name: activeBrandKit?.name,
+                    clarification_answers: answers
+                }),
+            });
+
+            const [parseRes, copywritingRes] = await Promise.all([parsePromise, copywritingPromise]);
+
+            if (!parseRes.ok) throw new Error("Failed to parse visual design text");
             const parsed = await parseRes.json();
             setParsedData(parsed);
-            setCurrentStep('prompt-review');
+
+            if (copywritingRes.ok) {
+                const copywritingData = await copywritingRes.json();
+                setCopyVariations(copywritingData.variations || []);
+            } else {
+                console.warn("Failed to generate copywriting, continuing with visual prompt...");
+                setCopyVariations([]);
+            }
+
+            setCurrentStep('results');
+            if (window.innerWidth < 768) setSidebarOpen(false); // Ensure sidebar is closed on mobile
 
         } catch (error) {
             console.error(error);
@@ -386,7 +417,7 @@ export default function CreatePage() {
             console.error(error);
             alert(error instanceof Error ? error.message : "Gagal memproses desain.");
             // Revert back to review on failure so they can try again
-            setCurrentStep('prompt-review');
+            setCurrentStep('results');
         } finally {
             setIsGeneratingImage(false);
         }
@@ -530,24 +561,24 @@ export default function CreatePage() {
                             onSkip={() => handleGeneratePrompt({})}
                             isGeneratingPrompt={isParsing}
                         />
-                    ) : currentStep === 'prompt-review' && parsedData ? (
-                        <div className="w-full max-w-4xl mx-auto animation-fade-in bg-card p-6 md:p-10 shadow-xl rounded-2xl overflow-hidden border border-border/50">
-                            <VisualPromptEditor
-                                parsedData={parsedData}
-                                onTogglePromptPart={handleTogglePromptPart}
-                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                onModifyPromptParts={(newParts: any, newCombined: string, newTranslation?: string) => {
-                                    setParsedData(prev => prev ? {
-                                        ...prev,
-                                        visual_prompt_parts: newParts,
-                                        visual_prompt: newCombined,
-                                        indonesian_translation: newTranslation || prev.indonesian_translation
-                                    } : null);
-                                }}
-                                onGenerate={handleGenerateImage}
-                                isGeneratingImage={isGeneratingImage}
-                            />
-                        </div>
+                    ) : currentStep === 'results' && parsedData ? (
+                        <UnifiedResultsView
+                            copyVariations={copyVariations}
+                            parsedData={parsedData}
+                            onSelectCopy={(fullText) => setRawText(fullText)}
+                            onTogglePromptPart={handleTogglePromptPart}
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            onModifyPromptParts={(newParts: any, newCombined: string, newTranslation?: string) => {
+                                setParsedData(prev => prev ? {
+                                    ...prev,
+                                    visual_prompt_parts: newParts,
+                                    visual_prompt: newCombined,
+                                    indonesian_translation: newTranslation || prev.indonesian_translation
+                                } : null);
+                            }}
+                            onGenerate={handleGenerateImage}
+                            isGeneratingImage={isGeneratingImage}
+                        />
                     ) : currentStep === 'preview' && parsedData ? (
                         <UnifiedPreviewEditor
                             parsedData={parsedData}
@@ -593,7 +624,7 @@ export default function CreatePage() {
                         </div>
                     )}
                 </main>
-            </div >
-        </div >
+            </div>
+        </div>
     );
 }

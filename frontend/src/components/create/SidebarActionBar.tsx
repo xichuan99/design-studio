@@ -3,7 +3,7 @@ import { Loader2, Sparkles, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface SidebarActionBarProps {
-    currentStep: 'input' | 'brief' | 'prompt-review' | 'generating' | 'preview';
+    currentStep: 'input' | 'brief' | 'results' | 'generating' | 'preview';
     isParsing: boolean;
     rawText: string;
     isInputLocked: boolean;

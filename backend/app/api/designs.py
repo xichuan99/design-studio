@@ -74,6 +74,18 @@ async def clarify_design_brief(request: DesignGenerationRequest) -> dict:
         logging.exception("Failed to generate clarification questions")
         raise HTTPException(status_code=500, detail=f"Failed to generate clarification questions: {str(e)}")
 
+@router.post("/clarify-unified")
+async def clarify_unified_brief(request: DesignGenerationRequest) -> dict:
+    """Analyze raw text and return combined clarifying questions for both design and copywriting."""
+    from app.services.llm_service import generate_unified_brief_questions
+    try:
+        result = await generate_unified_brief_questions(request.raw_text)
+        return result
+    except Exception as e:
+        import logging
+        logging.exception("Failed to generate unified clarification questions")
+        raise HTTPException(status_code=500, detail=f"Failed to generate unified clarification questions: {str(e)}")
+
 @router.post("/modify-prompt")
 async def modify_prompt(request: ModifyPromptRequest) -> dict:
     """Modifies visual prompt parts via Gemini based on Indonesian text instructions."""
