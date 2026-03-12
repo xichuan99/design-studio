@@ -30,10 +30,18 @@ export default function BrandKitPanel({ onClose, onApplyColors }: BrandKitPanelP
     const loadKits = React.useCallback(async () => {
         try {
             setIsLoadingKits(true);
-            const [allKits, active] = await Promise.all([
-                api.getBrandKits(),
-                api.getActiveBrandKit()
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error("Request timeout")), 10000)
+            );
+
+            const [allKits, active] = await Promise.race([
+                Promise.all([
+                    api.getBrandKits(),
+                    api.getActiveBrandKit()
+                ]),
+                timeoutPromise as Promise<[BrandKit[], BrandKit | null]>
             ]);
+            
             setKits(allKits);
             if (active) setActiveKitId(active.id);
         } catch (err: unknown) {
@@ -59,7 +67,15 @@ export default function BrandKitPanel({ onClose, onApplyColors }: BrandKitPanelP
             const previewUrl = URL.createObjectURL(file);
             setExtractedLogoUrl(previewUrl);
 
-            const result = await api.extractBrandColors(file);
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error("Ekstraksi warna terlalu lama (Request timeout)")), 15000)
+            );
+
+            const result = await Promise.race([
+                api.extractBrandColors(file),
+                timeoutPromise as Promise<{ colors: ColorSwatch[] }>
+            ]);
+            
             setExtractedColors(result.colors);
             setNewKitName(''); // Reset name field
 
@@ -90,11 +106,18 @@ export default function BrandKitPanel({ onClose, onApplyColors }: BrandKitPanelP
             // Default name if empty
             const kitName = newKitName.trim() || 'My Brand Kit';
             
-            await api.saveBrandKit({
-                name: kitName,
-                colors: extractedColors,
-                logo_url: null // We skip logo_url for now unless we upload it to s3/supabase
-            });
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error("Gagal menyimpan (Request timeout)")), 10000)
+            );
+
+            await Promise.race([
+                api.saveBrandKit({
+                    name: kitName,
+                    colors: extractedColors,
+                    logo_url: null // We skip logo_url for now unless we upload it to s3/supabase
+                }),
+                timeoutPromise
+            ]);
             
             // Reload list
             await loadKits();
@@ -136,29 +159,27 @@ export default function BrandKitPanel({ onClose, onApplyColors }: BrandKitPanelP
     };
 
     return (
-        <div className="absolute left-[80px] top-0 bottom-0 w-80 bg-white border-r border-[#e5e7eb] shadow-lg flex flex-col z-20">
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-[#e5e7eb]">
-                <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-                    <Palette className="w-5 h-5 text-indigo-500" />
-                    Brand Kit
-                </h3>
+        <div className="flex flex-col h-full bg-card gap-4">
+            <div className="flex items-center justify-between border-b pb-4 px-4 pt-4 shrink-0">
+                <div className="flex items-center gap-2">
+                    <Palette className="w-5 h-5 text-primary" />
+                    <h2 className="font-semibold text-sm">Brand Kit</h2>
+                </div>
                 <button
                     onClick={onClose}
-                    className="p-1.5 hover:bg-gray-100 rounded-full text-gray-500 transition-colors"
-                    aria-label="Close panel"
+                    className="p-1.5 hover:bg-muted rounded-xl text-muted-foreground transition-colors"
                 >
-                    <X className="w-5 h-5" />
+                    <X className="w-4 h-4" />
                 </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-6">
+            <div className="flex-1 overflow-y-auto space-y-6 px-4 pb-4">
                 
                 {/* Intro/Upload Area */}
                 {!extractedColors && (
                     <div className="flex flex-col gap-3">
-                        <p className="text-sm text-gray-600">
-                            Upload your logo to automatically extract brand colors and apply them consistently across all AI generations.
+                        <p className="text-xs text-muted-foreground">
+                            Upload logo untuk otomatis mengekstrak warna brand dan menggunakannya pada desain AI.
                         </p>
                         
                         <input
@@ -172,21 +193,21 @@ export default function BrandKitPanel({ onClose, onApplyColors }: BrandKitPanelP
                         <button 
                             onClick={() => fileInputRef.current?.click()}
                             disabled={isExtracting}
-                            className="w-full flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100 hover:border-indigo-400 transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full flex flex-col items-center justify-center p-6 border-2 border-dashed border-border rounded-xl bg-card hover:bg-muted/50 transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isExtracting ? (
-                                <Loader2 className="w-8 h-8 text-indigo-500 animate-spin mb-2" />
+                                <Loader2 className="w-8 h-8 text-primary animate-spin mb-2" />
                             ) : (
-                                <Upload className="w-8 h-8 text-gray-400 group-hover:text-indigo-500 mb-2 transition-colors" />
+                                <Upload className="w-8 h-8 text-muted-foreground group-hover:text-primary mb-2 transition-colors" />
                             )}
-                            <span className="text-sm font-medium text-gray-700">
-                                {isExtracting ? 'Analyzing logo colors...' : 'Upload Logo'}
+                            <span className="text-xs font-medium text-foreground">
+                                {isExtracting ? 'Menganalisa warna logo...' : 'Upload Logo'}
                             </span>
-                            <span className="text-xs text-gray-500 mt-1">PNG, JPG up to 5MB</span>
+                            <span className="text-[10px] text-muted-foreground mt-1">PNG, JPG up to 5MB</span>
                         </button>
 
                         {error && (
-                            <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md border border-red-100 mt-2">
+                            <div className="text-xs text-destructive bg-destructive/10 p-2.5 rounded-lg border border-destructive/20 mt-2">
                                 {error}
                             </div>
                         )}
@@ -195,23 +216,23 @@ export default function BrandKitPanel({ onClose, onApplyColors }: BrandKitPanelP
 
                 {/* Extraction Results & Save Form */}
                 {extractedColors && (
-                    <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-100 flex flex-col gap-4">
+                    <div className="bg-primary/5 rounded-xl p-4 border border-primary/20 flex flex-col gap-4">
                         <div className="flex justify-between items-start">
-                            <h4 className="font-medium text-indigo-900">Extracted Colors</h4>
+                            <h4 className="font-medium text-sm text-foreground">Warna Tengekstrak</h4>
                             <button 
                                 onClick={() => {
                                     setExtractedColors(null);
                                     setExtractedLogoUrl(null);
                                     setError(null);
                                 }}
-                                className="text-xs text-indigo-600 hover:text-indigo-800 underline"
+                                className="text-[10px] text-muted-foreground hover:text-foreground underline"
                             >
-                                Cancel
+                                Batal
                             </button>
                         </div>
                         
                         {extractedLogoUrl && (
-                            <div className="w-16 h-16 relative bg-white rounded-md border border-gray-200 overflow-hidden mx-auto mb-2">
+                            <div className="w-16 h-16 relative bg-white rounded-lg border border-border overflow-hidden mx-auto mb-2">
                                 <Image src={extractedLogoUrl} alt="Logo preview" fill className="object-contain p-1" />
                             </div>
                         )}
@@ -220,11 +241,11 @@ export default function BrandKitPanel({ onClose, onApplyColors }: BrandKitPanelP
                             {extractedColors.map((color, idx) => (
                                 <div key={idx} className="flex flex-col items-center gap-1 group relative">
                                     <div 
-                                        className="w-8 h-8 rounded-full border border-gray-200 shadow-sm"
+                                        className="w-8 h-8 rounded-full border border-border/50 shadow-sm"
                                         style={{ backgroundColor: color.hex }}
                                     />
                                     {/* Tooltip */}
-                                    <div className="absolute top-10 whitespace-nowrap bg-gray-800 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-10">
+                                    <div className="absolute top-10 whitespace-nowrap bg-secondary text-secondary-foreground text-[10px] py-1 px-2 rounded-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-10">
                                         {color.name}<br/>{color.hex}
                                     </div>
                                 </div>
@@ -232,38 +253,38 @@ export default function BrandKitPanel({ onClose, onApplyColors }: BrandKitPanelP
                         </div>
 
                         <div className="flex flex-col gap-2 mt-2">
-                            <label className="text-sm font-medium text-gray-700">Kit Name</label>
+                            <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Nama Brand Kit</label>
                             <input 
                                 type="text" 
                                 placeholder="E.g., Brand Utama" 
                                 value={newKitName}
                                 onChange={(e) => setNewKitName(e.target.value)}
-                                className="w-full h-9 px-3 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                className="w-full h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-transparent"
                             />
                         </div>
 
                         <button
                             onClick={handleSaveKit}
                             disabled={isSaving}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium h-9 rounded-md flex items-center justify-center gap-2 transition-colors disabled:opacity-70 mt-2"
+                            className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium h-9 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-70 mt-2"
                         >
-                            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                            Save Brand Kit
+                            {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                            Simpan Brand Kit
                         </button>
                         
-                        {error && <span className="text-xs text-red-600">{error}</span>}
+                        {error && <span className="text-xs text-destructive">{error}</span>}
                     </div>
                 )}
 
                 {/* Saved Kits List */}
                 <div className="flex flex-col gap-3">
-                    <h4 className="font-medium text-gray-800 text-sm uppercase tracking-wider">Your Brand Kits</h4>
+                    <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Brand Kit Tersimpan</h4>
                     
                     {isLoadingKits ? (
-                        <div className="flex justify-center p-4"><Loader2 className="w-5 h-5 text-gray-400 animate-spin" /></div>
+                        <div className="flex justify-center p-4"><Loader2 className="w-4 h-4 text-muted-foreground animate-spin" /></div>
                     ) : kits.length === 0 ? (
-                        <p className="text-sm text-gray-500 text-center p-4 bg-gray-50 rounded-lg border border-dashed border-gray-200">
-                            No brand kits saved yet.
+                        <p className="text-xs text-muted-foreground text-center p-4 bg-muted/50 rounded-xl border border-dashed border-border/50">
+                            Belum ada brand kit yang disimpan.
                         </p>
                     ) : (
                         <div className="flex flex-col gap-3">
@@ -272,19 +293,19 @@ export default function BrandKitPanel({ onClose, onApplyColors }: BrandKitPanelP
                                 return (
                                     <div 
                                         key={kit.id} 
-                                        className={`p-3 rounded-lg border ${isActive ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-gray-200'} transition-all flex flex-col gap-3`}
+                                        className={`p-3 rounded-xl border ${isActive ? 'bg-primary/5 border-primary/30' : 'bg-card border-border'} transition-all flex flex-col gap-3`}
                                     >
                                         <div className="flex justify-between items-center">
-                                            <span className="font-medium text-sm text-gray-800 flex items-center gap-1.5">
+                                            <span className="font-medium text-xs text-foreground flex items-center gap-1.5">
                                                 {kit.name}
-                                                {isActive && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
+                                                {isActive && <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />}
                                             </span>
                                             {!isActive && (
                                                 <button 
                                                     onClick={() => handleSetActive(kit.id)}
-                                                    className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                                                    className="text-[10px] text-muted-foreground hover:text-foreground font-medium"
                                                 >
-                                                    Set Active
+                                                    Set Aktif
                                                 </button>
                                             )}
                                         </div>
@@ -310,15 +331,15 @@ export default function BrandKitPanel({ onClose, onApplyColors }: BrandKitPanelP
             
             {/* Bottom Apply Action */}
             {onApplyColors && kits.length > 0 && activeKitId && (
-                <div className="p-4 border-t border-[#e5e7eb] bg-gray-50">
+                <div className="p-4 border-t border-border bg-card mt-auto shrink-0">
                     <button 
                         onClick={handleApplyActiveToCanvas}
-                        className="w-full bg-indigo-600 text-white font-medium text-sm py-2 rounded-md hover:bg-indigo-700 transition-colors"
+                        className="w-full bg-primary text-primary-foreground font-medium text-xs py-2 rounded-lg hover:bg-primary/90 transition-colors"
                     >
-                        Apply Active Colors to Canvas
+                        Terapkan ke Canvas
                     </button>
-                    <p className="text-[10px] text-gray-500 text-center mt-2 leading-tight">
-                        Applies active brand colors to background or available elements. Generating AI image/text will automatically use these colors.
+                    <p className="text-[10px] text-muted-foreground text-center mt-2 leading-tight">
+                        Mengaplikasikan warna brand aktif ke background. Generate desain AI selanjutnya akan mengikuti warna ini.
                     </p>
                 </div>
             )}

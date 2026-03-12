@@ -245,23 +245,25 @@ export const MagicTextPanel: React.FC = () => {
                             onClick={() => setMode('replace')}
                             disabled={isGenerating}
                             className={cn(
-                                "p-2 rounded-lg border text-center transition-all text-xs font-medium",
-                                mode === 'replace' ? "border-primary bg-primary/5 text-foreground ring-1 ring-primary/20" : "border-border text-muted-foreground hover:bg-muted/50",
+                                "flex flex-col items-center justify-center p-2 rounded-lg border text-center transition-all",
+                                mode === 'replace' ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border hover:bg-muted/50",
                                 isGenerating && "opacity-50 cursor-not-allowed"
                             )}
                         >
-                            Ganti Lama
+                            <span className={cn("text-xs font-medium mb-1", mode === 'replace' ? "text-foreground" : "text-muted-foreground")}>Ganti Lama</span>
+                            <span className="text-[9px] text-muted-foreground/80">Hapus teks lama, ganti baru</span>
                         </button>
                         <button
                             onClick={() => setMode('append')}
                             disabled={isGenerating}
                             className={cn(
-                                "p-2 rounded-lg border text-center transition-all text-xs font-medium",
-                                mode === 'append' ? "border-primary bg-primary/5 text-foreground ring-1 ring-primary/20" : "border-border text-muted-foreground hover:bg-muted/50",
+                                "flex flex-col items-center justify-center p-2 rounded-lg border text-center transition-all",
+                                mode === 'append' ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border hover:bg-muted/50",
                                 isGenerating && "opacity-50 cursor-not-allowed"
                             )}
                         >
-                            Tambahkan
+                            <span className={cn("text-xs font-medium mb-1", mode === 'append' ? "text-foreground" : "text-muted-foreground")}>Tambahkan</span>
+                            <span className="text-[9px] text-muted-foreground/80">Tambah teks tanpa menghapus</span>
                         </button>
                     </div>
                 </div>

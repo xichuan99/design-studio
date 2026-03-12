@@ -64,7 +64,7 @@ export default function CopywritingPanel({
                 
                 if (!res.questions || res.questions.length === 0) {
                     // Fallback to directly generate if no questions
-                    fetchVariations();
+                    fetchVariations({}, tone);
                 } else {
                     setIsLoading(false);
                 }
@@ -157,7 +157,7 @@ export default function CopywritingPanel({
                                 type="text"
                                 className="w-full bg-neutral-900/50 border border-neutral-700/50 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary/50"
                                 value={answers[q.id] || ''}
-                                placeholder="Ketik manual..."
+                                placeholder={q.default || "Ketik manual..."}
                                 onChange={(e) => handleAnswerChange(q.id, e.target.value)}
                             />
                         )}
@@ -169,13 +169,13 @@ export default function CopywritingPanel({
                         onClick={handleSkipInterview}
                         className="px-3 py-1.5 text-xs text-neutral-400 hover:text-white transition-colors"
                     >
-                        Lewati
+                        Langsung Generate
                     </button>
                     <button
                         onClick={handleSubmitInterview}
                         className="px-4 py-1.5 bg-primary/20 hover:bg-primary/30 text-primary text-xs font-medium rounded-lg transition-colors flex items-center gap-2"
                     >
-                        <Sparkles className="w-3.5 h-3.5" /> Generate Copy
+                        <Sparkles className="w-3.5 h-3.5" /> Lanjut Generate
                     </button>
                 </div>
             </div>
@@ -187,7 +187,17 @@ export default function CopywritingPanel({
 
         return (
             <div className="space-y-4">
-                {error && <div className="p-3 bg-red-900/50 text-red-200 text-sm rounded-xl">{error}</div>}
+                {error && (
+                    <div className="p-3 bg-red-900/50 border border-red-500/30 rounded-xl flex flex-col gap-3">
+                        <p className="text-red-200 text-sm">{error}</p>
+                        <button 
+                            onClick={() => fetchVariations(answers, tone)}
+                            className="bg-red-500/20 hover:bg-red-500/30 text-red-200 px-3 py-1.5 rounded-lg text-xs font-medium self-start transition-colors"
+                        >
+                            Coba Lagi
+                        </button>
+                    </div>
+                )}
                 
                 {/* Tone Selector */}
                 {!error && (

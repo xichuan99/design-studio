@@ -64,6 +64,24 @@ export function useAutoSave(projectId?: string | null) {
 
             if (!res.ok) throw new Error('Save failed');
 
+            // Wire up history snapshot on explicit save
+            try {
+                const historyData = {
+                    project_id: projectId,
+                    background_url: state.backgroundUrl || '', // Fallback to empty string if null
+                    text_layers: state.elements, // Using elements as text_layers for history snapshot
+                    generation_params: {} // Optional
+                };
+                
+                await fetch(`${API_BASE_URL}/history/`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(historyData),
+                });
+            } catch (historyErr) {
+                console.warn('Failed to snapshot history, continuing...', historyErr);
+            }
+
             setStatus('saved');
 
             setTimeout(() => {

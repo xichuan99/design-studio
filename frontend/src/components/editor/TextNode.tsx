@@ -133,6 +133,7 @@ export const TextNode: React.FC<TextNodeProps> = ({
             {isSelected && !isEditing && (
                 <Transformer
                     ref={trRef}
+                    padding={0}
                     boundBoxFunc={(oldBox, newBox) => {
                         if (newBox.width < 10 || newBox.height < 10) {
                             return oldBox;

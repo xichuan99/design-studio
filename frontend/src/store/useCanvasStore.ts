@@ -249,23 +249,32 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set) => ({
     groupElements: () => set((state) => {
         if (state.selectedElementIds.length < 2) return state;
         
+        let newElements = [...state.elements];
+        const selectedEls = newElements.filter(el => state.selectedElementIds.includes(el.id));
+        newElements = newElements.filter(el => !state.selectedElementIds.includes(el.id));
+        
+        // Calculate bounding box for the new group
+        const minX = Math.min(...selectedEls.map(el => el.x));
+        const minY = Math.min(...selectedEls.map(el => el.y));
+
         const groupId = uuidv4();
         const newGroup: CanvasElement = {
             id: groupId,
             type: 'group',
-            x: 0,
-            y: 0,
+            x: minX,
+            y: minY,
             rotation: 0,
             label: 'Group',
         };
         
-        let newElements = [...state.elements];
-        // Remove selected elements from their current position
-        const selectedEls = newElements.filter(el => state.selectedElementIds.includes(el.id));
-        newElements = newElements.filter(el => !state.selectedElementIds.includes(el.id));
+        // Add them as contiguous block with the parent, converting to relative coords
+        const updatedSelectedEls = selectedEls.map(el => ({ 
+            ...el, 
+            parentId: groupId,
+            x: el.x - minX,
+            y: el.y - minY
+        }));
         
-        // Add them as contiguous block with the parent
-        const updatedSelectedEls = selectedEls.map(el => ({ ...el, parentId: groupId }));
         newElements.push(newGroup, ...updatedSelectedEls);
 
         return {
@@ -283,11 +292,19 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set) => ({
         
         if (groupsToUngroup.length === 0) return state;
         
+        // Map group ID to its absolute position
+        const groupPositions = new Map(groupsToUngroup.map(g => [g.id, { x: g.x, y: g.y }]));
         const groupIds = new Set(groupsToUngroup.map(g => g.id));
         
         newElements = newElements.map(el => {
             if (el.parentId && groupIds.has(el.parentId)) {
-                return { ...el, parentId: undefined };
+                const groupPos = groupPositions.get(el.parentId);
+                return { 
+                    ...el, 
+                    parentId: undefined,
+                    x: el.x + (groupPos?.x || 0),
+                    y: el.y + (groupPos?.y || 0)
+                };
             }
             return el;
         });

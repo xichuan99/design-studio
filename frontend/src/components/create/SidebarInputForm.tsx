@@ -63,10 +63,10 @@ export function SidebarInputForm({
                 />
                 
                 {/* AI Copywriting Integration */}
-                <div className="flex justify-end mt-2">
+                <div className="flex flex-col items-end mt-2 gap-1.5">
                     <button
                         onClick={() => setShowCopywriting(!showCopywriting)}
-                        disabled={isInputLocked || isParsing || rawText.length < 10}
+                        disabled={isInputLocked || isParsing || rawText.length < 3}
                         className={`flex items-center gap-1.5 px-3 py-2 sm:py-1.5 text-xs font-medium rounded-lg transition-colors
                             ${showCopywriting 
                                 ? 'bg-primary text-primary-foreground' 
@@ -77,6 +77,9 @@ export function SidebarInputForm({
                         <Sparkles className="w-3.5 h-3.5" />
                         AI Copywriting
                     </button>
+                    <span className="text-[10px] text-muted-foreground mr-1">
+                        AI akan membuatkan 3 variasi teks promosi untuk deskripsi Anda
+                    </span>
                 </div>
 
                 {showCopywriting && (

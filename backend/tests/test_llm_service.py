@@ -20,7 +20,7 @@ async def test_parse_minimal():
 
 @pytest.mark.asyncio
 async def test_parse_long_text():
-    text = "Grand Opening Toko Baju Anak Matahari, Diskon up to 70% semua item, gratis goodie bag untuk 100 pembeli pertama, tanggal 15 Maret 2026, di Mall Kelapa Gading Lt.2"
+    text = "Grand Opening Toko Baju Anak Matahari, Diskon up to 70% semua item, gratis goodie bag untuk 100 pembeli pertama, tanggal 15 Maret 2026, di Mall Kelapa Gading Lt.2. Kunjungi Sekarang!"
     result = await parse_design_text(text)
     assert isinstance(result, ParsedTextElements)
     assert len(result.headline.split()) <= 6  # Should be concise

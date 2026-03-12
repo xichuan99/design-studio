@@ -260,14 +260,14 @@ async def generate_ai_copywriting(
                     "headline": "KUALITAS TERJAMIN UNTUK ANDA",
                     "subline": "Rasakan manfaat perlindungan optimal tiap hari.",
                     "cta": "COBA SEKARANG",
-                    "full_text": f"KUALITAS TERJAMIN UNTUK ANDA\nRasakan manfaat perlindungan optimal tiap hari.\nCOBA SEKARANG"
+                    "full_text": "KUALITAS TERJAMIN UNTUK ANDA\nRasakan manfaat perlindungan optimal tiap hari.\nCOBA SEKARANG"
                 },
                 {
                     "style": "Social Proof",
                     "headline": "RIBUAN ORANG SUDAH BUKTIKAN",
                     "subline": "Pilihan nomor 1 pelanggan di Indonesia.",
                     "cta": "ORDER SEKARANG",
-                    "full_text": f"RIBUAN ORANG SUDAH BUKTIKAN\nPilihan nomor 1 pelanggan di Indonesia.\nORDER SEKARANG"
+                    "full_text": "RIBUAN ORANG SUDAH BUKTIKAN\nPilihan nomor 1 pelanggan di Indonesia.\nORDER SEKARANG"
                 }
             ]
         }
