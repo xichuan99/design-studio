@@ -97,7 +97,7 @@ async def _execute_pipeline(job_id: str, raw_text: str, aspect_ratio: str, style
                 job_record.status = "failed"
                 job_record.error_message = str(e)
                 job_record.completed_at = datetime.now(timezone.utc)
-                
+
                 from app.models.user import User
                 user_record = await session.get(User, job_record.user_id)
                 if user_record:
