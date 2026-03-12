@@ -211,7 +211,7 @@ async def generate_copywriting_questions(raw_text: str) -> dict:
         raise e
 
 UNIFIED_BRIEF_SYSTEM = """
-Kamu adalah AI Creative Director. Tugasmu adalah menanyakan 3-4 pertanyaan klarifikasi SPESIFIK 
+Kamu adalah AI Creative Director. Tugasmu adalah menanyakan 3-4 pertanyaan klarifikasi SPESIFIK
 berdasarkan deskripsi singkat user untuk menghasilkan teks promosi (copywriting) DAN arahan visual (desain) sekaligus.
 
 Pertanyaan harus mencakup aspek-aspek berikut secara natural:
