@@ -12,6 +12,8 @@
 - **5-Step Create Flow** — Flow UI intuitif: 1) Input Teks, 2) **AI Interview** (pilihan ganda/teks), 3) Visual Prompt Review, 4) Generating, 5) Split-view Preview & Editor
 - **AI Text Parsing** — Gemini Flash menghasilkan headline, tagline, CTA, rekomendasi warna, dan layout JSON dari deskripsi teks
 - **AI Image Generation** — Generate background visual profesional via Fal.ai (SDXL/Flux) atau Gemini Imagen sebagai fallback
+- **AI Background Removal** — Hapus latar belakang foto produk secara instan menggunakan model U<sup>2</sup>-Net (rembg)
+- **Brand Kit (AI Color Palette)** — Upload logo UMKM, Gemini Vision otomatis mengekstrak 5 warna dominan. Simpan sebagai palet warna utama yang akan otomatis dipakai di setiap desain berikutnya.
 - **Canvas Editor** — Editor drag-and-drop berbasis Konva.js dengan:
   - Text & image elements, resize, rotate, drag
   - Fit-to-screen auto-zoom (otomatis menyesuaikan ukuran layar)
@@ -184,6 +186,14 @@ All endpoints except `/health`, `/docs`, and `/api/templates` require authentica
 | `GET` | `/api/designs/jobs/{job_id}` | Poll job status |
 | `GET` | `/api/designs/my-generations` | Riwayat generasi user |
 | `POST` | `/api/designs/upload` | Upload gambar referensi |
+| `POST` | `/api/designs/remove-background` | Hapus background foto via rembg |
+| **Brand Kits** | | |
+| `POST` | `/api/brand-kits/extract` | Upload logo/foto → ekstrak 5 warna via Gemini Vision |
+| `POST` | `/api/brand-kits/` | Simpan Brand Kit ke DB |
+| `GET` | `/api/brand-kits/` | List semua Brand Kit |
+| `GET` | `/api/brand-kits/active` | Get profil Brand Kit yang sedang aktif |
+| `PUT` | `/api/brand-kits/{id}` | Update (termasuk Set Active) |
+| `DELETE` | `/api/brand-kits/{id}` | Hapus Brand Kit |
 | **Templates** | | |
 | `GET` | `/api/templates/` | List all templates |
 | `GET` | `/api/templates/{id}` | Get template details |
