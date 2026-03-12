@@ -4,7 +4,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import desc
 from app.core.database import get_db
-from app.schemas.design import DesignGenerationRequest, ParsedTextElements, ModifyPromptRequest
+from app.schemas.design import (
+    DesignGenerationRequest, 
+    ParsedTextElements, 
+    ModifyPromptRequest,
+    CopywritingClarifyRequest,
+    CopywritingRequest,
+    CopywritingResponse
+)
 from app.services.llm_service import parse_design_text
 from app.models.job import Job
 from app.api.deps import get_current_user
@@ -12,7 +19,6 @@ from app.api.rate_limit import rate_limit_dependency
 from app.models.user import User
 
 router = APIRouter()
-
 
 @router.post("/upload")
 async def upload_user_image(
@@ -40,7 +46,6 @@ async def upload_user_image(
         import logging
         logging.exception("Upload endpoint failed")
         raise HTTPException(status_code=500, detail=f"Failed to upload image: {str(e)}")
-
 
 @router.post("/parse", response_model=ParsedTextElements)
 async def parse_text(request: DesignGenerationRequest) -> ParsedTextElements:
@@ -117,7 +122,6 @@ async def magic_text_layout(
             detail=f"Failed to generate layout: {str(e)}"
         )
 
-
 @router.post("/remove-background")
 async def api_remove_background(
     file: UploadFile = File(...),
@@ -161,6 +165,40 @@ async def api_remove_background(
             detail=f"Background removal failed: {str(e)}"
         )
 
+@router.post("/clarify-copywriting")
+async def clarify_copywriting(
+    request: CopywritingClarifyRequest,
+    current_user: User = Depends(rate_limit_dependency),
+) -> dict:
+    """Generates 3-4 clarification questions for copywriting."""
+    from app.services.llm_service import generate_copywriting_questions
+    try:
+        result = await generate_copywriting_questions(request.product_description)
+        return result
+    except Exception as e:
+        import logging
+        logging.exception("Failed to clarify copywriting")
+        raise HTTPException(status_code=500, detail="Failed to clarify copywriting")
+
+@router.post("/generate-copywriting", response_model=CopywritingResponse)
+async def generate_copywriting(
+    request: CopywritingRequest,
+    current_user: User = Depends(rate_limit_dependency),
+):
+    """Generates 3 variations of copywriting based on product description and clarifications."""
+    from app.services.llm_service import generate_ai_copywriting
+    try:
+        result = await generate_ai_copywriting(
+            product_description=request.product_description,
+            tone=request.tone,
+            brand_name=request.brand_name,
+            clarification_answers=request.clarification_answers
+        )
+        return result
+    except Exception as e:
+        import logging
+        logging.exception("Failed to generate copywriting")
+        raise HTTPException(status_code=500, detail="Failed to generate copywriting")
 
 @router.post("/generate")
 async def generate_design(
@@ -379,7 +417,6 @@ async def generate_design(
         await db.commit()
         raise HTTPException(status_code=500, detail=f"Image generation failed: {str(e)}")
 
-
 @router.get("/my-generations")
 async def get_my_generations(
     limit: int = 20,
@@ -411,7 +448,6 @@ async def get_my_generations(
         }
         for job in jobs
     ]
-
 
 @router.get("/jobs/{job_id}")
 async def get_job_status(

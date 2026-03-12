@@ -5,7 +5,8 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ReferenceImageUpload } from "@/components/create/ReferenceImageUpload";
 import { BrandKit } from "@/lib/api";
-import { Palette } from "lucide-react";
+import { Palette, Sparkles } from "lucide-react";
+import CopywritingPanel from "./CopywritingPanel";
 
 interface SidebarInputFormProps {
     rawText: string;
@@ -44,6 +45,7 @@ export function SidebarInputForm({
     activeBrandKit
 }: SidebarInputFormProps) {
     const formatStepNumber = showManualRef ? 3 : 2;
+    const [showCopywriting, setShowCopywriting] = React.useState(false);
 
     return (
         <div className="space-y-6 pt-4">
@@ -60,6 +62,35 @@ export function SidebarInputForm({
                     disabled={isInputLocked || isParsing}
                 />
                 
+                {/* AI Copywriting Integration */}
+                <div className="flex justify-end mt-2">
+                    <button
+                        onClick={() => setShowCopywriting(!showCopywriting)}
+                        disabled={isInputLocked || isParsing || rawText.length < 10}
+                        className={`flex items-center gap-1.5 px-3 py-2 sm:py-1.5 text-xs font-medium rounded-lg transition-colors
+                            ${showCopywriting 
+                                ? 'bg-primary text-primary-foreground' 
+                                : 'bg-primary/10 text-primary hover:bg-primary/20'
+                            }
+                            disabled:opacity-50 disabled:cursor-not-allowed`}
+                    >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        AI Copywriting
+                    </button>
+                </div>
+
+                {showCopywriting && (
+                    <CopywritingPanel
+                        productDescription={rawText}
+                        activeBrandKitName={activeBrandKit?.name}
+                        onSelectCopy={(fullText) => {
+                            setRawText(fullText);
+                            setShowCopywriting(false); // Automagically close on select
+                        }}
+                        onClose={() => setShowCopywriting(false)}
+                    />
+                )}
+
                 {/* Brand Kit Passive Badge */}
                 {activeBrandKit && (
                     <div className="flex items-center justify-between bg-indigo-50/50 border border-indigo-100 rounded-md p-2 mt-2">

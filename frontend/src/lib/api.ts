@@ -38,6 +38,15 @@ export interface BrandKit {
     created_at: string;
 }
 
+// --- Copywriting Types ---
+export interface CopywritingVariation {
+    style: string;
+    headline: string;
+    subline: string;
+    cta: string;
+    full_text: string;
+}
+
 export function useProjectApi() {
     const { data: session } = useSession();
 
@@ -158,6 +167,39 @@ export function useProjectApi() {
         if (!res.ok) {
             const errBase = await res.json().catch(() => ({}));
             throw new Error(errBase.detail || 'Failed to generate design');
+        }
+        return res.json();
+    };
+
+    const clarifyCopywriting = async (payload: {
+        product_description: string;
+    }) => {
+        const res = await fetch(`${API_BASE_URL}/designs/clarify-copywriting`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+            const errBase = await res.json().catch(() => ({}));
+            throw new Error(errBase.detail || 'Failed to clarify copywriting');
+        }
+        return res.json();
+    };
+
+    const generateCopywriting = async (payload: {
+        product_description: string;
+        tone?: string;
+        brand_name?: string;
+        clarification_answers?: Record<string, string>;
+    }): Promise<{ variations: CopywritingVariation[] }> => {
+        const res = await fetch(`${API_BASE_URL}/designs/generate-copywriting`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+            const errBase = await res.json().catch(() => ({}));
+            throw new Error(errBase.detail || 'Failed to generate copywriting');
         }
         return res.json();
     };
@@ -336,6 +378,7 @@ export function useProjectApi() {
         getUserProfile, updateProfile, deleteAccount, generateDesign, uploadImage, 
         getJobStatus, getMyGenerations, getTemplates, getHistory, createHistory, 
         generateMagicTextLayout, removeBackground,
-        extractBrandColors, saveBrandKit, getBrandKits, getActiveBrandKit, updateBrandKit, deleteBrandKit
+        extractBrandColors, saveBrandKit, getBrandKits, getActiveBrandKit, updateBrandKit, deleteBrandKit,
+        clarifyCopywriting, generateCopywriting
     };
 }

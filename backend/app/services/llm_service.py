@@ -7,7 +7,6 @@ from app.schemas.design import ParsedTextElements
 
 # client initialization is deferred into the function so pytest can mock/start
 
-
 SYSTEM_PROMPT = """
 You are a professional graphic designer and copywriter for Indonesian small businesses (UMKM).
 
@@ -59,6 +58,58 @@ Example options for Mood: "Minimalis & Bersih", "Hangat & Cozy", "Elegan & Mewah
 Example options for Color: "Warna Bumi (Mocca/Cokelat)", "Warna Cerah (Kuning/Merah)", "Monokrom", "Bebas, AI pilihkan".
 """
 
+COPYWRITING_BRIEF_SYSTEM = """
+Kamu adalah copywriter profesional. User ingin membuat teks promosi
+tapi hanya memberikan deskripsi singkat.
+
+Buatkan 3-4 pertanyaan klarifikasi SPESIFIK untuk menghasilkan copy
+yang lebih tepat sasaran. Pertanyaan harus mencakup:
+
+1. Target pelanggan (siapa yang mau dijangkau?)
+2. Promo/penawaran khusus (diskon, gratis ongkir, limited edition?)
+3. Keunggulan utama produk (apa yang membedakan dari kompetitor?)
+4. Tone/gaya bahasa yang diinginkan
+
+Format setiap pertanyaan sebagai objek JSON dengan `type` "choice" atau "text".
+Bahasa Indonesia, friendly.
+"""
+
+COPYWRITING_SYSTEM_PROMPT = """
+Kamu adalah copywriter profesional Indonesia.
+Diberikan deskripsi produk dan info tambahan, buatkan persis 3 variasi teks promosi pendek.
+
+Variasi 1 — FOMO (Fear of Missing Out / Urgensi):
+  Hook urgensi, batas waktu, kelangkaan stok.
+
+Variasi 2 — Benefit (Manfaat Utama):
+  Highlight manfaat nyata yang dirasakan pembeli.
+
+Variasi 3 — Social Proof (Bukti Sosial):
+  Kesan terpercaya, banyak dipakai, kualitas terjamin.
+
+RULES:
+- headline max 6 kata, UPPERCASE
+- subline max 15 kata  
+- cta max 4 kata
+- Bahasa Indonesia
+- Output HARUS JSON valid format:
+  {
+    "variations": [
+      {
+        "style": "FOMO",
+        "headline": "...",
+        "subline": "...",
+        "cta": "...",
+        "full_text": "[headline]\\n[subline]\\n[cta]"
+      },
+      ...
+    ]
+  }
+
+{tone_instruction}
+{brand_instruction}
+"""
+
 async def generate_design_brief_questions(raw_text: str) -> dict:
     """Generates clarifying questions based on the user's initial raw text."""
     from app.schemas.design import BriefQuestionsResponse
@@ -105,6 +156,142 @@ async def generate_design_brief_questions(raw_text: str) -> dict:
         ),
     )
     return json.loads(response.text)
+
+async def generate_copywriting_questions(raw_text: str) -> dict:
+    """Generates clarifying questions specifically for copywriting using Gemini."""
+    from app.schemas.design import BriefQuestionsResponse
+    if not settings.GEMINI_API_KEY:
+        import logging
+        logging.warning("GEMINI_API_KEY is missing – returning mock copywriting questions")
+        return {
+            "questions": [
+                {
+                    "id": "target_audience",
+                    "question": "Siapakah target pelanggan utama Anda?",
+                    "type": "choice",
+                    "options": ["Anak Muda / Gen Z", "Ibu Rumah Tangga", "Profesional / Pekerja", "Umum"],
+                    "default": "Umum"
+                },
+                {
+                    "id": "promo_detail",
+                    "question": "Apakah ada promo atau diskon khusus yang ingin ditonjolkan?",
+                    "type": "text",
+                    "options": [],
+                    "default": ""
+                },
+                {
+                    "id": "key_benefit",
+                    "question": "Apa keunggulan utama dari produk Anda dibandingkan yang lain?",
+                    "type": "choice",
+                    "options": ["Harga Terjangkau", "Kualitas Premium", "Cepat / Instan", "Estetik / Kekinian"],
+                    "default": "Kualitas Premium"
+                }
+            ]
+        }
+
+    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+
+    response = client.models.generate_content(
+        model='gemini-2.5-flash',
+        contents=[f"Buatkan pertanyaan klarifikasi copywriting untuk deskripsi ini:\n{raw_text}"],
+        config=types.GenerateContentConfig(
+            system_instruction=COPYWRITING_BRIEF_SYSTEM,
+            response_mime_type="application/json",
+            response_schema=BriefQuestionsResponse.model_json_schema(),
+            temperature=0.7,
+        ),
+    )
+
+    try:
+        parsed = BriefQuestionsResponse.model_validate_json(response.text)
+        return parsed.model_dump()
+    except Exception as e:
+        import logging
+        logging.exception("Error extracting copywriting questions via LLM")
+        raise e
+
+async def generate_ai_copywriting(
+    product_description: str,
+    tone: str = "persuasive",
+    brand_name: str | None = None,
+    clarification_answers: dict | None = None
+) -> dict:
+    """Generates 3 variations of copywriting using Gemini."""
+    from app.schemas.design import CopywritingResponse
+    
+    tone_map = {
+        "casual": "TONE: Gunakan bahasa yang santai, gaul, akrab, bisa pakai emoticon jika relevan.",
+        "professional": "TONE: Gunakan bahasa yang formal, profesional, terpercaya, dan elegan.",
+        "persuasive": "TONE: Gunakan teknik copywriting persuasif, menonjolkan urgensi, dan sangat meyakinkan pembaca untuk langsung bertindak.",
+        "funny": "TONE: Gunakan gaya bahasa yang lucu, nyeleneh, out-of-the-box, menarik perhatian."
+    }
+    tone_instruction = tone_map.get(tone, tone_map["persuasive"])
+    
+    brand_instruction = f"BRAND: Tolong sisipkan nama brand '{brand_name}' secara natural di salah satu bagian (Headline, Subline, atau CTA)." if brand_name else "BRAND: Tidak ada nama brand khusus yang disertakan."
+    
+    system_prompt_formatted = COPYWRITING_SYSTEM_PROMPT.format(
+        tone_instruction=tone_instruction,
+        brand_instruction=brand_instruction
+    )
+    
+    prompt_payload = f"Deskripsi Produk:\n{product_description}\n\n"
+    if clarification_answers:
+        prompt_payload += "Info Tambahan (Jawaban Klarifikasi):\n"
+        for key, value in clarification_answers.items():
+            prompt_payload += f"- {key}: {value}\n"
+    
+    if not settings.GEMINI_API_KEY:
+        import logging
+        logging.warning("GEMINI_API_KEY is missing – returning mock copywriting")
+        headline = "PROMO DISKON HARI INI"
+        subline = f"Dapatkan {product_description[:20]} dengan harga spesial."
+        cta = "BELI SEKARANG"
+        return {
+            "variations": [
+                {
+                    "style": "FOMO",
+                    "headline": headline,
+                    "subline": subline,
+                    "cta": cta,
+                    "full_text": f"{headline}\n{subline}\n{cta}"
+                },
+                {
+                    "style": "Benefit",
+                    "headline": "KUALITAS TERJAMIN UNTUK ANDA",
+                    "subline": "Rasakan manfaat perlindungan optimal tiap hari.",
+                    "cta": "COBA SEKARANG",
+                    "full_text": f"KUALITAS TERJAMIN UNTUK ANDA\nRasakan manfaat perlindungan optimal tiap hari.\nCOBA SEKARANG"
+                },
+                {
+                    "style": "Social Proof",
+                    "headline": "RIBUAN ORANG SUDAH BUKTIKAN",
+                    "subline": "Pilihan nomor 1 pelanggan di Indonesia.",
+                    "cta": "ORDER SEKARANG",
+                    "full_text": f"RIBUAN ORANG SUDAH BUKTIKAN\nPilihan nomor 1 pelanggan di Indonesia.\nORDER SEKARANG"
+                }
+            ]
+        }
+
+    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+
+    response = client.models.generate_content(
+        model='gemini-2.5-flash',
+        contents=[prompt_payload],
+        config=types.GenerateContentConfig(
+            system_instruction=system_prompt_formatted,
+            response_mime_type="application/json",
+            response_schema=CopywritingResponse.model_json_schema(),
+            temperature=0.8,
+        ),
+    )
+
+    try:
+        parsed = CopywritingResponse.model_validate_json(response.text)
+        return parsed.model_dump()
+    except Exception as e:
+        import logging
+        logging.exception("Error extracting copywriting via LLM")
+        raise e
 
 async def parse_design_text(
     raw_text: str,
@@ -376,4 +563,3 @@ async def generate_magic_text_layout(
     )
 
     return json.loads(response.text)
-

@@ -14,6 +14,7 @@
 - **AI Image Generation** — Generate background visual profesional via Fal.ai (SDXL/Flux) atau Gemini Imagen sebagai fallback
 - **AI Background Removal** — Hapus latar belakang foto produk secara instan menggunakan model U<sup>2</sup>-Net (rembg)
 - **Brand Kit (AI Color Palette)** — Upload logo UMKM, Gemini Vision otomatis mengekstrak 5 warna dominan. Simpan sebagai palet warna utama yang akan otomatis dipakai di setiap desain berikutnya.
+- **AI Copywriting / Headline Generator** — Generate 3 variasi teks promosi (FOMO, Benefit, Social Proof) dari deskripsi produk. Dilengkapi mini-interview klarifikasi, pilihan tone (Persuasif/Kasual/Profesional/Lucu), integrasi Brand Kit, dan re-generate.
 - **Canvas Editor** — Editor drag-and-drop berbasis Konva.js dengan:
   - Text & image elements, resize, rotate, drag
   - Fit-to-screen auto-zoom (otomatis menyesuaikan ukuran layar)
@@ -187,6 +188,8 @@ All endpoints except `/health`, `/docs`, and `/api/templates` require authentica
 | `GET` | `/api/designs/my-generations` | Riwayat generasi user |
 | `POST` | `/api/designs/upload` | Upload gambar referensi |
 | `POST` | `/api/designs/remove-background` | Hapus background foto via rembg |
+| `POST` | `/api/designs/clarify-copywriting` | Generate pertanyaan klarifikasi untuk copywriting |
+| `POST` | `/api/designs/generate-copywriting` | Generate 3 variasi teks promosi (FOMO/Benefit/Social Proof) |
 | **Brand Kits** | | |
 | `POST` | `/api/brand-kits/extract` | Upload logo/foto → ekstrak 5 warna via Gemini Vision |
 | `POST` | `/api/brand-kits/` | Simpan Brand Kit ke DB |
@@ -299,7 +302,8 @@ design-studio/
 │   │   │   └── providers.tsx       # PostHog provider
 │   │   ├── components/
 │   │   │   ├── create/             # Komponen halaman Create
-│   │   │   │   ├── DesignBriefInterview.tsx  # AI interview form (BARU)
+│   │   │   │   ├── DesignBriefInterview.tsx  # AI interview form
+│   │   │   │   ├── CopywritingPanel.tsx     # AI Copywriting panel (Sprint 3)
 │   │   │   │   ├── SidebarInputForm.tsx      # Form teks + referensi
 │   │   │   │   ├── SidebarActionBar.tsx      # Tombol aksi sidebar
 │   │   │   │   ├── VisualPromptEditor.tsx    # Prompt review editor
