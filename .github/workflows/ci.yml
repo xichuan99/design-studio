@@ -7,8 +7,6 @@ on:
     branches: ["main"]
 
 env:
-  # Force all actions to use Node 24 to fix Node 20 deprecation warnings
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 
 jobs:
@@ -53,9 +51,6 @@ jobs:
       S3_PUBLIC_URL: ${{ secrets.S3_PUBLIC_URL }}
 
     steps:
-      - name: Force Actions to use Node 24
-        run: echo "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true" >> $GITHUB_ENV
-
       - uses: actions/checkout@v4
 
       - name: Set up Python 3.9
@@ -91,9 +86,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Force Actions to use Node 24
-        run: echo "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true" >> $GITHUB_ENV
-
       - uses: actions/checkout@v4
 
       - name: Setup Node.js
