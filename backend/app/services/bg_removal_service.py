@@ -138,24 +138,24 @@ async def composite_with_shadow(
 
         if add_shadow:
             shadow = Image.new("RGBA", (int(p_w * 1.5), int(p_h * 1.5)), (0, 0, 0, 0))
-            
+
             # Create black shadow from alpha mask
             product_alpha = product_img.split()[-1]
             black_mask = Image.new("RGBA", (p_w, p_h), (0, 0, 0, 160)) # semi-transparent black
             black_mask.putalpha(product_alpha)
-            
+
             # Paste to padded shadow image to avoid cropping when blurring
             pad_x = int(p_w * 0.25)
             pad_y = int(p_h * 0.25)
             shadow.paste(black_mask, (pad_x, pad_y), black_mask)
-            
+
             # Apply blur
             shadow = shadow.filter(ImageFilter.GaussianBlur(radius=int(max_dim * 0.04)))
-            
+
             # Offset shadow slightly down
             shadow_x = offset_x - pad_x + int(p_w * 0.05)
             shadow_y = offset_y - pad_y + int(p_h * 0.08)
-            
+
             # Paste shadow first using its own alpha as mask
             background_img.paste(shadow, (shadow_x, shadow_y), shadow)
 

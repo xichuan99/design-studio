@@ -7,6 +7,7 @@ import { BeforeAfterSlider } from "@/components/tools/BeforeAfterSlider";
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowLeft, Download } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 export default function UpscalerPage() {
   const router = useRouter();
@@ -45,8 +46,12 @@ export default function UpscalerPage() {
       const data = await res.json();
       setResultUrl(data.url);
       setStep(3);
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        alert(err.message);
+      } else {
+        alert(String(err));
+      }
     } finally {
       setLoading(false);
     }
@@ -73,8 +78,8 @@ export default function UpscalerPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-4">
               <h3 className="text-lg font-semibold border-b pb-2">1. Gambar Original</h3>
-              <div className="aspect-[4/3] bg-muted/50 rounded-xl overflow-hidden border border-border shadow-inner">
-                <img src={previewOriginal} alt="Original" className="w-full h-full object-contain p-2" />
+              <div className="aspect-[4/3] bg-muted/50 rounded-xl overflow-hidden border border-border shadow-inner relative">
+                <Image src={previewOriginal} alt="Original" fill className="object-contain p-2" unoptimized />
               </div>
             </div>
             

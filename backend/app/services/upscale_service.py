@@ -15,14 +15,14 @@ async def upscale_image(image_url: str, scale: int = 2) -> Dict[str, Any]:
     os.environ["FAL_KEY"] = settings.FAL_KEY
 
     # aura-sr accepts image_url and output_format
-    # Other models like creative-upscaler might have different params, 
+    # Other models like creative-upscaler might have different params,
     # but aura-sr is fast and works well for general images.
-    
+
     # We will use "fal-ai/ccsr" or "fal-ai/aura-sr". We will try aura-sr first.
     # Actually, fal-ai/clarity-upscaler is another good one. Let's use fal-ai/ccsr for upscale or creative-upscaler if we want prompt.
     # We will use 'fal-ai/fast-lightning-sdxl-upscale' or equivalent.
     # For now, let's use fal-ai/aura-sr which is generally available.
-    
+
     # If using fal-ai/esrgan:
     model_id = "fal-ai/esrgan"
 

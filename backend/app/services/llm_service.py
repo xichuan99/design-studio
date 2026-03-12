@@ -89,7 +89,7 @@ Variasi 3 — Social Proof (Bukti Sosial):
 
 RULES:
 - headline max 6 kata, UPPERCASE
-- subline max 15 kata  
+- subline max 15 kata
 - cta max 4 kata
 - Bahasa Indonesia
 - Output HARUS JSON valid format:
@@ -218,7 +218,7 @@ async def generate_ai_copywriting(
 ) -> dict:
     """Generates 3 variations of copywriting using Gemini."""
     from app.schemas.design import CopywritingResponse
-    
+
     tone_map = {
         "casual": "TONE: Gunakan bahasa yang santai, gaul, akrab, bisa pakai emoticon jika relevan.",
         "professional": "TONE: Gunakan bahasa yang formal, profesional, terpercaya, dan elegan.",
@@ -226,20 +226,20 @@ async def generate_ai_copywriting(
         "funny": "TONE: Gunakan gaya bahasa yang lucu, nyeleneh, out-of-the-box, menarik perhatian."
     }
     tone_instruction = tone_map.get(tone, tone_map["persuasive"])
-    
+
     brand_instruction = f"BRAND: Tolong sisipkan nama brand '{brand_name}' secara natural di salah satu bagian (Headline, Subline, atau CTA)." if brand_name else "BRAND: Tidak ada nama brand khusus yang disertakan."
-    
+
     system_prompt_formatted = COPYWRITING_SYSTEM_PROMPT.format(
         tone_instruction=tone_instruction,
         brand_instruction=brand_instruction
     )
-    
+
     prompt_payload = f"Deskripsi Produk:\n{product_description}\n\n"
     if clarification_answers:
         prompt_payload += "Info Tambahan (Jawaban Klarifikasi):\n"
         for key, value in clarification_answers.items():
             prompt_payload += f"- {key}: {value}\n"
-    
+
     if not settings.GEMINI_API_KEY:
         import logging
         logging.warning("GEMINI_API_KEY is missing – returning mock copywriting")
@@ -300,7 +300,7 @@ async def parse_design_text(
     brand_colors: Optional[list[str]] = None
 ) -> ParsedTextElements:
     """Parses raw text into structured design elements and a visual prompt."""
-    
+
     prompt_modifier = ""
     if integrated_text:
         prompt_modifier = """
@@ -387,7 +387,7 @@ Update the English prompt parts to reflect the user's Indonesian instruction.
 If they want to change the style, update the "style" part. If they want a different mood/lighting, update the "lighting" part. Add or remove details organically.
 
 CRITICAL RULES FOR PRESERVING DETAIL:
-- Each part's `value` MUST contain AT LEAST as much descriptive detail as the original. 
+- Each part's `value` MUST contain AT LEAST as much descriptive detail as the original.
 - Do NOT summarize, abbreviate, or remove details unless the user explicitly asks.
 - You MUST preserve ALL layout instructions (like "copy space on the right side", "empty area for text overlay") from the original prompt. If you modify the setting, ensure the copy space instruction remains.
 - Return ALL prompt parts in full — both the ones you modified AND the ones left unchanged.
@@ -444,14 +444,14 @@ async def modify_visual_prompt(original_parts: list, original_visual_prompt: str
     )
 
     data = json.loads(response.text)
-    
+
     # SAFETY NET: Reconstruct the combined prompt from the parts to guarantee No Shortening
     assembled_prompt = ", ".join(p["value"] for p in data["modified_prompt_parts"] if p.get("enabled", True))
-    
+
     # If Gemini returned a very short combined prompt, override it with our assembled one
     if len(assembled_prompt) > len(data.get("modified_visual_prompt", "")):
         data["modified_visual_prompt"] = assembled_prompt
-        
+
     return data
 
 MAGIC_TEXT_SYSTEM = """
@@ -538,7 +538,7 @@ async def generate_magic_text_layout(
     # Inject style hint and canvas size context
     aspect_context = f"\nCanvas dimensions: {canvas_width}x{canvas_height}px. Place text within the safe area proportionally.\nFor portrait (height > width): prefer horizontal text bands, stack vertically.\nFor landscape (width > height): spread text horizontally, use left or right thirds."
     style_context = f"\nUSER STYLE PREFERENCE: [{style_hint}]\nAdapt your font choices, colors, and layout to strongly match this style vibe." if style_hint else ""
-    
+
     brand_colors_instruction = ""
     if brand_colors:
         brand_colors_instruction = f"""

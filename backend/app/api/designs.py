@@ -5,8 +5,8 @@ from sqlalchemy.future import select
 from sqlalchemy import desc
 from app.core.database import get_db
 from app.schemas.design import (
-    DesignGenerationRequest, 
-    ParsedTextElements, 
+    DesignGenerationRequest,
+    ParsedTextElements,
     ModifyPromptRequest,
     CopywritingClarifyRequest,
     CopywritingRequest,
@@ -175,7 +175,7 @@ async def clarify_copywriting(
     try:
         result = await generate_copywriting_questions(request.product_description)
         return result
-    except Exception as e:
+    except Exception:
         import logging
         logging.exception("Failed to clarify copywriting")
         raise HTTPException(status_code=500, detail="Failed to clarify copywriting")
@@ -195,7 +195,7 @@ async def generate_copywriting(
             clarification_answers=request.clarification_answers
         )
         return result
-    except Exception as e:
+    except Exception:
         import logging
         logging.exception("Failed to generate copywriting")
         raise HTTPException(status_code=500, detail="Failed to generate copywriting")
@@ -264,7 +264,7 @@ async def generate_design(
     logging.warning("Using Gemini Imagen sync fallback for image generation")
     try:
         from datetime import datetime, timezone
-        
+
         # Load brand kit colors if specified
         brand_colors = None
         if request.brand_kit_id:

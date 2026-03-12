@@ -65,7 +65,7 @@ class CopywritingRequest(BaseModel):
         None,
         description="Jawaban dari mini-interview klarifikasi"
     )
-    
+
 class CopywritingVariation(BaseModel):
     style: str = Field(
         ...,
