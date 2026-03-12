@@ -150,20 +150,27 @@ async def generate_design(
     _use_celery = app_settings.FAL_KEY and os.getenv("USE_CELERY", "false").lower() == "true"
 
     if _use_celery:
-        from app.workers.tasks import generate_design_task
-        generate_design_task.delay(
-            job_id=str(job.id),
-            raw_text=request.raw_text,
-            aspect_ratio=request.aspect_ratio,
-            style=request.style_preference,
-            reference_url=getattr(request, "reference_image_url", None),
-            integrated_text=request.integrated_text,
-        )
-        return {
-            "job_id": str(job.id),
-            "status": "queued",
-            "message": "Design generation started. Poll /api/designs/jobs/{job_id} for status.",
-        }
+        try:
+            from app.workers.tasks import generate_design_task
+            generate_design_task.delay(
+                job_id=str(job.id),
+                raw_text=request.raw_text,
+                aspect_ratio=request.aspect_ratio,
+                style=request.style_preference,
+                reference_url=getattr(request, "reference_image_url", None),
+                integrated_text=request.integrated_text,
+            )
+            return {
+                "job_id": str(job.id),
+                "status": "queued",
+                "message": "Design generation started. Poll /api/designs/jobs/{job_id} for status.",
+            }
+        except Exception as e:
+            job.status = "failed"
+            job.error_message = f"Failed to dispatch task: {str(e)}"
+            current_user.credits_remaining += 1
+            await db.commit()
+            raise HTTPException(status_code=500, detail=f"Image generation failed to start: {str(e)}")
     # Sync fallback: generate with Gemini Imagen (no Celery needed)
     import logging
     logging.warning("Using Gemini Imagen sync fallback for image generation")
@@ -252,6 +259,8 @@ async def generate_design(
             job.status = "failed"
             job.error_message = "Prompt rejected by Gemini safety filters (e.g. contains minors, sensitive topics). Please try rephrasing the prompt."
             job.completed_at = datetime.now(timezone.utc)
+            # Refund credit
+            current_user.credits_remaining += 1
 
         await db.commit()
         await db.refresh(job)
@@ -265,6 +274,7 @@ async def generate_design(
     except Exception as e:
         job.status = "failed"
         job.error_message = str(e)
+        current_user.credits_remaining += 1
         await db.commit()
         raise HTTPException(status_code=500, detail=f"Image generation failed: {str(e)}")
 

@@ -91,12 +91,18 @@ async def _execute_pipeline(job_id: str, raw_text: str, aspect_ratio: str, style
         )
 
     except Exception as e:
-        await _update_job_status(
-            job_id,
-            status="failed",
-            error_message=str(e),
-            completed_at=datetime.now(timezone.utc),
-        )
+        async with AsyncSessionLocal() as session:
+            job_record = await session.get(Job, job_id)
+            if job_record:
+                job_record.status = "failed"
+                job_record.error_message = str(e)
+                job_record.completed_at = datetime.now(timezone.utc)
+                
+                from app.models.user import User
+                user_record = await session.get(User, job_record.user_id)
+                if user_record:
+                    user_record.credits_remaining += 1
+            await session.commit()
         raise
 
 
