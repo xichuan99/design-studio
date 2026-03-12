@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, PanelLeftOpen, PanelLeftClose, X, ImagePlus } from "lucide-react";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import { AppHeader } from "@/components/layout/AppHeader";
-import { useProjectApi, API_BASE_URL, BrandKit } from "@/lib/api";
+import { useProjectApi, BrandKit } from "@/lib/api";
 import { generateCanvasElementsFromTemplate } from "@/lib/templateEngine";
 import { useRouter } from "next/navigation";
 import { ParsedDesignData, VisualPromptPart, BriefQuestion, MAX_FILE_SIZE } from "@/app/create/types";

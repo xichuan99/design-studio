@@ -2,8 +2,7 @@ import React, { useState } from "react";
 import { CopywritingVariation } from "@/lib/api";
 import { ParsedDesignData, VisualPromptPart } from "@/app/create/types";
 import { VisualPromptEditor } from "./VisualPromptEditor";
-import { Check, Sparkles, Type, Wand2, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Check, Sparkles, Type, Wand2 } from "lucide-react";
 
 interface UnifiedResultsViewProps {
     copyVariations: CopywritingVariation[];
