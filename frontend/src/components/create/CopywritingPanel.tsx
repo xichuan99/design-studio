@@ -55,12 +55,9 @@ export default function CopywritingPanel({
                 const res = await api.clarifyCopywriting({ product_description: productDescription });
                 setQuestions(res.questions || []);
                 
-                // Set default answers
-                const defaults: Record<string, string> = {};
-                (res.questions || []).forEach((q: Question) => {
-                    if (q.default) defaults[q.id] = q.default;
-                });
-                setAnswers(defaults);
+                // We no longer set default answers here so that the inputs remain empty
+                // and the placeholder (which contains the examples) is visible instead.
+                setAnswers({});
                 
                 if (!res.questions || res.questions.length === 0) {
                     // Fallback to directly generate if no questions
