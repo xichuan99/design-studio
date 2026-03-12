@@ -256,7 +256,10 @@ export default function CreatePage() {
             const token = document.cookie.split('; ').find(row => row.startsWith('next-auth.session-token='))?.split('=')[1] 
                 || document.cookie.split('; ').find(row => row.startsWith('__Secure-next-auth.session-token='))?.split('=')[1];
             
-            const headers: Record<string, string> = { "Content-Type": "application/json" };
+            const headers: Record<string, string> = { 
+                "Content-Type": "application/json",
+                ...(token ? { "Authorization": `Bearer ${token}` } : {})
+            };
             // In a deeper real implementation we'd use useProjectApi fully, but sticking to existing patterns here
             
             // STEP 1b: Parallel Parse Text and Generate Copywriting
