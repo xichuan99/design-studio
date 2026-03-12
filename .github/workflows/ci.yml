@@ -9,6 +9,7 @@ on:
 env:
   # Force all actions to use Node 24 to fix Node 20 deprecation warnings
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 
 jobs:
   backend-tests:
