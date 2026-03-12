@@ -40,7 +40,7 @@ interface SavedCreateState {
 export default function CreatePage() {
     const { status } = useSession();
     const router = useRouter();
-    const { generateDesign, getJobStatus, saveProject, uploadImage, getActiveBrandKit, clarifyUnified } = useProjectApi();
+    const { generateDesign, getJobStatus, saveProject, uploadImage, getActiveBrandKit, clarifyUnified, generateCopywriting, parseDesignText } = useProjectApi();
 
     const [rawText, setRawText] = useState("");
     const [aspectRatio, setAspectRatio] = useState("1:1");
@@ -252,21 +252,9 @@ export default function CreatePage() {
         setIsParsing(true);
         setBriefAnswers(answers);
         try {
-            // Use session token for auth
-            const token = document.cookie.split('; ').find(row => row.startsWith('next-auth.session-token='))?.split('=')[1] 
-                || document.cookie.split('; ').find(row => row.startsWith('__Secure-next-auth.session-token='))?.split('=')[1];
-            
-            const headers: Record<string, string> = { 
-                "Content-Type": "application/json",
-                ...(token ? { "Authorization": `Bearer ${token}` } : {})
-            };
-            // In a deeper real implementation we'd use useProjectApi fully, but sticking to existing patterns here
-            
-            // STEP 1b: Parallel Parse Text and Generate Copywriting
-            const parsePromise = fetch(`${API_BASE_URL}/designs/parse`, {
-                method: "POST",
-                headers,
-                body: JSON.stringify({
+            // STEP 1b: Parallel Parse Text and Generate Copywriting using proper API hooks
+            const [parsed, copywritingData] = await Promise.allSettled([
+                parseDesignText({
                     raw_text: rawText,
                     aspect_ratio: aspectRatio,
                     style_preference: stylePreference,
@@ -274,35 +262,28 @@ export default function CreatePage() {
                     integrated_text: integratedText,
                     clarification_answers: answers
                 }),
-            });
-
-            const copywritingPromise = fetch(`${API_BASE_URL}/designs/generate-copywriting`, {
-                method: "POST",
-                headers,
-                body: JSON.stringify({
+                generateCopywriting({
                     product_description: rawText,
-                    tone: "persuasive", // Handled inside or derived
+                    tone: "persuasive",
                     brand_name: activeBrandKit?.name,
                     clarification_answers: answers
-                }),
-            });
+                })
+            ]);
 
-            const [parseRes, copywritingRes] = await Promise.all([parsePromise, copywritingPromise]);
+            if (parsed.status === 'rejected') {
+                throw new Error("Failed to parse visual design text");
+            }
+            setParsedData(parsed.value);
 
-            if (!parseRes.ok) throw new Error("Failed to parse visual design text");
-            const parsed = await parseRes.json();
-            setParsedData(parsed);
-
-            if (copywritingRes.ok) {
-                const copywritingData = await copywritingRes.json();
-                setCopyVariations(copywritingData.variations || []);
+            if (copywritingData.status === 'fulfilled') {
+                setCopyVariations(copywritingData.value.variations || []);
             } else {
                 console.warn("Failed to generate copywriting, continuing with visual prompt...");
                 setCopyVariations([]);
             }
 
             setCurrentStep('results');
-            if (window.innerWidth < 768) setSidebarOpen(false); // Ensure sidebar is closed on mobile
+            if (window.innerWidth < 768) setSidebarOpen(false);
 
         } catch (error) {
             console.error(error);

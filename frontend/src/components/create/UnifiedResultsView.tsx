@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { CopywritingVariation } from "@/lib/api";
 import { ParsedDesignData, VisualPromptPart } from "@/app/create/types";
 import { VisualPromptEditor } from "./VisualPromptEditor";
-import { Check, Sparkles, Palette } from "lucide-react";
+import { Check, Sparkles, Type, Wand2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface UnifiedResultsViewProps {
@@ -31,58 +31,93 @@ export function UnifiedResultsView({
         onSelectCopy(fullText);
     };
 
+    const hasCopyVariations = copyVariations && copyVariations.length > 0;
+
     return (
         <div className="w-full max-w-6xl mx-auto animation-fade-in flex flex-col gap-6">
-            <div className="text-center mb-4">
-                <h2 className="text-2xl font-bold text-foreground flex items-center justify-center gap-2">
-                    <Sparkles className="w-6 h-6 text-primary" />
-                    Hasil Analisis AI
+            {/* Header */}
+            <div className="text-center mb-2">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-primary/10 rounded-full mb-3">
+                    <Sparkles className="w-4 h-4 text-primary" />
+                    <span className="text-xs font-semibold text-primary tracking-wider uppercase">Hasil Analisis AI</span>
+                </div>
+                <h2 className="text-2xl font-bold text-foreground">
+                    Sesuaikan Sebelum Generate
                 </h2>
-                <p className="text-muted-foreground text-sm max-w-xl mx-auto mt-2">
-                    Pilih teks promosi yang paling cocok, lalu sesuaikan arahan visual desainnya sebelum mulai di-generate.
+                <p className="text-muted-foreground text-sm max-w-lg mx-auto mt-1">
+                    Pilih teks promosi &amp; sesuaikan arahan visual untuk hasil desain terbaik.
                 </p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                 
                 {/* Left Column: Copywriting Variations */}
-                <div className="lg:col-span-5 flex flex-col gap-4">
-                    <div className="flex items-center gap-2 mb-2">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">1</div>
-                        <h3 className="font-semibold text-lg">Pilih Teks Promosi</h3>
+                <div className="lg:col-span-5 flex flex-col gap-3">
+                    <div className="flex items-center gap-2 mb-1">
+                        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-white font-bold text-xs shadow-sm">1</div>
+                        <h3 className="font-semibold text-base">Pilih Teks Promosi</h3>
                     </div>
                     
-                    {copyVariations.length === 0 ? (
-                        <div className="p-6 text-center border rounded-xl bg-muted/30">
-                            <p className="text-muted-foreground text-sm">Tidak ada variasi teks tersedia. Lanjutkan ke langkah berikutnya.</p>
+                    {!hasCopyVariations ? (
+                        <div className="p-6 text-center border border-dashed border-border rounded-xl bg-muted/20">
+                            <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-3">
+                                <Type className="w-5 h-5 text-muted-foreground/60" />
+                            </div>
+                            <p className="text-muted-foreground text-sm font-medium mb-1">Variasi teks sedang diproses...</p>
+                            <p className="text-muted-foreground/70 text-xs">AI copywriting sedang merangkai kata-kata. Anda bisa langsung lanjut ke langkah visual di sebelah kanan.</p>
                         </div>
                     ) : (
-                        <div className="grid gap-3">
+                        <div className="grid gap-2.5">
                             {copyVariations.map((v, i) => (
                                 <div 
                                     key={i} 
                                     className={`relative group bg-card border rounded-xl p-4 transition-all cursor-pointer overflow-hidden ${
                                         selectedCopyIndex === i 
-                                        ? 'border-primary ring-1 ring-primary shadow-md bg-primary/5' 
-                                        : 'hover:border-primary/50 hover:shadow-sm'
+                                        ? 'border-primary ring-2 ring-primary/20 shadow-md shadow-primary/5' 
+                                        : 'border-border hover:border-primary/40 hover:shadow-sm'
                                     }`}
                                     onClick={() => handleCopySelect(i, v.full_text)}
                                 >
-                                    <div className="flex items-start justify-between mb-2">
-                                        <span className={`inline-block px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider rounded ${
-                                            selectedCopyIndex === i ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                                    {/* Selection indicator */}
+                                    {selectedCopyIndex === i && (
+                                        <div className="absolute top-3 right-3 w-6 h-6 bg-primary rounded-full flex items-center justify-center animation-zoom-in shadow-sm">
+                                            <Check className="w-3.5 h-3.5 text-white" />
+                                        </div>
+                                    )}
+
+                                    {/* Style badge */}
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-md ${
+                                            selectedCopyIndex === i 
+                                            ? 'bg-primary/10 text-primary' 
+                                            : 'bg-muted text-muted-foreground'
                                         }`}>
+                                            <Wand2 className="w-2.5 h-2.5" />
                                             {v.style}
                                         </span>
-                                        {selectedCopyIndex === i && (
-                                            <div className="absolute top-3 right-3 w-5 h-5 bg-primary rounded-full flex items-center justify-center animation-zoom-in">
-                                                <Check className="w-3 h-3 text-white" />
-                                            </div>
-                                        )}
                                     </div>
-                                    <h5 className="font-bold text-sm text-foreground leading-snug mb-1 pr-6">{v.headline}</h5>
+
+                                    {/* Content */}
+                                    <h5 className="font-bold text-sm text-foreground leading-snug mb-1.5 pr-8">{v.headline}</h5>
                                     <p className="text-xs text-muted-foreground leading-relaxed mb-3">{v.subline}</p>
-                                    <p className="text-xs font-semibold text-primary/80">{v.cta}</p>
+                                    
+                                    {/* CTA */}
+                                    <div className="flex items-center justify-between">
+                                        <span className={`text-xs font-bold px-2.5 py-1 rounded-md ${
+                                            selectedCopyIndex === i 
+                                            ? 'bg-primary/10 text-primary' 
+                                            : 'bg-muted/50 text-primary/70'
+                                        }`}>
+                                            {v.cta}
+                                        </span>
+                                        <span className={`text-[10px] font-medium transition-opacity ${
+                                            selectedCopyIndex === i 
+                                            ? 'text-primary opacity-100' 
+                                            : 'text-muted-foreground opacity-0 group-hover:opacity-100'
+                                        }`}>
+                                            {selectedCopyIndex === i ? '✓ Terpilih' : 'Klik untuk pilih'}
+                                        </span>
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -90,10 +125,10 @@ export function UnifiedResultsView({
                 </div>
 
                 {/* Right Column: Visual Prompt Editor */}
-                <div className="lg:col-span-7 flex flex-col gap-4">
-                    <div className="flex items-center gap-2 mb-2">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">2</div>
-                        <h3 className="font-semibold text-lg">Sesuaikan Arahan Visual</h3>
+                <div className="lg:col-span-7 flex flex-col gap-3">
+                    <div className="flex items-center gap-2 mb-1">
+                        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-white font-bold text-xs shadow-sm">2</div>
+                        <h3 className="font-semibold text-base">Sesuaikan Arahan Visual</h3>
                     </div>
 
                     <div className="bg-card shadow-lg rounded-2xl overflow-hidden border border-border/50">

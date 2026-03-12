@@ -219,6 +219,26 @@ export function useProjectApi() {
         return res.json();
     };
 
+    const parseDesignText = async (payload: {
+        raw_text: string;
+        aspect_ratio?: string;
+        style_preference?: string;
+        num_variations?: number;
+        integrated_text?: boolean;
+        clarification_answers?: Record<string, string>;
+    }) => {
+        const res = await fetch(`${API_BASE_URL}/designs/parse`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+            const errBase = await res.json().catch(() => ({}));
+            throw new Error(errBase.detail || 'Failed to parse design text');
+        }
+        return res.json();
+    };
+
     const uploadImage = async (file: File) => {
         const formData = new FormData();
         formData.append('file', file);
@@ -394,6 +414,6 @@ export function useProjectApi() {
         getJobStatus, getMyGenerations, getTemplates, getHistory, createHistory, 
         generateMagicTextLayout, removeBackground,
         extractBrandColors, saveBrandKit, getBrandKits, getActiveBrandKit, updateBrandKit, deleteBrandKit,
-        clarifyCopywriting, generateCopywriting, clarifyUnified
+        clarifyCopywriting, generateCopywriting, parseDesignText, clarifyUnified
     };
 }
