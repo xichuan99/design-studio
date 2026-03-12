@@ -2,6 +2,7 @@ import { AppHeader } from "@/components/layout/AppHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Wand2, ImagePlus, Eraser, MoveDiagonal } from "lucide-react";
 import Link from "next/link";
+import { BeforeAfterSlider } from "@/components/tools/BeforeAfterSlider";
 
 export default function ToolsHubPage() {
   const tools = [
@@ -39,16 +40,16 @@ export default function ToolsHubPage() {
     <div className="min-h-screen bg-background flex flex-col">
       <AppHeader />
       <div className="flex-1 max-w-5xl mx-auto p-6 md:p-8 w-full">
-        <div className="mb-8">
-          <h1 className="text-3xl font-jakarta font-bold text-foreground">AI Photo Tools</h1>
-          <p className="text-muted-foreground mt-2 text-lg">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-jakarta font-bold text-foreground">AI Photo Tools</h1>
+          <p className="text-muted-foreground mt-2 text-base sm:text-lg">
             Sulap foto produk sederhana Anda menjadi aset visual profesional.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
           {tools.map((tool, idx) => (
-            <Card key={idx} className={`border-2 transition-all ${tool.isReady ? "hover:border-primary/50 cursor-pointer hover:shadow-md" : "opacity-60 grayscale bg-muted/30"}`}>
+            <Card key={idx} className={`border-2 transition-all ${tool.isReady ? "hover:border-primary/60 cursor-pointer hover:shadow-[0_0_20px_rgba(108,43,238,0.15)] hover:scale-[1.01] transition-all duration-200" : "opacity-40 grayscale bg-muted/20 pointer-events-none select-none"}`} title={!tool.isReady ? "Segera hadir!" : undefined}>
               {tool.isReady ? (
                 <Link href={tool.href} className="flex flex-col h-full pointer-events-auto">
                   <CardHeader className="flex flex-row items-start gap-4 pb-4">
@@ -76,6 +77,31 @@ export default function ToolsHubPage() {
               )}
             </Card>
           ))}
+        </div>
+
+        {/* Contoh Hasil Section */}
+        <div className="mt-10 sm:mt-16 mb-8">
+          <h2 className="text-xl sm:text-2xl font-jakarta font-bold text-foreground mb-4 sm:mb-6">Contoh Hasil Memukau</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold flex items-center gap-2"><Wand2 className="w-5 h-5 text-blue-500" /> AI Background Swap</h3>
+              <div className="aspect-[4/3] rounded-xl overflow-hidden shadow-lg border">
+                <BeforeAfterSlider 
+                  beforeImage="https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1000&auto=format&fit=crop" 
+                  afterImage="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=1000&auto=format&fit=crop" 
+                />
+              </div>
+            </div>
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold flex items-center gap-2"><ImagePlus className="w-5 h-5 text-green-500" /> AI Image Upscaler</h3>
+               <div className="aspect-[4/3] rounded-xl overflow-hidden shadow-lg border">
+                <BeforeAfterSlider 
+                  beforeImage="https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=1000&auto=format&fit=crop&blur=10" 
+                  afterImage="https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=1000&auto=format&fit=crop" 
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

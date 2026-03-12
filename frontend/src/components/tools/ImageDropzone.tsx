@@ -57,8 +57,8 @@ export function ImageDropzone({
 
   return (
     <div
-      className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-colors ${
-        isDragging ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50 bg-card"
+      className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-200 ${
+        isDragging ? "border-primary border-solid bg-primary/10 scale-[1.02] shadow-[0_0_30px_rgba(108,43,238,0.2)]" : "border-muted-foreground/25 hover:border-primary/50 bg-card"
       } ${className}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -73,8 +73,8 @@ export function ImageDropzone({
         className="hidden"
       />
       <div className="flex justify-center mb-4">
-        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-          <UploadCloud className="w-8 h-8" />
+        <div className={`w-16 h-16 rounded-full flex items-center justify-center text-primary transition-all duration-200 ${isDragging ? "bg-primary/20 scale-110" : "bg-primary/10"}`}>
+          <UploadCloud className={`w-8 h-8 transition-all ${isDragging ? "animate-bounce" : ""}`} />
         </div>
       </div>
       <h3 className="text-lg font-semibold mb-1">Upload foto produk Anda</h3>

@@ -66,9 +66,27 @@ export default function BackgroundSwapPage() {
     <div className="min-h-screen bg-background flex flex-col">
       <AppHeader />
       <div className="flex-1 max-w-4xl mx-auto p-6 md:p-8 w-full">
-        <Button variant="ghost" className="mb-6 -ml-4 gap-2 text-muted-foreground hover:text-foreground transition-colors" onClick={() => step > 1 && step < 3 ? setStep(1) : router.push("/tools")}>
+        <Button variant="ghost" className="mb-6 -ml-4 gap-2 text-foreground/70 hover:text-foreground hover:bg-muted/50 transition-colors" onClick={() => step > 1 && step < 3 ? setStep(1) : router.push("/tools")}>
           <ArrowLeft className="w-4 h-4" /> Kembali
         </Button>
+
+        {/* Step Indicator */}
+        <div className="flex items-center justify-center gap-1 sm:gap-2 mb-8 select-none">
+          <div className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold flex items-center gap-1.5 sm:gap-2 transition-colors ${step === 1 ? 'bg-primary text-primary-foreground shadow-md' : step > 1 ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>
+            <span className="flex items-center justify-center w-5 h-5 rounded-full text-[10px] bg-background/20 font-bold">1</span>
+            <span className="hidden sm:inline">Upload Foto</span>
+          </div>
+          <div className={`w-4 sm:w-8 h-[2px] ${step > 1 ? 'bg-primary/40' : 'bg-border'}`}></div>
+          <div className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold flex items-center gap-1.5 sm:gap-2 transition-colors ${step === 2 ? 'bg-primary text-primary-foreground shadow-md' : step > 2 ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>
+            <span className="flex items-center justify-center w-5 h-5 rounded-full text-[10px] bg-background/20 font-bold">2</span>
+            <span className="hidden sm:inline">Atur Suasana</span>
+          </div>
+          <div className={`w-4 sm:w-8 h-[2px] ${step > 2 ? 'bg-primary/40' : 'bg-border'}`}></div>
+          <div className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold flex items-center gap-1.5 sm:gap-2 transition-colors ${step === 3 ? 'bg-primary text-primary-foreground shadow-md' : 'bg-muted text-muted-foreground'}`}>
+            <span className="flex items-center justify-center w-5 h-5 rounded-full text-[10px] bg-background/20 font-bold">3</span>
+            <span className="hidden sm:inline">Hasil</span>
+          </div>
+        </div>
 
         <div className="mb-8">
           <h1 className="text-3xl font-jakarta font-bold text-foreground">AI Background Swap</h1>

@@ -133,12 +133,12 @@ export default function ProjectsPage() {
             <div className="flex-1 p-6 md:p-8">
                 <div className="max-w-6xl mx-auto space-y-8">
                     {/* Page Header */}
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                         <div>
-                            <h1 className="text-3xl font-jakarta font-bold text-foreground">Desain Saya</h1>
-                            <p className="text-muted-foreground mt-1">Kelola semua proyek dan desain yang tersimpan.</p>
+                            <h1 className="text-2xl sm:text-3xl font-jakarta font-bold text-foreground">Desain Saya</h1>
+                            <p className="text-muted-foreground mt-1 text-sm sm:text-base">Kelola semua proyek dan desain yang tersimpan.</p>
                         </div>
-                        <Button onClick={() => router.push('/create')} size="lg" className="gap-2 font-semibold shadow-md hover:shadow-lg transition-shadow">
+                        <Button onClick={() => router.push('/create')} size="lg" className="gap-2 font-semibold shadow-md hover:shadow-lg transition-shadow w-full sm:w-auto">
                             <Plus className="w-5 h-5" /> Desain Baru
                         </Button>
                     </div>
@@ -172,7 +172,7 @@ export default function ProjectsPage() {
                             {projects.map((project) => (
                                 <Card
                                     key={project.id}
-                                    className="overflow-hidden group flex flex-col cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all duration-200 border-border/60"
+                                    className="overflow-hidden group flex flex-col cursor-pointer hover:shadow-[0_0_15px_rgba(108,43,238,0.15)] hover:border-primary/40 hover:scale-[1.02] transition-all duration-200 border-border/60"
                                     onClick={() => router.push(`/edit/${project.id}`)}
                                 >
                                     {/* Thumbnail */}
@@ -241,7 +241,7 @@ export default function ProjectsPage() {
                                         <div className="flex gap-1" onClick={e => e.stopPropagation()}>
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground transition-colors">
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 min-w-[44px] min-h-[44px] text-muted-foreground hover:text-foreground transition-colors">
                                                         <MoreVertical className="w-4 h-4" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
