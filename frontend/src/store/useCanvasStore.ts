@@ -37,6 +37,8 @@ export interface CanvasElement {
     lineHeight?: number;
     stroke?: string;
     strokeWidth?: number;
+    backgroundColor?: string;
+    padding?: number;
 
     // Shadow properties (mostly for text on complex backgrounds)
     shadowColor?: string;
@@ -67,6 +69,7 @@ interface CanvasActions {
     // Elements
     addElement: (element: Omit<CanvasElement, 'id'>) => void;
     addMagicTextElements: (elements: Omit<CanvasElement, 'id'>[]) => void;
+    appendMagicTextElements: (elements: Omit<CanvasElement, 'id'>[]) => void;
     updateElement: (id: string, attrs: Partial<CanvasElement>) => void;
     deleteElement: (id: string) => void;
     deleteSelectedElements: () => void;
@@ -148,6 +151,27 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set) => ({
         
         const newElementsWithId = elementsToAdd.map(el => ({ ...el, id: uuidv4() }));
         const newElements = [...filteredElements, ...newElementsWithId];
+        
+        return {
+            ...saveHistory(state, newElements),
+            selectedElementIds: newElementsWithId.map(el => el.id)
+        };
+    }),
+
+    appendMagicTextElements: (elementsToAdd) => set((state) => {
+        // DO NOT remove previous Magic Text elements
+        const newElementsWithId = elementsToAdd.map((el, i) => {
+            // Find highest existing magic text index to continue numbering
+            const magicCounts = state.elements
+                .filter(e => e.label && e.label.startsWith('Magic Text '))
+                .length;
+            return {
+                ...el,
+                id: uuidv4(),
+                label: `Magic Text ${magicCounts + i + 1}`
+            };
+        });
+        const newElements = [...state.elements, ...newElementsWithId];
         
         return {
             ...saveHistory(state, newElements),

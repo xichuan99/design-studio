@@ -52,6 +52,7 @@ export function VisualPromptEditor({
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     original_prompt_parts: parsedData.visual_prompt_parts,
+                    original_visual_prompt: originalCombined,
                     user_instruction: instruction
                 })
             });

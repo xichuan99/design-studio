@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, PanelLeftOpen, PanelLeftClose, X, ImagePlus } from "lucide-react";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import { AppHeader } from "@/components/layout/AppHeader";
-import { useProjectApi, API_BASE_URL } from "@/lib/api";
+import { useProjectApi, API_BASE_URL, BrandKit } from "@/lib/api";
 import { generateCanvasElementsFromTemplate } from "@/lib/templateEngine";
 import { useRouter } from "next/navigation";
 import { ParsedDesignData, VisualPromptPart, BriefQuestion, MAX_FILE_SIZE } from "@/app/create/types";
@@ -32,12 +32,13 @@ interface SavedCreateState {
     integratedText: boolean;
     briefQuestions: BriefQuestion[];
     briefAnswers: Record<string, string>;
+    removeProductBg: boolean;
 }
 
 export default function CreatePage() {
     const { status } = useSession();
     const router = useRouter();
-    const { generateDesign, getJobStatus, saveProject, uploadImage } = useProjectApi();
+    const { generateDesign, getJobStatus, saveProject, uploadImage, getActiveBrandKit } = useProjectApi();
 
     const [rawText, setRawText] = useState("");
     const [aspectRatio, setAspectRatio] = useState("1:1");
@@ -54,6 +55,24 @@ export default function CreatePage() {
     const [integratedText, setIntegratedText] = useState(false);
     const [briefQuestions, setBriefQuestions] = useState<BriefQuestion[]>([]);
     const [briefAnswers, setBriefAnswers] = useState<Record<string, string>>({});
+    const [removeProductBg, setRemoveProductBg] = useState(false);
+    
+    // Brand Kit State
+    const [activeBrandKit, setActiveBrandKit] = useState<BrandKit | null>(null);
+
+    useEffect(() => {
+        // Fetch active brand kit on mount
+        const fetchBrandKit = async () => {
+            try {
+                const kit = await getActiveBrandKit();
+                setActiveBrandKit(kit);
+            } catch (err) {
+                console.error("Failed to fetch active brand kit:", err);
+            }
+        };
+        fetchBrandKit();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Image History State
     const [imageHistory, setImageHistory] = useState<{ url: string; prompt: string }[]>([]);
@@ -82,6 +101,7 @@ export default function CreatePage() {
                 setIntegratedText(parsed.integratedText || false);
                 setBriefQuestions(parsed.briefQuestions || []);
                 setBriefAnswers(parsed.briefAnswers || {});
+                setRemoveProductBg(parsed.removeProductBg || false);
             } catch (e) {
                 console.error("Failed to parse saved state", e);
             }
@@ -102,13 +122,14 @@ export default function CreatePage() {
             imageHistory,
             activeImageIndex,
             integratedText,
+            removeProductBg,
             briefQuestions,
             briefAnswers
         };
         localStorage.setItem('smartdesign_create_state', JSON.stringify(stateToSave));
     }, [
         isInitialized, rawText, aspectRatio, stylePreference, currentStep,
-        parsedData, imageHistory, activeImageIndex, integratedText,
+        parsedData, imageHistory, activeImageIndex, integratedText, removeProductBg,
         briefQuestions, briefAnswers
     ]);
 
@@ -130,10 +151,12 @@ export default function CreatePage() {
             setCurrentStep('input');
             setParsedData(null);
             setImageHistory([]);
+            setActiveImageIndex(0);
             setBriefQuestions([]);
             setBriefAnswers({});
             setReferenceFile(null);
             setReferencePreview(null);
+            setRemoveProductBg(false);
         }
     };
 
@@ -309,6 +332,9 @@ export default function CreatePage() {
                 style_preference: stylePreference,
                 reference_image_url: uploadedReferenceUrl,
                 integrated_text: integratedText,
+                remove_product_bg: removeProductBg && !!uploadedReferenceUrl,
+                product_image_url: removeProductBg ? uploadedReferenceUrl : undefined,
+                brand_kit_id: activeBrandKit?.id,
             });
             const jobId = jobData.job_id;
 
@@ -468,6 +494,8 @@ export default function CreatePage() {
                             setStylePreference={setStylePreference}
                             integratedText={integratedText}
                             setIntegratedText={setIntegratedText}
+                            removeProductBg={removeProductBg}
+                            setRemoveProductBg={setRemoveProductBg}
                             showManualRef={showManualRef}
                             setShowManualRef={setShowManualRef}
                             referenceFile={referenceFile}
@@ -479,6 +507,7 @@ export default function CreatePage() {
                             handleDragOver={handleDragOver}
                             handleDragLeave={handleDragLeave}
                             handleDrop={handleDrop}
+                            activeBrandKit={activeBrandKit}
                         />
                     </div>
 

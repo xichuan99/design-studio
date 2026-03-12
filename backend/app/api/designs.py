@@ -76,6 +76,7 @@ async def modify_prompt(request: ModifyPromptRequest) -> dict:
     try:
         result = await modify_visual_prompt(
             original_parts=request.original_prompt_parts,
+            original_visual_prompt=request.original_visual_prompt,
             instruction=request.user_instruction
         )
         return result
@@ -102,14 +103,64 @@ async def magic_text_layout(
         if len(image_base64) > 30_000_000:
             raise HTTPException(status_code=400, detail="Image too large. Max ~20MB.")
 
-        result = await generate_magic_text_layout(image_base64=image_base64, text=text, style_hint=style_hint)
+        canvas_width = request.get("canvas_width", 1024)
+        canvas_height = request.get("canvas_height", 1024)
+        result = await generate_magic_text_layout(image_base64=image_base64, text=text, style_hint=style_hint, canvas_width=canvas_width, canvas_height=canvas_height)
         return result
     except HTTPException:
         raise
     except Exception as e:
         import logging
         logging.exception("Failed to generate magic text layout")
-        raise HTTPException(status_code=500, detail=f"Failed to generate layout: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate layout: {str(e)}"
+        )
+
+
+@router.post("/remove-background")
+async def api_remove_background(
+    file: UploadFile = File(...),
+    current_user: User = Depends(rate_limit_dependency),
+):
+    """
+    Stand-alone endpoint to remove background from an uploaded image.
+    Returns the URL of the processed PNG transparent image.
+    """
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(
+            status_code=400, detail="File must be an image"
+        )
+
+    # Read file content safely
+    content = await file.read()
+    if len(content) > 10 * 1024 * 1024:  # 10MB limit
+        raise HTTPException(
+            status_code=400,
+            detail="Image size exceeds 10MB limit"
+        )
+
+    from app.services.bg_removal_service import remove_background
+    try:
+        no_bg_bytes = await remove_background(content)
+
+        # Upload the transparent PNG to our storage
+        from app.services.storage_service import upload_image
+        result_url = await upload_image(
+            no_bg_bytes,
+            content_type="image/png",
+            prefix=f"nobg_{current_user.id}"
+        )
+
+        return {"url": result_url}
+    except Exception as e:
+        import logging
+        logging.exception("Failed to remove background")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Background removal failed: {str(e)}"
+        )
+
 
 @router.post("/generate")
 async def generate_design(
@@ -171,14 +222,38 @@ async def generate_design(
             current_user.credits_remaining += 1
             await db.commit()
             raise HTTPException(status_code=500, detail=f"Image generation failed to start: {str(e)}")
-    # Sync fallback: generate with Gemini Imagen (no Celery needed)
     import logging
     logging.warning("Using Gemini Imagen sync fallback for image generation")
     try:
         from datetime import datetime, timezone
+        
+        # Load brand kit colors if specified
+        brand_colors = None
+        if request.brand_kit_id:
+            from app.models.brand_kit import BrandKit
+            from sqlalchemy.future import select
+            import uuid
+            try:
+                kit_id_uuid = uuid.UUID(request.brand_kit_id)
+                kit_result = await db.execute(
+                    select(BrandKit).where(
+                        BrandKit.id == kit_id_uuid,
+                        BrandKit.user_id == current_user.id
+                    )
+                )
+                kit = kit_result.scalar_one_or_none()
+                if kit and kit.colors:
+                    # extract the hex values
+                    brand_colors = [c.get("hex") for c in kit.colors if c.get("hex")]
+            except Exception as e:
+                logging.error(f"Failed to load brand kit {request.brand_kit_id}: {e}")
 
         # Parse text first (reuse existing logic)
-        parsed = await parse_design_text(request.raw_text, integrated_text=request.integrated_text)
+        parsed = await parse_design_text(
+            request.raw_text,
+            integrated_text=request.integrated_text,
+            brand_colors=brand_colors
+        )
 
         # Assemble visual prompt from parts if available (user might have edited/toggled them)
         if parsed.visual_prompt_parts:
@@ -210,9 +285,13 @@ async def generate_design(
         }
         style_suffix = style_map.get(request.style_preference, style_map["bold"])
 
+        # Limit headline for Imagen rendering when integrated_text is enabled
+        headline_words = parsed.headline.split()
+        headline_for_image = " ".join(headline_words[:4]) if len(headline_words) > 4 else parsed.headline
+
         # Modify the prompt based on whether we want embedded text or not
         text_instruction = (
-            f"high quality typography, clearly readable text saying '{parsed.headline}', stylized to match the scene"
+            f"high quality typography, clearly readable text saying '{headline_for_image}', stylized to match the scene"
             if request.integrated_text
             else "copy space area for text overlay, no text, no letters, no words"
         )
@@ -246,10 +325,32 @@ async def generate_design(
 
         if response.generated_images:
             image_bytes = response.generated_images[0].image.image_bytes
+
+            # --- Flow A: Product Composite Logic ---
+            if getattr(request, "remove_product_bg", False) and getattr(request, "product_image_url", None):
+                try:
+                    # Download the product image locally
+                    import httpx
+                    async with httpx.AsyncClient() as http_client:
+                        product_resp = await http_client.get(request.product_image_url)
+                        product_resp.raise_for_status()
+                        product_bytes = product_resp.content
+
+                    # 1. Remove background from product
+                    from app.services.bg_removal_service import remove_background, composite_product_on_background
+                    product_nobg_bytes = await remove_background(product_bytes)
+
+                    # 2. Composite the isolated product on top of the newly generated Imagen background
+                    image_bytes = await composite_product_on_background(product_nobg_bytes, image_bytes)
+                except Exception as comp_e:
+                    import logging
+                    logging.exception(f"Failed product composite during generation, falling back to raw background: {str(comp_e)}")
+                    # We fallback to the raw background image if compositing fails
+
             from app.services.storage_service import upload_image
             result_url = await upload_image(
                 image_bytes,
-                content_type="image/png",
+                content_type="image/png" if not getattr(request, "remove_product_bg", False) else "image/jpeg",
                 prefix="generated",
             )
             job.result_url = result_url

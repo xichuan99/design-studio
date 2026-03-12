@@ -16,11 +16,12 @@ const STYLE_PRESETS = [
 ];
 
 export const MagicTextPanel: React.FC = () => {
-    const { stageRef, addMagicTextElements, backgroundUrl, elements } = useCanvasStore();
+    const { stageRef, addMagicTextElements, appendMagicTextElements, backgroundUrl, elements, canvasWidth, canvasHeight } = useCanvasStore();
     const { generateMagicTextLayout } = useProjectApi();
 
     const [text, setText] = useState('');
     const [styleHint, setStyleHint] = useState<string>(STYLE_PRESETS[0].id);
+    const [mode, setMode] = useState<'replace' | 'append'>('replace');
     const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [warning, setWarning] = useState<string | null>(null);
@@ -51,6 +52,8 @@ export const MagicTextPanel: React.FC = () => {
                 image_base64: dataUrl,
                 text: text,
                 style_hint: styleHint,
+                canvas_width: canvasWidth,
+                canvas_height: canvasHeight
             });
 
             const timeoutPromise = new Promise((_, reject) => {
@@ -74,6 +77,9 @@ export const MagicTextPanel: React.FC = () => {
                     text_shadow?: string;
                     opacity?: number;
                     rotation?: number;
+                    background_color?: string;
+                    background_padding?: number;
+                    background_radius?: number;
                 }>;
             }
 
@@ -154,13 +160,20 @@ export const MagicTextPanel: React.FC = () => {
                         shadowBlur,
                         shadowOffsetX,
                         shadowOffsetY,
+                        backgroundColor: el.background_color,
+                        padding: el.background_padding,
+                        cornerRadius: el.background_radius,
                         label: `Magic Text ${idx + 1}`,
                     };
                 });
 
                 // 5. Batch tambahkan ke canvas via satu history entry
                 // Set highlight agar user notice
-                addMagicTextElements(newNodes);
+                if (mode === 'append') {
+                    appendMagicTextElements(newNodes);
+                } else {
+                    addMagicTextElements(newNodes);
+                }
                 setText('');
             } else {
                 throw new Error("AI tidak mengembalikan struktur teks yang valid.");
@@ -221,6 +234,35 @@ export const MagicTextPanel: React.FC = () => {
                                 </button>
                             );
                         })}
+                    </div>
+                </div>
+
+                {/* Mode Append vs Replace */}
+                <div className="space-y-3">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Mode Penempatan</label>
+                    <div className="grid grid-cols-2 gap-2">
+                        <button
+                            onClick={() => setMode('replace')}
+                            disabled={isGenerating}
+                            className={cn(
+                                "p-2 rounded-lg border text-center transition-all text-xs font-medium",
+                                mode === 'replace' ? "border-primary bg-primary/5 text-foreground ring-1 ring-primary/20" : "border-border text-muted-foreground hover:bg-muted/50",
+                                isGenerating && "opacity-50 cursor-not-allowed"
+                            )}
+                        >
+                            Ganti Lama
+                        </button>
+                        <button
+                            onClick={() => setMode('append')}
+                            disabled={isGenerating}
+                            className={cn(
+                                "p-2 rounded-lg border text-center transition-all text-xs font-medium",
+                                mode === 'append' ? "border-primary bg-primary/5 text-foreground ring-1 ring-primary/20" : "border-border text-muted-foreground hover:bg-muted/50",
+                                isGenerating && "opacity-50 cursor-not-allowed"
+                            )}
+                        >
+                            Tambahkan
+                        </button>
                     </div>
                 </div>
 

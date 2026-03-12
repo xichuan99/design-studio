@@ -9,6 +9,7 @@ from app.api.templates import router as templates_router
 from app.api.projects import router as projects_router
 from app.api.users import router as users_router
 from app.api.history import router as history_router
+from app.api.brand_kits import router as brand_kits_router
 
 # Initialize Sentry if DSN is provided
 SENTRY_DSN = os.getenv("SENTRY_DSN")
@@ -37,6 +38,7 @@ app.include_router(templates_router, prefix="/api/templates", tags=["Templates"]
 app.include_router(projects_router, prefix="/api/projects", tags=["Projects"])
 app.include_router(users_router, prefix="/api/users", tags=["Users"])
 app.include_router(history_router, prefix="/api/history", tags=["History"])
+app.include_router(brand_kits_router, prefix="/api/brand-kits", tags=["Brand Kits"])
 
 
 @app.get("/health")

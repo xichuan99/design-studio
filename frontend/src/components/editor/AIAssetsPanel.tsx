@@ -138,26 +138,57 @@ export const AIAssetsPanel: React.FC = () => {
                                     crossOrigin="anonymous"
                                     title={asset.visual_prompt || asset.raw_text}
                                 />
-                                
                                 {/* Hover Actions Overlay */}
                                 <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/80 via-black/50 to-transparent flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 translate-y-2 group-hover:translate-y-0">
                                     <Button 
                                         size="sm" 
                                         variant="secondary" 
-                                        className="h-7 text-[10px] w-full gap-1.5"
-                                        onClick={() => handleSetAsBackground(asset.result_url)}
-                                        title="Jadikan Background Canvas"
+                                        className="h-7 text-[10px] w-full gap-1.5 bg-black/50 hover:bg-black/70 text-white border-0"
+                                        onClick={async () => {
+                                            if (confirm("Ingin memisahkan objek utama dari background di gambar ini?")) {
+                                                try {
+                                                    // Convert URL to blob/file
+                                                    const response = await fetch(previewUrl);
+                                                    const blob = await response.blob();
+                                                    // We can't nicely transition state between panels without a global store for it,
+                                                    // But we can trigger download or notify the user to upload it in the BG removal tab
+                                                    const tempUrl = window.URL.createObjectURL(blob);
+                                                    const a = document.createElement('a');
+                                                    a.href = tempUrl;
+                                                    a.download = "to_remove_bg.jpg";
+                                                    document.body.appendChild(a);
+                                                    a.click();
+                                                    a.remove();
+                                                    alert("Gambar berhasil di-download. Buka tab 'Hapus BG' dan upload gambar ini.");
+                                                } catch (e) {
+                                                    console.error(e);
+                                                    alert("Gagal mengunduh gambar.");
+                                                }
+                                            }
+                                        }}
+                                        title="Download untuk Dihapus Background-nya"
                                     >
-                                        <Wallpaper className="w-3 h-3" /> Bg
+                                        Hapus BG
                                     </Button>
-                                    <Button 
-                                        size="sm" 
-                                        className="h-7 text-[10px] w-full gap-1.5 bg-primary/90 hover:bg-primary text-primary-foreground"
-                                        onClick={() => handleAddAsElement(asset.result_url)}
-                                        title="Tambah sebagai Elemen"
-                                    >
-                                        <ImagePlus className="w-3 h-3" /> Tambah
-                                    </Button>
+                                    <div className="flex gap-1">
+                                        <Button 
+                                            size="sm" 
+                                            variant="secondary" 
+                                            className="h-7 text-[10px] w-full gap-1.5"
+                                            onClick={() => handleSetAsBackground(asset.result_url)}
+                                            title="Jadikan Background Canvas"
+                                        >
+                                            <Wallpaper className="w-3 h-3" /> Bg
+                                        </Button>
+                                        <Button 
+                                            size="sm" 
+                                            className="h-7 text-[10px] w-full gap-1.5 bg-primary/90 hover:bg-primary text-primary-foreground"
+                                            onClick={() => handleAddAsElement(asset.result_url)}
+                                            title="Tambah sebagai Elemen"
+                                        >
+                                            <ImagePlus className="w-3 h-3" /> Tambah
+                                        </Button>
+                                    </div>
                                 </div>
                             </div>
                         );

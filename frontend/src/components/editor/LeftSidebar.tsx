@@ -6,14 +6,16 @@ import { useProjectApi } from '@/lib/api';
 import { AIPromptPanel } from './AIPromptPanel';
 import { MagicTextPanel } from './MagicTextPanel';
 import { AIAssetsPanel } from './AIAssetsPanel';
+import { BackgroundRemovalPanel } from './BackgroundRemovalPanel';
+import BrandKitPanel from './BrandKitPanel';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Sparkles, Wand2, Image as ImageIcon, Wrench, Type, Square, Circle, Minus, Blocks, Upload, Trash2, ChevronLeft, ChevronRight, type LucideIcon } from 'lucide-react';
+import { Sparkles, Wand2, Image as ImageIcon, Wrench, Type, Square, Circle, Minus, Blocks, Upload, Trash2, ChevronLeft, ChevronRight, Scissors, Palette, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 
 export const LeftSidebar: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'tools' | 'ai' | 'magictext' | 'assets'>('ai');
+    const [activeTab, setActiveTab] = useState<'tools' | 'ai' | 'magictext' | 'assets' | 'bgremoval' | 'brandkit'>('ai');
     const [isCollapsed, setIsCollapsed] = useState(false);
 
     // Toolbar logic
@@ -148,17 +150,32 @@ export const LeftSidebar: React.FC = () => {
         </button>
     );
 
+    const closePanel = () => {
+        setIsCollapsed(true);
+        setActiveTab('ai'); // Default to AI tab when closing
+    };
+
+    const navItems: { id: typeof activeTab; icon: LucideIcon; label: string }[] = [
+        { id: 'ai', icon: Sparkles, label: 'Generate' },
+        { id: 'magictext', icon: Wand2, label: 'Magic Text' },
+        { id: 'bgremoval', icon: Scissors, label: 'Hapus BG' },
+        { id: 'brandkit', icon: Palette, label: 'Brand Kit' },
+        { id: 'assets', icon: ImageIcon, label: 'Assets' },
+        { id: 'tools', icon: Wrench, label: 'Tools' },
+    ];
+
     return (
         <div className="flex h-full border-r border-border/40 bg-background/80 backdrop-blur-xl shadow-xl z-40 relative transition-all duration-300">
             {/* Narrow Navigation Bar */}
-            <div className="w-[80px] h-full flex flex-col items-center py-4 border-r border-border/40 gap-3 shrink-0 bg-card/50">
-                <NavButton id="ai" icon={Sparkles} label="AI Generate" />
-                <NavButton id="magictext" icon={Wand2} label="Magic Text" />
-                <NavButton id="assets" icon={ImageIcon} label="Aset / Galeri" />
-                
-                <div className="w-10 h-px bg-border/50 my-2" />
-                
-                <NavButton id="tools" icon={Wrench} label="Manual Tools" />
+            <div className="w-[80px] h-full flex flex-col items-center py-4 border-r border-border/40 gap-3 shrink-0 bg-card/50 z-50">
+                {navItems.map((item) => (
+                    <React.Fragment key={item.id}>
+                        <NavButton id={item.id} icon={item.icon} label={item.label} />
+                        {(item.id === 'brandkit' || item.id === 'assets') && (
+                            <div className="w-10 h-px bg-border/50 my-2" />
+                        )}
+                    </React.Fragment>
+                ))}
 
                 <div className="mt-auto" />
                 
@@ -179,6 +196,20 @@ export const LeftSidebar: React.FC = () => {
             >
                 {activeTab === 'ai' && <AIPromptPanel />}
                 {activeTab === 'magictext' && <MagicTextPanel />}
+                {activeTab === 'bgremoval' && (
+                    <BackgroundRemovalPanel />
+                )}
+                {activeTab === 'brandkit' && (
+                    <BrandKitPanel 
+                        onClose={closePanel} 
+                        onApplyColors={(hexes) => {
+                            if (hexes.length > 0) {
+                                // Apply the first extracted color as the canvas background
+                                setBackgroundColor(hexes[0]);
+                            }
+                        }}
+                    />
+                )}
                 {activeTab === 'assets' && <AIAssetsPanel />}
                 
                 {activeTab === 'tools' && (

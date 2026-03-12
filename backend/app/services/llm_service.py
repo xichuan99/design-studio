@@ -106,16 +106,23 @@ async def generate_design_brief_questions(raw_text: str) -> dict:
     )
     return json.loads(response.text)
 
-async def parse_design_text(raw_text: str, integrated_text: bool = False, clarification_answers: dict = None) -> ParsedTextElements:
-    """Passes raw text to Gemini and extracts structured JSON elements for graphics."""
-
-    # Append instructions for integrated text if requested
+async def parse_design_text(
+    raw_text: str,
+    integrated_text: bool = False,
+    clarification_answers: Optional[dict] = None,
+    brand_colors: Optional[list[str]] = None
+) -> ParsedTextElements:
+    """Parses raw text into structured design elements and a visual prompt."""
+    
     prompt_modifier = ""
     if integrated_text:
         prompt_modifier = """
         IMPORTANT INTEGRATED TEXT OVERRIDE:
         The user wants the text completely integrated into the image generation itself.
-        Instead of asking for 'copy space', your `visual_prompt` MUST explicitly tell the image generator to render the headline and subheadline text natively in the scene.
+        Instead of asking for 'copy space', your `visual_prompt` MUST explicitly tell the image generator to render the headline text natively in the scene.
+        - headline MUST be maximum 3 words for reliable AI text rendering
+        - Do NOT embed sub_headline or CTA text in the image — only the headline
+        - Use scene context for natural text (neon sign, chalkboard, banner, poster on wall)
         Example visual_prompt: "A hyper-realistic 3D render of a neon sign that spells 'MEGA SALE', vibrant cyberpunk street background, bold typography."
         """
 
@@ -127,7 +134,16 @@ async def parse_design_text(raw_text: str, integrated_text: bool = False, clarif
         {json.dumps(clarification_answers, indent=2)}
         """
 
-    final_prompt = SYSTEM_PROMPT + prompt_modifier + clarification_modifier
+    brand_colors_modifier = ""
+    if brand_colors:
+        brand_colors_modifier = f"""
+        BRAND COLORS:
+        The user has an active Brand Kit. You MUST use these exact colors for the suggested_colors and coordinate the layout elements to use these colors:
+        {json.dumps(brand_colors)}
+        In the visual_prompt_parts 'colors' category, explicitly mention these hex codes or their nearest color name equivalents.
+        """
+
+    final_prompt = SYSTEM_PROMPT + prompt_modifier + clarification_modifier + brand_colors_modifier
 
     if not settings.GEMINI_API_KEY:
         # Dev-mode mock: return sample parsed elements so the app is usable without an API key
@@ -175,25 +191,31 @@ async def parse_design_text(raw_text: str, integrated_text: bool = False, clarif
 MODIFY_PROMPT_SYSTEM = """
 You are an expert AI prompt engineer and bilingual assistant (Indonesian & English).
 The user is adjusting an existing AI image generation prompt. They will give you:
-1. The ORIGINAL English prompt parts.
-2. An INSTRUCTION in Indonesian describing what they want to change.
+1. The ORIGINAL full combined English prompt.
+2. The ORIGINAL English prompt parts.
+3. An INSTRUCTION in Indonesian describing what they want to change.
 
 YOUR TASK:
 Update the English prompt parts to reflect the user's Indonesian instruction.
 If they want to change the style, update the "style" part. If they want a different mood/lighting, update the "lighting" part. Add or remove details organically.
-Return ALL prompt parts in full — both the ones you modified AND the ones left unchanged — so the complete original structure is preserved. Also return the final combined prompt.
+
+CRITICAL RULES FOR PRESERVING DETAIL:
+- Each part's `value` MUST contain AT LEAST as much descriptive detail as the original. 
+- Do NOT summarize, abbreviate, or remove details unless the user explicitly asks.
+- You MUST preserve ALL layout instructions (like "copy space on the right side", "empty area for text overlay") from the original prompt. If you modify the setting, ensure the copy space instruction remains.
+- Return ALL prompt parts in full — both the ones you modified AND the ones left unchanged.
 
 Output JSON must match:
 {
   "modified_prompt_parts": [
      { "category": "...", "label": "...", "value": "..._UPDATED_OR_ORIGINAL_ENGLISH_VALUE_...", "enabled": true }
   ],
-  "modified_visual_prompt": "The new combined full English prompt...",
+  "modified_visual_prompt": "The new combined full English prompt. Make sure it explicitly includes ALL details and copy space instructions from the parts.",
   "indonesian_translation": "A natural, friendly Indonesian sentence explaining what the new `modified_visual_prompt` describes."
 }
 """
 
-async def modify_visual_prompt(original_parts: list, instruction: str) -> dict:
+async def modify_visual_prompt(original_parts: list, original_visual_prompt: str, instruction: str) -> dict:
     """Modifies existing English prompt parts based on an Indonesian user instruction."""
     from app.schemas.design import ModifyPromptResponse
 
@@ -222,7 +244,7 @@ async def modify_visual_prompt(original_parts: list, instruction: str) -> dict:
     # Ensure parts are dicts
     parts_dicts = [p.model_dump() if hasattr(p, 'model_dump') else dict(p) for p in original_parts]
 
-    input_text = f"ORIGINAL PROMPT PARTS:\n{json.dumps(parts_dicts, indent=2)}\n\nUSER INSTRUCTION (ID):\n{instruction}"
+    input_text = f"ORIGINAL FULL PROMPT:\n{original_visual_prompt}\n\nORIGINAL PROMPT PARTS:\n{json.dumps(parts_dicts, indent=2)}\n\nUSER INSTRUCTION (ID):\n{instruction}"
 
     response = client.models.generate_content(
         model='gemini-2.5-flash',
@@ -235,6 +257,14 @@ async def modify_visual_prompt(original_parts: list, instruction: str) -> dict:
     )
 
     data = json.loads(response.text)
+    
+    # SAFETY NET: Reconstruct the combined prompt from the parts to guarantee No Shortening
+    assembled_prompt = ", ".join(p["value"] for p in data["modified_prompt_parts"] if p.get("enabled", True))
+    
+    # If Gemini returned a very short combined prompt, override it with our assembled one
+    if len(assembled_prompt) > len(data.get("modified_visual_prompt", "")):
+        data["modified_visual_prompt"] = assembled_prompt
+        
     return data
 
 MAGIC_TEXT_SYSTEM = """
@@ -256,12 +286,33 @@ CRITICAL HEURISTICS:
    - Text MUST be highly legible. If the background is complex or light, add a `text_shadow` (e.g., "2px 2px 12px rgba(0,0,0,0.8)").
    - If the background is very clean and dark, use pure white text with no shadow.
 6. OPACITY: Use slight transparency (opacity: 0.8 to 0.9) for secondary text so it blends into the image context.
+7. INDONESIAN TEXT HANDLING:
+   - The text will likely be in Bahasa Indonesia (promotional/marketing text).
+   - Identify the text hierarchy correctly: "DISKON 50%" → Headline, "Khusus hari ini" → Sub-headline, "Pesan Sekarang" → CTA.
+   - Indonesian keywords for hierarchy: "Diskon", "Promo", "Gratis", "Sale" → always Headline.
+   - Supporting details (dates, conditions, descriptions) → Sub-headline or Body.
+   - Action words ("Pesan", "Hubungi", "Kunjungi", "Beli") → CTA.
+8. ELEMENT COUNT:
+   - For text under 20 words: produce 2-3 elements (headline + sub-headline + optional CTA).
+   - For text over 20 words: produce 3-5 elements with clear visual hierarchy.
+   - NEVER put all text in a single element.
+9. BACKGROUND BOX:
+   - When the background behind the text placement is complex/noisy, set `background_color` to a semi-transparent color (e.g. "rgba(0,0,0,0.5)") with `background_padding: 16` and `background_radius: 8`.
+   - For clean/simple backgrounds: do NOT add a background box.
 
 Coordinates must be proportional floats between 0.0 and 1.0 (x: 0.0 is left, y: 0.0 is top).
 Return the result STRICTLY as a JSON object matching the requested schema.
 """
 
-async def generate_magic_text_layout(image_base64: str, text: str, style_hint: Optional[str] = None) -> dict:
+async def generate_magic_text_layout(
+    text: str,
+    image_base64: str,
+    style_hint: Optional[str] = None,
+    canvas_width: int = 1024,
+    canvas_height: int = 1024,
+    brand_colors: Optional[list[str]] = None
+) -> dict:
+    """Generates a layout for text overlaid on a specific image."""
     from app.schemas.design import MagicTextResponse
     import base64
 
@@ -297,14 +348,25 @@ async def generate_magic_text_layout(image_base64: str, text: str, style_hint: O
 
     image_bytes = base64.b64decode(image_base64)
 
-    # Inject style hint context if provided
+    # Inject style hint and canvas size context
+    aspect_context = f"\nCanvas dimensions: {canvas_width}x{canvas_height}px. Place text within the safe area proportionally.\nFor portrait (height > width): prefer horizontal text bands, stack vertically.\nFor landscape (width > height): spread text horizontally, use left or right thirds."
     style_context = f"\nUSER STYLE PREFERENCE: [{style_hint}]\nAdapt your font choices, colors, and layout to strongly match this style vibe." if style_hint else ""
+    
+    brand_colors_instruction = ""
+    if brand_colors:
+        brand_colors_instruction = f"""
+        10. BRAND COLORS:
+           - The user has established specific brand colors: {json.dumps(brand_colors)}.
+           - You MUST strongly prefer using these exact colors (or variations of them) for text `color`, `background_color`, or `shadowColor` if they contrast well against the image background.
+        """
+
+    context_string = aspect_context + style_context + brand_colors_instruction
 
     response = client.models.generate_content(
         model='gemini-2.5-flash',
         contents=[
             types.Part.from_bytes(data=image_bytes, mime_type='image/png'),
-            f"Here is the text I want to place on this image: {text}{style_context}"
+            f"Here is the text I want to place on this image: {text}{context_string}"
         ],
         config=types.GenerateContentConfig(
             system_instruction=MAGIC_TEXT_SYSTEM,

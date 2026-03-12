@@ -25,6 +25,13 @@ class DesignGenerationRequest(BaseModel):
     integrated_text: bool = Field(False, description="Whether to instruct the image AI to render text directly into the pixels")
     clarification_answers: Optional[dict] = Field(None, description="User's answers to the clarification questions")
 
+    # Sprint 2: Brand Kit
+    brand_kit_id: Optional[str] = Field(None, description="Active Brand Kit ID to apply color palette")
+
+    # Sprint 1: Background removal from Create page
+    product_image_url: Optional[str] = Field(None, description="URL of the uploaded product image to be composited")
+    remove_product_bg: bool = Field(False, description="Whether the product image should have its background removed before compositing")
+
 # --- Clarification Interview Models ---
 class BriefQuestion(BaseModel):
     id: str = Field(..., description="Unique identifier for the question")
@@ -69,6 +76,7 @@ class ParsedTextElements(BaseModel):
 
 class ModifyPromptRequest(BaseModel):
     original_prompt_parts: List[VisualPromptPart]
+    original_visual_prompt: str = Field(..., description="The original full visual prompt for context")
     user_instruction: str = Field(..., description="User's instruction in Indonesian to modify the prompt")
 
 class ModifyPromptResponse(BaseModel):
@@ -129,6 +137,9 @@ class MagicTextElement(BaseModel):
     text_shadow: Optional[str] = Field(None, description="CSS-like text shadow (e.g., '2px 2px 8px rgba(0,0,0,0.6)') for better contrast")
     opacity: float = Field(1.0, description="Opacity from 0.0 to 1.0. Use for subtle sub-headlines.")
     rotation: float = Field(0.0, description="Rotation in degrees. Usually 0, but can be slight for playful styles.")
+    background_color: Optional[str] = Field(None, description="Background color behind text (e.g. 'rgba(0,0,0,0.6)'). Use when background is noisy.")
+    background_padding: float = Field(0, description="Padding around text in px when background_color is set (e.g., 16)")
+    background_radius: float = Field(0, description="Border radius of the background box in px (e.g., 8)")
 
 class MagicTextResponse(BaseModel):
     elements: List[MagicTextElement] = Field(default_factory=list)

@@ -4,12 +4,40 @@ import React from 'react';
 import { useCanvasStore } from '@/store/useCanvasStore';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Trash2, Bold, Italic, AlignLeft, AlignCenter, AlignRight, MousePointer2, Layers } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
+import { Trash2, Bold, Italic, AlignLeft, AlignCenter, AlignRight, MousePointer2, Layers, Palette } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useProjectApi, BrandKit } from '@/lib/api';
 
 export const StylePanel: React.FC = () => {
     const { elements, selectedElementIds, updateElement, deleteSelectedElements, duplicateSelectedElements, bringForward, sendBackward, bringToFront, sendToBack, deleteElement, duplicateElement, groupElements, ungroupElements } = useCanvasStore();
+    const api = useProjectApi();
+    const [activeKit, setActiveKit] = React.useState<BrandKit | null>(null);
+
+    React.useEffect(() => {
+        api.getActiveBrandKit()
+            .then(kit => setActiveKit(kit))
+            .catch(err => console.error('Failed to load active brand kit', err));
+    }, [api]);
+
+    // Reusable swatch renderer
+    const renderBrandSwatches = (applyColor: (hex: string) => void) => {
+        if (!activeKit) return null;
+        return (
+            <div className="flex items-center gap-1.5 mt-2 mb-1 bg-muted/50 p-1.5 rounded border">
+                <Palette className="w-3 h-3 text-indigo-500 mr-0.5" />
+                {activeKit.colors.map((c, i) => (
+                    <button
+                        key={i}
+                        className="w-4 h-4 rounded-full border border-border shadow-sm hover:scale-110 transition-transform"
+                        style={{ backgroundColor: c.hex }}
+                        onClick={() => applyColor(c.hex)}
+                        title={c.name}
+                    />
+                ))}
+            </div>
+        );
+    };
 
     if (selectedElementIds.length === 0) {
         return (
@@ -193,6 +221,7 @@ export const StylePanel: React.FC = () => {
                                                     {(selectedElement.fill || '#000000')}
                                                 </span>
                                             </div>
+                                            {renderBrandSwatches((c) => updateAttr('fill', c))}
                                         </div>
                                     </div>
                                 </AccordionContent>
@@ -272,6 +301,7 @@ export const StylePanel: React.FC = () => {
                                                 {(selectedElement.fill || '#e2e8f0')}
                                             </span>
                                         </div>
+                                        {renderBrandSwatches((c) => updateAttr('fill', c))}
                                     </div>
 
                                     {(selectedElement.shapeType === 'rect' || !selectedElement.shapeType) && (
@@ -355,7 +385,8 @@ export const StylePanel: React.FC = () => {
                                                     {(selectedElement.stroke || '#000000')}
                                                 </span>
                                             </div>
-                                            <Button variant="ghost" size="sm" className="h-5 text-[9px] justify-start px-0 text-muted-foreground" onClick={() => updateAttr('stroke', undefined)} disabled={!selectedElement.stroke}>
+                                            {renderBrandSwatches((c) => updateAttr('stroke', c))}
+                                            <Button variant="ghost" size="sm" className="h-5 text-[9px] justify-start px-0 text-muted-foreground mt-1" onClick={() => updateAttr('stroke', undefined)} disabled={!selectedElement.stroke}>
                                                 Remove
                                             </Button>
                                         </div>
@@ -389,7 +420,8 @@ export const StylePanel: React.FC = () => {
                                                     {(selectedElement.shadowColor || '#000000')}
                                                 </span>
                                             </div>
-                                            <Button variant="ghost" size="sm" className="h-5 text-[9px] justify-start px-0 text-muted-foreground" onClick={() => {
+                                            {renderBrandSwatches((c) => updateAttr('shadowColor', c))}
+                                            <Button variant="ghost" size="sm" className="h-5 text-[9px] justify-start px-0 text-muted-foreground mt-1" onClick={() => {
                                                 updateAttr('shadowColor', undefined);
                                                 updateAttr('shadowBlur', undefined);
                                                 updateAttr('shadowOffsetX', undefined);

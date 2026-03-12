@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useProjectApi } from "@/lib/api";
+import { useProjectApi, BrandKit } from "@/lib/api";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +19,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Trash2, User, Save, Loader2, CheckCircle2, Coins } from "lucide-react";
+import { Trash2, User, Save, Loader2, CheckCircle2, Coins, Palette, Plus } from "lucide-react";
 
 const NAME_MIN_LENGTH = 2;
 const NAME_MAX_LENGTH = 100;
@@ -37,6 +37,11 @@ export default function SettingsPage() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
+    
+    // Brand Kit State
+    const [brandKits, setBrandKits] = useState<BrandKit[]>([]);
+    const [activeBrandKitId, setActiveBrandKitId] = useState<string | null>(null);
+    const [isLoadingKits, setIsLoadingKits] = useState(true);
 
     // Route guard: redirect if unauthenticated
     useEffect(() => {
@@ -58,11 +63,28 @@ export default function SettingsPage() {
         }
     }, [api]);
 
-    useEffect(() => {
-        if (session) {
-            fetchProfile();
+    const fetchBrandKits = useCallback(async () => {
+        try {
+            setIsLoadingKits(true);
+            const [allKits, active] = await Promise.all([
+                api.getBrandKits(),
+                api.getActiveBrandKit()
+            ]);
+            setBrandKits(allKits);
+            if (active) setActiveBrandKitId(active.id);
+        } catch (err) {
+            console.error("Failed to load brand kits", err);
+        } finally {
+            setIsLoadingKits(false);
         }
-    }, [session]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [api]);
+
+    useEffect(() => {
+        if (sessionStatus === "authenticated") {
+            fetchProfile();
+            fetchBrandKits();
+        }
+    }, [sessionStatus, fetchProfile, fetchBrandKits]);
 
     // Auto-clear success message
     useEffect(() => {
@@ -115,7 +137,32 @@ export default function SettingsPage() {
         }
     };
 
-    if (sessionStatus === "loading" || isLoading) {
+    const handleSetActiveBrandKit = async (id: string) => {
+        try {
+            await api.updateBrandKit(id, { is_active: true });
+            setActiveBrandKitId(id);
+            setSuccess("Brand Kit berhasil diaktifkan.");
+            setTimeout(() => setSuccess(null), 3000);
+            await fetchBrandKits();
+        } catch (err) {
+            console.error(err);
+            setError("Gagal mengaktifkan Brand Kit.");
+        }
+    };
+
+    const handleDeleteBrandKit = async (id: string) => {
+        try {
+            await api.deleteBrandKit(id);
+            setSuccess("Brand Kit berhasil dihapus.");
+            setTimeout(() => setSuccess(null), 3000);
+            await fetchBrandKits();
+        } catch (err) {
+            console.error(err);
+            setError("Gagal menghapus Brand Kit.");
+        }
+    };
+
+    if (isLoading && sessionStatus !== "unauthenticated") {
         return (
             <div className="min-h-screen bg-background flex flex-col items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-purple-600 mb-4" />
@@ -217,6 +264,133 @@ export default function SettingsPage() {
                                     Simpan Perubahan
                                 </Button>
                             </CardFooter>
+                        </Card>
+
+                        {/* Brand Kit Card */}
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between">
+                                <div>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Palette className="h-5 w-5 text-indigo-500" />
+                                        Brand Kit Manager
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Kelola warna identitas brand Anda. Brand Kit aktif akan otomatis digunakan saat men-generate desain atau Magic Text.
+                                    </CardDescription>
+                                </div>
+                                <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="gap-2"
+                                    onClick={() => router.push('/create')}
+                                >
+                                    <Plus className="h-4 w-4" />
+                                    Buat Baru
+                                </Button>
+                            </CardHeader>
+                            <CardContent>
+                                {isLoadingKits ? (
+                                    <div className="flex justify-center p-8">
+                                        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                                    </div>
+                                ) : brandKits.length === 0 ? (
+                                    <div className="text-center p-8 bg-muted/30 rounded-lg border border-dashed">
+                                        <Palette className="w-10 h-10 text-muted-foreground mx-auto mb-3 opacity-50" />
+                                        <h3 className="text-sm font-medium mb-1">Belum Ada Brand Kit</h3>
+                                        <p className="text-xs text-muted-foreground mb-4">
+                                            Ekstrak warna otomatis dari logo Anda di editor.
+                                        </p>
+                                        <Button 
+                                            variant="secondary" 
+                                            size="sm"
+                                            onClick={() => router.push('/create')}
+                                        >
+                                            Buat Sekarang
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {brandKits.map(kit => {
+                                            const isActive = kit.id === activeBrandKitId;
+                                            return (
+                                                <div 
+                                                    key={kit.id} 
+                                                    className={`p-4 rounded-xl border flex flex-col gap-4 relative overflow-hidden transition-all ${isActive ? 'bg-indigo-50/50 border-indigo-200 ring-1 ring-indigo-500/20 shadow-sm' : 'bg-card border-border hover:border-indigo-200'}`}
+                                                >
+                                                    <div className="flex justify-between items-start">
+                                                        <div className="flex flex-col">
+                                                            <span className="font-semibold text-sm text-foreground flex items-center gap-2">
+                                                                {kit.name}
+                                                                {isActive && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
+                                                            </span>
+                                                            <span className="text-[10px] text-muted-foreground">
+                                                                Dibuat {new Date(kit.created_at).toLocaleDateString('id-ID')}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-2">
+                                                        {kit.colors.map((c, i) => (
+                                                            <div 
+                                                                key={i} 
+                                                                className="w-8 h-8 rounded-full border border-border/50 shadow-sm relative group cursor-help"
+                                                                style={{ backgroundColor: c.hex }}
+                                                            >
+                                                                <div className="absolute opacity-0 group-hover:opacity-100 bg-gray-800 text-white text-[10px] py-0.5 px-1.5 rounded -top-8 left-1/2 -translate-x-1/2 pointer-events-none transition-opacity whitespace-nowrap z-10">
+                                                                    {c.hex}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+
+                                                    <div className="flex items-center justify-between mt-1 pt-3 border-t border-border/50">
+                                                        {!isActive ? (
+                                                            <Button 
+                                                                variant="ghost" 
+                                                                size="sm" 
+                                                                className="h-8 text-xs text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 px-2"
+                                                                onClick={() => handleSetActiveBrandKit(kit.id)}
+                                                            >
+                                                                Jadikan Aktif
+                                                            </Button>
+                                                        ) : (
+                                                            <span className="text-xs font-medium text-emerald-600 px-2 flex items-center gap-1">
+                                                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                                                Aktif Digunakan
+                                                            </span>
+                                                        )}
+                                                        
+                                                        <AlertDialog>
+                                                            <AlertDialogTrigger asChild>
+                                                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10">
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </Button>
+                                                            </AlertDialogTrigger>
+                                                            <AlertDialogContent>
+                                                                <AlertDialogHeader>
+                                                                    <AlertDialogTitle>Hapus Brand Kit?</AlertDialogTitle>
+                                                                    <AlertDialogDescription>
+                                                                        Anda yakin ingin menghapus <strong>{kit.name}</strong>? Aksi ini tidak dapat dibatalkan.
+                                                                    </AlertDialogDescription>
+                                                                </AlertDialogHeader>
+                                                                <AlertDialogFooter>
+                                                                    <AlertDialogCancel>Batal</AlertDialogCancel>
+                                                                    <AlertDialogAction
+                                                                        onClick={() => handleDeleteBrandKit(kit.id)}
+                                                                        className="bg-destructive hover:bg-destructive/90 text-white"
+                                                                    >
+                                                                        Ya, Hapus
+                                                                    </AlertDialogAction>
+                                                                </AlertDialogFooter>
+                                                            </AlertDialogContent>
+                                                        </AlertDialog>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </CardContent>
                         </Card>
 
                     </div>

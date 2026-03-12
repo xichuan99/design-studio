@@ -11,6 +11,33 @@ interface ProjectPayload {
     aspect_ratio?: string;
 }
 
+// --- History Types ---
+export interface HistoryEntry {
+    id: string;
+    project_id: string;
+    action_type: string;
+    canvas_state?: Record<string, unknown>;
+    prompt_used?: string;
+    created_at: string;
+}
+
+// --- Brand Kit Types ---
+export interface ColorSwatch {
+    hex: string;
+    name: string;
+    role: string;
+}
+
+export interface BrandKit {
+    id: string;
+    user_id: string;
+    name: string;
+    logo_url: string | null;
+    colors: ColorSwatch[];
+    is_active: boolean;
+    created_at: string;
+}
+
 export function useProjectApi() {
     const { data: session } = useSession();
 
@@ -119,6 +146,9 @@ export function useProjectApi() {
         reference_image_url?: string;
         template_id?: string;
         integrated_text?: boolean;
+        remove_product_bg?: boolean;
+        product_image_url?: string;
+        brand_kit_id?: string; // Added brand_kit_id
     }) => {
         const res = await fetch(`${API_BASE_URL}/designs/generate`, {
             method: 'POST',
@@ -214,5 +244,98 @@ export function useProjectApi() {
         return res.json();
     };
 
-    return { getProject, saveProject, getProjects, deleteProject, duplicateProject, getUserProfile, updateProfile, deleteAccount, generateDesign, uploadImage, getJobStatus, getMyGenerations, getTemplates, getHistory, createHistory, generateMagicTextLayout };
+    const removeBackground = async (file: File) => {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        // Custom headers to avoid application/json content-type
+        // @ts-expect-error session token
+        const token = session?.accessToken;
+        const headers: Record<string, string> = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const res = await fetch(`${API_BASE_URL}/designs/remove-background`, {
+            method: 'POST',
+            headers,
+            body: formData,
+        });
+        if (!res.ok) {
+            const errBase = await res.json().catch(() => ({}));
+            throw new Error(errBase.detail || 'Failed to remove background');
+        }
+        return res.json(); // returns { url: string }
+    };
+
+    // --- Brand Kit API ---
+    const extractBrandColors = async (file: File): Promise<{ colors: ColorSwatch[] }> => {
+        const formData = new FormData();
+        formData.append('file', file);
+        // @ts-expect-error session token
+        const token = session?.accessToken;
+        const headers: Record<string, string> = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const res = await fetch(`${API_BASE_URL}/brand-kits/extract`, {
+            method: 'POST',
+            headers,
+            body: formData,
+        });
+        if (!res.ok) {
+            const errBase = await res.json().catch(() => ({}));
+            throw new Error(errBase.detail || 'Failed to extract colors');
+        }
+        return res.json();
+    };
+
+    const saveBrandKit = async (data: { name: string; logo_url: string | null; colors: ColorSwatch[] }): Promise<BrandKit> => {
+        const res = await fetch(`${API_BASE_URL}/brand-kits`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(data),
+        });
+        if (!res.ok) {
+            const errBase = await res.json().catch(() => ({}));
+            throw new Error(errBase.detail || 'Failed to save Brand Kit');
+        }
+        return res.json();
+    };
+
+    const getBrandKits = async (): Promise<BrandKit[]> => {
+        const res = await fetch(`${API_BASE_URL}/brand-kits`, { headers: getHeaders() });
+        if (!res.ok) throw new Error('Failed to fetch brand kits');
+        return res.json();
+    };
+
+    const getActiveBrandKit = async (): Promise<BrandKit | null> => {
+        const res = await fetch(`${API_BASE_URL}/brand-kits/active`, { headers: getHeaders() });
+        if (res.status === 404) return null;
+        if (!res.ok) throw new Error('Failed to fetch active brand kit');
+        return res.json();
+    };
+
+    const updateBrandKit = async (id: string, data: Partial<BrandKit>): Promise<BrandKit> => {
+        const res = await fetch(`${API_BASE_URL}/brand-kits/${id}`, {
+            method: 'PUT',
+            headers: getHeaders(),
+            body: JSON.stringify(data),
+        });
+        if (!res.ok) throw new Error('Failed to update Brand Kit');
+        return res.json();
+    };
+
+    const deleteBrandKit = async (id: string): Promise<void> => {
+        const res = await fetch(`${API_BASE_URL}/brand-kits/${id}`, {
+            method: 'DELETE',
+            headers: getHeaders(),
+        });
+        if (!res.ok) throw new Error('Failed to delete Brand Kit');
+    };
+
+    return { 
+        getProject, saveProject, getProjects, deleteProject, duplicateProject, 
+        getUserProfile, updateProfile, deleteAccount, generateDesign, uploadImage, 
+        getJobStatus, getMyGenerations, getTemplates, getHistory, createHistory, 
+        generateMagicTextLayout, removeBackground,
+        extractBrandColors, saveBrandKit, getBrandKits, getActiveBrandKit, updateBrandKit, deleteBrandKit
+    };
 }
