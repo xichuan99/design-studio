@@ -40,7 +40,7 @@ interface SavedCreateState {
 export default function CreatePage() {
     const { status } = useSession();
     const router = useRouter();
-    const { generateDesign, getJobStatus, saveProject, uploadImage, getActiveBrandKit } = useProjectApi();
+    const { generateDesign, getJobStatus, saveProject, uploadImage, getActiveBrandKit, clarifyUnified } = useProjectApi();
 
     const [rawText, setRawText] = useState("");
     const [aspectRatio, setAspectRatio] = useState("1:1");
@@ -229,19 +229,7 @@ export default function CreatePage() {
 
         try {
             // STEP 1a: Get Unified Clarification Questions
-            const { clarifyUnified } = useProjectApi(); // We'll just call api directly using fetch since it's already implemented like that below
-            const clarifyRes = await fetch(`${API_BASE_URL}/designs/clarify-unified`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    raw_text: rawText,
-                }),
-            });
-
-            if (!clarifyRes.ok) throw new Error("Failed to generate clarification questions");
-            const clarifyData = await clarifyRes.json();
+            const clarifyData = await clarifyUnified({ raw_text: rawText });
             
             if (clarifyData.questions && clarifyData.questions.length > 0) {
                 setBriefQuestions(clarifyData.questions);
