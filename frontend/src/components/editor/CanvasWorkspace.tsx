@@ -126,7 +126,7 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ onBgStatusChan
             onClick={() => useCanvasStore.getState().selectElement(null)}
         >
             {/* Zoom Controls Overlay */}
-            <div className="absolute bottom-4 right-4 flex items-center gap-1 bg-background border rounded-md shadow-sm p-1 z-10"
+            <div className="absolute bottom-4 right-4 flex items-center gap-1 bg-background/90 backdrop-blur-sm border rounded-lg shadow-lg p-1 z-50"
                 onClick={(e) => e.stopPropagation()}
             >
                 <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={handleZoomOut}>
