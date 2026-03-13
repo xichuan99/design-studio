@@ -403,6 +403,43 @@ export default function CreatePage() {
         
         setIsSaving(true);
         try {
+            // Dynamically detect aspect ratio from the generated image
+            let finalAspectRatio = aspectRatio; // Fallback to user selection
+            if (activeImageUrl) {
+                const proxyUrl = activeImageUrl.startsWith('http')
+                    ? `/api/proxy-image?url=${encodeURIComponent(activeImageUrl)}`
+                    : activeImageUrl;
+                
+                finalAspectRatio = await new Promise<string>((resolve) => {
+                    const img = new window.Image();
+                    img.crossOrigin = 'anonymous';
+                    let resolved = false;
+
+                    img.onload = () => {
+                        if (resolved) return;
+                        resolved = true;
+                        const ratio = img.width / img.height;
+                        if (ratio > 1.2) resolve("16:9");
+                        else if (ratio < 0.8) resolve("9:16");
+                        else resolve("1:1");
+                    };
+
+                    img.onerror = () => {
+                        if (resolved) return;
+                        resolved = true;
+                        resolve(aspectRatio); // Fallback on error
+                    };
+
+                    setTimeout(() => {
+                        if (resolved) return;
+                        resolved = true;
+                        resolve(aspectRatio); // Fallback on timeout
+                    }, 3000);
+
+                    img.src = proxyUrl;
+                });
+            }
+
             const elements = integratedText
                 ? []
                 : generateCanvasElementsFromTemplate(
@@ -412,28 +449,12 @@ export default function CreatePage() {
             const newProject = await saveProject({
                 title: "AI Generated Design",
                 status: "draft",
-                aspect_ratio: aspectRatio,
+                aspect_ratio: finalAspectRatio, // Use the dynamically detected aspect ratio
                 canvas_state: {
                     backgroundUrl: activeImageUrl || null,
                     elements: elements
                 }
             });
-
-            // Prefetch background image through proxy so it's in browser cache
-            const bgUrl = activeImageUrl;
-            if (bgUrl) {
-                const proxyUrl = bgUrl.startsWith('http')
-                    ? `/api/proxy-image?url=${encodeURIComponent(bgUrl)}`
-                    : bgUrl;
-                const prefetch = new window.Image();
-                prefetch.crossOrigin = 'anonymous';
-                prefetch.src = proxyUrl;
-                // Wait for it to load, but don't block for more than 3 seconds
-                await Promise.race([
-                    new Promise(r => { prefetch.onload = r; prefetch.onerror = r; }),
-                    new Promise(r => setTimeout(r, 3000))
-                ]);
-            }
 
             router.push(`/edit/${newProject.id}`);
         } catch (error) {
