@@ -346,7 +346,7 @@ async def generate_design(
         else:
             model_name = 'imagen-4.0-fast-generate-001'  # Keep imagen for non-text backgrounds as it excels at pure aesthetics
             text_instruction = "professional graphic design background, copy space area for text overlay, no text, no letters, no words"
-            
+
         import re
         def sanitize_prompt_for_imagen(prompt: str) -> str:
             replacements = {
