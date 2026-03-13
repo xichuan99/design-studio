@@ -15,6 +15,7 @@ env:
   FRONTEND_IMAGE: ghcr.io/clarinovist/design-studio-frontend
   # Silence the Node 20 deprecation warnings for actions that haven't updated yet
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   # ─────────────────────────────────────────────
@@ -99,8 +100,8 @@ jobs:
             set -e
             cd ~/design-studio
 
-            # Login ke GHCR agar bisa pull image private
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            # Login ke GHCR agar bisa pull image private (redirect stderr to suppress credential helper warning)
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin 2>/dev/null
 
             # Pull image terbaru dari GHCR
             BACKEND_IMAGE=${{ env.BACKEND_IMAGE }}:${{ github.sha }} \
