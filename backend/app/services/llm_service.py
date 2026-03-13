@@ -383,8 +383,9 @@ async def parse_design_text(
         IMPORTANT INTEGRATED TEXT OVERRIDE:
         The user wants the text completely integrated into the image generation itself.
         Instead of asking for 'copy space', your `visual_prompt` MUST explicitly tell the image generator to render the headline text natively in the scene.
-        - headline MUST be maximum 3 words for reliable AI text rendering
-        - Do NOT embed sub_headline or CTA text in the image — only the headline
+        - headline can be up to 8 words for reliable AI text rendering
+        - sub_headline and CTA text SHOULD also be rendered in the image with proper visual hierarchy
+        - Headline should be the largest, most prominent text. Sub-headline smaller. CTA as a button-like or badge-like element.
         - Use scene context for natural text (neon sign, chalkboard, banner, poster on wall)
         Example visual_prompt: "A hyper-realistic 3D render of a neon sign that spells 'MEGA SALE', vibrant cyberpunk street background, bold typography."
         """

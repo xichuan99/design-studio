@@ -335,14 +335,19 @@ async def generate_design(
         }
         style_suffix = style_map.get(request.style_preference, style_map["bold"])
 
-        # Limit headline for Imagen rendering when integrated_text is enabled
-        headline_words = parsed.headline.split()
-        headline_for_image = " ".join(headline_words[:4]) if len(headline_words) > 4 else parsed.headline
-
         # Determine the best model and text instructions based on integration needs
         if request.integrated_text:
             model_name = 'gemini-3.1-flash-image-preview'
-            text_instruction = f"high quality typography, clearly readable text saying '{headline_for_image}', stylized to perfectly integrate organically into the scene"
+            
+            # Build all text elements for integrated rendering
+            text_parts = [f"'{parsed.headline}'"]
+            if parsed.sub_headline:
+                text_parts.append(f"'{parsed.sub_headline}'")
+            if parsed.cta:
+                text_parts.append(f"'{parsed.cta}'")
+            all_text = ", and ".join(text_parts)
+            
+            text_instruction = f"high quality typography, clearly readable text showing {all_text}, with proper visual hierarchy, stylized to perfectly integrate organically into the scene"
         else:
             model_name = 'imagen-4.0-fast-generate-001'  # Keep imagen for non-text backgrounds as it excels at pure aesthetics
             text_instruction = "professional graphic design background, copy space area for text overlay, no text, no letters, no words"

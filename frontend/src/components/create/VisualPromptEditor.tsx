@@ -26,6 +26,29 @@ const SUGGESTIONS = [
     "Efek sinematik"
 ];
 
+const LABEL_ID: Record<string, string> = {
+    "Lighting": "Pencahayaan",
+    "Color Palette": "Palet Warna",
+    "Background": "Latar Belakang",
+    "Composition": "Komposisi",
+    "Style": "Gaya Visual",
+    "Mood": "Suasana",
+    "Texture": "Tekstur",
+    "Typography": "Tipografi",
+    "Subject": "Subjek Utama",
+    "Perspective": "Perspektif",
+    "Effects": "Efek Visual",
+    "Details": "Detail",
+    "Layout": "Tata Letak",
+    "Foreground": "Latar Depan",
+    "Product Placement": "Penempatan Produk",
+    "Color Scheme": "Skema Warna",
+    "Atmosphere": "Atmosfer",
+    "Scene": "Pemandangan",
+    "Camera Angle": "Sudut Kamera",
+    "Illustration Style": "Gaya Ilustrasi",
+};
+
 export function VisualPromptEditor({
     parsedData,
     onTogglePromptPart,
@@ -108,7 +131,7 @@ export function VisualPromptEditor({
             {/* Prompt Parts Toggles */}
             <div className="space-y-3 mt-2">
                 <div className="flex items-center justify-between px-2">
-                    <h3 className="font-semibold text-foreground/80 text-sm tracking-wide uppercase">Opsi Visual Aktif</h3>
+                    <h3 className="font-semibold text-foreground/80 text-sm tracking-wide uppercase">Pengaturan Visual</h3>
                     {hasModified && (
                         <Button variant="ghost" size="sm" onClick={handleUndo} className="h-8 text-muted-foreground hover:text-foreground">
                             <Undo2 className="w-3.5 h-3.5 mr-1.5" /> Batal Perubahan
@@ -131,7 +154,7 @@ export function VisualPromptEditor({
                                     className={`text-sm font-bold tracking-wide cursor-pointer select-none transition-all
                                         ${part.enabled ? 'text-foreground' : 'text-muted-foreground'}`}
                                 >
-                                    {part.label}
+                                    {LABEL_ID[part.label] || part.label}
                                 </label>
                                 <Switch 
                                     checked={part.enabled}
@@ -208,6 +231,18 @@ export function VisualPromptEditor({
                         </Badge>
                     ))}
                 </div>
+
+                {/* Generate Ulang - compact mode only */}
+                {compact && onGenerate && (
+                    <Button 
+                        onClick={onGenerate} 
+                        disabled={isGeneratingImage || isModifying} 
+                        variant="outline" 
+                        className="w-full mt-4 font-bold border-primary/20 hover:bg-primary/5 hover:text-primary transition-colors"
+                    >
+                        {isGeneratingImage ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generate...</> : "🔄 Generate Ulang"}
+                    </Button>
+                )}
             </div>            
 
             {/* Generate AI Button - Only in non-compact mode */}

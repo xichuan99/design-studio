@@ -69,21 +69,7 @@ export function UnifiedPreviewEditor({
                             </button>
                         ))}
                     </div>
-                    
                     <div className="flex items-center gap-3 shrink-0">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="font-bold h-10 px-4 shrink-0 transition-opacity"
-                            onClick={onGenerate}
-                            disabled={isGeneratingImage || isSaving}
-                        >
-                            {isGeneratingImage ? (
-                                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generate...</>
-                            ) : (
-                                "🔄 Generate Ulang"
-                            )}
-                        </Button>
                         <Button
                             size="sm"
                             className="font-bold shadow-lg h-10 px-6 shrink-0"
@@ -109,6 +95,8 @@ export function UnifiedPreviewEditor({
                         onTogglePromptPart={onTogglePromptPart}
                         onModifyPromptParts={onModifyPromptParts}
                         compact={true}
+                        onGenerate={onGenerate}
+                        isGeneratingImage={isGeneratingImage}
                     />
                 </div>
             </div>
