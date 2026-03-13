@@ -374,9 +374,11 @@ async def generate_design(
         image_bytes = None
         if model_name == 'gemini-3.1-flash-image-preview':
             # Nano Banana 2 uses generate_content for image generation
+            # Explicitly append aspect ratio to the prompt
+            nb2_prompt = f"{enhanced_prompt}, aspect ratio {request.aspect_ratio}"
             response = client.models.generate_content(
                 model=model_name,
-                contents=enhanced_prompt,
+                contents=nb2_prompt,
             )
             if response.candidates:
                 for candidate in response.candidates:
