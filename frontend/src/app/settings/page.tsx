@@ -61,7 +61,8 @@ export default function SettingsPage() {
         } finally {
             setIsLoading(false);
         }
-    }, [api]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const fetchBrandKits = useCallback(async () => {
         try {
@@ -77,7 +78,8 @@ export default function SettingsPage() {
         } finally {
             setIsLoadingKits(false);
         }
-    }, [api]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     useEffect(() => {
         if (sessionStatus === "authenticated") {

@@ -3,21 +3,19 @@
 import React, { useState } from 'react';
 import { useCanvasStore } from '@/store/useCanvasStore';
 import { useProjectApi } from '@/lib/api';
-import { AIPromptPanel } from './AIPromptPanel';
-import { MagicTextPanel } from './MagicTextPanel';
-import { AIAssetsPanel } from './AIAssetsPanel';
 import { BackgroundRemovalPanel } from './BackgroundRemovalPanel';
-import { TextBannerPanel } from './TextBannerPanel';
 import BrandKitPanel from './BrandKitPanel';
+import { AIStudioPanel } from './AIStudioPanel';
+import { AIAssetsPanel } from './AIAssetsPanel';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Sparkles, Wand2, Image as ImageIcon, Wrench, Type, Square, Circle, Minus, Blocks, Upload, Trash2, ChevronLeft, ChevronRight, Scissors, Palette, type LucideIcon } from 'lucide-react';
+import { Sparkles, Image as ImageIcon, Wrench, Type, Square, Circle, Minus, Blocks, Upload, Trash2, ChevronLeft, ChevronRight, Scissors, Palette, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 
 export const LeftSidebar: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'tools' | 'ai' | 'magictext' | 'assets' | 'bgremoval' | 'brandkit' | 'textbanner'>('ai');
     const [isCollapsed, setIsCollapsed] = useState(false);
+    const [activeTab, setActiveTab] = useState<'tools' | 'aistudio' | 'assets' | 'bgremoval' | 'brandkit'>('aistudio');
 
     // Toolbar logic
     const { addElement, backgroundColor, setBackgroundColor, setBackgroundUrl } = useCanvasStore();
@@ -153,15 +151,13 @@ export const LeftSidebar: React.FC = () => {
 
     const closePanel = () => {
         setIsCollapsed(true);
-        setActiveTab('ai'); // Default to AI tab when closing
+        setActiveTab('aistudio'); // Default to AI tab when closing
     };
 
     const navItems: { id: typeof activeTab; icon: LucideIcon; label: string }[] = [
-        { id: 'ai', icon: Sparkles, label: 'Generate' },
-        { id: 'magictext', icon: Wand2, label: 'Magic Text' },
+        { id: 'aistudio', icon: Sparkles, label: 'AI Studio' },
         { id: 'bgremoval', icon: Scissors, label: 'Hapus BG' },
         { id: 'brandkit', icon: Palette, label: 'Brand Kit' },
-        { id: 'textbanner', icon: Type, label: 'Text Banner' },
         { id: 'assets', icon: ImageIcon, label: 'Assets' },
         { id: 'tools', icon: Wrench, label: 'Tools' },
     ];
@@ -196,16 +192,14 @@ export const LeftSidebar: React.FC = () => {
                     isCollapsed ? "w-0 opacity-0" : "w-[300px] opacity-100"
                 )}
             >
-                {activeTab === 'ai' && <AIPromptPanel />}
-                {activeTab === 'magictext' && <MagicTextPanel />}
+                {activeTab === 'aistudio' && <AIStudioPanel />}
                 {activeTab === 'bgremoval' && (
                     <BackgroundRemovalPanel />
                 )}
-                {activeTab === 'textbanner' && <TextBannerPanel />}
                 {activeTab === 'brandkit' && (
                     <BrandKitPanel 
                         onClose={closePanel} 
-                        onApplyColors={(hexes) => {
+                        onApplyColors={(hexes: string[]) => {
                             if (hexes.length > 0) {
                                 // Apply the first extracted color as the canvas background
                                 setBackgroundColor(hexes[0]);
