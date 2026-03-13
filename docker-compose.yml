@@ -61,6 +61,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_BUILD_ID=${NEXT_PUBLIC_BUILD_ID:-run-${RANDOM:-$((1 + $RANDOM % 10000))}}
     ports:
       - "3000:3000"
     env_file:
