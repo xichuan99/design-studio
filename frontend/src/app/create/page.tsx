@@ -446,8 +446,18 @@ export default function CreatePage() {
                     parsedData,
                     []
                 );
+
+            const getDynamicTitle = (prompt: string) => {
+                if (!prompt) return "Desain AI Baru";
+                const words = prompt.trim().split(/\s+/).slice(0, 5).join(' ');
+                const titleCase = words.replace(/\b\w/g, c => c.toUpperCase());
+                return prompt.trim().split(/\s+/).length > 5 ? `${titleCase}...` : titleCase;
+            };
+
+            const projectTitle = getDynamicTitle(parsedData.indonesian_translation || rawText);
+
             const newProject = await saveProject({
-                title: "AI Generated Design",
+                title: projectTitle,
                 status: "draft",
                 aspect_ratio: finalAspectRatio, // Use the dynamically detected aspect ratio
                 canvas_state: {
