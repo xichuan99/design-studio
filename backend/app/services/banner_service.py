@@ -28,9 +28,9 @@ async def generate_text_banner(
     quality: str = "standard"
 ) -> dict:
     """
-    Generates a decorative banner containing text, removes the background, 
+    Generates a decorative banner containing text, removes the background,
     and uploads it to storage.
-    
+
     Quality tiers:
     - draft:    fal-ai/flux/schnell (fast, cheap)
     - standard: fal-ai/flux/dev (good quality)
@@ -43,24 +43,24 @@ async def generate_text_banner(
         else:
             # Treat as free-text creative description
             base_prompt = f"{style}, {color_hint} color palette, centered, clean composition"
-        
+
         # Add text instructions
         prompt = f"{base_prompt}. The graphic MUST contain the exact text: \"{text}\" written on it boldly and legibly. Clean solid white background behind the object for easy extraction."
-        
+
         banner_url = None
-        
+
         # 2. Generate Image based on quality
         if quality == "premium":
             # Use Gemini API (Nano Banana 2)
             if not settings.GEMINI_API_KEY:
                 raise ValueError("GEMINI_API_KEY is not configured for premium generation")
-                
+
             client = genai.Client(api_key=settings.GEMINI_API_KEY)
-            
+
             # Use the synchronous call in a thread pool for async compatibility
             import asyncio
             loop = asyncio.get_running_loop()
-            
+
             def run_gemini():
                 return client.models.generate_images(
                     model='gemini-3.1-flash-image-preview',
@@ -71,17 +71,17 @@ async def generate_text_banner(
                         aspect_ratio="1:1" # Standard size for banners
                     )
                 )
-                
+
             response = await loop.run_in_executor(None, run_gemini)
-            
+
             if not response.generated_images:
                 raise RuntimeError("Gemini API returned no images")
-                
+
             # Gemini returns base64 bytes for generated_images when output_mime_type is set
-            
+
             # The SDK returns a GenerativeImage object. We need to get its bytes.
             img = response.generated_images[0]
-            
+
             # Upload temp image for bg removal
             temp_id = str(uuid.uuid4())[:8]
             banner_url = await upload_image(
@@ -89,16 +89,16 @@ async def generate_text_banner(
                 content_type="image/jpeg",
                 prefix=f"temp_gemini_{temp_id}"
             )
-            
+
         else:
             # Use Fal.ai (Flux)
             if not settings.FAL_KEY:
                 raise ValueError("FAL_KEY is missing from environment")
-                
+
             os.environ["FAL_KEY"] = settings.FAL_KEY
-            
+
             model_id = "fal-ai/flux/schnell" if quality == "draft" else "fal-ai/flux/dev"
-            
+
             result = await fal_client.run_async(
                 model_id,
                 arguments={
@@ -106,23 +106,23 @@ async def generate_text_banner(
                     "image_size": "square_hd" if quality == "standard" else "square"
                 },
             )
-            
+
             images = result.get("images", [])
             if not images or not images[0].get("url"):
                 raise RuntimeError("Fal.ai returned no image URL")
-                
+
             banner_url = images[0]["url"]
-            
+
         # 3. Remove Background
         # We need to download the generated image first to pass bytes to remove_background
         async with httpx.AsyncClient() as http_client:
             resp = await http_client.get(banner_url, timeout=30.0)
             resp.raise_for_status()
             image_bytes = resp.content
-            
+
         # bg_removal_service takes bytes and returns bytes
         transparent_bytes = await remove_background(image_bytes)
-        
+
         # 4. Upload Final Image
         final_id = str(uuid.uuid4())[:12]
         final_url = await upload_image(
@@ -130,13 +130,13 @@ async def generate_text_banner(
             content_type="image/png",
             prefix=f"banners/{final_id}"
         )
-        
+
         return {
             "url": final_url,
             "width": 1024, # Approximate standard size
             "height": 1024
         }
-        
+
     except Exception as e:
         logger.exception(f"Failed to generate text banner: {str(e)}")
         raise

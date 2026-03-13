@@ -102,11 +102,11 @@ async def upscale(
             raise HTTPException(status_code=402, detail="Insufficient credits")
 
         start_time = time.time()
-        
+
         # 1. Upload original to S3
         temp_id = str(uuid.uuid4())[:8]
         image_bytes = await file.read()
-        
+
         # Try to guess mime type from filename if content_type is null
         mime_type = file.content_type
         if not mime_type:
@@ -116,29 +116,29 @@ async def upscale(
                 mime_type = "image/jpeg"
             else:
                 mime_type = "image/jpeg" # Default fallback
-                
+
         temp_url = await upload_image(
             image_bytes,
             content_type=mime_type,
             prefix=f"temp_upscale_{temp_id}"
         )
-        
+
         # 2. Call Fal.ai for upscaling
         result = await upscale_service.upscale_image(temp_url, scale)
         upscaled_url = result.get("url")
-        
+
         if not upscaled_url:
             raise HTTPException(status_code=500, detail="Upscale failed to return URL")
-            
+
         # 3. Download the result and upload to our S3
         async with httpx.AsyncClient() as http_client:
             resp = await http_client.get(upscaled_url, timeout=60.0)
             resp.raise_for_status()
             final_bytes = resp.content
-            
+
         # Determine content type of the result (Fal upscale docs say it preserves format usually, default jpeg)
         final_mime = "image/png" if ".png" in upscaled_url.lower() else "image/jpeg"
-        
+
         final_id = str(uuid.uuid4())[:12]
         stored_url = await upload_image(
             final_bytes,
@@ -187,7 +187,7 @@ async def text_banner(
             raise HTTPException(status_code=402, detail="Insufficient credits")
 
         start_time = time.time()
-        
+
         # Call the banner service
         result = await banner_service.generate_text_banner(
             text=text,
