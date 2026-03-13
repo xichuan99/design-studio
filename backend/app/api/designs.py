@@ -370,17 +370,37 @@ async def generate_design(
         )
 
         client = genai.Client(api_key=app_settings.GEMINI_API_KEY)
-        response = client.models.generate_images(
-            model=model_name,
-            prompt=enhanced_prompt,
-            config=types.GenerateImagesConfig(
-                number_of_images=1,
-                aspect_ratio=request.aspect_ratio.replace(":", ":"),
-            ),
-        )
 
-        if response.generated_images:
-            image_bytes = response.generated_images[0].image.image_bytes
+        image_bytes = None
+        if model_name == 'gemini-3.1-flash-image-preview':
+            # Nano Banana 2 uses generate_content for image generation
+            response = client.models.generate_content(
+                model=model_name,
+                contents=enhanced_prompt,
+            )
+            if response.candidates:
+                for candidate in response.candidates:
+                    if candidate.content and candidate.content.parts:
+                        for part in candidate.content.parts:
+                            if part.inline_data:
+                                image_bytes = part.inline_data.data
+                                break
+                    if image_bytes:
+                        break
+        else:
+            # Traditional Imagen models use generate_images
+            response = client.models.generate_images(
+                model=model_name,
+                prompt=enhanced_prompt,
+                config=types.GenerateImagesConfig(
+                    number_of_images=1,
+                    aspect_ratio=request.aspect_ratio.replace(":", ":"),
+                ),
+            )
+            if response.generated_images:
+                image_bytes = response.generated_images[0].image.image_bytes
+
+        if image_bytes:
 
             # --- Flow A: Product Composite Logic ---
             if getattr(request, "remove_product_bg", False) and getattr(request, "product_image_url", None):
