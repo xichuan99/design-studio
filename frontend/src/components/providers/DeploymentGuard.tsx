@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 const CHECK_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
 
 export function DeploymentGuard() {
-  const [currentBuildId, setCurrentBuildId] = useState<string | null>(null);
   const [hasNotified, setHasNotified] = useState(false);
   const pathname = usePathname();
 
@@ -19,7 +18,6 @@ export function DeploymentGuard() {
 
     // Read the current build ID injected during build time
     const initialBuildId = process.env.NEXT_PUBLIC_BUILD_ID || "dev";
-    setCurrentBuildId(initialBuildId);
 
     // Skip checking if we're in dev mode
     if (initialBuildId === "dev") return;
