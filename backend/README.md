@@ -45,15 +45,35 @@ docker compose up -d
 | `GET`  | `/api/projects/` | List project user |
 | `GET`  | `/api/users/me` | Profil + kredit user |
 
+## AI Model Routing Strategy
+
+Each AI task is assigned to a specific provider and model to avoid overlap:
+
+| Task | Provider | Model | Used By |
+|------|----------|-------|---------|
+| Text Parsing & Layout | **Gemini** | `gemini-2.5-flash` | `/clarify`, `/parse`, `/magic-text` |
+| Copywriting Generation | **Gemini** | `gemini-2.5-flash` | `/generate-copywriting` |
+| Main Image Generation | **Gemini** | `gemini-3.1-flash-image-preview` | `/generate` |
+| Background Removal | **Fal.ai** | `fal-ai/birefnet` | `/remove-background`, `/tools/background-swap` |
+| New BG Generation (Swap) | **Fal.ai** | `fal-ai/flux/dev` | `/tools/background-swap` |
+| Image Upscaling | **Fal.ai** | `fal-ai/aura-sr` | `/tools/upscale` |
+
+**Rule of thumb:** Gemini = 🧠 Otak (text, logic, image gen). Fal.ai = ✂️ Piksel (segmentasi, upscale).
+
+### Environment Variables
+
+- `GEMINI_API_KEY` — Used by `llm_service.py` and Gemini Imagen in `designs.py`.
+- `FAL_KEY` — Used by `image_service.py`, `bg_removal_service.py`, and `upscale_service.py`.
+
+If `GEMINI_API_KEY` is not set, AI endpoints return **mock data** for local development.
+
 ## AI Design Flow
 
 ```
-POST /clarify  →  3-4 pertanyaan klarifikasi dari Gemini
-POST /parse    →  Prompt visual + layout JSON (dengan context jawaban)
-POST /generate →  Background image generation (Fal.ai / Gemini Imagen)
+POST /clarify  →  3-4 pertanyaan klarifikasi (Gemini)
+POST /parse    →  Prompt visual + layout JSON (Gemini)
+POST /generate →  Background image (Gemini Imagen / Nano Banana 2)
 ```
-
-Jika `GEMINI_API_KEY` tidak disetel, semua endpoint AI mengembalikan **mock data** sehingga aplikasi tetap bisa dijalankan untuk development.
 
 ## Testing
 
@@ -66,21 +86,24 @@ pytest tests/ -v
 ```
 app/
 ├── api/
-│   ├── deps.py         # Auth + user dependency injection
-│   ├── designs.py      # AI generation endpoints (/clarify, /parse, /generate, dll)
-│   ├── projects.py     # Project CRUD
-│   ├── rate_limit.py   # Redis rate limiter
-│   ├── templates.py    # Template endpoints
-│   └── users.py        # User profile + credits
-├── core/               # Config, database, security
-├── models/             # SQLAlchemy ORM models
+│   ├── ai_tools.py        # Standalone AI tools (/background-swap, /upscale)
+│   ├── deps.py            # Auth + user dependency injection
+│   ├── designs.py         # AI generation endpoints (/clarify, /parse, /generate)
+│   ├── projects.py        # Project CRUD
+│   ├── rate_limit.py      # Redis rate limiter
+│   ├── templates.py       # Template endpoints
+│   └── users.py           # User profile + credits
+├── core/                  # Config, database, security
+├── models/                # SQLAlchemy ORM models
 ├── schemas/
-│   └── design.py       # Pydantic schemas (BriefQuestion, DesignGenerationRequest, dll)
+│   └── design.py          # Pydantic schemas
 ├── services/
-│   ├── llm_service.py  # Gemini Flash integration (clarify + parse + modify)
-│   ├── image_service.py
-│   ├── preprocess.py
-│   └── storage_service.py
-├── workers/            # Celery async tasks
-└── main.py             # FastAPI app entry point
+│   ├── llm_service.py     # Gemini (text parsing, copywriting, layout)
+│   ├── image_service.py   # Fal.ai Flux (background generation)
+│   ├── bg_removal_service.py  # Fal.ai birefnet (background removal)
+│   ├── upscale_service.py # Fal.ai aura-sr (image upscaling)
+│   ├── preprocess.py      # Image preprocessing utilities
+│   └── storage_service.py # S3 upload/download
+├── workers/               # Celery async tasks
+└── main.py                # FastAPI app entry point
 ```

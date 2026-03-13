@@ -48,7 +48,7 @@ async def remove_background(image_bytes: bytes) -> bytes:
             resp = await http_client.get(output_url, timeout=60.0)
             resp.raise_for_status()
             final_bytes = resp.content
-            
+
         return final_bytes
 
     except Exception as e:
