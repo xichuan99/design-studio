@@ -16,7 +16,7 @@ router = APIRouter()
 class DesignHistoryCreate(BaseModel):
     project_id: str
     background_url: str
-    text_layers: dict
+    text_layers: list
     generation_params: Optional[dict] = None
 
 

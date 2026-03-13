@@ -4,7 +4,7 @@ from fastapi import (
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import update
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 
 from app.core.database import get_db
@@ -118,13 +118,13 @@ async def list_brand_kits(
     return kits
 
 
-@router.get("/active", response_model=BrandKitResponse)
+@router.get("/active", response_model=Optional[BrandKitResponse])
 async def get_active_brand_kit(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Get the currently active Brand Kit. Returns 404 if none active.
+    Get the currently active Brand Kit. Returns null if none active.
     """
     result = await db.execute(
         select(BrandKit)
@@ -132,9 +132,6 @@ async def get_active_brand_kit(
         .limit(1)
     )
     active_kit = result.scalar_one_or_none()
-
-    if not active_kit:
-        raise HTTPException(status_code=404, detail="No active kit found.")
 
     return active_kit
 
