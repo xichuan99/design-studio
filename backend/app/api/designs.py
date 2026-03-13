@@ -273,7 +273,7 @@ async def generate_design(
             await db.commit()
             raise HTTPException(status_code=500, detail=f"Image generation failed to start: {str(e)}")
     import logging
-    logging.warning("Using Gemini Imagen sync fallback for image generation")
+    logging.info("Using Gemini synchronous generation (Nano Banana / Imagen) for image generation")
     try:
         from datetime import datetime, timezone
 
@@ -339,13 +339,14 @@ async def generate_design(
         headline_words = parsed.headline.split()
         headline_for_image = " ".join(headline_words[:4]) if len(headline_words) > 4 else parsed.headline
 
-        # Modify the prompt based on whether we want embedded text or not
-        text_instruction = (
-            f"high quality typography, clearly readable text saying '{headline_for_image}', stylized to match the scene"
-            if request.integrated_text
-            else "copy space area for text overlay, no text, no letters, no words"
-        )
-
+        # Determine the best model and text instructions based on integration needs
+        if request.integrated_text:
+            model_name = 'gemini-3.1-flash-image-preview'
+            text_instruction = f"high quality typography, clearly readable text saying '{headline_for_image}', stylized to perfectly integrate organically into the scene"
+        else:
+            model_name = 'imagen-4.0-fast-generate-001'  # Keep imagen for non-text backgrounds as it excels at pure aesthetics
+            text_instruction = "professional graphic design background, copy space area for text overlay, no text, no letters, no words"
+            
         import re
         def sanitize_prompt_for_imagen(prompt: str) -> str:
             replacements = {
@@ -360,12 +361,12 @@ async def generate_design(
 
         enhanced_prompt = (
             f"{sanitize_prompt_for_imagen(visual_prompt_final)}, {style_suffix}, "
-            f"professional graphic design background, {text_instruction}, high quality, 4k"
+            f"{text_instruction}, high quality, 4k"
         )
 
         client = genai.Client(api_key=app_settings.GEMINI_API_KEY)
         response = client.models.generate_images(
-            model='imagen-4.0-fast-generate-001',
+            model=model_name,
             prompt=enhanced_prompt,
             config=types.GenerateImagesConfig(
                 number_of_images=1,
