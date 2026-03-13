@@ -14,7 +14,6 @@ fal-client==0.*
 Pillow==11.*
 scikit-learn==1.*
 numpy==2.*
-rembg[cpu]==2.*
 pytest==8.*
 pytest-asyncio==0.*
 sentry-sdk[fastapi]==2.*

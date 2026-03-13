@@ -1,65 +1,58 @@
 import os
 import io
 import logging
+import httpx
+import uuid
+import fal_client
 from PIL import Image
+
+from app.core.config import settings
+from app.services.storage_service import upload_image
 
 logger = logging.getLogger(__name__)
 
-
-def _get_rembg_session():
-    """Lazy load rembg session to avoid slow startup for all workers."""
-    try:
-        from rembg import new_session
-        # U2net is the standard model for general background removal
-        return new_session("u2net")
-    except ImportError:
-        logger.error(
-            "rembg is not installed. "
-            "Please install it with `pip install rembg[cpu]`."
-        )
-        return None
-
-
 async def remove_background(image_bytes: bytes) -> bytes:
     """
-    Removes the background from an image.
-    Uses rembg by default since we are running locally.
+    Removes the background from an image using Fal.ai (birefnet model).
+    This offloads processing to avoid out-of-memory errors on the local VPS.
     """
+    if not settings.FAL_KEY:
+        raise ValueError("FAL_KEY is missing from environment")
+
+    os.environ["FAL_KEY"] = settings.FAL_KEY
+
     try:
-        from rembg import remove
+        # 1. Upload the image temporarily to get a public URL for Fal.ai
+        temp_id = str(uuid.uuid4())[:8]
+        temp_url = await upload_image(
+            image_bytes,
+            content_type="image/jpeg",  # Assume JPEG, Fal will figure it out
+            prefix=f"temp_bgrm_{temp_id}"
+        )
 
-        # Determine if we should use Gemini (env var GEMINI_BG_REMOVAL=true)
-        # For now, default to rembg as specified in plan.
-        use_gemini = os.environ.get(
-            "GEMINI_BG_REMOVAL", "false"
-        ).lower() == "true"
+        # 2. Call Fal.ai background removal model
+        # Using birefnet which is highly accurate for general object extraction
+        result = await fal_client.run_async(
+            "fal-ai/birefnet",
+            arguments={
+                "image_url": temp_url
+            },
+        )
 
-        if use_gemini:
-            # Placeholder for Gemini experimental BG removal
-            logger.info(
-                "Gemini BG removal requested but not implemented. "
-                "Falling back to rembg."
-            )
+        output_url = result.get("image", {}).get("url")
+        if not output_url:
+            raise RuntimeError("Fal.ai returned no image URL")
 
-        session = _get_rembg_session()
-        if not session:
-            raise RuntimeError("rembg session could not be initialized")
-
-        input_image = Image.open(io.BytesIO(image_bytes))
-        # Ensure image has no orientation issues
-        if hasattr(input_image, '_getexif') and input_image._getexif():
-            from PIL import ImageOps
-            input_image = ImageOps.exif_transpose(input_image)
-
-        # Convert to RGB if necessary (rembg accepts PIL Images)
-        output_image = remove(input_image, session=session)
-
-        output_buffer = io.BytesIO()
-        output_image.save(output_buffer, format="PNG")
-        return output_buffer.getvalue()
+        # 3. Download the resulting transparent PNG
+        async with httpx.AsyncClient() as http_client:
+            resp = await http_client.get(output_url, timeout=60.0)
+            resp.raise_for_status()
+            final_bytes = resp.content
+            
+        return final_bytes
 
     except Exception as e:
-        logger.exception(f"Failed to remove background: {str(e)}")
+        logger.exception(f"Failed to remove background via Fal.ai: {str(e)}")
         raise
 
 
