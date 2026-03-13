@@ -116,3 +116,27 @@ jobs:
             docker compose exec -T backend alembic upgrade head
 
             echo "✅ Deploy selesai! Commit: ${{ github.sha }}"
+
+  # ─────────────────────────────────────────────
+  # 3. Auto Tag Release
+  # ─────────────────────────────────────────────
+  auto-tag:
+    name: Auto Tag Release
+    runs-on: ubuntu-latest
+    needs: deploy
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Create Git Tag
+        run: |
+          VERSION=$(cat VERSION)
+          if ! git rev-parse "v$VERSION" >/dev/null 2>&1; then
+            git tag "v$VERSION"
+            git push origin "v$VERSION"
+            echo "✅ Tagged v$VERSION"
+          else
+            echo "⏭️ Tag v$VERSION already exists, skipping"
+          fi
