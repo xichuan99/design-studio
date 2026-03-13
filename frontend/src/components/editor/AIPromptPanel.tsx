@@ -152,7 +152,7 @@ export const AIPromptPanel: React.FC = () => {
                     </p>
                     <Textarea
                         placeholder="Contoh: Latar belakang ruang tamu modern minimalis dengan cahaya alami..."
-                        className="h-28 resize-none text-sm"
+                        className="h-28 resize-none text-sm rounded-xl bg-card/80 border-border/60 focus-visible:ring-indigo-500/50"
                         value={prompt}
                         onChange={(e) => setPrompt(e.target.value)}
                         disabled={isGenerating}
@@ -225,7 +225,7 @@ export const AIPromptPanel: React.FC = () => {
             {!generatedUrl && (
                 <div className="pt-4 border-t mt-auto">
                     <Button
-                        className="w-full gap-2"
+                        className="w-full gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 shadow-[0_4px_14px_rgba(99,102,241,0.4)] border-0"
                         onClick={() => handleGenerate()}
                         disabled={isGenerating || !prompt.trim()}
                     >

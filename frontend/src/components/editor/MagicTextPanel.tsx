@@ -198,7 +198,7 @@ export const MagicTextPanel: React.FC = () => {
                 <div className="space-y-2">
                     <div className="flex items-center justify-between">
                         <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Teks Promosi</label>
-                        <span className="text-[10px] text-muted-foreground">{text.length}/500</span>
+                        <span className="text-[11px] text-muted-foreground">{text.length}/500</span>
                     </div>
                     <Textarea
                         placeholder="Contoh: Diskon 50% Khusus Hari Ini! Dapatkan sekarang sebelum kehabisan."
@@ -229,8 +229,8 @@ export const MagicTextPanel: React.FC = () => {
                                     )}
                                 >
                                     <Icon className={cn("h-4 w-4 mb-1.5", isSelected ? "text-primary" : "text-muted-foreground")} />
-                                    <span className={cn("text-[10px] font-medium block w-full truncate", isSelected ? "text-foreground" : "text-muted-foreground")}>{preset.label}</span>
-                                    <span className="text-[9px] text-muted-foreground/70 hidden sm:block truncate w-full">{preset.description}</span>
+                                    <span className={cn("text-[11px] font-medium block w-full truncate", isSelected ? "text-foreground" : "text-muted-foreground")}>{preset.label}</span>
+                                    <span className="text-[11px] text-muted-foreground/70 hidden sm:block truncate w-full">{preset.description}</span>
                                 </button>
                             );
                         })}
@@ -250,8 +250,8 @@ export const MagicTextPanel: React.FC = () => {
                                 isGenerating && "opacity-50 cursor-not-allowed"
                             )}
                         >
-                            <span className={cn("text-xs font-medium mb-1", mode === 'replace' ? "text-foreground" : "text-muted-foreground")}>Ganti Lama</span>
-                            <span className="text-[9px] text-muted-foreground/80">Hapus teks lama, ganti baru</span>
+                            <span className={cn("text-[11px] font-medium mb-1", mode === 'replace' ? "text-foreground" : "text-muted-foreground")}>Ganti Lama</span>
+                            <span className="text-[11px] text-muted-foreground/80">Hapus teks lama, ganti baru</span>
                         </button>
                         <button
                             onClick={() => setMode('append')}
@@ -262,8 +262,8 @@ export const MagicTextPanel: React.FC = () => {
                                 isGenerating && "opacity-50 cursor-not-allowed"
                             )}
                         >
-                            <span className={cn("text-xs font-medium mb-1", mode === 'append' ? "text-foreground" : "text-muted-foreground")}>Tambahkan</span>
-                            <span className="text-[9px] text-muted-foreground/80">Tambah teks tanpa menghapus</span>
+                            <span className={cn("text-[11px] font-medium mb-1", mode === 'append' ? "text-foreground" : "text-muted-foreground")}>Tambahkan</span>
+                            <span className="text-[11px] text-muted-foreground/80">Tambah teks tanpa menghapus</span>
                         </button>
                     </div>
                 </div>
@@ -284,7 +284,7 @@ export const MagicTextPanel: React.FC = () => {
 
             <div className="pt-4 border-t mt-auto">
                 <Button
-                    className="w-full gap-2 relative overflow-hidden group"
+                    className="w-full gap-2 relative overflow-hidden group bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 shadow-[0_4px_14px_rgba(99,102,241,0.4)] border-0"
                     onClick={handleGenerate}
                     disabled={isGenerating || !text.trim()}
                 >

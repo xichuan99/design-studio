@@ -23,7 +23,7 @@ export const AIStudioPanel: React.FC = () => {
             {/* Header / Sub-navigation */}
             <div className="flex flex-col p-4 pb-2 border-b shrink-0 bg-background/50 backdrop-blur-sm z-10">
                 <div className="flex items-center gap-2 mb-4">
-                    <div className="p-1.5 bg-indigo-500/10 rounded-md">
+                    <div className="p-1.5 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 rounded-md">
                         <Sparkles className="h-5 w-5 text-indigo-500" />
                     </div>
                     <div>
@@ -44,7 +44,7 @@ export const AIStudioPanel: React.FC = () => {
                                 className={cn(
                                     "flex-1 flex flex-col items-center justify-center py-1.5 px-2 rounded-md transition-all relative",
                                     isActive 
-                                        ? "bg-background text-foreground shadow-sm ring-1 ring-border/50" 
+                                        ? "bg-background text-foreground shadow-[0_0_12px_rgba(99,102,241,0.3)] ring-1 ring-indigo-500/30" 
                                         : "text-muted-foreground hover:text-foreground hover:bg-background/50"
                                 )}
                             >

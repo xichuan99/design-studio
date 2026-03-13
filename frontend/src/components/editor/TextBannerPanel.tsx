@@ -2,6 +2,11 @@ import React, { useState } from 'react';
 import { useProjectApi } from '@/lib/api';
 import { useCanvasStore } from '@/store/useCanvasStore';
 import { Loader2, Type, Palette, Wand2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
 export const TextBannerPanel = () => {
     const { generateTextBanner } = useProjectApi();
@@ -73,137 +78,141 @@ export const TextBannerPanel = () => {
     };
 
     return (
-        <div className="p-4 flex flex-col h-full bg-neutral-900 text-white overflow-y-auto w-full">
-            <div className="mb-6 flex items-center space-x-2">
-                <Wand2 className="w-5 h-5 text-indigo-400" />
-                <h2 className="text-lg font-semibold text-white">AI Text Banner</h2>
+        <div className="flex flex-col h-full bg-card p-4 gap-4">
+            <div className="flex items-center gap-2 border-b pb-4">
+                <Wand2 className="h-5 w-5 text-primary" />
+                <h2 className="font-semibold text-sm">AI Text Banner</h2>
             </div>
             
-            <p className="text-sm text-neutral-400 mb-6">
-                Generate high-quality decorative text banners with transparent backgrounds to composite over your designs.
-            </p>
+            <div className="flex-1 overflow-y-auto space-y-5 pr-1 pb-4">
+                <p className="text-[13px] text-muted-foreground leading-relaxed">
+                    Generate high-quality decorative text banners with transparent backgrounds to composite over your designs.
+                </p>
 
-            <div className="space-y-5">
+                <div className="space-y-5">
                 {/* Text Input */}
-                <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-2 flex items-center">
-                        <Type className="w-3.5 h-3.5 mr-1" /> Banner Text
+                <div className="space-y-2">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                        <Type className="w-3.5 h-3.5" /> Banner Text
                     </label>
-                    <input
+                    <Input
                         type="text"
                         value={text}
                         onChange={(e) => setText(e.target.value)}
                         placeholder="e.g. SUMMER SALE"
-                        className="w-full bg-neutral-800 border border-neutral-700 rounded-lg p-2.5 text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                        className="text-sm focus-visible:ring-primary/50"
                     />
                 </div>
 
                 {/* Style Preset Dropdown */}
-                <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-2 flex items-center">
-                        <Wand2 className="w-3.5 h-3.5 mr-1" /> Banner Style
+                <div className="space-y-2">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                        <Wand2 className="w-3.5 h-3.5" /> Banner Style
                     </label>
-                    <select
-                        value={style}
-                        onChange={(e) => setStyle(e.target.value)}
-                        className="w-full bg-neutral-800 border border-neutral-700 rounded-lg p-2.5 text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all appearance-none cursor-pointer"
-                    >
-                        {STYLE_PRESETS.map(p => (
-                            <option key={p.key} value={p.key}>{p.label}</option>
-                        ))}
-                    </select>
+                    <Select value={style} onValueChange={setStyle}>
+                        <SelectTrigger className="w-full text-sm">
+                            <SelectValue placeholder="Select a style" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {STYLE_PRESETS.map(p => (
+                                <SelectItem key={p.key} value={p.key}>{p.label}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                     
                     {/* Custom Style Textarea (shown only when "custom" selected) */}
                     {style === 'custom' && (
-                        <textarea
+                        <Textarea
                             value={customStyle}
                             onChange={(e) => setCustomStyle(e.target.value)}
                             placeholder="e.g. elegant 3d metallic lettering with neon glow"
-                            rows={2}
-                            className="w-full mt-2 bg-neutral-800 border border-neutral-700 rounded-lg p-2.5 text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none"
+                            className="min-h-[80px] max-h-[160px] resize-y text-sm mt-2 focus-visible:ring-primary/50"
                         />
                     )}
                 </div>
 
                 {/* Color Hint */}
-                <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-2 flex items-center">
-                        <Palette className="w-3.5 h-3.5 mr-1" /> Color Hint (Optional)
+                <div className="space-y-2">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                        <Palette className="w-3.5 h-3.5" /> Color Hint (Optional)
                     </label>
-                    <input
+                    <Input
                         type="text"
                         value={colorHint}
                         onChange={(e) => setColorHint(e.target.value)}
                         placeholder="e.g. gold and black"
-                        className="w-full bg-neutral-800 border border-neutral-700 rounded-lg p-2.5 text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                        className="text-sm focus-visible:ring-primary/50"
                     />
                 </div>
 
                 {/* Quality / Tier Selection */}
-                <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-2">
+                <div className="space-y-2">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                         Generation Quality
                     </label>
                     <div className="grid grid-cols-3 gap-2">
                          <button
                             onClick={() => setQuality('draft')}
-                            className={`flex flex-col items-center justify-center p-2 rounded-lg border text-xs transition-all ${
-                                quality === 'draft' 
-                                ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300' 
-                                : 'bg-neutral-800 border-neutral-700 text-neutral-400 hover:border-neutral-500'
-                            }`}
+                            className={cn(
+                                "flex flex-col items-center justify-center p-2 rounded-lg border text-center transition-all",
+                                quality === 'draft' ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border hover:bg-muted/50"
+                            )}
                         >
-                            <span className="font-semibold mb-1">Draft</span>
-                            <span className="text-[10px] opacity-70">1 Credit</span>
+                            <span className={cn("text-xs font-medium mb-1", quality === 'draft' ? "text-foreground" : "text-muted-foreground")}>Draft</span>
+                            <span className="text-[11px] text-muted-foreground/80">1 Credit</span>
                         </button>
                         <button
                             onClick={() => setQuality('standard')}
-                            className={`flex flex-col items-center justify-center p-2 rounded-lg border text-xs transition-all ${
-                                quality === 'standard' 
-                                ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300' 
-                                : 'bg-neutral-800 border-neutral-700 text-neutral-400 hover:border-neutral-500'
-                            }`}
+                            className={cn(
+                                "flex flex-col items-center justify-center p-2 rounded-lg border text-center transition-all",
+                                quality === 'standard' ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border hover:bg-muted/50"
+                            )}
                         >
-                            <span className="font-semibold mb-1">Standard</span>
-                            <span className="text-[10px] opacity-70">1 Credit</span>
+                            <span className={cn("text-xs font-medium mb-1", quality === 'standard' ? "text-foreground" : "text-muted-foreground")}>Standard</span>
+                            <span className="text-[11px] text-muted-foreground/80">1 Credit</span>
                         </button>
                         <button
                             onClick={() => setQuality('premium')}
-                            className={`flex flex-col items-center justify-center p-2 rounded-lg border text-xs transition-all ${
-                                quality === 'premium' 
-                                ? 'bg-amber-500/20 border-amber-500 text-amber-300' 
-                                : 'bg-neutral-800 border-neutral-700 text-neutral-400 hover:border-neutral-500'
-                            }`}
+                            className={cn(
+                                "flex flex-col items-center justify-center p-2 rounded-lg border text-center transition-all",
+                                quality === 'premium' ? "border-amber-500 bg-amber-500/5 ring-1 ring-amber-500/20" : "border-border hover:bg-muted/50"
+                            )}
                             title="Uses Nano Banana 2 (Gemini Flash 3.1) - Best text accuracy"
                         >
-                            <span className="font-semibold mb-1">Premium</span>
-                            <span className="text-[10px] opacity-70">2 Credits</span>
+                            <span className={cn("text-xs font-medium mb-1", quality === 'premium' ? "text-amber-500" : "text-muted-foreground")}>Premium</span>
+                            <span className="text-[11px] text-muted-foreground/80">2 Credits</span>
                         </button>
                     </div>
                 </div>
 
                 {/* Error Message */}
                 {error && (
-                    <div className="p-3 bg-red-900/30 border border-red-800/50 rounded-lg text-red-200 text-xs">
+                    <div className="text-xs text-destructive bg-destructive/10 p-2.5 rounded-lg border border-destructive/20">
                         {error}
                     </div>
                 )}
+            </div>
+            </div>
 
-                {/* Generate Button */}
-                <button
+            {/* Generate Button */}
+            <div className="pt-4 border-t mt-auto">
+                <Button
                     onClick={handleGenerate}
-                    disabled={isGenerating}
-                    className="w-full mt-4 flex items-center justify-center py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-800/50 text-white rounded-lg font-medium transition-colors shadow-lg shadow-indigo-500/20"
+                    disabled={isGenerating || !text.trim()}
+                    className="w-full gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 shadow-[0_4px_14px_rgba(99,102,241,0.4)] border-0"
                 >
                     {isGenerating ? (
                         <>
-                            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                             Generating Banner...
                         </>
                     ) : (
-                        'Generate AI Banner'
+                        <>
+                            <Wand2 className="w-4 h-4 mr-2" />
+                            Generate AI Banner
+                        </>
                     )}
-                </button>
+                </Button>
             </div>
         </div>
     );
