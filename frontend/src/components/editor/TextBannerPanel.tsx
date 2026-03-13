@@ -8,16 +8,31 @@ export const TextBannerPanel = () => {
     const { addElement } = useCanvasStore();
 
     const [text, setText] = useState('');
-    const [style, setStyle] = useState('elegant 3d lettering, neon glow');
+    const [style, setStyle] = useState('ribbon');
+    const [customStyle, setCustomStyle] = useState('');
     const [colorHint, setColorHint] = useState('');
     const [quality, setQuality] = useState<'draft' | 'standard' | 'premium'>('standard');
     
     const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    const STYLE_PRESETS = [
+        { key: 'ribbon', label: '🎀 Ribbon Banner' },
+        { key: 'badge', label: '🏷️ Badge / Sticker' },
+        { key: 'cloud', label: '☁️ Cloud Bubble' },
+        { key: 'star', label: '⭐ Starburst' },
+        { key: 'banner', label: '📜 Classic Scroll' },
+        { key: 'custom', label: '✨ Custom Style...' },
+    ];
+
     const handleGenerate = async () => {
         if (!text.trim()) {
             setError('Please enter some text for the banner.');
+            return;
+        }
+
+        if (style === 'custom' && !customStyle.trim()) {
+            setError('Please describe your custom style.');
             return;
         }
 
@@ -27,7 +42,7 @@ export const TextBannerPanel = () => {
         try {
             const result = await generateTextBanner({
                 text,
-                style,
+                style: style === 'custom' ? customStyle : style,
                 color_hint: colorHint,
                 quality
             });
@@ -42,8 +57,6 @@ export const TextBannerPanel = () => {
                     width: result.width || 400,
                     height: result.height || 150,
                     rotation: 0,
-                    // Note: zIndex and opacity are not directly in CanvasElement, 
-                    // though opacity is. 'locked' is.
                     opacity: 1,
                     locked: false,
                     label: 'AI Banner',
@@ -85,18 +98,31 @@ export const TextBannerPanel = () => {
                     />
                 </div>
 
-                {/* Style Hint */}
+                {/* Style Preset Dropdown */}
                 <div>
                     <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-2 flex items-center">
-                        <Wand2 className="w-3.5 h-3.5 mr-1" /> Visual Style
+                        <Wand2 className="w-3.5 h-3.5 mr-1" /> Banner Style
                     </label>
-                    <textarea
+                    <select
                         value={style}
                         onChange={(e) => setStyle(e.target.value)}
-                        placeholder="e.g. elegant 3d lettering, neon glow"
-                        rows={2}
-                        className="w-full bg-neutral-800 border border-neutral-700 rounded-lg p-2.5 text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none"
-                    />
+                        className="w-full bg-neutral-800 border border-neutral-700 rounded-lg p-2.5 text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all appearance-none cursor-pointer"
+                    >
+                        {STYLE_PRESETS.map(p => (
+                            <option key={p.key} value={p.key}>{p.label}</option>
+                        ))}
+                    </select>
+                    
+                    {/* Custom Style Textarea (shown only when "custom" selected) */}
+                    {style === 'custom' && (
+                        <textarea
+                            value={customStyle}
+                            onChange={(e) => setCustomStyle(e.target.value)}
+                            placeholder="e.g. elegant 3d metallic lettering with neon glow"
+                            rows={2}
+                            className="w-full mt-2 bg-neutral-800 border border-neutral-700 rounded-lg p-2.5 text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none"
+                        />
+                    )}
                 </div>
 
                 {/* Color Hint */}

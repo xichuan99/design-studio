@@ -37,9 +37,12 @@ async def generate_text_banner(
     - premium:  gemini-3.1-flash-image-preview (best text rendering)
     """
     try:
-        # 1. Prepare Prompt
-        base_prompt = STYLE_PROMPTS.get(style, STYLE_PROMPTS["ribbon"])
-        base_prompt = base_prompt.replace("{color_hint}", color_hint)
+        # 1. Prepare Prompt — support both preset keys and free-text
+        if style in STYLE_PROMPTS:
+            base_prompt = STYLE_PROMPTS[style].replace("{color_hint}", color_hint)
+        else:
+            # Treat as free-text creative description
+            base_prompt = f"{style}, {color_hint} color palette, centered, clean composition"
         
         # Add text instructions
         prompt = f"{base_prompt}. The graphic MUST contain the exact text: \"{text}\" written on it boldly and legibly. Clean solid white background behind the object for easy extraction."
