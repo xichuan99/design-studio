@@ -338,7 +338,7 @@ async def generate_design(
         # Determine the best model and text instructions based on integration needs
         if request.integrated_text:
             model_name = 'gemini-3.1-flash-image-preview'
-            
+
             # Build all text elements for integrated rendering
             text_parts = [f"'{parsed.headline}'"]
             if parsed.sub_headline:
@@ -346,7 +346,7 @@ async def generate_design(
             if parsed.cta:
                 text_parts.append(f"'{parsed.cta}'")
             all_text = ", and ".join(text_parts)
-            
+
             text_instruction = f"high quality typography, clearly readable text showing {all_text}, with proper visual hierarchy, stylized to perfectly integrate organically into the scene"
         else:
             model_name = 'imagen-4.0-fast-generate-001'  # Keep imagen for non-text backgrounds as it excels at pure aesthetics
