@@ -7,6 +7,7 @@ import { AIPromptPanel } from './AIPromptPanel';
 import { MagicTextPanel } from './MagicTextPanel';
 import { AIAssetsPanel } from './AIAssetsPanel';
 import { BackgroundRemovalPanel } from './BackgroundRemovalPanel';
+import { TextBannerPanel } from './TextBannerPanel';
 import BrandKitPanel from './BrandKitPanel';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -15,7 +16,7 @@ import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 
 export const LeftSidebar: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'tools' | 'ai' | 'magictext' | 'assets' | 'bgremoval' | 'brandkit'>('ai');
+    const [activeTab, setActiveTab] = useState<'tools' | 'ai' | 'magictext' | 'assets' | 'bgremoval' | 'brandkit' | 'textbanner'>('ai');
     const [isCollapsed, setIsCollapsed] = useState(false);
 
     // Toolbar logic
@@ -160,6 +161,7 @@ export const LeftSidebar: React.FC = () => {
         { id: 'magictext', icon: Wand2, label: 'Magic Text' },
         { id: 'bgremoval', icon: Scissors, label: 'Hapus BG' },
         { id: 'brandkit', icon: Palette, label: 'Brand Kit' },
+        { id: 'textbanner', icon: Type, label: 'Text Banner' },
         { id: 'assets', icon: ImageIcon, label: 'Assets' },
         { id: 'tools', icon: Wrench, label: 'Tools' },
     ];
@@ -199,6 +201,7 @@ export const LeftSidebar: React.FC = () => {
                 {activeTab === 'bgremoval' && (
                     <BackgroundRemovalPanel />
                 )}
+                {activeTab === 'textbanner' && <TextBannerPanel />}
                 {activeTab === 'brandkit' && (
                     <BrandKitPanel 
                         onClose={closePanel} 

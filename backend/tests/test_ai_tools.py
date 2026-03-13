@@ -13,6 +13,7 @@ def override_rate_limit():
 
 async def override_get_db():
     mock_session = AsyncMock()
+    mock_session.add = MagicMock()
     yield mock_session
 
 app.dependency_overrides[rate_limit_dependency] = override_rate_limit
@@ -34,7 +35,7 @@ def test_background_swap_endpoint_success():
          patch("app.services.image_service.generate_background", new_callable=AsyncMock) as mock_gen, \
          patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_http_get, \
          patch("app.services.bg_removal_service.composite_with_shadow", new_callable=AsyncMock) as mock_comp, \
-         patch("app.services.storage_service.upload_image", new_callable=AsyncMock) as mock_upload:
+         patch("app.api.ai_tools.upload_image", new_callable=AsyncMock) as mock_upload:
 
         mock_rm.return_value = b"nobg"
         mock_gen.return_value = {"image_url": "http://fake-url.com/fg.jpg"}
@@ -68,7 +69,7 @@ def test_upscale_endpoint_success():
     files = {"file": ("test.png", mock_file_content, "image/png")}
     data = {"scale": "2"}
 
-    with patch("app.services.storage_service.upload_image", new_callable=AsyncMock) as mock_upload, \
+    with patch("app.api.ai_tools.upload_image", new_callable=AsyncMock) as mock_upload, \
          patch("app.services.upscale_service.upscale_image", new_callable=AsyncMock) as mock_upscale, \
          patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_http_get:
 
@@ -91,4 +92,38 @@ def test_upscale_endpoint_success():
         assert res.status_code == 200
         assert res.json() == {"url": "http://storage.com/final.png"}
         assert mock_upload.call_count == 2
-        mock_upscale.assert_called_once_with("http://storage.com/temp.jpg", scale=2)
+        mock_upscale.assert_called_once_with("http://storage.com/temp.jpg", 2.0)
+
+def test_text_banner_endpoint_success():
+    """Test generating a text banner."""
+    data = {
+        "text": "SALE MANTAP",
+        "style": "ribbon",
+        "color_hint": "merah kuning",
+        "quality": "standard"
+    }
+
+    with patch("app.services.banner_service.generate_text_banner", new_callable=AsyncMock) as mock_gen:
+        mock_gen.return_value = {
+            "url": "http://storage.com/banner.png",
+            "width": 1024,
+            "height": 1024
+        }
+
+        res = client.post(
+            "/api/tools/text-banner",
+            data=data,
+        )
+
+        assert res.status_code == 200
+        assert res.json() == {
+            "url": "http://storage.com/banner.png",
+            "width": 1024,
+            "height": 1024
+        }
+        mock_gen.assert_called_once_with(
+            text="SALE MANTAP",
+            style="ribbon",
+            color_hint="merah kuning",
+            quality="standard"
+        )

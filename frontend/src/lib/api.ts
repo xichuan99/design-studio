@@ -50,8 +50,10 @@ export interface CopywritingVariation {
 export function useProjectApi() {
     const { data: session } = useSession();
 
-    const getHeaders = useCallback((): Record<string, string> => {
-        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    const getHeaders = useCallback((skipContentType: boolean = false): Record<string, string> => {
+        const headers: Record<string, string> = {
+            ...(skipContentType ? {} : { 'Content-Type': 'application/json' })
+        };
         // @ts-expect-error - accessToken is extended on the session object
         const token = session?.accessToken;
 
@@ -343,6 +345,50 @@ export function useProjectApi() {
         return res.json(); // returns { url: string }
     };
 
+    const upscaleImage = async (file: File, scale: number = 2.0): Promise<{ url: string }> => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('scale', scale.toString());
+
+        const response = await fetch(`${API_BASE_URL}/api/tools/upscale`, {
+            method: 'POST',
+            headers: getHeaders(true), // true implies skipContentType
+            body: formData,
+        });
+        if (!response.ok) {
+            const errBase = await response.json().catch(() => ({}));
+            throw new Error(errBase.detail || 'Failed to upscale image');
+        }
+        return response.json();
+    };
+
+    const generateTextBanner = async (payload: {
+        text: string;
+        style?: string;
+        color_hint?: string;
+        quality?: string;
+    }): Promise<{ url: string, width?: number, height?: number }> => {
+        const formData = new FormData();
+        formData.append('text', payload.text);
+        if (payload.style) formData.append('style', payload.style);
+        if (payload.color_hint) formData.append('color_hint', payload.color_hint);
+        if (payload.quality) formData.append('quality', payload.quality);
+
+        const response = await fetch(`${API_BASE_URL}/api/tools/text-banner`, {
+            method: 'POST',
+            headers: getHeaders(true),
+            body: formData,
+        });
+        
+        if (!response.ok) {
+            const errBase = await response.json().catch(() => ({}));
+            throw new Error(errBase.detail || 'Failed to generate text banner');
+        }
+        return response.json();
+    };
+
+
+
     // --- Brand Kit API ---
     const extractBrandColors = async (file: File): Promise<{ colors: ColorSwatch[] }> => {
         const formData = new FormData();
@@ -414,6 +460,8 @@ export function useProjectApi() {
         getJobStatus, getMyGenerations, getTemplates, getHistory, createHistory, 
         generateMagicTextLayout, removeBackground,
         extractBrandColors, saveBrandKit, getBrandKits, getActiveBrandKit, updateBrandKit, deleteBrandKit,
-        clarifyCopywriting, generateCopywriting, parseDesignText, clarifyUnified
+        clarifyCopywriting, generateCopywriting, parseDesignText, clarifyUnified,
+        upscaleImage,
+        generateTextBanner,
     };
 }
