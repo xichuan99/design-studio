@@ -640,3 +640,38 @@ async def generate_magic_text_layout(
     )
 
     return json.loads(response.text)
+
+async def generate_project_title(prompt: str) -> str:
+    """Generates a short, catchy project title based on the user's prompt."""
+    if not settings.GEMINI_API_KEY:
+        import logging
+        logging.warning("GEMINI_API_KEY is missing – returning mock title")
+        words = prompt.split()
+        return " ".join(words[:4]).title() if words else "Desain AI Baru"
+
+    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    
+    system_instruction = (
+        "You are an assistant that creates short, descriptive, and catchy project titles "
+        "(2 to 5 words max) based on a description. Respond ONLY with the title. "
+        "Ensure the language matches the prompt's language (mostly Indonesian)."
+    )
+
+    try:
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=[f"Create a short title for this design prompt: {prompt}"],
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction,
+                temperature=0.7,
+                max_output_tokens=20,
+            ),
+        )
+        title = response.text.strip().replace('"', '')
+        return title if title else "Desain AI Baru"
+    except Exception as e:
+        import logging
+        logging.exception(f"Failed to generate project title: {e}")
+        # Fallback to truncated prompt
+        words = prompt.split()
+        return " ".join(words[:5]).title() + ("..." if len(words) > 5 else "") if words else "Desain AI Baru"

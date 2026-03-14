@@ -40,7 +40,7 @@ interface SavedCreateState {
 export default function CreatePage() {
     const { status } = useSession();
     const router = useRouter();
-    const { generateDesign, getJobStatus, saveProject, uploadImage, getActiveBrandKit, clarifyUnified, generateCopywriting, parseDesignText } = useProjectApi();
+    const { generateDesign, getJobStatus, saveProject, uploadImage, getActiveBrandKit, clarifyUnified, generateCopywriting, parseDesignText, generateProjectTitle } = useProjectApi();
 
     const [rawText, setRawText] = useState("");
     const [aspectRatio, setAspectRatio] = useState("1:1");
@@ -447,14 +447,22 @@ export default function CreatePage() {
                     []
                 );
 
-            const getDynamicTitle = (prompt: string) => {
+            const getDynamicTitleFallback = (prompt: string) => {
                 if (!prompt) return "Desain AI Baru";
                 const words = prompt.trim().split(/\s+/).slice(0, 5).join(' ');
                 const titleCase = words.replace(/\b\w/g, c => c.toUpperCase());
                 return prompt.trim().split(/\s+/).length > 5 ? `${titleCase}...` : titleCase;
             };
 
-            const projectTitle = getDynamicTitle(parsedData.indonesian_translation || rawText);
+            let projectTitle = getDynamicTitleFallback(parsedData.indonesian_translation || rawText);
+            try {
+                const titleRes = await generateProjectTitle(rawText || parsedData.indonesian_translation || "");
+                if (titleRes && titleRes.title) {
+                    projectTitle = titleRes.title;
+                }
+            } catch (titleError) {
+                console.warn("Failed to generate AI title, using fallback", titleError);
+            }
 
             const newProject = await saveProject({
                 title: projectTitle,

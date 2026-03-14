@@ -88,6 +88,16 @@ export function useProjectApi() {
         return res.json();
     };
 
+    const generateProjectTitle = async (prompt: string) => {
+        const res = await fetch(`${API_BASE_URL}/designs/generate-title`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ prompt }),
+        });
+        if (!res.ok) throw new Error('Failed to generate project title');
+        return res.json();
+    };
+
     const getProjects = async () => {
         const res = await fetch(`${API_BASE_URL}/projects/`, {
             headers: getHeaders(),
@@ -463,5 +473,6 @@ export function useProjectApi() {
         clarifyCopywriting, generateCopywriting, parseDesignText, clarifyUnified,
         upscaleImage,
         generateTextBanner,
+        generateProjectTitle,
     };
 }

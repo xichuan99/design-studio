@@ -322,3 +322,9 @@ class MagicTextElement(BaseModel):
 
 class MagicTextResponse(BaseModel):
     elements: List[MagicTextElement] = Field(default_factory=list)
+
+class GenerateTitleRequest(BaseModel):
+    prompt: str = Field(..., description="The user's description or prompt")
+
+class GenerateTitleResponse(BaseModel):
+    title: str = Field(..., description="The AI-generated short title")

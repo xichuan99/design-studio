@@ -10,7 +10,9 @@ from app.schemas.design import (
     ModifyPromptRequest,
     CopywritingClarifyRequest,
     CopywritingRequest,
-    CopywritingResponse
+    CopywritingResponse,
+    GenerateTitleRequest,
+    GenerateTitleResponse
 )
 from app.services.llm_service import parse_design_text
 from app.models.job import Job
@@ -133,6 +135,21 @@ async def magic_text_layout(
             status_code=500,
             detail=f"Failed to generate layout: {str(e)}"
         )
+
+@router.post("/generate-title", response_model=GenerateTitleResponse)
+async def api_generate_project_title(
+    request: GenerateTitleRequest,
+    current_user: User = Depends(rate_limit_dependency),
+):
+    """Generates a short project title from a prompt via LLM."""
+    from app.services.llm_service import generate_project_title
+    try:
+        title = await generate_project_title(request.prompt)
+        return GenerateTitleResponse(title=title)
+    except Exception as e:
+        import logging
+        logging.exception("Failed to generate project title")
+        raise HTTPException(status_code=500, detail="Failed to generate project title")
 
 @router.post("/remove-background")
 async def api_remove_background(
