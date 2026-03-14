@@ -146,7 +146,7 @@ async def api_generate_project_title(
     try:
         title = await generate_project_title(request.prompt)
         return GenerateTitleResponse(title=title)
-    except Exception as e:
+    except Exception:
         import logging
         logging.exception("Failed to generate project title")
         raise HTTPException(status_code=500, detail="Failed to generate project title")
