@@ -98,7 +98,7 @@ export function DesignBriefInterview({
                 ))}
             </div>
 
-            <div className="mt-8 flex flex-col sm:flex-row-reverse items-center justify-center gap-4 border-t pt-8">
+            <div className="mt-8 flex flex-col items-center justify-center gap-3 border-t pt-8">
                 <Button 
                     size="lg" 
                     className="w-full sm:w-auto min-w-[200px] h-12 shadow-lg hover:shadow-xl transition-all"
@@ -112,15 +112,14 @@ export function DesignBriefInterview({
                     )}
                 </Button>
                 
-                <Button 
-                    size="lg" 
-                    variant="ghost" 
-                    className="w-full sm:w-auto h-12 text-muted-foreground hover:text-foreground"
+                <button 
+                    type="button"
+                    className="text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors underline-offset-4 hover:underline disabled:opacity-50"
                     onClick={onSkip}
                     disabled={isGeneratingPrompt}
                 >
-                    Lewati (Gunakan AI Bebas)
-                </Button>
+                    atau lewati →
+                </button>
             </div>
         </div>
     );
