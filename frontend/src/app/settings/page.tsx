@@ -537,29 +537,6 @@ export default function SettingsPage() {
                         </div>
                     </SettingsSection>
 
-                    {/* -- SECTION BRAND KIT -- */}
-                    <SettingsSection
-                        title="Smart Brand Kit"
-                        description="Kelola warna, font, dan logo cerdas Anda. Pilih brand aktif untuk menerapkan aturan warna secara ketat pada desain AI Anda."
-                        icon={Wand2}
-                    >
-                        <Card className="shadow-sm border-border/60 bg-muted/20">
-                            <CardContent className="p-6 sm:p-8 flex flex-col items-center justify-center text-center gap-4">
-                                <div className="p-3 bg-primary/10 rounded-full">
-                                    <Wand2 className="w-6 h-6 text-primary" />
-                                </div>
-                                <div className="space-y-1">
-                                    <h4 className="font-semibold text-foreground">Brand Kit Pindah Rumah!</h4>
-                                    <p className="text-sm text-muted-foreground w-full sm:max-w-sm mx-auto">
-                                        Untuk memudahkan akses, pengaturan Brand Kit sekarang memiliki halaman utamanya sendiri.
-                                    </p>
-                                </div>
-                                <Button onClick={() => router.push('/brand')} className="mt-2">
-                                    Buka Halaman Brand Kit
-                                </Button>
-                            </CardContent>
-                        </Card>
-                    </SettingsSection>
 
                     {/* -- SECTION DANGER ZONE -- */}
                     <SettingsSection
