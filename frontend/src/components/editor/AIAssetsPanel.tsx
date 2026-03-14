@@ -6,6 +6,7 @@ import { useCanvasStore } from "@/store/useCanvasStore";
 import { Loader2, Wallpaper, ImagePlus, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 interface AIGeneration {
     id: string;
@@ -22,6 +23,7 @@ export const AIAssetsPanel: React.FC = () => {
     const [assets, setAssets] = useState<AIGeneration[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [pendingBgRemovalAsset, setPendingBgRemovalAsset] = useState<string | null>(null);
 
     // Stabilize function ref to prevent infinite re-fetch loop
     const getMyGenerationsRef = useRef(getMyGenerations);
@@ -86,6 +88,26 @@ export const AIAssetsPanel: React.FC = () => {
         });
     };
 
+    const handleConfirmBgRemoval = async () => {
+        if (!pendingBgRemovalAsset) return;
+        try {
+            const response = await fetch(pendingBgRemovalAsset);
+            const blob = await response.blob();
+            const tempUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = tempUrl;
+            a.download = "to_remove_bg.jpg";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            toast.success("Gambar berhasil di-download. Buka tab 'Hapus BG' dan upload gambar ini.", { duration: 5000 });
+        } catch (e) {
+            console.error(e);
+            toast.error("Gagal mengunduh gambar.");
+        }
+        setPendingBgRemovalAsset(null);
+    };
+
     if (loading && assets.length === 0) {
         return (
             <div className="flex flex-col h-full bg-card p-4 items-center justify-center text-muted-foreground">
@@ -145,28 +167,7 @@ export const AIAssetsPanel: React.FC = () => {
                                         size="sm" 
                                         variant="secondary" 
                                         className="h-7 text-[10px] w-full gap-1.5 bg-black/50 hover:bg-black/70 text-white border-0"
-                                        onClick={async () => {
-                                            if (confirm("Ingin memisahkan objek utama dari background di gambar ini?")) {
-                                                try {
-                                                    // Convert URL to blob/file
-                                                    const response = await fetch(previewUrl);
-                                                    const blob = await response.blob();
-                                                    // We can't nicely transition state between panels without a global store for it,
-                                                    // But we can trigger download or notify the user to upload it in the BG removal tab
-                                                    const tempUrl = window.URL.createObjectURL(blob);
-                                                    const a = document.createElement('a');
-                                                    a.href = tempUrl;
-                                                    a.download = "to_remove_bg.jpg";
-                                                    document.body.appendChild(a);
-                                                    a.click();
-                                                    a.remove();
-                                                    toast.success("Gambar berhasil di-download. Buka tab 'Hapus BG' dan upload gambar ini.", { duration: 5000 });
-                                                } catch (e) {
-                                                    console.error(e);
-                                                    toast.error("Gagal mengunduh gambar.");
-                                                }
-                                            }
-                                        }}
+                                        onClick={() => setPendingBgRemovalAsset(previewUrl || asset.result_url)}
                                         title="Download untuk Dihapus Background-nya"
                                     >
                                         Hapus BG
@@ -196,6 +197,27 @@ export const AIAssetsPanel: React.FC = () => {
                     })}
                 </div>
             </div>
+
+            {/* Delete Confirmation */}
+            <AlertDialog
+                open={!!pendingBgRemovalAsset}
+                onOpenChange={(isOpen) => !isOpen && setPendingBgRemovalAsset(null)}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Hapus Background?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Gambar akan diunduh sehingga Anda dapat mengunggahnya ke tab Hapus BG. Lanjutkan?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Batal</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleConfirmBgRemoval}>
+                            Unduh Gambar
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 };

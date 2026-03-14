@@ -7,6 +7,7 @@ class AspectRatio(str, Enum):
     SQUARE = "1:1"
     STORY = "9:16"
     LANDSCAPE = "16:9"
+    POST = "4:5"
 
 class StylePreference(str, Enum):
     BOLD = "bold"

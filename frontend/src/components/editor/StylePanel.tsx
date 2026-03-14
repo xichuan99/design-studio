@@ -5,7 +5,7 @@ import { useCanvasStore } from '@/store/useCanvasStore';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
-import { Trash2, Bold, Italic, AlignLeft, AlignCenter, AlignRight, MousePointer2, Layers, Palette } from 'lucide-react';
+import { Trash2, Bold, Italic, AlignLeft, AlignCenter, AlignRight, MousePointer2, Layers, Palette, Loader2, Sparkles } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useProjectApi, BrandKit } from '@/lib/api';
 
@@ -13,12 +13,33 @@ export const StylePanel: React.FC = () => {
     const { elements, selectedElementIds, updateElement, deleteSelectedElements, duplicateSelectedElements, bringForward, sendBackward, bringToFront, sendToBack, deleteElement, duplicateElement, groupElements, ungroupElements } = useCanvasStore();
     const api = useProjectApi();
     const [activeKit, setActiveKit] = React.useState<BrandKit | null>(null);
+    const [isUpscaling, setIsUpscaling] = React.useState(false);
 
     React.useEffect(() => {
         api.getActiveBrandKit()
             .then(kit => setActiveKit(kit))
             .catch(err => console.error('Failed to load active brand kit', err));
     }, [api]);
+
+    const handleUpscale = async () => {
+        if (!selectedElement || selectedElement.type !== 'image' || !selectedElement.url) return;
+        
+        try {
+            setIsUpscaling(true);
+            const response = await fetch(selectedElement.url);
+            const blob = await response.blob();
+            const file = new File([blob], 'upscale-source.png', { type: blob.type || 'image/png' });
+            
+            const result = await api.upscaleImage(file);
+            if (result && result.url) {
+                updateElement(selectedElement.id, { url: result.url });
+            }
+        } catch (error) {
+            console.error('Failed to upscale image:', error);
+        } finally {
+            setIsUpscaling(false);
+        }
+    };
 
     // Reusable swatch renderer
     const renderBrandSwatches = (applyColor: (hex: string) => void) => {
@@ -358,6 +379,24 @@ export const StylePanel: React.FC = () => {
                                         onChange={(e) => updateAttr('cornerRadius', parseInt(e.target.value) || 0)}
                                         className="w-full h-1 bg-muted rounded-lg appearance-none cursor-pointer"
                                     />
+                                </div>
+
+                                {/* AI Upscale Button */}
+                                <div className="pt-4 mt-2">
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="w-full gap-2 text-primary hover:text-primary hover:bg-primary/10 border-primary/20"
+                                        onClick={handleUpscale}
+                                        disabled={isUpscaling}
+                                    >
+                                        {isUpscaling ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                            <Sparkles className="w-4 h-4" />
+                                        )}
+                                        {isUpscaling ? 'Upscaling...' : 'AI Upscale Image'}
+                                    </Button>
                                 </div>
                             </AccordionContent>
                         </AccordionItem>

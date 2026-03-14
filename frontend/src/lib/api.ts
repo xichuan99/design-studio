@@ -24,6 +24,16 @@ export interface HistoryEntry {
 // --- Brand Kit Types ---
 export type ColorRole = 'background' | 'primary_text' | 'secondary_text' | 'accent' | 'primary' | 'secondary' | string;
 
+export interface Template {
+    id: string;
+    name: string;
+    description: string;
+    category: string;
+    aspect_ratio: string;
+    layout_data: unknown;
+    thumbnail_url?: string;
+}
+
 export interface ColorSwatch {
     hex: string;
     name: string;
