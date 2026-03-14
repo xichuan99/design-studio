@@ -1,6 +1,4 @@
-from fastapi import (
-    APIRouter, Depends, HTTPException, UploadFile, File, status
-)
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import update
@@ -35,8 +33,7 @@ async def extract_brand_colors(
     """
     if file.size and file.size > 5 * 1024 * 1024:
         raise HTTPException(
-            status_code=400,
-            detail="File too large. Maximum size is 5MB."
+            status_code=400, detail="File too large. Maximum size is 5MB."
         )
 
     if not file.content_type or not file.content_type.startswith("image/"):
@@ -44,18 +41,13 @@ async def extract_brand_colors(
 
     image_bytes = await file.read()
     colors = await extract_colors_from_image(
-        image_bytes,
-        mime_type=file.content_type or "image/png"
+        image_bytes, mime_type=file.content_type or "image/png"
     )
 
     return ColorExtractionResponse(colors=colors)
 
 
-@router.post(
-    "",
-    response_model=BrandKitResponse,
-    status_code=status.HTTP_201_CREATED
-)
+@router.post("", response_model=BrandKitResponse, status_code=status.HTTP_201_CREATED)
 async def create_brand_kit(
     brand_kit_in: BrandKitCreate,
     current_user: User = Depends(get_current_user),
@@ -76,7 +68,7 @@ async def create_brand_kit(
             raise HTTPException(
                 status_code=400,
                 detail=f"You can only save up to {MAX_BRAND_KITS_FREE} "
-                       "Brand Kits on the free tier."
+                "Brand Kits on the free tier.",
             )
         if existing_kits:
             await db.execute(
@@ -85,7 +77,9 @@ async def create_brand_kit(
                 .values(is_active=False)
             )
         colors_json = [c.model_dump() for c in brand_kit_in.colors]
-        typography_json = brand_kit_in.typography.model_dump() if brand_kit_in.typography else None
+        typography_json = (
+            brand_kit_in.typography.model_dump() if brand_kit_in.typography else None
+        )
 
         new_kit = BrandKit(
             user_id=current_user.id,
@@ -94,7 +88,7 @@ async def create_brand_kit(
             logos=brand_kit_in.logos,
             colors=colors_json,
             typography=typography_json,
-            is_active=True
+            is_active=True,
         )
 
         db.add(new_kit)
@@ -104,6 +98,7 @@ async def create_brand_kit(
         return new_kit
     except Exception as e:
         import logging
+
         logging.exception(f"Exception creating brand kit: {e}")
         raise
 
@@ -156,8 +151,9 @@ async def update_brand_kit(
     Update a specific Brand Kit. Also handles changing the active kit.
     """
     result = await db.execute(
-        select(BrandKit)
-        .where(BrandKit.id == kit_id, BrandKit.user_id == current_user.id)
+        select(BrandKit).where(
+            BrandKit.id == kit_id, BrandKit.user_id == current_user.id
+        )
     )
     kit = result.scalar_one_or_none()
 
@@ -198,8 +194,9 @@ async def delete_brand_kit(
     Delete a Brand Kit.
     """
     result = await db.execute(
-        select(BrandKit)
-        .where(BrandKit.id == kit_id, BrandKit.user_id == current_user.id)
+        select(BrandKit).where(
+            BrandKit.id == kit_id, BrandKit.user_id == current_user.id
+        )
     )
     kit = result.scalar_one_or_none()
 

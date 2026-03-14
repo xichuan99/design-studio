@@ -27,7 +27,7 @@ async def get_my_profile(current_user: User = Depends(get_current_user)):
 async def update_my_profile(
     user_update: UserUpdate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """Updates the current user's profile."""
     if user_update.name is not None:
@@ -41,8 +41,7 @@ async def update_my_profile(
 
 @router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_my_account(
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
     """Deletes the current user's account and all related data."""
     user_id = current_user.id
@@ -61,7 +60,7 @@ async def delete_my_account(
         logger.exception("Failed to delete user %s", user_id)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete account. Please try again."
+            detail="Failed to delete account. Please try again.",
         )
     return None
 
@@ -71,23 +70,23 @@ async def get_my_credit_history(
     limit: int = 50,
     offset: int = 0,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """Returns the user's credit transaction history."""
-    query = select(CreditTransaction).where(
-        CreditTransaction.user_id == current_user.id
-    ).order_by(desc(CreditTransaction.created_at))
+    query = (
+        select(CreditTransaction)
+        .where(CreditTransaction.user_id == current_user.id)
+        .order_by(desc(CreditTransaction.created_at))
+    )
 
     result = await db.execute(query.offset(offset).limit(limit))
     transactions = result.scalars().all()
 
     # Get total count
-    count_query = select(func.count()).where(CreditTransaction.user_id == current_user.id)
+    count_query = select(func.count()).where(
+        CreditTransaction.user_id == current_user.id
+    )
     count_result = await db.execute(count_query)
     total_count = count_result.scalar_one()
 
-    return CreditHistoryResponse(
-        transactions=transactions,
-        total_count=total_count
-    )
-
+    return CreditHistoryResponse(transactions=transactions, total_count=total_count)

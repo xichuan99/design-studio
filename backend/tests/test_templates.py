@@ -1,4 +1,5 @@
 """Integration tests for the Templates — uses sync DB connection to avoid async conflicts."""
+
 from __future__ import annotations
 from sqlalchemy import create_engine, text
 from app.core.config import settings
@@ -11,9 +12,11 @@ def _get_templates():
     """Fetch all templates using a sync connection."""
     engine = create_engine(SYNC_DB_URL)
     with engine.connect() as conn:
-        result = conn.execute(text(
-            "SELECT id, name, category, aspect_ratio, style, default_text_layers FROM templates"
-        ))
+        result = conn.execute(
+            text(
+                "SELECT id, name, category, aspect_ratio, style, default_text_layers FROM templates"
+            )
+        )
         rows = result.fetchall()
     engine.dispose()
     return rows
@@ -29,7 +32,20 @@ def test_templates_have_all_categories():
     """Verify all categories are represented."""
     templates = _get_templates()
     categories = set(row[2] for row in templates)
-    expected_categories = {"food", "sale", "product", "event", "education", "property", "giveaway", "hiring", "testimonial", "holiday", "story", "general"}
+    expected_categories = {
+        "food",
+        "sale",
+        "product",
+        "event",
+        "education",
+        "property",
+        "giveaway",
+        "hiring",
+        "testimonial",
+        "holiday",
+        "story",
+        "general",
+    }
     assert expected_categories.issubset(categories)
 
 

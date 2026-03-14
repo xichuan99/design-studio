@@ -8,31 +8,25 @@ class ColorSwatch(BaseModel):
     hex: str = Field(..., description="Hex color code, e.g., #FF5733")
     name: str = Field(..., description="Color name in Indonesian")
     role: str = Field(
-        ...,
-        description="Logical role: primary, secondary, accent, background, text"
+        ..., description="Logical role: primary, secondary, accent, background, text"
     )
+
+
 class Typography(BaseModel):
     primaryFont: Optional[str] = Field(None, description="Primary font family name")
     secondaryFont: Optional[str] = Field(None, description="Secondary font family name")
 
 
 class BrandKitBase(BaseModel):
-    name: str = Field(
-        ..., json_schema_extra={"example": "Brand Kit Utama"}
-    )
+    name: str = Field(..., json_schema_extra={"example": "Brand Kit Utama"})
     logo_url: Optional[str] = Field(
-        None,
-        description="URL of the uploaded logo (legacy/single logo)"
+        None, description="URL of the uploaded logo (legacy/single logo)"
     )
     logos: Optional[List[str]] = Field(
-        default_factory=list,
-        description="List of logo URLs"
+        default_factory=list, description="List of logo URLs"
     )
     colors: List[ColorSwatch] = Field(..., min_length=1, max_length=10)
-    typography: Optional[Typography] = Field(
-        None,
-        description="Typography settings"
-    )
+    typography: Optional[Typography] = Field(None, description="Typography settings")
 
 
 class BrandKitCreate(BrandKitBase):

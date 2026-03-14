@@ -676,7 +676,7 @@ export default function CreatePage() {
                         </div>
                     )}
                     
-                    <div className="flex-1 w-full flex justify-center items-start">
+                    <div className={`flex-1 w-full flex justify-center ${currentStep === 'preview' ? 'items-stretch overflow-hidden min-h-0' : 'items-start'}`}>
                         {currentStep === 'brief' && briefQuestions.length > 0 ? (
                         <DesignBriefInterview 
                             questions={briefQuestions}

@@ -3,6 +3,7 @@ import fal_client
 from typing import Dict, Any
 from app.core.config import settings
 
+
 async def upscale_image(image_url: str, scale: int = 2) -> Dict[str, Any]:
     """
     Upscales an image using fal-ai/aura-sr endpoint.

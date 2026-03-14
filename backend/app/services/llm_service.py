@@ -110,12 +110,14 @@ RULES:
 {brand_instruction}
 """
 
+
 async def generate_design_brief_questions(raw_text: str) -> dict:
     """Generates clarifying questions based on the user's initial raw text."""
     from app.schemas.design import BriefQuestionsResponse
 
     if not settings.GEMINI_API_KEY:
         import logging
+
         logging.warning("GEMINI_API_KEY is missing – returning mock brief questions")
         return {
             "questions": [
@@ -123,31 +125,43 @@ async def generate_design_brief_questions(raw_text: str) -> dict:
                     "id": "mood",
                     "question": "Seperti apa nuansa/mood yang Anda inginkan untuk desain ini?",
                     "type": "choice",
-                    "options": ["Elegan & Premium", "Ceria & Fun", "Minimalis & Bersih", "Hangat & Cozy"],
-                    "default": "Minimalis & Bersih"
+                    "options": [
+                        "Elegan & Premium",
+                        "Ceria & Fun",
+                        "Minimalis & Bersih",
+                        "Hangat & Cozy",
+                    ],
+                    "default": "Minimalis & Bersih",
                 },
                 {
                     "id": "color_palette",
                     "question": "Ada preferensi warna utama?",
                     "type": "choice",
-                    "options": ["Warna bumi (Coklat/Krem)", "Warna pastel lembut", "Warna mencolok/Terang", "Bebas, pilihin AI"],
-                    "default": "Bebas, pilihin AI"
+                    "options": [
+                        "Warna bumi (Coklat/Krem)",
+                        "Warna pastel lembut",
+                        "Warna mencolok/Terang",
+                        "Bebas, pilihin AI",
+                    ],
+                    "default": "Bebas, pilihin AI",
                 },
                 {
                     "id": "specific_elements",
                     "question": "Apakah ada objek spesifik yang harus muncul di gambar? (misal: 'cangkir kopi di meja kayu')",
                     "type": "text",
                     "options": [],
-                    "default": "Sesuai konteks saja"
-                }
+                    "default": "Sesuai konteks saja",
+                },
             ]
         }
 
     client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
     response = client.models.generate_content(
-        model='gemini-2.5-flash',
-        contents=[f"Buatkan pertanyaan klarifikasi desain untuk deskripsi ini:\n{raw_text}"],
+        model="gemini-2.5-flash",
+        contents=[
+            f"Buatkan pertanyaan klarifikasi desain untuk deskripsi ini:\n{raw_text}"
+        ],
         config=types.GenerateContentConfig(
             system_instruction=BRIEF_QUESTIONS_SYSTEM,
             response_mime_type="application/json",
@@ -157,43 +171,60 @@ async def generate_design_brief_questions(raw_text: str) -> dict:
     )
     return json.loads(response.text)
 
+
 async def generate_copywriting_questions(raw_text: str) -> dict:
     """Generates clarifying questions specifically for copywriting using Gemini."""
     from app.schemas.design import BriefQuestionsResponse
+
     if not settings.GEMINI_API_KEY:
         import logging
-        logging.warning("GEMINI_API_KEY is missing – returning mock copywriting questions")
+
+        logging.warning(
+            "GEMINI_API_KEY is missing – returning mock copywriting questions"
+        )
         return {
             "questions": [
                 {
                     "id": "target_audience",
                     "question": "Siapakah target pelanggan utama Anda?",
                     "type": "choice",
-                    "options": ["Anak Muda / Gen Z", "Ibu Rumah Tangga", "Profesional / Pekerja", "Umum"],
-                    "default": "Umum"
+                    "options": [
+                        "Anak Muda / Gen Z",
+                        "Ibu Rumah Tangga",
+                        "Profesional / Pekerja",
+                        "Umum",
+                    ],
+                    "default": "Umum",
                 },
                 {
                     "id": "promo_detail",
                     "question": "Apakah ada promo atau diskon khusus yang ingin ditonjolkan?",
                     "type": "text",
                     "options": [],
-                    "default": ""
+                    "default": "",
                 },
                 {
                     "id": "key_benefit",
                     "question": "Apa keunggulan utama dari produk Anda dibandingkan yang lain?",
                     "type": "choice",
-                    "options": ["Harga Terjangkau", "Kualitas Premium", "Cepat / Instan", "Estetik / Kekinian"],
-                    "default": "Kualitas Premium"
-                }
+                    "options": [
+                        "Harga Terjangkau",
+                        "Kualitas Premium",
+                        "Cepat / Instan",
+                        "Estetik / Kekinian",
+                    ],
+                    "default": "Kualitas Premium",
+                },
             ]
         }
 
     client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
     response = client.models.generate_content(
-        model='gemini-2.5-flash',
-        contents=[f"Buatkan pertanyaan klarifikasi copywriting untuk deskripsi ini:\n{raw_text}"],
+        model="gemini-2.5-flash",
+        contents=[
+            f"Buatkan pertanyaan klarifikasi copywriting untuk deskripsi ini:\n{raw_text}"
+        ],
         config=types.GenerateContentConfig(
             system_instruction=COPYWRITING_BRIEF_SYSTEM,
             response_mime_type="application/json",
@@ -207,8 +238,10 @@ async def generate_copywriting_questions(raw_text: str) -> dict:
         return parsed.model_dump()
     except Exception as e:
         import logging
+
         logging.exception("Error extracting copywriting questions via LLM")
         raise e
+
 
 UNIFIED_BRIEF_SYSTEM = """
 Kamu adalah AI Creative Director. Tugasmu adalah menanyakan 3-4 pertanyaan klarifikasi SPESIFIK
@@ -225,11 +258,14 @@ Gunakan Bahasa Indonesia yang friendly dan profesional.
 Pastikan opsi "choice" relevan dengan konteks deskripsi user.
 """
 
+
 async def generate_unified_brief_questions(raw_text: str) -> dict:
     """Generates combined clarifying questions for both design and copywriting."""
     from app.schemas.design import BriefQuestionsResponse
+
     if not settings.GEMINI_API_KEY:
         import logging
+
         logging.warning("GEMINI_API_KEY is missing – returning mock unified questions")
         return {
             "questions": [
@@ -237,38 +273,50 @@ async def generate_unified_brief_questions(raw_text: str) -> dict:
                     "id": "audience_tone",
                     "question": "Siapakah target audiens Anda & gaya bahasa apa yang cocok?",
                     "type": "choice",
-                    "options": ["Anak Muda (Kasual & Santai)", "Profesional (Formal & Elegan)", "Ibu Rumah Tangga (Ramah & Hangat)", "Umum (Persuasif)"],
-                    "default": "Umum (Persuasif)"
+                    "options": [
+                        "Anak Muda (Kasual & Santai)",
+                        "Profesional (Formal & Elegan)",
+                        "Ibu Rumah Tangga (Ramah & Hangat)",
+                        "Umum (Persuasif)",
+                    ],
+                    "default": "Umum (Persuasif)",
                 },
                 {
                     "id": "design_mood",
                     "question": "Nuansa visual seperti apa yang Anda bayangkan untuk desainnya?",
                     "type": "choice",
-                    "options": ["Elegan & Mewah", "Ceria & Colorful", "Minimalis & Modern", "Estetik & Kalem"],
-                    "default": "Minimalis & Modern"
+                    "options": [
+                        "Elegan & Mewah",
+                        "Ceria & Colorful",
+                        "Minimalis & Modern",
+                        "Estetik & Kalem",
+                    ],
+                    "default": "Minimalis & Modern",
                 },
                 {
                     "id": "promo_benefit",
                     "question": "Apa keunggulan utama atau promo khusus yang ingin ditonjolkan?",
                     "type": "text",
                     "options": [],
-                    "default": ""
+                    "default": "",
                 },
                 {
                     "id": "specific_objects",
                     "question": "Apakah ada objek tertentu yang wajib ada di gambar? (misal: 'gelas es kopi di meja')",
                     "type": "text",
                     "options": [],
-                    "default": ""
-                }
+                    "default": "",
+                },
             ]
         }
 
     client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
     response = client.models.generate_content(
-        model='gemini-2.5-flash',
-        contents=[f"Buatkan pertanyaan klarifikasi desain & copywriting untuk deskripsi ini:\n{raw_text}"],
+        model="gemini-2.5-flash",
+        contents=[
+            f"Buatkan pertanyaan klarifikasi desain & copywriting untuk deskripsi ini:\n{raw_text}"
+        ],
         config=types.GenerateContentConfig(
             system_instruction=UNIFIED_BRIEF_SYSTEM,
             response_mime_type="application/json",
@@ -282,6 +330,7 @@ async def generate_unified_brief_questions(raw_text: str) -> dict:
         return parsed.model_dump()
     except Exception as e:
         import logging
+
         logging.exception("Error extracting unified questions via LLM")
         raise e
 
@@ -290,7 +339,7 @@ async def generate_ai_copywriting(
     product_description: str,
     tone: str = "persuasive",
     brand_name: Optional[str] = None,
-    clarification_answers: Optional[dict] = None
+    clarification_answers: Optional[dict] = None,
 ) -> dict:
     """Generates 3 variations of copywriting using Gemini."""
     from app.schemas.design import CopywritingResponse
@@ -299,15 +348,18 @@ async def generate_ai_copywriting(
         "casual": "TONE: Gunakan bahasa yang santai, gaul, akrab, bisa pakai emoticon jika relevan.",
         "professional": "TONE: Gunakan bahasa yang formal, profesional, terpercaya, dan elegan.",
         "persuasive": "TONE: Gunakan teknik copywriting persuasif, menonjolkan urgensi, dan sangat meyakinkan pembaca untuk langsung bertindak.",
-        "funny": "TONE: Gunakan gaya bahasa yang lucu, nyeleneh, out-of-the-box, menarik perhatian."
+        "funny": "TONE: Gunakan gaya bahasa yang lucu, nyeleneh, out-of-the-box, menarik perhatian.",
     }
     tone_instruction = tone_map.get(tone, tone_map["persuasive"])
 
-    brand_instruction = f"BRAND: Tolong sisipkan nama brand '{brand_name}' secara natural di salah satu bagian (Headline, Subline, atau CTA)." if brand_name else "BRAND: Tidak ada nama brand khusus yang disertakan."
+    brand_instruction = (
+        f"BRAND: Tolong sisipkan nama brand '{brand_name}' secara natural di salah satu bagian (Headline, Subline, atau CTA)."
+        if brand_name
+        else "BRAND: Tidak ada nama brand khusus yang disertakan."
+    )
 
     system_prompt_formatted = COPYWRITING_SYSTEM_PROMPT.format(
-        tone_instruction=tone_instruction,
-        brand_instruction=brand_instruction
+        tone_instruction=tone_instruction, brand_instruction=brand_instruction
     )
 
     prompt_payload = f"Deskripsi Produk:\n{product_description}\n\n"
@@ -318,6 +370,7 @@ async def generate_ai_copywriting(
 
     if not settings.GEMINI_API_KEY:
         import logging
+
         logging.warning("GEMINI_API_KEY is missing – returning mock copywriting")
         headline = "PROMO DISKON HARI INI"
         subline = f"Dapatkan {product_description[:20]} dengan harga spesial."
@@ -329,29 +382,29 @@ async def generate_ai_copywriting(
                     "headline": headline,
                     "subline": subline,
                     "cta": cta,
-                    "full_text": f"{headline}\n{subline}\n{cta}"
+                    "full_text": f"{headline}\n{subline}\n{cta}",
                 },
                 {
                     "style": "Benefit",
                     "headline": "KUALITAS TERJAMIN UNTUK ANDA",
                     "subline": "Rasakan manfaat perlindungan optimal tiap hari.",
                     "cta": "COBA SEKARANG",
-                    "full_text": "KUALITAS TERJAMIN UNTUK ANDA\nRasakan manfaat perlindungan optimal tiap hari.\nCOBA SEKARANG"
+                    "full_text": "KUALITAS TERJAMIN UNTUK ANDA\nRasakan manfaat perlindungan optimal tiap hari.\nCOBA SEKARANG",
                 },
                 {
                     "style": "Social Proof",
                     "headline": "RIBUAN ORANG SUDAH BUKTIKAN",
                     "subline": "Pilihan nomor 1 pelanggan di Indonesia.",
                     "cta": "ORDER SEKARANG",
-                    "full_text": "RIBUAN ORANG SUDAH BUKTIKAN\nPilihan nomor 1 pelanggan di Indonesia.\nORDER SEKARANG"
-                }
+                    "full_text": "RIBUAN ORANG SUDAH BUKTIKAN\nPilihan nomor 1 pelanggan di Indonesia.\nORDER SEKARANG",
+                },
             ]
         }
 
     client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
     response = client.models.generate_content(
-        model='gemini-2.5-flash',
+        model="gemini-2.5-flash",
         contents=[prompt_payload],
         config=types.GenerateContentConfig(
             system_instruction=system_prompt_formatted,
@@ -366,15 +419,17 @@ async def generate_ai_copywriting(
         return parsed.model_dump()
     except Exception as e:
         import logging
+
         logging.exception("Error extracting copywriting via LLM")
         raise e
+
 
 async def parse_design_text(
     raw_text: str,
     integrated_text: bool = False,
     clarification_answers: Optional[dict] = None,
     brand_colors: Optional[list[str]] = None,
-    brand_typography: Optional[dict] = None
+    brand_typography: Optional[dict] = None,
 ) -> ParsedTextElements:
     """Parses raw text into structured design elements and a visual prompt."""
 
@@ -421,31 +476,91 @@ async def parse_design_text(
         Do NOT use any other font. These brand fonts are mandatory.
         """
 
-    final_prompt = SYSTEM_PROMPT + prompt_modifier + clarification_modifier + brand_colors_modifier + brand_typography_modifier
+    final_prompt = (
+        SYSTEM_PROMPT
+        + prompt_modifier
+        + clarification_modifier
+        + brand_colors_modifier
+        + brand_typography_modifier
+    )
 
     if not settings.GEMINI_API_KEY:
         # Dev-mode mock: return sample parsed elements so the app is usable without an API key
         import logging
-        logging.warning("GEMINI_API_KEY is missing – returning mock parsed data for development")
+
+        logging.warning(
+            "GEMINI_API_KEY is missing – returning mock parsed data for development"
+        )
         words = raw_text.split()
         headline = " ".join(words[:5]) if len(words) >= 5 else raw_text[:40]
         return ParsedTextElements(
             headline=headline.upper(),
-            sub_headline=" ".join(words[5:15]) if len(words) > 5 else "Penawaran spesial untuk Anda",
+            sub_headline=" ".join(words[5:15])
+            if len(words) > 5
+            else "Penawaran spesial untuk Anda",
             cta="Pesan Sekarang",
             visual_prompt=f"Professional product photography, {raw_text[:60]}, vibrant colors, clean composition with copy space on the right side, modern aesthetic",
             indonesian_translation=f"Fotografi produk profesional bertema '{raw_text[:40]}' dengan warna cerah, komposisi bersih, dan ruang kosong di sisi kanan untuk teks.",
             visual_prompt_parts=[
-                {"category": "style", "label": "Gaya Visual", "value": "Professional product photography", "enabled": True},
-                {"category": "subject", "label": "Objek Utama", "value": raw_text[:60], "enabled": True},
-                {"category": "colors", "label": "Palet Warna", "value": "vibrant colors", "enabled": True},
-                {"category": "setting", "label": "Latar", "value": "clean composition with copy space on the right side", "enabled": True},
-                {"category": "extra", "label": "Estetika", "value": "modern aesthetic", "enabled": True}
+                {
+                    "category": "style",
+                    "label": "Gaya Visual",
+                    "value": "Professional product photography",
+                    "enabled": True,
+                },
+                {
+                    "category": "subject",
+                    "label": "Objek Utama",
+                    "value": raw_text[:60],
+                    "enabled": True,
+                },
+                {
+                    "category": "colors",
+                    "label": "Palet Warna",
+                    "value": "vibrant colors",
+                    "enabled": True,
+                },
+                {
+                    "category": "setting",
+                    "label": "Latar",
+                    "value": "clean composition with copy space on the right side",
+                    "enabled": True,
+                },
+                {
+                    "category": "extra",
+                    "label": "Estetika",
+                    "value": "modern aesthetic",
+                    "enabled": True,
+                },
             ],
             suggested_colors=["#6C2BEE", "#F59E0B", "#10B981"],
-            headline_layout={"x": 0.7, "y": 0.3, "font_family": "Montserrat", "font_size": 72, "font_weight": 700, "color": "#FFFFFF", "align": "center"},
-            sub_headline_layout={"x": 0.7, "y": 0.5, "font_family": "Inter", "font_size": 36, "font_weight": 400, "color": "#FFFFFF", "align": "center"},
-            cta_layout={"x": 0.7, "y": 0.7, "font_family": "Inter", "font_size": 28, "font_weight": 700, "color": "#F59E0B", "align": "center"},
+            headline_layout={
+                "x": 0.7,
+                "y": 0.3,
+                "font_family": "Montserrat",
+                "font_size": 72,
+                "font_weight": 700,
+                "color": "#FFFFFF",
+                "align": "center",
+            },
+            sub_headline_layout={
+                "x": 0.7,
+                "y": 0.5,
+                "font_family": "Inter",
+                "font_size": 36,
+                "font_weight": 400,
+                "color": "#FFFFFF",
+                "align": "center",
+            },
+            cta_layout={
+                "x": 0.7,
+                "y": 0.7,
+                "font_family": "Inter",
+                "font_size": 28,
+                "font_weight": 700,
+                "color": "#F59E0B",
+                "align": "center",
+            },
         )
 
     # Initialize client lazily to prevent global collection crashes during testing
@@ -453,7 +568,7 @@ async def parse_design_text(
 
     # We use Flash for lowest latency, passing schema to force JSON structure natively
     response = client.models.generate_content(
-        model='gemini-2.5-flash',
+        model="gemini-2.5-flash",
         contents=[raw_text],
         config=types.GenerateContentConfig(
             system_instruction=final_prompt,
@@ -465,6 +580,7 @@ async def parse_design_text(
     # We parse the response text instead of using dynamic decoding structure, though the types are standard JSON
     data = json.loads(response.text)
     return ParsedTextElements(**data)
+
 
 MODIFY_PROMPT_SYSTEM = """
 You are an expert AI prompt engineer and bilingual assistant (Indonesian & English).
@@ -493,12 +609,16 @@ Output JSON must match:
 }
 """
 
-async def modify_visual_prompt(original_parts: list, original_visual_prompt: str, instruction: str) -> dict:
+
+async def modify_visual_prompt(
+    original_parts: list, original_visual_prompt: str, instruction: str
+) -> dict:
     """Modifies existing English prompt parts based on an Indonesian user instruction."""
     from app.schemas.design import ModifyPromptResponse
 
     if not settings.GEMINI_API_KEY:
         import logging
+
         logging.warning("GEMINI_API_KEY is missing – returning mock modified data")
         # simple mock
         new_parts = []
@@ -513,19 +633,21 @@ async def modify_visual_prompt(original_parts: list, original_visual_prompt: str
         return ModifyPromptResponse(
             modified_prompt_parts=new_parts,
             modified_visual_prompt=combined,
-            indonesian_translation=f"Terjemahan mock untuk: {combined}"
+            indonesian_translation=f"Terjemahan mock untuk: {combined}",
         ).model_dump()
 
     client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
     # Send the original parts as a JSON dumped string for Gemini to read easily
     # Ensure parts are dicts
-    parts_dicts = [p.model_dump() if hasattr(p, 'model_dump') else dict(p) for p in original_parts]
+    parts_dicts = [
+        p.model_dump() if hasattr(p, "model_dump") else dict(p) for p in original_parts
+    ]
 
     input_text = f"ORIGINAL FULL PROMPT:\n{original_visual_prompt}\n\nORIGINAL PROMPT PARTS:\n{json.dumps(parts_dicts, indent=2)}\n\nUSER INSTRUCTION (ID):\n{instruction}"
 
     response = client.models.generate_content(
-        model='gemini-2.5-flash',
+        model="gemini-2.5-flash",
         contents=[input_text],
         config=types.GenerateContentConfig(
             system_instruction=MODIFY_PROMPT_SYSTEM,
@@ -537,13 +659,16 @@ async def modify_visual_prompt(original_parts: list, original_visual_prompt: str
     data = json.loads(response.text)
 
     # SAFETY NET: Reconstruct the combined prompt from the parts to guarantee No Shortening
-    assembled_prompt = ", ".join(p["value"] for p in data["modified_prompt_parts"] if p.get("enabled", True))
+    assembled_prompt = ", ".join(
+        p["value"] for p in data["modified_prompt_parts"] if p.get("enabled", True)
+    )
 
     # If Gemini returned a very short combined prompt, override it with our assembled one
     if len(assembled_prompt) > len(data.get("modified_visual_prompt", "")):
         data["modified_visual_prompt"] = assembled_prompt
 
     return data
+
 
 MAGIC_TEXT_SYSTEM = """
 You are an expert graphic designer and world-class typographer.
@@ -582,13 +707,14 @@ Coordinates must be proportional floats between 0.0 and 1.0 (x: 0.0 is left, y: 
 Return the result STRICTLY as a JSON object matching the requested schema.
 """
 
+
 async def generate_magic_text_layout(
     text: str,
     image_base64: str,
     style_hint: Optional[str] = None,
     canvas_width: int = 1024,
     canvas_height: int = 1024,
-    brand_colors: Optional[list[str]] = None
+    brand_colors: Optional[list[str]] = None,
 ) -> dict:
     """Generates a layout for text overlaid on a specific image."""
     from app.schemas.design import MagicTextResponse
@@ -596,6 +722,7 @@ async def generate_magic_text_layout(
 
     if not settings.GEMINI_API_KEY:
         import logging
+
         logging.warning("GEMINI_API_KEY is missing – returning mock magic text")
         return MagicTextResponse(
             elements=[
@@ -613,7 +740,7 @@ async def generate_magic_text_layout(
                     "text_transform": "uppercase",
                     "text_shadow": "2px 2px 8px rgba(0,0,0,0.6)",
                     "opacity": 1.0,
-                    "rotation": 0.0
+                    "rotation": 0.0,
                 }
             ]
         ).model_dump()
@@ -628,7 +755,11 @@ async def generate_magic_text_layout(
 
     # Inject style hint and canvas size context
     aspect_context = f"\nCanvas dimensions: {canvas_width}x{canvas_height}px. Place text within the safe area proportionally.\nFor portrait (height > width): prefer horizontal text bands, stack vertically.\nFor landscape (width > height): spread text horizontally, use left or right thirds."
-    style_context = f"\nUSER STYLE PREFERENCE: [{style_hint}]\nAdapt your font choices, colors, and layout to strongly match this style vibe." if style_hint else ""
+    style_context = (
+        f"\nUSER STYLE PREFERENCE: [{style_hint}]\nAdapt your font choices, colors, and layout to strongly match this style vibe."
+        if style_hint
+        else ""
+    )
 
     brand_colors_instruction = ""
     if brand_colors:
@@ -641,10 +772,10 @@ async def generate_magic_text_layout(
     context_string = aspect_context + style_context + brand_colors_instruction
 
     response = client.models.generate_content(
-        model='gemini-2.5-flash',
+        model="gemini-2.5-flash",
         contents=[
-            types.Part.from_bytes(data=image_bytes, mime_type='image/png'),
-            f"Here is the text I want to place on this image: {text}{context_string}"
+            types.Part.from_bytes(data=image_bytes, mime_type="image/png"),
+            f"Here is the text I want to place on this image: {text}{context_string}",
         ],
         config=types.GenerateContentConfig(
             system_instruction=MAGIC_TEXT_SYSTEM,
@@ -655,10 +786,12 @@ async def generate_magic_text_layout(
 
     return json.loads(response.text)
 
+
 async def generate_project_title(prompt: str) -> str:
     """Generates a short, catchy project title based on the user's prompt."""
     if not settings.GEMINI_API_KEY:
         import logging
+
         logging.warning("GEMINI_API_KEY is missing – returning mock title")
         words = prompt.split()
         return " ".join(words[:4]).title() if words else "Desain AI Baru"
@@ -673,7 +806,7 @@ async def generate_project_title(prompt: str) -> str:
 
     try:
         response = client.models.generate_content(
-            model='gemini-2.5-flash',
+            model="gemini-2.5-flash",
             contents=[f"Create a short title for this design prompt: {prompt}"],
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,
@@ -681,14 +814,21 @@ async def generate_project_title(prompt: str) -> str:
                 max_output_tokens=20,
             ),
         )
-        if hasattr(response, 'text') and response.text:
-            title = response.text.strip().replace('"', '')
+        if hasattr(response, "text") and response.text:
+            title = response.text.strip().replace('"', "")
             return title if title else "Desain AI Baru"
         else:
-            raise ValueError("Empty response from LLM (potentially blocked by safety filters)")
+            raise ValueError(
+                "Empty response from LLM (potentially blocked by safety filters)"
+            )
     except Exception as e:
         import logging
+
         logging.exception(f"Failed to generate project title: {e}")
         # Fallback to truncated prompt
         words = prompt.split()
-        return " ".join(words[:5]).title() + ("..." if len(words) > 5 else "") if words else "Desain AI Baru"
+        return (
+            " ".join(words[:5]).title() + ("..." if len(words) > 5 else "")
+            if words
+            else "Desain AI Baru"
+        )

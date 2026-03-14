@@ -11,6 +11,7 @@ from app.services.storage_service import upload_image
 
 logger = logging.getLogger(__name__)
 
+
 async def remove_background(image_bytes: bytes) -> bytes:
     """
     Removes the background from an image using Fal.ai (birefnet model).
@@ -27,16 +28,14 @@ async def remove_background(image_bytes: bytes) -> bytes:
         temp_url = await upload_image(
             image_bytes,
             content_type="image/jpeg",  # Assume JPEG, Fal will figure it out
-            prefix=f"temp_bgrm_{temp_id}"
+            prefix=f"temp_bgrm_{temp_id}",
         )
 
         # 2. Call Fal.ai background removal model
         # Using birefnet which is highly accurate for general object extraction
         result = await fal_client.run_async(
             "fal-ai/birefnet",
-            arguments={
-                "image_url": temp_url
-            },
+            arguments={"image_url": temp_url},
         )
 
         output_url = result.get("image", {}).get("url")
@@ -64,12 +63,8 @@ async def composite_product_on_background(
     Centers the product and scales it to fit nicely within the background.
     """
     try:
-        product_img = Image.open(
-            io.BytesIO(product_png_bytes)
-        ).convert("RGBA")
-        background_img = Image.open(
-            io.BytesIO(background_bytes)
-        ).convert("RGBA")
+        product_img = Image.open(io.BytesIO(product_png_bytes)).convert("RGBA")
+        background_img = Image.open(io.BytesIO(background_bytes)).convert("RGBA")
 
         bg_w, bg_h = background_img.size
 
@@ -97,10 +92,9 @@ async def composite_product_on_background(
         return output_buffer.getvalue()
 
     except Exception as e:
-        logger.exception(
-            f"Failed to composite product on background: {str(e)}"
-        )
+        logger.exception(f"Failed to composite product on background: {str(e)}")
         raise
+
 
 async def composite_with_shadow(
     product_png_bytes: bytes,
@@ -108,13 +102,14 @@ async def composite_with_shadow(
     scale_factor: float = 0.7,
     offset_x_ratio: float = 0.5,
     offset_y_ratio: float = 0.55,
-    add_shadow: bool = True
+    add_shadow: bool = True,
 ) -> bytes:
     """
     Advanced compositing: overlays product on background with scale, offset, and optional drop shadow.
     """
     try:
         from PIL import ImageFilter
+
         product_img = Image.open(io.BytesIO(product_png_bytes)).convert("RGBA")
         background_img = Image.open(io.BytesIO(background_bytes)).convert("RGBA")
 
@@ -134,7 +129,9 @@ async def composite_with_shadow(
 
             # Create black shadow from alpha mask
             product_alpha = product_img.split()[-1]
-            black_mask = Image.new("RGBA", (p_w, p_h), (0, 0, 0, 160)) # semi-transparent black
+            black_mask = Image.new(
+                "RGBA", (p_w, p_h), (0, 0, 0, 160)
+            )  # semi-transparent black
             black_mask.putalpha(product_alpha)
 
             # Paste to padded shadow image to avoid cropping when blurring

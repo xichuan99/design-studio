@@ -1,4 +1,5 @@
 """Job model for tracking async image generation tasks."""
+
 import uuid
 from sqlalchemy import Column, String, DateTime, ForeignKey, Text
 from sqlalchemy.dialects.postgresql import UUID

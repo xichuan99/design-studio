@@ -2,6 +2,7 @@
 Image generation service using Fal.ai SDXL/Flux with IP-Adapter for style transfer.
 Generates background images (no text) for the design tool.
 """
+
 from __future__ import annotations
 import os
 import fal_client

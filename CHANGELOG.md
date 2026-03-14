@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-03-14
+
+### Added
+- **Social Media Auto-Resize**: Batch export designs into various social media formats with a new dialog and off-screen resizing.
+- **Standalone Tools Cross-linking**: Added "Continue to Editor" functionality to seamlessly transition from standalone tools (Background Swap, Upscaler) to the main Editor.
+- **Credit History**: New database model, API endpoints, and frontend settings display to track credit transactions.
+- **AI Project Title Generation**: Automatic project naming using Gemini 2.0 Flash Lite based on user prompts.
+
+### Changed
+- **AI Studio Visual Polish**: Enhanced aesthetic consistency across AI features with refined typography and container styles.
+- **Error Handling & UX**: Migrated simple alerts to a unified 3-tier system (`ErrorModal`, `InlineErrorBanner`, `toast`) and added visual warnings for low credits.
+- **Codebase Cleanup**: Audited and removed obsolete features related to earlier AI tool iterations.
+
+### Fixed
+- Fixed Brand Settings loading indefinitely in the UI.
+- Fixed backend API issues preventing Brand Kits from saving.
+- Fixed GitHub Actions CI compile errors related to Recharts Tooltip typings in `ProductDetail.tsx` and general workflow failures.
+- Fixed Ruff linting errors (trailing whitespace, blank lines, undefined variables) across backend AI tools services (`ai_tools.py`, `retouch_service.py`, `id_photo_service.py`).
+
 ## [1.0.0] - 2026-03-13
 
 ### Added

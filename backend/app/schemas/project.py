@@ -18,9 +18,7 @@ class CanvasElementSchema(BaseModel):
     fill: Optional[str] = None
     align: Optional[str] = None
     # Add other flexible properties using extra fields if necessary
-    model_config = {
-        "extra": "allow"
-    }
+    model_config = {"extra": "allow"}
 
 
 class ProjectCanvasState(BaseModel):

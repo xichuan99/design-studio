@@ -37,16 +37,16 @@ export default function ToolsHubPage() {
     {
       title: "Magic Eraser",
       description: "Hapus objek yang mengganggu atau noda dari foto Anda dengan sekali usap.",
-      icon: <Eraser className="w-8 h-8 text-gray-400" />,
-      href: "#",
-      isReady: false,
+      icon: <Eraser className="w-8 h-8 text-pink-500" />,
+      href: "/tools/magic-eraser",
+      isReady: true,
     },
     {
       title: "Generative Expand",
       description: "Perluas area (outpaint) foto Anda menyesuaikan rasio tanpa memotong objek utama.",
-      icon: <MoveDiagonal className="w-8 h-8 text-gray-400" />,
-      href: "#",
-      isReady: false,
+      icon: <MoveDiagonal className="w-8 h-8 text-indigo-500" />,
+      href: "/tools/generative-expand",
+      isReady: true,
     },
   ];
 

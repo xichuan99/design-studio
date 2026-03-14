@@ -1,4 +1,5 @@
 """Updated designs API with generate and job status endpoints."""
+
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -12,7 +13,7 @@ from app.schemas.design import (
     CopywritingRequest,
     CopywritingResponse,
     GenerateTitleRequest,
-    GenerateTitleResponse
+    GenerateTitleResponse,
 )
 from app.services.llm_service import parse_design_text
 from app.models.job import Job
@@ -21,6 +22,7 @@ from app.api.rate_limit import rate_limit_dependency
 from app.models.user import User
 
 router = APIRouter()
+
 
 @router.post("/upload")
 async def upload_user_image(
@@ -41,13 +43,15 @@ async def upload_user_image(
         url = await upload_image(
             image_bytes=content,
             content_type=file.content_type,
-            prefix=f"uploads/{current_user.id}"
+            prefix=f"uploads/{current_user.id}",
         )
         return {"url": url}
     except Exception as e:
         import logging
+
         logging.exception("Upload endpoint failed")
         raise HTTPException(status_code=500, detail=f"Failed to upload image: {str(e)}")
+
 
 @router.post("/parse", response_model=ParsedTextElements)
 async def parse_text(request: DesignGenerationRequest) -> ParsedTextElements:
@@ -58,51 +62,69 @@ async def parse_text(request: DesignGenerationRequest) -> ParsedTextElements:
         parsed = await parse_design_text(
             raw_text=request.raw_text,
             integrated_text=request.integrated_text,
-            clarification_answers=request.clarification_answers
+            clarification_answers=request.clarification_answers,
         )
         return parsed
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to parse text: {str(e)}")
 
+
 @router.post("/clarify")
 async def clarify_design_brief(request: DesignGenerationRequest) -> dict:
     """Analyze raw text and return 3-4 specific clarifying questions."""
     from app.services.llm_service import generate_design_brief_questions
+
     try:
         result = await generate_design_brief_questions(request.raw_text)
         return result
     except Exception as e:
         import logging
+
         logging.exception("Failed to generate clarification questions")
-        raise HTTPException(status_code=500, detail=f"Failed to generate clarification questions: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate clarification questions: {str(e)}",
+        )
+
 
 @router.post("/clarify-unified")
 async def clarify_unified_brief(request: DesignGenerationRequest) -> dict:
     """Analyze raw text and return combined clarifying questions for both design and copywriting."""
     from app.services.llm_service import generate_unified_brief_questions
+
     try:
         result = await generate_unified_brief_questions(request.raw_text)
         return result
     except Exception as e:
         import logging
+
         logging.exception("Failed to generate unified clarification questions")
-        raise HTTPException(status_code=500, detail=f"Failed to generate unified clarification questions: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate unified clarification questions: {str(e)}",
+        )
+
 
 @router.post("/modify-prompt")
 async def modify_prompt(request: ModifyPromptRequest) -> dict:
     """Modifies visual prompt parts via Gemini based on Indonesian text instructions."""
     from app.services.llm_service import modify_visual_prompt
+
     try:
         result = await modify_visual_prompt(
             original_parts=request.original_prompt_parts,
             original_visual_prompt=request.original_visual_prompt,
-            instruction=request.user_instruction
+            instruction=request.user_instruction,
         )
         return result
     except Exception as e:
         import logging
+
         logging.exception("Failed to modify prompt")
-        raise HTTPException(status_code=500, detail=f"Failed to modify prompt: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to modify prompt: {str(e)}"
+        )
+
 
 @router.post("/magic-text")
 async def magic_text_layout(
@@ -111,6 +133,7 @@ async def magic_text_layout(
 ) -> dict:
     """Uses Vision AI to layout user text onto an existing canvas image."""
     from app.services.llm_service import generate_magic_text_layout
+
     try:
         image_base64 = request.get("image_base64")
         text = request.get("text")
@@ -124,17 +147,24 @@ async def magic_text_layout(
 
         canvas_width = request.get("canvas_width", 1024)
         canvas_height = request.get("canvas_height", 1024)
-        result = await generate_magic_text_layout(image_base64=image_base64, text=text, style_hint=style_hint, canvas_width=canvas_width, canvas_height=canvas_height)
+        result = await generate_magic_text_layout(
+            image_base64=image_base64,
+            text=text,
+            style_hint=style_hint,
+            canvas_width=canvas_width,
+            canvas_height=canvas_height,
+        )
         return result
     except HTTPException:
         raise
     except Exception as e:
         import logging
+
         logging.exception("Failed to generate magic text layout")
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to generate layout: {str(e)}"
+            status_code=500, detail=f"Failed to generate layout: {str(e)}"
         )
+
 
 @router.post("/generate-title", response_model=GenerateTitleResponse)
 async def api_generate_project_title(
@@ -143,13 +173,16 @@ async def api_generate_project_title(
 ):
     """Generates a short project title from a prompt via LLM."""
     from app.services.llm_service import generate_project_title
+
     try:
         title = await generate_project_title(request.prompt)
         return GenerateTitleResponse(title=title)
     except Exception:
         import logging
+
         logging.exception("Failed to generate project title")
         raise HTTPException(status_code=500, detail="Failed to generate project title")
+
 
 @router.post("/remove-background")
 async def api_remove_background(
@@ -161,38 +194,34 @@ async def api_remove_background(
     Returns the URL of the processed PNG transparent image.
     """
     if not file.content_type.startswith("image/"):
-        raise HTTPException(
-            status_code=400, detail="File must be an image"
-        )
+        raise HTTPException(status_code=400, detail="File must be an image")
 
     # Read file content safely
     content = await file.read()
     if len(content) > 10 * 1024 * 1024:  # 10MB limit
-        raise HTTPException(
-            status_code=400,
-            detail="Image size exceeds 10MB limit"
-        )
+        raise HTTPException(status_code=400, detail="Image size exceeds 10MB limit")
 
     from app.services.bg_removal_service import remove_background
+
     try:
         no_bg_bytes = await remove_background(content)
 
         # Upload the transparent PNG to our storage
         from app.services.storage_service import upload_image
+
         result_url = await upload_image(
-            no_bg_bytes,
-            content_type="image/png",
-            prefix=f"nobg_{current_user.id}"
+            no_bg_bytes, content_type="image/png", prefix=f"nobg_{current_user.id}"
         )
 
         return {"url": result_url}
     except Exception as e:
         import logging
+
         logging.exception("Failed to remove background")
         raise HTTPException(
-            status_code=500,
-            detail=f"Background removal failed: {str(e)}"
+            status_code=500, detail=f"Background removal failed: {str(e)}"
         )
+
 
 @router.post("/clarify-copywriting")
 async def clarify_copywriting(
@@ -201,13 +230,16 @@ async def clarify_copywriting(
 ) -> dict:
     """Generates 3-4 clarification questions for copywriting."""
     from app.services.llm_service import generate_copywriting_questions
+
     try:
         result = await generate_copywriting_questions(request.product_description)
         return result
     except Exception:
         import logging
+
         logging.exception("Failed to clarify copywriting")
         raise HTTPException(status_code=500, detail="Failed to clarify copywriting")
+
 
 @router.post("/generate-copywriting", response_model=CopywritingResponse)
 async def generate_copywriting(
@@ -216,18 +248,21 @@ async def generate_copywriting(
 ):
     """Generates 3 variations of copywriting based on product description and clarifications."""
     from app.services.llm_service import generate_ai_copywriting
+
     try:
         result = await generate_ai_copywriting(
             product_description=request.product_description,
             tone=request.tone,
             brand_name=request.brand_name,
-            clarification_answers=request.clarification_answers
+            clarification_answers=request.clarification_answers,
         )
         return result
     except Exception:
         import logging
+
         logging.exception("Failed to generate copywriting")
         raise HTTPException(status_code=500, detail="Failed to generate copywriting")
+
 
 @router.post("/generate")
 async def generate_design(
@@ -244,11 +279,12 @@ async def generate_design(
     if current_user.credits_remaining <= 0:
         raise HTTPException(
             status_code=402,
-            detail="Insufficient credits. Please upgrade or wait for a refill."
+            detail="Insufficient credits. Please upgrade or wait for a refill.",
         )
 
     # Deduct credit
     from app.services.credit_service import log_credit_change
+
     await log_credit_change(db, current_user, -1, "Generate desain")
 
     # Create a job record in the database
@@ -272,12 +308,12 @@ async def generate_design(
         from app.models.brand_kit import BrandKit
         from sqlalchemy.future import select
         import uuid
+
         try:
             kit_id_uuid = uuid.UUID(request.brand_kit_id)
             kit_result = await db.execute(
                 select(BrandKit).where(
-                    BrandKit.id == kit_id_uuid,
-                    BrandKit.user_id == current_user.id
+                    BrandKit.id == kit_id_uuid, BrandKit.user_id == current_user.id
                 )
             )
             kit = kit_result.scalar_one_or_none()
@@ -299,31 +335,50 @@ async def generate_design(
                         if hex_val:
                             color_strs.append(f"{role}: {hex_val}")
                     if color_strs:
-                        parts.append("Use ONLY these exact hex colors: " + ", ".join(color_strs) + ".")
+                        parts.append(
+                            "Use ONLY these exact hex colors: "
+                            + ", ".join(color_strs)
+                            + "."
+                        )
                 if kit.typography:
                     fonts = []
                     if kit.typography.get("primaryFont"):
-                        fonts.append(f"Headline Font: {kit.typography.get('primaryFont')}")
+                        fonts.append(
+                            f"Headline Font: {kit.typography.get('primaryFont')}"
+                        )
                     if kit.typography.get("secondaryFont"):
-                        fonts.append(f"Body Font: {kit.typography.get('secondaryFont')}")
+                        fonts.append(
+                            f"Body Font: {kit.typography.get('secondaryFont')}"
+                        )
                     if fonts:
-                        parts.append("Typography constraints: " + ", ".join(fonts) + ".")
+                        parts.append(
+                            "Typography constraints: " + ", ".join(fonts) + "."
+                        )
                 if not parts:
                     return ""
-                return " CRITICAL INSTRUCTION: " + " ".join(parts) + " Do not improvise or add any other colors or fonts."
+                return (
+                    " CRITICAL INSTRUCTION: "
+                    + " ".join(parts)
+                    + " Do not improvise or add any other colors or fonts."
+                )
 
             strict_brand_suffix = build_strict_brand_suffix(kit)
         except Exception as e:
             import logging
+
             logging.error(f"Failed to load brand kit {request.brand_kit_id}: {e}")
 
     # Use Celery+Fal.ai only when explicitly enabled (requires running celery worker)
     import os
-    _use_celery = app_settings.FAL_KEY and os.getenv("USE_CELERY", "false").lower() == "true"
+
+    _use_celery = (
+        app_settings.FAL_KEY and os.getenv("USE_CELERY", "false").lower() == "true"
+    )
 
     if _use_celery:
         try:
             from app.workers.tasks import generate_design_task
+
             generate_design_task.delay(
                 job_id=str(job.id),
                 raw_text=request.raw_text,
@@ -332,7 +387,7 @@ async def generate_design(
                 reference_url=getattr(request, "reference_image_url", None),
                 integrated_text=request.integrated_text,
                 brand_colors=brand_colors,
-                brand_typography=brand_typography
+                brand_typography=brand_typography,
             )
             return {
                 "job_id": str(job.id),
@@ -343,12 +398,20 @@ async def generate_design(
             job.status = "failed"
             job.error_message = f"Failed to dispatch task: {str(e)}"
             from app.services.credit_service import log_credit_change
-            await log_credit_change(db, current_user, 1, "Refund: gagal generate desain")
+
+            await log_credit_change(
+                db, current_user, 1, "Refund: gagal generate desain"
+            )
             await db.commit()
-            raise HTTPException(status_code=500, detail=f"Image generation failed to start: {str(e)}")
+            raise HTTPException(
+                status_code=500, detail=f"Image generation failed to start: {str(e)}"
+            )
 
     import logging
-    logging.info("Using Gemini synchronous generation (Nano Banana / Imagen) for image generation")
+
+    logging.info(
+        "Using Gemini synchronous generation (Nano Banana / Imagen) for image generation"
+    )
     try:
         from datetime import datetime, timezone
 
@@ -357,7 +420,7 @@ async def generate_design(
             request.raw_text,
             integrated_text=request.integrated_text,
             brand_colors=brand_colors,
-            brand_typography=brand_typography
+            brand_typography=brand_typography,
         )
 
         # Assemble visual prompt from parts if available (user might have edited/toggled them)
@@ -365,7 +428,9 @@ async def generate_design(
             # We filter for enabled parts just in case, though the backend /generate endpoint
             # currently just takes raw_text and re-parses it. This is prep for when
             # frontend sends the modified parsed object directly or as an assembled prompt.
-            assembled = ", ".join(p.value for p in parsed.visual_prompt_parts if p.enabled)
+            assembled = ", ".join(
+                p.value for p in parsed.visual_prompt_parts if p.enabled
+            )
             visual_prompt_final = assembled if assembled else parsed.visual_prompt
         else:
             visual_prompt_final = parsed.visual_prompt
@@ -392,7 +457,7 @@ async def generate_design(
 
         # Determine the best model and text instructions based on integration needs
         if request.integrated_text:
-            model_name = 'gemini-3.1-flash-image-preview'
+            model_name = "gemini-3.1-flash-image-preview"
 
             # Build all text elements for integrated rendering
             text_parts = [f"'{parsed.headline}'"]
@@ -404,15 +469,16 @@ async def generate_design(
 
             text_instruction = f"high quality typography, clearly readable text showing {all_text}, with proper visual hierarchy, stylized to perfectly integrate organically into the scene"
         else:
-            model_name = 'imagen-4.0-fast-generate-001'  # Keep imagen for non-text backgrounds as it excels at pure aesthetics
+            model_name = "imagen-4.0-fast-generate-001"  # Keep imagen for non-text backgrounds as it excels at pure aesthetics
             text_instruction = "professional graphic design background, copy space area for text overlay, no text, no letters, no words"
 
         import re
+
         def sanitize_prompt_for_imagen(prompt: str) -> str:
             replacements = {
-                r'\b(child|children|kid|kids|boy|girl|toddler|baby|infant|teen|teenager|young student|school child)(s)?\b': 'person',
-                r'\b(young singer)\b': 'singer',
-                r'\b(elementary school)\b': '', # remove specific young age contexts
+                r"\b(child|children|kid|kids|boy|girl|toddler|baby|infant|teen|teenager|young student|school child)(s)?\b": "person",
+                r"\b(young singer)\b": "singer",
+                r"\b(elementary school)\b": "",  # remove specific young age contexts
             }
             sanitized = prompt
             for pattern, replacement in replacements.items():
@@ -427,7 +493,7 @@ async def generate_design(
         client = genai.Client(api_key=app_settings.GEMINI_API_KEY)
 
         image_bytes = None
-        if model_name == 'gemini-3.1-flash-image-preview':
+        if model_name == "gemini-3.1-flash-image-preview":
             # Nano Banana 2 uses generate_content for image generation
             # Explicitly append aspect ratio to the prompt
             nb2_prompt = f"{enhanced_prompt}, aspect ratio {request.aspect_ratio}"
@@ -458,32 +524,46 @@ async def generate_design(
                 image_bytes = response.generated_images[0].image.image_bytes
 
         if image_bytes:
-
             # --- Flow A: Product Composite Logic ---
-            if getattr(request, "remove_product_bg", False) and getattr(request, "product_image_url", None):
+            if getattr(request, "remove_product_bg", False) and getattr(
+                request, "product_image_url", None
+            ):
                 try:
                     # Download the product image locally
                     import httpx
+
                     async with httpx.AsyncClient() as http_client:
                         product_resp = await http_client.get(request.product_image_url)
                         product_resp.raise_for_status()
                         product_bytes = product_resp.content
 
                     # 1. Remove background from product
-                    from app.services.bg_removal_service import remove_background, composite_product_on_background
+                    from app.services.bg_removal_service import (
+                        remove_background,
+                        composite_product_on_background,
+                    )
+
                     product_nobg_bytes = await remove_background(product_bytes)
 
                     # 2. Composite the isolated product on top of the newly generated Imagen background
-                    image_bytes = await composite_product_on_background(product_nobg_bytes, image_bytes)
+                    image_bytes = await composite_product_on_background(
+                        product_nobg_bytes, image_bytes
+                    )
                 except Exception as comp_e:
                     import logging
-                    logging.exception(f"Failed product composite during generation, falling back to raw background: {str(comp_e)}")
+
+                    logging.exception(
+                        f"Failed product composite during generation, falling back to raw background: {str(comp_e)}"
+                    )
                     # We fallback to the raw background image if compositing fails
 
             from app.services.storage_service import upload_image
+
             result_url = await upload_image(
                 image_bytes,
-                content_type="image/png" if not getattr(request, "remove_product_bg", False) else "image/jpeg",
+                content_type="image/png"
+                if not getattr(request, "remove_product_bg", False)
+                else "image/jpeg",
                 prefix="generated",
             )
             job.result_url = result_url
@@ -495,6 +575,7 @@ async def generate_design(
             job.completed_at = datetime.now(timezone.utc)
             # Refund credit
             from app.services.credit_service import log_credit_change
+
             await log_credit_change(db, current_user, 1, "Refund: prompt ditolak AI")
 
         await db.commit()
@@ -510,9 +591,13 @@ async def generate_design(
         job.status = "failed"
         job.error_message = str(e)
         from app.services.credit_service import log_credit_change
+
         await log_credit_change(db, current_user, 1, "Refund: sistem error")
         await db.commit()
-        raise HTTPException(status_code=500, detail=f"Image generation failed: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Image generation failed: {str(e)}"
+        )
+
 
 @router.get("/my-generations")
 async def get_my_generations(
@@ -527,7 +612,7 @@ async def get_my_generations(
         .where(
             Job.user_id == current_user.id,
             Job.status == "completed",
-            Job.result_url.isnot(None)
+            Job.result_url.isnot(None),
         )
         .order_by(desc(Job.created_at))
         .offset(offset)
@@ -545,6 +630,7 @@ async def get_my_generations(
         }
         for job in jobs
     ]
+
 
 @router.get("/jobs/{job_id}")
 async def get_job_status(
@@ -565,14 +651,18 @@ async def get_job_status(
     }
 
     if job.status == "completed":
-        response.update({
-            "result_url": job.result_url,
-            "headline": job.parsed_headline,
-            "sub_headline": job.parsed_sub_headline,
-            "cta": job.parsed_cta,
-            "visual_prompt": job.visual_prompt,
-            "completed_at": job.completed_at.isoformat() if job.completed_at else None,
-        })
+        response.update(
+            {
+                "result_url": job.result_url,
+                "headline": job.parsed_headline,
+                "sub_headline": job.parsed_sub_headline,
+                "cta": job.parsed_cta,
+                "visual_prompt": job.visual_prompt,
+                "completed_at": job.completed_at.isoformat()
+                if job.completed_at
+                else None,
+            }
+        )
     elif job.status == "failed":
         response["error_message"] = job.error_message
 

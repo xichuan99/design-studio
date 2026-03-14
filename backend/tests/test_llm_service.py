@@ -2,6 +2,7 @@ import pytest
 from app.services.llm_service import parse_design_text
 from app.schemas.design import ParsedTextElements
 
+
 @pytest.mark.asyncio
 async def test_parse_food_promo():
     result = await parse_design_text("Promo Seblak Pedas, Diskon 50% khusus Jumat")
@@ -11,12 +12,14 @@ async def test_parse_food_promo():
     assert len(result.suggested_colors) >= 1
     assert all(c.startswith("#") for c in result.suggested_colors)
 
+
 @pytest.mark.asyncio
 async def test_parse_minimal():
     result = await parse_design_text("Flash Sale")
     assert isinstance(result, ParsedTextElements)
     assert result.headline
     assert result.visual_prompt
+
 
 @pytest.mark.asyncio
 async def test_parse_long_text():
@@ -27,6 +30,7 @@ async def test_parse_long_text():
     assert result.sub_headline is not None
     assert result.cta is not None
 
+
 @pytest.mark.asyncio
 async def test_output_matches_schema():
     result = await parse_design_text("Bakso Mercon Promo Beli 2 Gratis 1")
@@ -35,6 +39,7 @@ async def test_output_matches_schema():
     assert isinstance(result.visual_prompt, str)
     assert isinstance(result.suggested_colors, list)
 
+
 @pytest.mark.asyncio
 async def test_parse_english_text():
     result = await parse_design_text("Summer Collection 2026 - 30% OFF everything")
@@ -42,17 +47,26 @@ async def test_parse_english_text():
     assert result.headline
     assert result.visual_prompt
 
+
 @pytest.mark.asyncio
 async def test_modify_visual_prompt():
     from app.services.llm_service import modify_visual_prompt
+
     original_parts = [
-        {"category": "subject", "label": "Objek Utama", "value": "A cup of coffee", "enabled": True},
-        {"category": "style", "label": "Gaya", "value": "minimalist", "enabled": True}
+        {
+            "category": "subject",
+            "label": "Objek Utama",
+            "value": "A cup of coffee",
+            "enabled": True,
+        },
+        {"category": "style", "label": "Gaya", "value": "minimalist", "enabled": True},
     ]
     original_visual_prompt = "A cup of coffee, minimalist"
     instruction = "Buat lebih gelap dan dramatis"
 
-    result = await modify_visual_prompt(original_parts, original_visual_prompt, instruction)
+    result = await modify_visual_prompt(
+        original_parts, original_visual_prompt, instruction
+    )
 
     assert "modified_prompt_parts" in result
     assert "modified_visual_prompt" in result

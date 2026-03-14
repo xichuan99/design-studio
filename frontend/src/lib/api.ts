@@ -493,9 +493,58 @@ export function useProjectApi() {
         return response.json();
     };
 
+    const magicEraser = async (
+        file: File,
+        mask: File,
+        prompt?: string
+    ): Promise<{ url: string, width?: number, height?: number }> => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('mask', mask);
+        if (prompt) formData.append('prompt', prompt);
 
+        const response = await fetch(`${API_BASE_URL}/api/tools/magic-eraser`, {
+            method: 'POST',
+            headers: getHeaders(true),
+            body: formData,
+        });
+        
+        if (!response.ok) {
+            const errBase = await response.json().catch(() => ({}));
+            throw new Error(errBase.detail || 'Failed to apply Magic Eraser');
+        }
+        return response.json();
+    };
 
-    // --- Brand Kit API ---
+    const generativeExpand = async (
+        file: File,
+        direction?: string,
+        pixels?: number,
+        targetWidth?: number,
+        targetHeight?: number,
+        prompt?: string
+    ): Promise<{ url: string, width?: number, height?: number }> => {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        if (direction) formData.append('direction', direction);
+        if (pixels !== undefined) formData.append('pixels', pixels.toString());
+        if (targetWidth !== undefined) formData.append('target_width', targetWidth.toString());
+        if (targetHeight !== undefined) formData.append('target_height', targetHeight.toString());
+        if (prompt) formData.append('prompt', prompt);
+
+        const response = await fetch(`${API_BASE_URL}/api/tools/generative-expand`, {
+            method: 'POST',
+            headers: getHeaders(true),
+            body: formData,
+        });
+        
+        if (!response.ok) {
+            const errBase = await response.json().catch(() => ({}));
+            throw new Error(errBase.detail || 'Failed to apply Generative Expand');
+        }
+        return response.json();
+    };    // --- Brand Kit API ---
     const extractBrandColors = async (file: File): Promise<{ colors: ColorSwatch[] }> => {
         const formData = new FormData();
         formData.append('file', file);
@@ -574,5 +623,7 @@ export function useProjectApi() {
         getCreditHistory,
         retouchImage,
         generateIdPhoto,
+        magicEraser,
+        generativeExpand,
     };
 }

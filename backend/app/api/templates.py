@@ -1,4 +1,5 @@
 """Templates API: list and retrieve design templates."""
+
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession

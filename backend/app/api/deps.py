@@ -8,10 +8,11 @@ from app.models.user import User
 
 security = HTTPBearer(auto_error=False)
 
+
 async def get_current_user(
     request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ) -> User:
     # Support X-User-Email bypass for dev mode as documented in README
     dev_email = request.headers.get("X-User-Email")
@@ -52,7 +53,7 @@ async def get_current_user(
             email=email,
             name=name or "Unknown User",
             provider="google",
-            credits_remaining=10
+            credits_remaining=10,
         )
         db.add(user)
         await db.commit()

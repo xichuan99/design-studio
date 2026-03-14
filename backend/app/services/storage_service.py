@@ -2,6 +2,7 @@
 Cloud storage service for uploading/downloading images to S3-compatible storage
 (Backblaze B2, Cloudflare R2, AWS S3).
 """
+
 from __future__ import annotations
 import io
 import uuid
@@ -34,20 +35,34 @@ async def upload_image(
     prefix: str = "generated",
 ) -> str:
     """Upload an image to S3 and return the public URL."""
-    if not settings.S3_ACCESS_KEY or settings.S3_ACCESS_KEY == "your_b2_application_key_id":
+    if (
+        not settings.S3_ACCESS_KEY
+        or settings.S3_ACCESS_KEY == "your_b2_application_key_id"
+    ):
         # Dev-mode fallback: save to local filesystem
         import os
         import logging
+
         logging.warning("S3 credentials not configured – saving image locally")
         ext = "png" if "png" in content_type else "jpg"
         if key is None:
             key = generate_key(prefix, ext)
-        local_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "static", "uploads", os.path.dirname(key))
+        local_dir = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+            "static",
+            "uploads",
+            os.path.dirname(key),
+        )
         os.makedirs(local_dir, exist_ok=True)
-        local_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "static", "uploads", key)
+        local_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+            "static",
+            "uploads",
+            key,
+        )
         with open(local_path, "wb") as f:
             f.write(image_bytes)
-        base = settings.BACKEND_BASE_URL.rstrip('/')
+        base = settings.BACKEND_BASE_URL.rstrip("/")
         return f"{base}/static/uploads/{key}"
 
     ext = "png" if "png" in content_type else "jpg"
@@ -74,13 +89,24 @@ async def upload_image(
         # Fallback to local storage if S3 fails (bucket doesn't exist, etc.)
         import os
         import logging
+
         logging.warning(f"S3 upload failed ({e}) – saving image locally")
-        local_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "static", "uploads", os.path.dirname(key))
+        local_dir = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+            "static",
+            "uploads",
+            os.path.dirname(key),
+        )
         os.makedirs(local_dir, exist_ok=True)
-        local_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "static", "uploads", key)
+        local_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+            "static",
+            "uploads",
+            key,
+        )
         with open(local_path, "wb") as f:
             f.write(image_bytes)
-        base = settings.BACKEND_BASE_URL.rstrip('/')
+        base = settings.BACKEND_BASE_URL.rstrip("/")
         return f"{base}/static/uploads/{key}"
 
 

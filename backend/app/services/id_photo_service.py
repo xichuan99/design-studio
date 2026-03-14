@@ -10,16 +10,13 @@ from app.services import bg_removal_service
 logger = logging.getLogger(__name__)
 
 # Standard ID photo pixel sizes at 300 DPI (approximate)
-ID_SIZES = {
-    "2x3": (236, 354),
-    "3x4": (354, 472),
-    "4x6": (472, 709)
-}
+ID_SIZES = {"2x3": (236, 354), "3x4": (354, 472), "4x6": (472, 709)}
 
 BG_COLORS = {
-    "red": (204, 0, 0),    # Pasfoto Studio Red
-    "blue": (0, 71, 171)   # Pasfoto Studio Blue
+    "red": (204, 0, 0),  # Pasfoto Studio Red
+    "blue": (0, 71, 171),  # Pasfoto Studio Blue
 }
+
 
 async def generate_id_photo(
     image_bytes: bytes,
@@ -27,7 +24,7 @@ async def generate_id_photo(
     size_name: str = "3x4",
     custom_w_cm: Optional[float] = None,
     custom_h_cm: Optional[float] = None,
-    output_format: str = "jpeg"
+    output_format: str = "jpeg",
 ) -> bytes:
     """
     Generates a print-ready ID photo (pasfoto) at 300 DPI.
@@ -50,10 +47,12 @@ async def generate_id_photo(
 
         # 2. Detect face for accurate cropping
         mp_face_detection = mp.solutions.face_detection
-        np_img = np.array(person_img.convert('RGB'))
+        np_img = np.array(person_img.convert("RGB"))
 
         faces = []
-        with mp_face_detection.FaceDetection(model_selection=1, min_detection_confidence=0.5) as face_detection:
+        with mp_face_detection.FaceDetection(
+            model_selection=1, min_detection_confidence=0.5
+        ) as face_detection:
             results = face_detection.process(np_img)
             if results.detections:
                 for detection in results.detections:
@@ -82,14 +81,21 @@ async def generate_id_photo(
 
             # Standard Pasfoto: Face height is ~50-60% of total image height
             desired_face_h = int(target_h * 0.55)
-            scale = desired_face_h / max(h, 1) # prevent div by zero
+            scale = desired_face_h / max(h, 1)  # prevent div by zero
 
             new_w = int(img_w * scale)
             new_h = int(img_h * scale)
-            person_img_scaled = person_img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+            person_img_scaled = person_img.resize(
+                (new_w, new_h), Image.Resampling.LANCZOS
+            )
 
             # Recalculate face box relative to new scaled dimensions
-            scaled_x, scaled_y, scaled_w, _ = int(x * scale), int(y * scale), int(w * scale), int(h * scale)
+            scaled_x, scaled_y, scaled_w, _ = (
+                int(x * scale),
+                int(y * scale),
+                int(w * scale),
+                int(h * scale),
+            )
 
             # Position face: horizontally centered, vertically with ~12% clearance at the top
             crop_top = scaled_y - int(target_h * 0.12)
@@ -104,15 +110,19 @@ async def generate_id_photo(
             if img_aspect > target_aspect:
                 new_h = target_h
                 new_w = int(target_h * img_aspect)
-                person_img_scaled = person_img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+                person_img_scaled = person_img.resize(
+                    (new_w, new_h), Image.Resampling.LANCZOS
+                )
                 crop_top = 0
                 crop_left = (new_w - target_w) // 2
             else:
                 new_w = target_w
                 new_h = int(target_w / img_aspect)
-                person_img_scaled = person_img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+                person_img_scaled = person_img.resize(
+                    (new_w, new_h), Image.Resampling.LANCZOS
+                )
                 crop_left = 0
-                crop_top = int(new_h * 0.05) # Assume top of head is 5% down
+                crop_top = int(new_h * 0.05)  # Assume top of head is 5% down
 
             crop_right = crop_left + target_w
             crop_bottom = crop_top + target_h
@@ -134,7 +144,9 @@ async def generate_id_photo(
         adj_crop_bottom = crop_bottom + shift_y
 
         # Execute crop
-        cropped_person = canvas.crop((adj_crop_left, adj_crop_top, adj_crop_right, adj_crop_bottom))
+        cropped_person = canvas.crop(
+            (adj_crop_left, adj_crop_top, adj_crop_right, adj_crop_bottom)
+        )
 
         # 4. Fill with requested solid background color
         final_img = Image.new("RGB", (target_w, target_h), bg_rgb)
@@ -151,6 +163,7 @@ async def generate_id_photo(
     except Exception as e:
         logger.exception(f"Failed to generate ID photo: {str(e)}")
         raise
+
 
 def generate_print_sheet(photo_bytes: bytes, output_format: str = "jpeg") -> bytes:
     """
@@ -194,7 +207,7 @@ def generate_print_sheet(photo_bytes: bytes, output_format: str = "jpeg") -> byt
         if output_format.lower() == "png":
             sheet.save(out_buffer, format="PNG", dpi=(300, 300))
         else:
-             sheet.save(out_buffer, format="JPEG", quality=100, dpi=(300, 300))
+            sheet.save(out_buffer, format="JPEG", quality=100, dpi=(300, 300))
         return out_buffer.getvalue()
     except Exception as e:
         logger.exception(f"Failed to generate print sheet: {str(e)}")

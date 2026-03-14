@@ -5,7 +5,10 @@ from app.models.credit_transaction import CreditTransaction
 
 logger = logging.getLogger(__name__)
 
-async def log_credit_change(db: AsyncSession, user: User, amount: int, description: str):
+
+async def log_credit_change(
+    db: AsyncSession, user: User, amount: int, description: str
+):
     """
     Modifies the user's credits_remaining and logs a CreditTransaction.
     Note: The caller is responsible for eventually calling db.commit().
@@ -23,7 +26,7 @@ async def log_credit_change(db: AsyncSession, user: User, amount: int, descripti
             user_id=user.id,
             amount=amount,
             balance_after=user.credits_remaining,
-            description=description
+            description=description,
         )
         db.add(transaction)
 

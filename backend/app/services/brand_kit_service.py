@@ -27,8 +27,7 @@ REQUIREMENTS:
 
 
 async def extract_colors_from_image(
-    image_bytes: bytes,
-    mime_type: str = "image/png"
+    image_bytes: bytes, mime_type: str = "image/png"
 ) -> List[Dict[str, Any]]:
     """
     Analyzes an image using Gemini Vision to extract a 5-color brand palette.
@@ -38,13 +37,10 @@ async def extract_colors_from_image(
 
     try:
         response = client.models.generate_content(
-            model='gemini-2.5-flash',
+            model="gemini-2.5-flash",
             contents=[
                 "Extract the 5 dominant brand colors from this logo/image. Respond with pure JSON only.",
-                {
-                    "mime_type": mime_type,
-                    "data": image_bytes
-                }
+                {"mime_type": mime_type, "data": image_bytes},
             ],
             config=genai.types.GenerateContentConfig(
                 system_instruction=BRAND_COLORS_SYSTEM_PROMPT,

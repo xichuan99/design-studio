@@ -1,0 +1,62 @@
+from typing import Optional
+
+from fastapi import HTTPException
+import fal_client
+
+
+async def inpaint_image(
+    image_url: str, mask_url: str, prompt: Optional[str] = None
+) -> dict:
+    """
+    Inpaints an image using the fal-ai/flux-pro/v1/fill model.
+
+    Args:
+        image_url: URL of the base image.
+        mask_url: URL of the mask image (white=fill, black=keep).
+        prompt: Optional prompt to describe the desired fill content.
+                For "magic eraser" object removal, this can be empty or something like "background".
+
+    Returns:
+        dict: Containing the 'url', 'width', and 'height' of the processed image.
+    """
+    try:
+        arguments = {
+            "image_url": image_url,
+            "mask_url": mask_url,
+            "sync_mode": True,
+            "output_format": "jpeg",
+        }
+
+        if prompt:
+            arguments["prompt"] = prompt
+
+        # We use fal-ai/flux-pro/v1/fill as it offers excellent inpainting capabilities
+        result = await fal_client.run_async(
+            "fal-ai/flux-pro/v1/fill", arguments=arguments
+        )
+
+        # Result structure usually contains 'images' or 'image'
+        if "images" in result and len(result["images"]) > 0:
+            image_data = result["images"][0]
+        elif "image" in result:
+            image_data = result["image"]
+        else:
+            # Fallback looking for direct url
+            image_data = {"url": result.get("image_url") or result.get("url")}
+
+        if not image_data or not image_data.get("url"):
+            raise HTTPException(
+                status_code=500, detail="Failed to get valid output from model"
+            )
+
+        return {
+            "url": image_data["url"],
+            "width": image_data.get("width"),
+            "height": image_data.get("height"),
+        }
+
+    except Exception as e:
+        print(f"Error in inpaint_image: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Inpainting service error: {str(e)}"
+        )

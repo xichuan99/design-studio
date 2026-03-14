@@ -5,11 +5,16 @@ from sqlalchemy.orm import relationship
 import uuid
 from app.core.database import Base
 
+
 class DesignHistory(Base):
     __tablename__ = "design_history"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    project_id = Column(UUID(as_uuid=True), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    project_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("projects.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     background_url = Column(String, nullable=False)
     text_layers = Column(JSON, nullable=False)
     generation_params = Column(JSON, nullable=True)

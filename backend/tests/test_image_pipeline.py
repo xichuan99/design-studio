@@ -1,24 +1,39 @@
 """Integration tests for the image generation pipeline (with mocked external services)."""
+
 from __future__ import annotations
 import pytest
 from unittest.mock import patch, AsyncMock
-from app.services.image_service import generate_background, ASPECT_RATIO_MAP, STYLE_SUFFIXES
+from app.services.image_service import (
+    generate_background,
+    ASPECT_RATIO_MAP,
+    STYLE_SUFFIXES,
+)
 from app.services.preprocess import resize_to_aspect, extract_dominant_colors
 from app.services.storage_service import generate_key
 
 
 # --- Image Service Tests ---
 
+
 @pytest.mark.asyncio
 async def test_generate_background_text_to_image():
     """Test text-to-image generation calls Fal.ai with correct params."""
     mock_result = {
-        "images": [{"url": "https://fal.cdn/generated.jpg", "width": 1024, "height": 1024, "content_type": "image/jpeg"}],
+        "images": [
+            {
+                "url": "https://fal.cdn/generated.jpg",
+                "width": 1024,
+                "height": 1024,
+                "content_type": "image/jpeg",
+            }
+        ],
         "seed": 42,
     }
 
-    with patch("app.services.image_service.settings") as mock_settings, \
-         patch("app.services.image_service.fal_client") as mock_fal:
+    with (
+        patch("app.services.image_service.settings") as mock_settings,
+        patch("app.services.image_service.fal_client") as mock_fal,
+    ):
         mock_settings.FAL_KEY = "test-key"
         mock_fal.run_async = AsyncMock(return_value=mock_result)
 
@@ -41,11 +56,15 @@ async def test_generate_background_text_to_image():
 async def test_generate_background_image_to_image():
     """Test image-to-image mode uses the correct Fal.ai model."""
     mock_result = {
-        "images": [{"url": "https://fal.cdn/generated.jpg", "width": 768, "height": 1344}],
+        "images": [
+            {"url": "https://fal.cdn/generated.jpg", "width": 768, "height": 1344}
+        ],
     }
 
-    with patch("app.services.image_service.settings") as mock_settings, \
-         patch("app.services.image_service.fal_client") as mock_fal:
+    with (
+        patch("app.services.image_service.settings") as mock_settings,
+        patch("app.services.image_service.fal_client") as mock_fal,
+    ):
         mock_settings.FAL_KEY = "test-key"
         mock_fal.run_async = AsyncMock(return_value=mock_result)
 
@@ -85,10 +104,12 @@ def test_style_suffixes_complete():
 
 # --- Preprocess Tests ---
 
+
 def test_resize_to_aspect_square():
     """resize_to_aspect produces correct dimensions for 1:1."""
     from PIL import Image
     import io
+
     # Create a 200x100 test image (landscape)
     img = Image.new("RGB", (200, 100), color="red")
     buf = io.BytesIO()
@@ -103,6 +124,7 @@ def test_resize_to_aspect_story():
     """resize_to_aspect produces correct dimensions for 9:16."""
     from PIL import Image
     import io
+
     img = Image.new("RGB", (300, 300), color="blue")
     buf = io.BytesIO()
     img.save(buf, format="JPEG")
@@ -116,6 +138,7 @@ def test_extract_dominant_colors():
     """extract_dominant_colors returns correct number of hex colors."""
     from PIL import Image
     import io
+
     # Create a non-uniform test image (Red with a Blue pixel) to avoid numerical instability warnings in KMeans
     img = Image.new("RGB", (50, 50), color=(255, 0, 0))
     img.putpixel((0, 0), (0, 0, 255))
@@ -129,6 +152,7 @@ def test_extract_dominant_colors():
 
 
 # --- Storage Tests ---
+
 
 def test_generate_key_format():
     """generate_key produces valid S3 key format."""

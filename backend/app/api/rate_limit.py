@@ -8,6 +8,7 @@ from app.models.user import User
 # Shared redis client for rate limiting
 redis_client = redis.from_url(settings.REDIS_URL, decode_responses=True)
 
+
 async def rate_limit_dependency(current_user: User = Depends(get_current_user)):
     """
     Limits generation endpoint to 10 requests per minute per user.
@@ -30,7 +31,7 @@ async def rate_limit_dependency(current_user: User = Depends(get_current_user)):
         if request_count >= limit:
             raise HTTPException(
                 status_code=429,
-                detail="Too many design requests. Please wait a minute before generating again."
+                detail="Too many design requests. Please wait a minute before generating again.",
             )
     except redis.RedisError as e:
         # If redis fails, fail open instead of breaking the app

@@ -18,14 +18,15 @@ STYLE_PROMPTS = {
     "badge": "A circular promotional badge/sticker, {color_hint} color scheme, modern vector graphic style, sharp edges, centered",
     "cloud": "A soft, fluffy cloud-shaped dialogue bubble, {color_hint} tint, cute and friendly style, centered, clean background",
     "star": "A dynamic starburst or explosion shape, {color_hint} colors, energetic sale tag style, centered, high contrast",
-    "banner": "A classic rectangular scroll banner with folded ends, {color_hint} theme, elegant and clean, centered"
+    "banner": "A classic rectangular scroll banner with folded ends, {color_hint} theme, elegant and clean, centered",
 }
+
 
 async def generate_text_banner(
     text: str,
     style: str = "ribbon",
     color_hint: str = "colorful",
-    quality: str = "standard"
+    quality: str = "standard",
 ) -> dict:
     """
     Generates a decorative banner containing text, removes the background,
@@ -42,10 +43,12 @@ async def generate_text_banner(
             base_prompt = STYLE_PROMPTS[style].replace("{color_hint}", color_hint)
         else:
             # Treat as free-text creative description
-            base_prompt = f"{style}, {color_hint} color palette, centered, clean composition"
+            base_prompt = (
+                f"{style}, {color_hint} color palette, centered, clean composition"
+            )
 
         # Add text instructions
-        prompt = f"{base_prompt}. The graphic MUST contain the exact text: \"{text}\" written on it boldly and legibly. Clean solid white background behind the object for easy extraction."
+        prompt = f'{base_prompt}. The graphic MUST contain the exact text: "{text}" written on it boldly and legibly. Clean solid white background behind the object for easy extraction.'
 
         banner_url = None
 
@@ -53,23 +56,26 @@ async def generate_text_banner(
         if quality == "premium":
             # Use Gemini API (Nano Banana 2)
             if not settings.GEMINI_API_KEY:
-                raise ValueError("GEMINI_API_KEY is not configured for premium generation")
+                raise ValueError(
+                    "GEMINI_API_KEY is not configured for premium generation"
+                )
 
             client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
             # Use the synchronous call in a thread pool for async compatibility
             import asyncio
+
             loop = asyncio.get_running_loop()
 
             def run_gemini():
                 return client.models.generate_images(
-                    model='gemini-3.1-flash-image-preview',
+                    model="gemini-3.1-flash-image-preview",
                     prompt=prompt,
                     config=types.GenerateImagesConfig(
                         number_of_images=1,
                         output_mime_type="image/jpeg",
-                        aspect_ratio="1:1" # Standard size for banners
-                    )
+                        aspect_ratio="1:1",  # Standard size for banners
+                    ),
                 )
 
             response = await loop.run_in_executor(None, run_gemini)
@@ -87,7 +93,7 @@ async def generate_text_banner(
             banner_url = await upload_image(
                 img.image.image_bytes,
                 content_type="image/jpeg",
-                prefix=f"temp_gemini_{temp_id}"
+                prefix=f"temp_gemini_{temp_id}",
             )
 
         else:
@@ -97,13 +103,15 @@ async def generate_text_banner(
 
             os.environ["FAL_KEY"] = settings.FAL_KEY
 
-            model_id = "fal-ai/flux/schnell" if quality == "draft" else "fal-ai/flux/dev"
+            model_id = (
+                "fal-ai/flux/schnell" if quality == "draft" else "fal-ai/flux/dev"
+            )
 
             result = await fal_client.run_async(
                 model_id,
                 arguments={
                     "prompt": prompt,
-                    "image_size": "square_hd" if quality == "standard" else "square"
+                    "image_size": "square_hd" if quality == "standard" else "square",
                 },
             )
 
@@ -126,15 +134,13 @@ async def generate_text_banner(
         # 4. Upload Final Image
         final_id = str(uuid.uuid4())[:12]
         final_url = await upload_image(
-            transparent_bytes,
-            content_type="image/png",
-            prefix=f"banners/{final_id}"
+            transparent_bytes, content_type="image/png", prefix=f"banners/{final_id}"
         )
 
         return {
             "url": final_url,
-            "width": 1024, # Approximate standard size
-            "height": 1024
+            "width": 1024,  # Approximate standard size
+            "height": 1024,
         }
 
     except Exception as e:

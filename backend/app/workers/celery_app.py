@@ -1,4 +1,5 @@
 """Celery app instance configured with Redis broker."""
+
 from celery import Celery
 from app.core.config import settings
 

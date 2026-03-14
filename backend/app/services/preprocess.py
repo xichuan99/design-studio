@@ -2,6 +2,7 @@
 Image pre-processing service: resize, crop, and extract dominant colors
 from user-uploaded reference images before sending to Fal.ai.
 """
+
 from __future__ import annotations
 import io
 from PIL import Image

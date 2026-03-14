@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+
 class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://dev:devpass@localhost:5433/designstudio"
@@ -26,7 +27,9 @@ class Settings(BaseSettings):
     # Backend public base URL (used for local-storage fallback URLs)
     BACKEND_BASE_URL: str = "http://localhost:8000"
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
+
 
 settings = Settings()
-
