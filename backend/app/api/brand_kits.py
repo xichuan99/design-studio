@@ -64,35 +64,27 @@ async def create_brand_kit(
     """
     Saves a new Brand Kit for the current user.
     """
-    print(f"DEBUG: create_brand_kit called for user {current_user.id}")
     try:
         # Check limit for free tier
         result = await db.execute(
             select(BrandKit).where(BrandKit.user_id == current_user.id)
         )
         existing_kits = result.scalars().all()
-        print(f"DEBUG: Found {len(existing_kits)} existing kits")
+        existing_kits = result.scalars().all()
 
         if len(existing_kits) >= MAX_BRAND_KITS_FREE:
-            print("DEBUG: Limit reached")
             raise HTTPException(
                 status_code=400,
                 detail=f"You can only save up to {MAX_BRAND_KITS_FREE} "
                        "Brand Kits on the free tier."
             )
-
         if existing_kits:
-            print("DEBUG: Updating existing kits to inactive")
             await db.execute(
                 update(BrandKit)
                 .where(BrandKit.user_id == current_user.id)
                 .values(is_active=False)
             )
-
-        print("DEBUG: Converting colors")
         colors_json = [c.model_dump() for c in brand_kit_in.colors]
-
-        print("DEBUG: Creating new BrandKit model object")
         typography_json = brand_kit_in.typography.model_dump() if brand_kit_in.typography else None
 
         new_kit = BrandKit(
@@ -105,17 +97,14 @@ async def create_brand_kit(
             is_active=True
         )
 
-        print("DEBUG: Adding to db")
         db.add(new_kit)
-        print("DEBUG: Committing to db")
         await db.commit()
-        print("DEBUG: Refreshing kit")
         await db.refresh(new_kit)
 
-        print("DEBUG: Returned kit", new_kit.id)
         return new_kit
     except Exception as e:
-        print(f"DEBUG EXCEPTION: {e}")
+        import logging
+        logging.exception(f"Exception creating brand kit: {e}")
         raise
 
     return new_kit

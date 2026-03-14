@@ -215,6 +215,10 @@ export const StylePanel: React.FC = () => {
                                                 <SelectItem value="Playfair Display" style={{ fontFamily: '"Playfair Display", serif' }}>Playfair Display</SelectItem>
                                                 <SelectItem value="Montserrat" style={{ fontFamily: 'Montserrat' }}>Montserrat</SelectItem>
                                                 <SelectItem value="Oswald" style={{ fontFamily: 'Oswald' }}>Oswald</SelectItem>
+                                                <SelectItem value="Lato" style={{ fontFamily: 'Lato' }}>Lato</SelectItem>
+                                                <SelectItem value="Raleway" style={{ fontFamily: 'Raleway' }}>Raleway</SelectItem>
+                                                <SelectItem value="Plus Jakarta Sans" style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}>Plus Jakarta Sans</SelectItem>
+                                                <SelectItem value="DM Sans" style={{ fontFamily: '"DM Sans", sans-serif' }}>DM Sans</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>

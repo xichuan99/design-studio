@@ -33,14 +33,19 @@ async def _update_job_status(job_id, **fields):
         await session.commit()
 
 
-async def _execute_pipeline(job_id: str, raw_text: str, aspect_ratio: str, style: str, reference_url: str | None, integrated_text: bool):
+async def _execute_pipeline(job_id: str, raw_text: str, aspect_ratio: str, style: str, reference_url: str | None, integrated_text: bool, brand_colors: list | None = None, brand_typography: dict | None = None):
     """Execute the full generation pipeline."""
     try:
         # Step 1: Update status to processing
         await _update_job_status(job_id, status="processing")
 
         # Step 2: LLM parse the raw text
-        parsed = await parse_design_text(raw_text, integrated_text=integrated_text)
+        parsed = await parse_design_text(
+            raw_text, 
+            integrated_text=integrated_text,
+            brand_colors=brand_colors,
+            brand_typography=brand_typography
+        )
 
         # Assemble visual prompt from parts if available
         if parsed.visual_prompt_parts:
@@ -108,6 +113,6 @@ async def _execute_pipeline(job_id: str, raw_text: str, aspect_ratio: str, style
 
 
 @celery_app.task(bind=True, name="generate_design", time_limit=300, soft_time_limit=270)
-def generate_design_task(self, job_id: str, raw_text: str, aspect_ratio: str = "1:1", style: str = "bold", reference_url: str | None = None, integrated_text: bool = False):
+def generate_design_task(self, job_id: str, raw_text: str, aspect_ratio: str = "1:1", style: str = "bold", reference_url: str | None = None, integrated_text: bool = False, brand_colors: list | None = None, brand_typography: dict | None = None):
     """Celery task: runs the full design generation pipeline."""
-    _run_async(_execute_pipeline(job_id, raw_text, aspect_ratio, style, reference_url, integrated_text))
+    _run_async(_execute_pipeline(job_id, raw_text, aspect_ratio, style, reference_url, integrated_text, brand_colors, brand_typography))

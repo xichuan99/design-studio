@@ -23,6 +23,7 @@ export default function BrandKitPanel({ onClose, onApplyColors }: BrandKitPanelP
     const [isExtracting, setIsExtracting] = useState(false);
     const [extractedColors, setExtractedColors] = useState<ColorSwatch[] | null>(null);
     const [extractedLogoUrl, setExtractedLogoUrl] = useState<string | null>(null);
+    const [extractedFile, setExtractedFile] = useState<File | null>(null);
     const [newKitName, setNewKitName] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -70,6 +71,7 @@ export default function BrandKitPanel({ onClose, onApplyColors }: BrandKitPanelP
             // For the preview, we can use object URL
             const previewUrl = URL.createObjectURL(file);
             setExtractedLogoUrl(previewUrl);
+            setExtractedFile(file);
 
             const timeoutPromise = new Promise((_, reject) => 
                 setTimeout(() => reject(new Error("Ekstraksi warna terlalu lama (Request timeout)")), 15000)
@@ -87,10 +89,11 @@ export default function BrandKitPanel({ onClose, onApplyColors }: BrandKitPanelP
             if (err instanceof Error) {
                 setError(err.message);
             } else {
-                setError('Failed to extract colors');
+                setError('Gagal mengekstrak warna dari logo');
             }
             setExtractedColors(null);
             setExtractedLogoUrl(null);
+            setExtractedFile(null);
         } finally {
             setIsExtracting(false);
             if (fileInputRef.current) fileInputRef.current.value = '';
@@ -98,28 +101,33 @@ export default function BrandKitPanel({ onClose, onApplyColors }: BrandKitPanelP
     };
 
     const handleSaveKit = async () => {
-        if (!extractedColors) return;
-        
-        // In a full implementation, we'd also upload the logo to a storage bucket here
-        // and get the actual URL. For now, we simulate saving without a real logo URL 
-        // if we didn't implement the generic storage upload yet.
+        if (!newKitName.trim() || !extractedColors) return;
         
         try {
             setIsSaving(true);
             setError(null);
-            // Default name if empty
-            const kitName = newKitName.trim() || 'My Brand Kit';
             
+            let uploadedLogoUrl: string | null = null;
+            if (extractedFile) {
+                try {
+                    const uploadResult = await api.uploadImage(extractedFile);
+                    uploadedLogoUrl = uploadResult.url;
+                } catch (uploadErr) {
+                    console.error("Failed to upload logo:", uploadErr);
+                    // Silently fail upload and proceed saving with null logo
+                }
+            }
+
             const timeoutPromise = new Promise((_, reject) => 
                 setTimeout(() => reject(new Error("Gagal menyimpan (Request timeout)")), 10000)
             );
 
             await Promise.race([
                 api.saveBrandKit({
-                    name: kitName,
+                    name: newKitName,
                     colors: extractedColors,
-                    logo_url: null, // We skip logo_url for now unless we upload it to s3/supabase
-                    logos: [],
+                    logo_url: uploadedLogoUrl,
+                    logos: uploadedLogoUrl ? [uploadedLogoUrl] : [],
                     typography: { primaryFont: 'Inter', secondaryFont: 'Inter' },
                     is_active: false
                 }),
@@ -132,6 +140,7 @@ export default function BrandKitPanel({ onClose, onApplyColors }: BrandKitPanelP
             // Clear extraction state
             setExtractedColors(null);
             setExtractedLogoUrl(null);
+            setExtractedFile(null);
             setNewKitName('');
             
         } catch (err: unknown) {
@@ -225,7 +234,7 @@ export default function BrandKitPanel({ onClose, onApplyColors }: BrandKitPanelP
                 {extractedColors && (
                     <div className="bg-primary/5 rounded-xl p-4 border border-primary/20 flex flex-col gap-4">
                         <div className="flex justify-between items-start">
-                            <h4 className="font-medium text-sm text-foreground">Warna Tengekstrak</h4>
+                            <h4 className="font-medium text-sm text-foreground">Warna Terekstrak</h4>
                             <button 
                                 onClick={() => {
                                     setExtractedColors(null);

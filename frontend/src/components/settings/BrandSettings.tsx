@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useBrandKit } from '@/hooks/useBrandKit';
 import { useProjectApi, BrandKitProfile, ColorRole, ColorSwatch } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -7,11 +7,28 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Trash2, CheckCircle2, Palette, Loader2, Save } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+const SUPPORTED_FONTS = [
+    'Inter', 'Poppins', 'Roboto', 'Montserrat',
+    'Playfair Display', 'Oswald', 'Lato', 'Raleway',
+    'Plus Jakarta Sans', 'DM Sans'
+];
 
 export default function BrandSettings() {
     const api = useProjectApi();
     const { brandKits, activeBrandProfile, isLoading, switchBrand, refreshKits } = useBrandKit();
     const [isSaving, setIsSaving] = useState(false);
+    const [kitToDelete, setKitToDelete] = useState<string | null>(null);
 
     // Form state for editing/creating
     const [editingBrand, setEditingBrand] = useState<Partial<BrandKitProfile> | null>(null);
@@ -50,19 +67,25 @@ export default function BrandSettings() {
         setEditingBrand({ ...editingBrand, colors: newColors });
     };
 
-    const handleAddLogoUrl = () => {
-        if (!editingBrand) return;
-        setEditingBrand({
-            ...editingBrand,
-            logos: [...(editingBrand.logos || []), '']
-        });
-    };
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+    const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
-    const handleUpdateLogoUrl = (index: number, value: string) => {
-        if (!editingBrand || !editingBrand.logos) return;
-        const newLogos = [...editingBrand.logos];
-        newLogos[index] = value;
-        setEditingBrand({ ...editingBrand, logos: newLogos });
+    const handleUploadLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !editingBrand) return;
+
+        try {
+            setIsUploadingLogo(true);
+            const res = await api.uploadImage(file);
+            const newLogos = [...(editingBrand.logos || []), res.url];
+            setEditingBrand({ ...editingBrand, logos: newLogos });
+        } catch (err) {
+            console.error("Failed to upload logo:", err);
+            alert("Gagal mengunggah logo.");
+        } finally {
+            setIsUploadingLogo(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
     };
 
     const handleRemoveLogo = (index: number) => {
@@ -77,14 +100,19 @@ export default function BrandSettings() {
 
         try {
             if (editingBrand.id) {
-                await api.updateBrandKit(editingBrand.id, editingBrand);
+                // Determine logo_url from logos array for update
+                const payload = {
+                    ...editingBrand,
+                    logo_url: editingBrand.logos && editingBrand.logos.length > 0 ? editingBrand.logos[0] : null
+                };
+                await api.updateBrandKit(editingBrand.id, payload);
             } else {
                 const payload: Omit<BrandKitProfile, 'id' | 'created_at' | 'updated_at' | 'user_id'> = {
                     name: editingBrand.name,
                     logos: editingBrand.logos || [],
                     colors: editingBrand.colors || [],
                     typography: editingBrand.typography || { primaryFont: 'Inter', secondaryFont: 'Inter' },
-                    logo_url: null,
+                    logo_url: editingBrand.logos && editingBrand.logos.length > 0 ? editingBrand.logos[0] : null,
                     is_active: false
                 };
                 await api.saveBrandKit(payload);
@@ -99,13 +127,15 @@ export default function BrandSettings() {
     };
 
 
-    const handleDelete = async (kitId: string) => {
-        if (!confirm("Yakin mau dihapus?")) return;
+    const confirmDelete = async () => {
+        if (!kitToDelete) return;
         try {
-            await api.deleteBrandKit(kitId);
+            await api.deleteBrandKit(kitToDelete);
             refreshKits();
         } catch(e) {
             console.error(e);
+        } finally {
+            setKitToDelete(null);
         }
     }
 
@@ -140,19 +170,47 @@ export default function BrandSettings() {
 
                     <div className="space-y-4">
                         <div className="flex justify-between items-center">
-                            <Label>Logos (URL)</Label>
-                            <Button variant="outline" size="sm" onClick={handleAddLogoUrl}><Plus className="w-4 h-4 mr-1"/> Tambah Logo</Button>
-                        </div>
-                        {editingBrand.logos?.map((logo, i) => (
-                            <div key={i} className="flex gap-2 items-center">
-                                <Input 
-                                    value={logo} 
-                                    onChange={e => handleUpdateLogoUrl(i, e.target.value)} 
-                                    placeholder="https://..."
+                            <Label>Logo Brand</Label>
+                            <div>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    ref={fileInputRef}
+                                    onChange={handleUploadLogo}
                                 />
-                                <Button variant="ghost" size="icon" onClick={() => handleRemoveLogo(i)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                                <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={isUploadingLogo}
+                                >
+                                    {isUploadingLogo ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Plus className="w-4 h-4 mr-1"/>} 
+                                    Upload Logo
+                                </Button>
                             </div>
-                        ))}
+                        </div>
+                        {editingBrand.logos && editingBrand.logos.length > 0 && (
+                            <div className="flex flex-wrap gap-4">
+                                {editingBrand.logos.map((logo, i) => (
+                                    <div key={i} className="relative group w-24 h-24 border rounded-lg bg-muted flex items-center justify-center p-2">
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img src={logo} alt="Logo" className="max-w-full max-h-full object-contain" />
+                                        <button 
+                                            onClick={() => handleRemoveLogo(i)}
+                                            className="absolute top-1 right-1 bg-background/80 hover:bg-destructive hover:text-white p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                                        >
+                                            <Trash2 className="w-3 h-3" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {!editingBrand.logos?.length && (
+                            <div className="text-sm text-muted-foreground border-2 border-dashed p-4 rounded-lg text-center">
+                                Belum ada logo. Klik tombol di atas untuk mengunggah logo.
+                            </div>
+                        )}
                     </div>
 
                      <div className="space-y-4">
@@ -162,19 +220,39 @@ export default function BrandSettings() {
                         <div className="grid grid-cols-2 gap-4">
                              <div>
                                 <Label className="text-xs text-muted-foreground">Primary Font (Headline)</Label>
-                                <Input 
-                                    value={editingBrand.typography?.primaryFont || ''} 
-                                    onChange={e => setEditingBrand({...editingBrand, typography: { ...editingBrand.typography, primaryFont: e.target.value }})} 
-                                    placeholder="e.g. Poppins"
-                                />
+                                <Select 
+                                    value={editingBrand.typography?.primaryFont || 'Inter'} 
+                                    onValueChange={val => setEditingBrand({...editingBrand, typography: { ...editingBrand.typography, primaryFont: val }})}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Pilih Font" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {SUPPORTED_FONTS.map(font => (
+                                            <SelectItem key={font} value={font} style={{ fontFamily: font }}>
+                                                {font}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                              </div>
                              <div>
                                 <Label className="text-xs text-muted-foreground">Secondary Font (Body)</Label>
-                                <Input 
-                                    value={editingBrand.typography?.secondaryFont || ''} 
-                                    onChange={e => setEditingBrand({...editingBrand, typography: { ...editingBrand.typography, secondaryFont: e.target.value }})} 
-                                    placeholder="e.g. Inter"
-                                />
+                                <Select 
+                                    value={editingBrand.typography?.secondaryFont || 'Inter'} 
+                                    onValueChange={val => setEditingBrand({...editingBrand, typography: { ...editingBrand.typography, secondaryFont: val }})}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Pilih Font" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {SUPPORTED_FONTS.map(font => (
+                                            <SelectItem key={font} value={font} style={{ fontFamily: font }}>
+                                                {font}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                              </div>
                         </div>
                     </div>
@@ -267,7 +345,7 @@ export default function BrandSettings() {
                                             <Button variant="secondary" size="sm" onClick={() => switchBrand(kit.id)}>Set Aktif</Button>
                                         )}
                                         <Button variant="outline" size="sm" onClick={() => handleEdit(kit)}>Edit</Button>
-                                        <Button variant="ghost" size="sm" className="text-destructive " onClick={() => handleDelete(kit.id)}>Hapus</Button>
+                                        <Button variant="ghost" size="sm" className="text-destructive " onClick={() => setKitToDelete(kit.id)}>Hapus</Button>
                                     </div>
                                 </div>
                                 <div className="flex gap-2 mt-2">
@@ -285,6 +363,23 @@ export default function BrandSettings() {
                     </div>
                 )}
             </CardContent>
+
+            <AlertDialog open={!!kitToDelete} onOpenChange={(open) => !open && setKitToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Hapus Brand Kit?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Tindakan ini tidak dapat dibatalkan. Brand kit ini akan dihapus secara permanen dari akun Anda.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Batal</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                            Ya, Hapus
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </Card>
     );
 }

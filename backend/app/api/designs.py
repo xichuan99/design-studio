@@ -264,6 +264,59 @@ async def generate_design(
     await db.commit()
     await db.refresh(job)
 
+    # Load brand kit colors and typography if specified
+    brand_colors = None
+    brand_typography = None
+    strict_brand_suffix = ""
+    if request.brand_kit_id:
+        from app.models.brand_kit import BrandKit
+        from sqlalchemy.future import select
+        import uuid
+        try:
+            kit_id_uuid = uuid.UUID(request.brand_kit_id)
+            kit_result = await db.execute(
+                select(BrandKit).where(
+                    BrandKit.id == kit_id_uuid,
+                    BrandKit.user_id == current_user.id
+                )
+            )
+            kit = kit_result.scalar_one_or_none()
+            if kit:
+                if kit.colors:
+                    brand_colors = [c.get("hex") for c in kit.colors if c.get("hex")]
+                if kit.typography:
+                    brand_typography = kit.typography
+
+            def build_strict_brand_suffix(kit) -> str:
+                if not kit:
+                    return ""
+                parts = []
+                if kit.colors:
+                    color_strs = []
+                    for c in kit.colors:
+                        role = c.get("role", "color").upper()
+                        hex_val = c.get("hex", "")
+                        if hex_val:
+                            color_strs.append(f"{role}: {hex_val}")
+                    if color_strs:
+                        parts.append("Use ONLY these exact hex colors: " + ", ".join(color_strs) + ".")
+                if kit.typography:
+                    fonts = []
+                    if kit.typography.get("primaryFont"):
+                        fonts.append(f"Headline Font: {kit.typography.get('primaryFont')}")
+                    if kit.typography.get("secondaryFont"):
+                        fonts.append(f"Body Font: {kit.typography.get('secondaryFont')}")
+                    if fonts:
+                        parts.append("Typography constraints: " + ", ".join(fonts) + ".")
+                if not parts:
+                    return ""
+                return " CRITICAL INSTRUCTION: " + " ".join(parts) + " Do not improvise or add any other colors or fonts."
+
+            strict_brand_suffix = build_strict_brand_suffix(kit)
+        except Exception as e:
+            import logging
+            logging.error(f"Failed to load brand kit {request.brand_kit_id}: {e}")
+
     # Use Celery+Fal.ai only when explicitly enabled (requires running celery worker)
     import os
     _use_celery = app_settings.FAL_KEY and os.getenv("USE_CELERY", "false").lower() == "true"
@@ -278,6 +331,8 @@ async def generate_design(
                 style=request.style_preference,
                 reference_url=getattr(request, "reference_image_url", None),
                 integrated_text=request.integrated_text,
+                brand_colors=brand_colors,
+                brand_typography=brand_typography
             )
             return {
                 "job_id": str(job.id),
@@ -291,71 +346,18 @@ async def generate_design(
             await log_credit_change(db, current_user, 1, "Refund: gagal generate desain")
             await db.commit()
             raise HTTPException(status_code=500, detail=f"Image generation failed to start: {str(e)}")
+
     import logging
     logging.info("Using Gemini synchronous generation (Nano Banana / Imagen) for image generation")
     try:
         from datetime import datetime, timezone
 
-        def build_strict_brand_suffix(kit) -> str:
-            if not kit:
-                return ""
-
-            parts = []
-            if kit.colors:
-                color_strs = []
-                for c in kit.colors:
-                    role = c.get("role", "color").upper()
-                    hex_val = c.get("hex", "")
-                    if hex_val:
-                        color_strs.append(f"{role}: {hex_val}")
-                if color_strs:
-                    parts.append("Use ONLY these exact hex colors: " + ", ".join(color_strs) + ".")
-
-            if kit.typography:
-                fonts = []
-                if kit.typography.get("primaryFont"):
-                    fonts.append(f"Headline Font: {kit.typography.get('primaryFont')}")
-                if kit.typography.get("secondaryFont"):
-                    fonts.append(f"Body Font: {kit.typography.get('secondaryFont')}")
-                if fonts:
-                    parts.append("Typography constraints: " + ", ".join(fonts) + ".")
-
-            if not parts:
-                return ""
-
-            return " CRITICAL INSTRUCTION: " + " ".join(parts) + " Do not improvise or add any other colors or fonts."
-
-        # Load brand kit colors if specified
-        brand_colors = None
-        if request.brand_kit_id:
-            from app.models.brand_kit import BrandKit
-            from sqlalchemy.future import select
-            import uuid
-            try:
-                kit_id_uuid = uuid.UUID(request.brand_kit_id)
-                kit_result = await db.execute(
-                    select(BrandKit).where(
-                        BrandKit.id == kit_id_uuid,
-                        BrandKit.user_id == current_user.id
-                    )
-                )
-                kit = kit_result.scalar_one_or_none()
-                if kit and kit.colors:
-                    # extract the hex values
-                    brand_colors = [c.get("hex") for c in kit.colors if c.get("hex")]
-
-                strict_brand_suffix = build_strict_brand_suffix(kit)
-            except Exception as e:
-                logging.error(f"Failed to load brand kit {request.brand_kit_id}: {e}")
-                strict_brand_suffix = ""
-        else:
-            strict_brand_suffix = ""
-
         # Parse text first (reuse existing logic)
         parsed = await parse_design_text(
             request.raw_text,
             integrated_text=request.integrated_text,
-            brand_colors=brand_colors
+            brand_colors=brand_colors,
+            brand_typography=brand_typography
         )
 
         # Assemble visual prompt from parts if available (user might have edited/toggled them)

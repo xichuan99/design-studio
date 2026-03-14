@@ -8,9 +8,9 @@ Whenever you need to run `ruff` (the Python linter) for the backend code, you **
 
 Do **not** run `ruff check .` directly.
 
-Instead, always run:
+Instead, always run this command to check and automatically fix common issues (like trailing whitespaces or unused imports):
 ```bash
-venv/bin/ruff check .
+venv/bin/ruff check . --fix
 ```
 
 Make sure the command is executed from the `/Users/nugroho/Documents/design-studio/backend` directory.
