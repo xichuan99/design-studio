@@ -41,7 +41,7 @@ async def _execute_pipeline(job_id: str, raw_text: str, aspect_ratio: str, style
 
         # Step 2: LLM parse the raw text
         parsed = await parse_design_text(
-            raw_text, 
+            raw_text,
             integrated_text=integrated_text,
             brand_colors=brand_colors,
             brand_typography=brand_typography
