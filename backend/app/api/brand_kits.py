@@ -94,7 +94,7 @@ async def create_brand_kit(
 
         print("DEBUG: Creating new BrandKit model object")
         typography_json = brand_kit_in.typography.model_dump() if brand_kit_in.typography else None
-        
+
         new_kit = BrandKit(
             user_id=current_user.id,
             name=brand_kit_in.name,
@@ -111,7 +111,7 @@ async def create_brand_kit(
         await db.commit()
         print("DEBUG: Refreshing kit")
         await db.refresh(new_kit)
-        
+
         print("DEBUG: Returned kit", new_kit.id)
         return new_kit
     except Exception as e:
@@ -186,7 +186,7 @@ async def update_brand_kit(
 
     if "colors" in update_data and kit_update.colors is not None:
         update_data["colors"] = [c.model_dump() for c in kit_update.colors]
-        
+
     if "typography" in update_data and kit_update.typography is not None:
         update_data["typography"] = kit_update.typography.model_dump()
 
