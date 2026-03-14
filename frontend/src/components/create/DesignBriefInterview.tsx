@@ -88,7 +88,7 @@ export function DesignBriefInterview({
                                     placeholder="Ketik jawaban Anda di sini..."
                                     value={answers[q.id] || ""}
                                     onChange={(e) => handleAnswer(q.id, e.target.value)}
-                                    className="max-w-md bg-background text-foreground border-border/50 focus-visible:ring-primary placeholder:text-muted-foreground"
+                                    className="max-w-md bg-background dark:bg-zinc-800 text-foreground border-border/50 focus-visible:ring-primary placeholder:text-muted-foreground"
                                     disabled={isGeneratingPrompt}
                                 />
                             </div>
