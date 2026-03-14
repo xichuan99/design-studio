@@ -3,12 +3,23 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { redirect, useRouter } from "next/navigation";
-import { Loader2, Plus, PenSquare, Trash2, Layers, MoreVertical, Copy, Edit2, Check, X, Wand2 } from "lucide-react";
+import { Loader2, Plus, PenSquare, Trash2, Layers, MoreVertical, Copy, Edit2, Check, X, Wand2, Search, ArrowUpDown, SearchX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardFooter } from "@/components/ui/card";
 import { useProjectApi } from "@/lib/api";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -21,7 +32,10 @@ interface Project {
     id: string;
     title: string;
     updated_at: string;
-    canvas_state?: { backgroundUrl?: string };
+    created_at?: string;
+    aspect_ratio?: string;
+    status?: string;
+    canvas_state?: { backgroundUrl?: string; elements?: Record<string, unknown>[] };
 }
 
 export default function ProjectsPage() {
@@ -31,9 +45,12 @@ export default function ProjectsPage() {
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
     const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editingTitle, setEditingTitle] = useState("");
+    const [searchQuery, setSearchQuery] = useState("");
+    const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'a-z' | 'z-a'>('newest');
 
     if (status === "unauthenticated") {
         redirect("/");
@@ -56,18 +73,24 @@ export default function ProjectsPage() {
         fetchProjects();
     }, [status, getProjects]);
 
-    const handleDeleteProject = async (e: React.MouseEvent, projectId: string) => {
+    const confirmDeleteProject = (e: React.MouseEvent, projectId: string) => {
         e.stopPropagation();
-        if (!window.confirm('Hapus proyek ini? Tindakan ini tidak bisa dibatalkan.')) return;
-        setDeletingId(projectId);
+        setProjectToDelete(projectId);
+    };
+
+    const executeDeleteProject = async () => {
+        if (!projectToDelete) return;
+        setDeletingId(projectToDelete);
         try {
-            await deleteProject(projectId);
-            setProjects((prev) => prev.filter((p) => p.id !== projectId));
+            await deleteProject(projectToDelete);
+            setProjects((prev) => prev.filter((p) => p.id !== projectToDelete));
+            toast.success("Proyek berhasil dihapus");
         } catch (err) {
             console.error('Failed to delete project', err);
-            alert('Gagal menghapus proyek. Coba lagi.');
+            toast.error('Gagal menghapus proyek. Coba lagi.');
         } finally {
             setDeletingId(null);
+            setProjectToDelete(null);
         }
     };
 
@@ -77,9 +100,10 @@ export default function ProjectsPage() {
         try {
             const newProject = await duplicateProject(projectId);
             setProjects([newProject, ...projects]);
+            toast.success("Proyek berhasil diduplikasi");
         } catch (err) {
             console.error('Failed to duplicate project', err);
-            alert('Gagal menduplikasi proyek. Coba lagi.');
+            toast.error('Gagal menduplikasi proyek. Coba lagi.');
         } finally {
             setDuplicatingId(null);
         }
@@ -102,9 +126,10 @@ export default function ProjectsPage() {
             });
             setProjects(projects.map(p => p.id === project.id ? { ...p, title: editingTitle } : p));
             setEditingId(null);
+            toast.success("Nama proyek berhasil diubah");
         } catch (err) {
             console.error('Failed to rename project', err);
-            alert('Gagal mengubah nama proyek.');
+            toast.error('Gagal mengubah nama proyek.');
         }
     };
 
@@ -115,6 +140,16 @@ export default function ProjectsPage() {
             year: 'numeric',
         });
     };
+
+    const filteredAndSortedProjects = projects
+        .filter(p => !searchQuery || (p.title && p.title.toLowerCase().includes(searchQuery.toLowerCase())))
+        .sort((a, b) => {
+            if (sortBy === 'newest') return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+            if (sortBy === 'oldest') return new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime();
+            if (sortBy === 'a-z') return (a.title || "").localeCompare(b.title || "");
+            if (sortBy === 'z-a') return (b.title || "").localeCompare(a.title || "");
+            return 0;
+        });
 
     if (loading || status === "loading") {
         return (
@@ -154,8 +189,55 @@ export default function ProjectsPage() {
                         </Button>
                     </div>
 
+                    {/* Controls Row */}
+                    {projects.length > 0 && (
+                        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-card p-2 px-3 rounded-xl border border-border/50 shadow-sm">
+                            <div className="flex items-center gap-2 w-full sm:w-auto">
+                                <span className="bg-primary/10 text-primary font-semibold text-xs px-2.5 py-1 rounded-full whitespace-nowrap">
+                                    {filteredAndSortedProjects.length} desain
+                                </span>
+                                <div className="relative w-full sm:w-72">
+                                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                    <Input 
+                                        placeholder="Cari desain..." 
+                                        className="pl-9 h-9 bg-background border-border/50 focus-visible:ring-1"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                    />
+                                    {searchQuery && (
+                                        <button 
+                                            onClick={() => setSearchQuery("")}
+                                            className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-muted text-muted-foreground transition-colors"
+                                        >
+                                            <X className="w-3.5 h-3.5" />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-2 w-full sm:w-auto">
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="outline" size="sm" className="h-9 gap-2 w-full sm:w-auto border-border/50 font-normal">
+                                            <ArrowUpDown className="w-4 h-4 text-muted-foreground" />
+                                            {sortBy === 'newest' ? 'Terbaru' : 
+                                             sortBy === 'oldest' ? 'Terlama' : 
+                                             sortBy === 'a-z' ? 'A-Z' : 'Z-A'}
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-40">
+                                        <DropdownMenuItem onClick={() => setSortBy('newest')} className={sortBy === 'newest' ? 'bg-primary/5 text-primary' : ''}>Terbaru</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => setSortBy('oldest')} className={sortBy === 'oldest' ? 'bg-primary/5 text-primary' : ''}>Terlama</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => setSortBy('a-z')} className={sortBy === 'a-z' ? 'bg-primary/5 text-primary' : ''}>A-Z</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => setSortBy('z-a')} className={sortBy === 'z-a' ? 'bg-primary/5 text-primary' : ''}>Z-A</DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+                        </div>
+                    )}
+
                     {projects.length === 0 ? (
-                        /* Empty State */
+                        /* Empty State - No Projects */
                         <div className="text-center py-24 border-2 border-dashed rounded-2xl bg-card">
                             <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
                                 <Layers className="w-8 h-8 text-primary" />
@@ -166,10 +248,22 @@ export default function ProjectsPage() {
                                 <Plus className="w-5 h-5" /> Buat Desain Pertama
                             </Button>
                         </div>
+                    ) : filteredAndSortedProjects.length === 0 ? (
+                        /* Empty State - Search Not Found */
+                        <div className="text-center py-20 border border-border/50 rounded-2xl bg-card/50">
+                            <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+                                <SearchX className="w-6 h-6 text-muted-foreground" />
+                            </div>
+                            <h3 className="text-lg font-semibold mb-1 text-foreground">Pencarian tidak ditemukan</h3>
+                            <p className="text-muted-foreground text-sm mb-4">Tidak ada desain yang cocok dengan &quot;{searchQuery}&quot;</p>
+                            <Button variant="outline" size="sm" onClick={() => setSearchQuery("")}>
+                                Reset Pencarian
+                            </Button>
+                        </div>
                     ) : (
                         /* Project Grid */
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-                            {projects.map((project) => (
+                            {filteredAndSortedProjects.map((project) => (
                                 <Card
                                     key={project.id}
                                     className="overflow-hidden group flex flex-col cursor-pointer hover:shadow-[0_0_15px_rgba(108,43,238,0.15)] hover:border-primary/40 hover:scale-[1.02] transition-all duration-200 border-border/60"
@@ -236,12 +330,23 @@ export default function ProjectsPage() {
                                         )}
                                     </div>
 
-                                    <CardFooter className="p-3.5 pt-2 flex justify-between items-center text-xs text-muted-foreground border-t mt-2">
-                                        <span>{formatDate(project.updated_at)}</span>
-                                        <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+                                    <CardFooter className="p-3.5 pt-2.5 flex justify-between items-center text-xs text-muted-foreground border-t mt-2">
+                                        <div className="flex flex-col gap-1.5">
+                                            <span className="font-medium truncate">{formatDate(project.updated_at)}</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="bg-muted/80 px-1.5 py-0.5 rounded text-[10px] font-semibold border border-border/50 text-foreground/70 tracking-wide">
+                                                    {project.aspect_ratio || '1:1'}
+                                                </span>
+                                                <span className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground/80">
+                                                    <Layers className="w-3 h-3" />
+                                                    {project.canvas_state?.elements?.length || 0} layer
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-1 shrink-0" onClick={e => e.stopPropagation()}>
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 min-w-[44px] min-h-[44px] text-muted-foreground hover:text-foreground transition-colors">
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 min-w-[32px] min-h-[32px] text-muted-foreground hover:text-foreground transition-colors shrink-0">
                                                         <MoreVertical className="w-4 h-4" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
@@ -254,7 +359,7 @@ export default function ProjectsPage() {
                                                         Duplicate
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator />
-                                                    <DropdownMenuItem className="cursor-pointer gap-2 text-destructive focus:bg-destructive/10 focus:text-destructive" onClick={(e) => handleDeleteProject(e, project.id)} disabled={deletingId === project.id}>
+                                                    <DropdownMenuItem className="cursor-pointer gap-2 text-destructive focus:bg-destructive/10 focus:text-destructive" onClick={(e) => confirmDeleteProject(e, project.id)} disabled={deletingId === project.id}>
                                                         {deletingId === project.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                                                         Delete
                                                     </DropdownMenuItem>
@@ -268,6 +373,28 @@ export default function ProjectsPage() {
                     )}
                 </div>
             </div>
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={!!projectToDelete} onOpenChange={(open) => !open && setProjectToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Hapus Proyek</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Tindakan ini tidak bisa dibatalkan. Proyek ini akan dihapus secara permanen dari server.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setProjectToDelete(null)}>Batal</AlertDialogCancel>
+                        <AlertDialogAction 
+                            onClick={executeDeleteProject}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            {deletingId ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                            Hapus
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

@@ -5,6 +5,7 @@ import { jsPDF } from "jspdf";
 import { Download, Loader2 } from "lucide-react";
 import { useCanvasStore } from "@/store/useCanvasStore";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import {
     Dialog,
     DialogContent,
@@ -79,7 +80,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({ open, onOpenChange, 
             onOpenChange(false);
         } catch (err) {
             console.error("Export failed:", err);
-            alert("Failed to export design.");
+            toast.error("Gagal mengekspor desain.");
         } finally {
             setIsExporting(false);
         }

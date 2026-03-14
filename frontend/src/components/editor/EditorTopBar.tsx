@@ -4,10 +4,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useCanvasStore } from '@/store/useCanvasStore';
 import { useProjectApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
-import { Undo, Redo, Download as DownloadIcon, Loader2, ChevronLeft, Cloud, CloudAlert, Check, Keyboard } from 'lucide-react';
+import { Undo, Redo, Download as DownloadIcon, Loader2, ChevronLeft, Cloud, CloudAlert, Check, Keyboard, Info } from 'lucide-react';
 import { ExportDialog } from './ExportDialog';
 import { KeyboardShortcutsDialog } from './KeyboardShortcutsDialog';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SaveStatus } from '@/hooks/useAutoSave';
+import { toast } from 'sonner';
 import Link from 'next/link';
 
 interface EditorTopBarProps {
@@ -17,7 +19,7 @@ interface EditorTopBarProps {
 }
 
 export const EditorTopBar: React.FC<EditorTopBarProps> = ({ projectId, saveStatus = 'idle', onSave }) => {
-    const { undo, redo, history, historyIndex, elements, backgroundUrl, backgroundColor, stageRef, projectTitle, setProjectTitle } = useCanvasStore();
+    const { undo, redo, history, historyIndex, elements, backgroundUrl, backgroundColor, stageRef, projectTitle, setProjectTitle, originalPrompt } = useCanvasStore();
     const { saveProject } = useProjectApi();
     const [saving, setSaving] = useState(false);
     const [exportOpen, setExportOpen] = useState(false);
@@ -62,7 +64,7 @@ export const EditorTopBar: React.FC<EditorTopBarProps> = ({ projectId, saveStatu
             await saveProject(payload);
         } catch (err) {
             console.error('Save failed:', err);
-            alert('Failed to save project.');
+            toast.error('Gagal menyimpan proyek.');
         } finally {
             setSaving(false);
         }
@@ -148,6 +150,23 @@ export const EditorTopBar: React.FC<EditorTopBarProps> = ({ projectId, saveStatu
                         >
                             {projectTitle || "Untitled Design"}
                         </h1>
+                    )}
+                    {originalPrompt && (
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full text-muted-foreground hover:text-primary transition-colors">
+                                    <Info className="h-4 w-4" />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent align="start" className="w-80 max-h-64 overflow-y-auto z-50 p-4 shadow-xl">
+                                <div className="space-y-2">
+                                    <h4 className="font-semibold text-sm text-foreground">Prompt Generasi AI</h4>
+                                    <p className="text-sm text-muted-foreground leading-relaxed">
+                                        {originalPrompt}
+                                    </p>
+                                </div>
+                            </PopoverContent>
+                        </Popover>
                     )}
                 </div>
             </div>

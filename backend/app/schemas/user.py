@@ -1,6 +1,7 @@
 from pydantic import BaseModel, ConfigDict, field_validator
 from typing import Optional
 import uuid
+from datetime import datetime
 
 
 class UserUpdate(BaseModel):
@@ -29,3 +30,5 @@ class UserResponse(BaseModel):
     name: str
     avatar_url: Optional[str]
     credits_remaining: int
+    provider: str
+    created_at: datetime

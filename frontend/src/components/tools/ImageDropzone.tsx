@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from "react";
 import { UploadCloud, Image as ImageIcon } from "lucide-react";
+import { toast } from "sonner";
 
 interface ImageDropzoneProps {
   onFileSelect: (file: File) => void;
@@ -31,11 +32,11 @@ export function ImageDropzone({
 
   const processFile = (file: File) => {
     if (!file.type.startsWith("image/")) {
-      alert("Hanya file gambar yang diperbolehkan.");
+      toast.error("Hanya file gambar yang diperbolehkan.");
       return;
     }
     if (file.size > maxSizeMB * 1024 * 1024) {
-      alert(`Ukuran maksimal file adalah ${maxSizeMB}MB.`);
+      toast.error(`Ukuran maksimal file adalah ${maxSizeMB}MB.`);
       return;
     }
     onFileSelect(file);

@@ -35,6 +35,13 @@ import {
     ArrowUpRight,
     ArrowDownRight,
     Clock,
+    CalendarDays,
+    Settings2,
+    Image as ImageIcon,
+    Type,
+    Wand2,
+    Gift,
+    Receipt,
 } from "lucide-react";
 
 const NAME_MIN_LENGTH = 2;
@@ -73,6 +80,27 @@ function SettingsSection({
     );
 }
 
+const getTransactionBadge = (description: string, amount: number) => {
+    const desc = description.toLowerCase();
+    
+    if (desc.includes("ai image generation") || desc.includes("generate")) {
+        return { label: "Generate", colorClass: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400 border-purple-200 dark:border-purple-800", Icon: ImageIcon };
+    }
+    if (desc.includes("magic text")) {
+        return { label: "Magic Text", colorClass: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400 border-blue-200 dark:border-blue-800", Icon: Type };
+    }
+    if (desc.includes("background removal") || desc.includes("bg removal")) {
+        return { label: "BG Remove", colorClass: "bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-400 border-pink-200 dark:border-pink-800", Icon: Wand2 };
+    }
+    
+    // Default types based on amount
+    if (amount > 0) {
+        return { label: "Kredit Masuk", colorClass: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800", Icon: Gift };
+    }
+    
+    return { label: "Kredit Keluar", colorClass: "bg-slate-100 text-slate-700 dark:bg-slate-900/40 dark:text-slate-400 border-slate-200 dark:border-slate-800", Icon: Receipt };
+};
+
 export default function SettingsPage() {
     const { data: session, status: sessionStatus, update } = useSession();
     const router = useRouter();
@@ -80,12 +108,16 @@ export default function SettingsPage() {
 
     const [name, setName] = useState("");
     const [originalName, setOriginalName] = useState("");
+    const [createdAt, setCreatedAt] = useState<string | null>(null);
+    const [provider, setProvider] = useState<string | null>(null);
     const [credits, setCredits] = useState<number | null>(null);
+    const [totalUsedCredits, setTotalUsedCredits] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
+    const [avatarError, setAvatarError] = useState(false);
 
     // Credit History State
     const [creditHistory, setCreditHistory] = useState<CreditTransaction[]>([]);
@@ -104,6 +136,8 @@ export default function SettingsPage() {
             setName(profile.name);
             setOriginalName(profile.name);
             setCredits(profile.credits_remaining);
+            setCreatedAt(profile.created_at || null);
+            setProvider(profile.provider || null);
         } catch (err: unknown) {
             setError((err as Error).message || "Gagal memuat profil");
         } finally {
@@ -117,6 +151,12 @@ export default function SettingsPage() {
             setIsLoadingHistory(true);
             const historyData = await api.getCreditHistory(20, 0); // initial load 20
             setCreditHistory(historyData.transactions);
+            
+            // Calculate total used
+            const used = historyData.transactions
+                .filter(tx => tx.amount < 0)
+                .reduce((acc, curr) => acc + Math.abs(curr.amount), 0);
+            setTotalUsedCredits(used);
         } catch (err) {
             console.error("Failed to load credit history", err);
         } finally {
@@ -238,13 +278,14 @@ export default function SettingsPage() {
                             <CardContent className="p-6 sm:p-8 space-y-6">
                                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
                                     <div className="h-24 w-24 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/50 dark:to-purple-900/50 flex items-center justify-center border-4 border-background shadow-sm ring-1 ring-border/50 shrink-0">
-                                        {session?.user?.image ? (
+                                        {session?.user?.image && !avatarError ? (
                                             <Image
                                                 src={session.user.image}
                                                 alt="Avatar"
                                                 width={96}
                                                 height={96}
                                                 className="w-full h-full rounded-full object-cover"
+                                                onError={() => setAvatarError(true)}
                                             />
                                         ) : (
                                             <User className="h-10 w-10 text-indigo-500" />
@@ -254,9 +295,23 @@ export default function SettingsPage() {
                                         <h3 className="font-semibold text-xl leading-none">
                                             {originalName || "User"}
                                         </h3>
-                                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-muted/50 rounded-md w-fit text-sm text-muted-foreground font-medium border border-border/50">
-                                            <Mail className="w-4 h-4" />
-                                            {session?.user?.email}
+                                        <div className="flex flex-wrap items-center gap-2 mt-1">
+                                            <div className="flex items-center gap-1.5 px-3 py-1 bg-muted/50 rounded-md text-sm text-muted-foreground font-medium border border-border/50">
+                                                <Mail className="w-4 h-4" />
+                                                {session?.user?.email}
+                                            </div>
+                                            {provider && (
+                                                <div className="flex items-center gap-1.5 px-3 py-1 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400 rounded-md text-sm font-medium border border-indigo-200/50 dark:border-indigo-800/50">
+                                                    <Settings2 className="w-4 h-4" />
+                                                    Via {provider.charAt(0).toUpperCase() + provider.slice(1)}
+                                                </div>
+                                            )}
+                                            {createdAt && (
+                                                <div className="flex items-center gap-1.5 px-3 py-1 bg-muted/30 rounded-md text-sm text-muted-foreground font-medium border border-border/40">
+                                                    <CalendarDays className="w-4 h-4" />
+                                                    Bergabung sejak {new Date(createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -332,10 +387,25 @@ export default function SettingsPage() {
                                             Setiap generasi gambar teks atau fitur AI di editor akan memotong 1 kredit.
                                         </p>
                                     </div>
-                                    <div className="flex flex-col items-center sm:items-end">
-                                        <div className="text-5xl font-extrabold tracking-tighter text-indigo-600 dark:text-indigo-400 bg-white dark:bg-zinc-950 px-8 py-4 rounded-2xl shadow-sm border border-indigo-100 dark:border-indigo-900 min-w-[140px] text-center">
+                                    <div className="flex flex-col sm:items-end gap-3 w-full sm:max-w-xs">
+                                        <div className="text-5xl font-extrabold tracking-tighter text-indigo-600 dark:text-indigo-400 bg-white dark:bg-zinc-950 px-8 py-4 rounded-2xl shadow-sm border border-indigo-100 dark:border-indigo-900 min-w-[140px] text-center w-fit self-start sm:self-end">
                                             {credits !== null ? credits : "-"}
                                         </div>
+                                        
+                                        {totalUsedCredits > 0 && credits !== null && (
+                                            <div className="w-full sm:min-w-[200px] flex flex-col gap-1.5 mt-1 bg-white/50 dark:bg-zinc-950/50 p-3 rounded-xl border border-indigo-100/50 dark:border-indigo-900/50">
+                                                <div className="flex justify-between text-xs font-medium text-muted-foreground px-1">
+                                                    <span>Terpakai: {totalUsedCredits}</span>
+                                                    <span>Total: {credits + totalUsedCredits}</span>
+                                                </div>
+                                                <div className="h-2 w-full bg-indigo-100 dark:bg-indigo-950/50 rounded-full overflow-hidden">
+                                                    <div 
+                                                        className="h-full bg-indigo-500 rounded-full"
+                                                        style={{ width: `${(totalUsedCredits / (credits + totalUsedCredits)) * 100}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </CardContent>
@@ -358,50 +428,111 @@ export default function SettingsPage() {
                                 </div>
                             ) : (
                                 <div className="rounded-xl border bg-card/50 overflow-hidden text-sm">
-                                    <table className="w-full text-left">
+                                    {/* Desktop Table View */}
+                                    <table className="w-full text-left hidden md:table">
                                         <thead className="bg-muted/30">
                                             <tr>
                                                 <th className="py-3 px-4 font-medium text-muted-foreground w-[160px]">Tanggal</th>
+                                                <th className="py-3 px-4 font-medium text-muted-foreground w-[140px]">Tipe</th>
                                                 <th className="py-3 px-4 font-medium text-muted-foreground w-[120px]">Perubahan</th>
-                                                <th className="py-3 px-4 font-medium text-muted-foreground">Sisa Kredit</th>
+                                                <th className="py-3 px-4 font-medium text-muted-foreground w-[120px]">Sisa Kredit</th>
                                                 <th className="py-3 px-4 font-medium text-muted-foreground">Deskripsi</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-border/40">
-                                            {creditHistory.map((tx) => (
-                                                <tr key={tx.id} className="hover:bg-muted/20 transition-colors">
-                                                    <td className="py-3 px-4 whitespace-nowrap text-muted-foreground">
-                                                        {new Date(tx.created_at).toLocaleString("id-ID", {
-                                                            day: "2-digit",
-                                                            month: "short",
-                                                            year: "numeric",
-                                                            hour: "2-digit",
-                                                            minute: "2-digit",
-                                                        })}
-                                                    </td>
-                                                    <td className="py-3 px-4 font-medium">
-                                                        {tx.amount > 0 ? (
-                                                            <span className="text-emerald-500 flex items-center gap-1">
-                                                                <ArrowUpRight className="h-3.5 w-3.5" />
-                                                                +{tx.amount}
+                                            {creditHistory.map((tx) => {
+                                                const badge = getTransactionBadge(tx.description, tx.amount);
+                                                const BadgeIcon = badge.Icon;
+                                                return (
+                                                    <tr key={tx.id} className="hover:bg-muted/20 transition-colors">
+                                                        <td className="py-3 px-4 whitespace-nowrap text-muted-foreground">
+                                                            {new Date(tx.created_at).toLocaleString("id-ID", {
+                                                                day: "2-digit",
+                                                                month: "short",
+                                                                year: "numeric",
+                                                                hour: "2-digit",
+                                                                minute: "2-digit",
+                                                            })}
+                                                        </td>
+                                                        <td className="py-3 px-4">
+                                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border ${badge.colorClass}`}>
+                                                                <BadgeIcon className="w-3 h-3" />
+                                                                {badge.label}
                                                             </span>
-                                                        ) : (
-                                                            <span className="text-destructive flex items-center gap-1">
-                                                                <ArrowDownRight className="h-3.5 w-3.5" />
-                                                                {tx.amount}
-                                                            </span>
-                                                        )}
-                                                    </td>
-                                                    <td className="py-3 px-4 font-semibold text-foreground/80">
-                                                        {tx.balance_after}
-                                                    </td>
-                                                    <td className="py-3 px-4 text-foreground/90">
-                                                        {tx.description}
-                                                    </td>
-                                                </tr>
-                                            ))}
+                                                        </td>
+                                                        <td className="py-3 px-4 font-medium">
+                                                            {tx.amount > 0 ? (
+                                                                <span className="text-emerald-500 flex items-center gap-1">
+                                                                    <ArrowUpRight className="h-3.5 w-3.5" />
+                                                                    +{tx.amount}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-destructive flex items-center gap-1">
+                                                                    <ArrowDownRight className="h-3.5 w-3.5" />
+                                                                    {tx.amount}
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                        <td className="py-3 px-4 font-semibold text-foreground/80">
+                                                            {tx.balance_after}
+                                                        </td>
+                                                        <td className="py-3 px-4 text-foreground/90">
+                                                            {tx.description}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
                                         </tbody>
                                     </table>
+
+                                    {/* Mobile Cards View */}
+                                    <div className="flex flex-col md:hidden divide-y divide-border/40">
+                                        {creditHistory.map((tx) => {
+                                            const badge = getTransactionBadge(tx.description, tx.amount);
+                                            const BadgeIcon = badge.Icon;
+                                            return (
+                                                <div key={tx.id} className="p-4 flex gap-4 hover:bg-muted/10 transition-colors">
+                                                    <div className={`mt-0.5 shrink-0 flex items-center justify-center w-8 h-8 rounded-full border ${badge.colorClass}`}>
+                                                        <BadgeIcon className="w-4 h-4" />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0 space-y-1">
+                                                        <div className="flex items-start justify-between gap-2">
+                                                            <div className="space-y-0.5 min-w-0">
+                                                                <p className="font-medium text-foreground text-sm truncate">
+                                                                    {tx.description}
+                                                                </p>
+                                                                <p className="text-xs text-muted-foreground whitespace-nowrap">
+                                                                    {new Date(tx.created_at).toLocaleString("id-ID", {
+                                                                        day: "2-digit",
+                                                                        month: "short",
+                                                                        year: "numeric",
+                                                                        hour: "2-digit",
+                                                                        minute: "2-digit",
+                                                                    })}
+                                                                </p>
+                                                            </div>
+                                                            <div className="flex flex-col items-end shrink-0">
+                                                                {tx.amount > 0 ? (
+                                                                    <span className="text-emerald-500 font-medium flex items-center gap-0.5 text-sm">
+                                                                        <ArrowUpRight className="h-3.5 w-3.5" />
+                                                                        +{tx.amount}
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="text-destructive font-medium flex items-center gap-0.5 text-sm">
+                                                                        <ArrowDownRight className="h-3.5 w-3.5" />
+                                                                        {tx.amount}
+                                                                    </span>
+                                                                )}
+                                                                <span className="text-[10px] text-muted-foreground font-medium mt-0.5 bg-muted px-1.5 py-0.5 rounded">
+                                                                    Sisa: {tx.balance_after}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             )}
                         </div>

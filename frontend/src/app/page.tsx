@@ -29,15 +29,15 @@ export default function LandingPage() {
             </div>
             <div className="hidden md:flex flex-1 justify-end gap-8 items-center">
               <nav className="flex items-center gap-8">
-                <a className="text-slate-300 hover:text-purple-400 transition-colors text-sm font-medium" href="#features">Features</a>
-                <a className="text-slate-300 hover:text-purple-400 transition-colors text-sm font-medium" href="#how-it-works">How it Works</a>
+                <a className="text-slate-300 hover:text-purple-400 transition-colors text-sm font-medium" href="#features">Fitur</a>
+                <a className="text-slate-300 hover:text-purple-400 transition-colors text-sm font-medium" href="#how-it-works">Cara Kerja</a>
               </nav>
               <div className="flex gap-3">
                 <button onClick={handleLogin} className="rounded-lg h-10 px-5 border border-slate-700 hover:bg-slate-800 text-white text-sm font-medium transition-all">
-                  Log In
+                  Masuk
                 </button>
                 <button onClick={handleLogin} className="rounded-lg h-10 px-5 bg-purple-600 hover:bg-purple-500 text-white text-sm font-bold shadow-[0_0_20px_rgba(108,43,238,0.5)] transition-all">
-                  Sign Up
+                  Daftar
                 </button>
               </div>
             </div>
@@ -48,24 +48,24 @@ export default function LandingPage() {
             <div className="flex flex-col gap-8 flex-1 lg:pr-10 z-10">
               <div className="inline-flex items-center gap-2 bg-white/5 backdrop-blur-md rounded-full px-4 py-1.5 w-max border border-purple-500/30">
                 <Sparkles className="text-purple-400 h-4 w-4" />
-                <span className="text-xs font-semibold uppercase tracking-wider text-purple-400">AI-Powered Design v2.0</span>
+                <span className="text-xs font-semibold uppercase tracking-wider text-purple-400">Desain Berbasis AI v2.0</span>
               </div>
               <div className="flex flex-col gap-4 text-left">
                 <h1 className="text-5xl lg:text-7xl font-bold leading-tight tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-purple-300">
-                  Design like a Pro, <br />Powered by AI
+                  Desain Profesional, <br />Dibantu oleh AI
                 </h1>
                 <h2 className="text-slate-400 text-lg lg:text-xl font-normal leading-relaxed max-w-xl">
-                  Create stunning, high-converting graphics in seconds with our advanced AI design tool. No design skills required.
+                  Buat grafis yang memukau dan siap pakai dalam hitungan detik dengan alat desain AI canggih kami. Tanpa perlu keahlian desain.
                 </h2>
               </div>
               <div className="flex flex-col sm:flex-row gap-4">
                 <button onClick={handleLogin} className="flex items-center justify-center gap-2 rounded-xl h-14 px-8 bg-purple-600 text-white text-lg font-bold shadow-[0_0_20px_rgba(108,43,238,0.5)] hover:bg-purple-500 hover:scale-105 transition-all duration-300">
-                  <span>Start Designing Free</span>
+                  <span>Mulai Desain Gratis</span>
                   <ArrowRight className="h-5 w-5" />
                 </button>
                 <button className="flex items-center justify-center gap-2 rounded-xl h-14 px-8 bg-white/5 border border-white/10 text-white text-lg font-medium hover:bg-white/10 transition-colors">
                   <MonitorPlay className="h-5 w-5" />
-                  <span>Watch Demo</span>
+                  <span>Tonton Demo</span>
                 </button>
               </div>
             </div>
@@ -95,7 +95,7 @@ export default function LandingPage() {
                       <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center opacity-60"></div>
                       <div className="bg-white/10 backdrop-blur-md p-4 rounded-xl z-10 flex items-center gap-3">
                         <Zap className="text-purple-400 h-5 w-5 animate-pulse" />
-                        <span className="text-sm font-medium text-white">Generating assets...</span>
+                        <span className="text-sm font-medium text-white">Sedang membuat aset...</span>
                       </div>
                     </div>
                   </div>
@@ -108,9 +108,9 @@ export default function LandingPage() {
           <div id="how-it-works" className="flex flex-col gap-12 py-20 border-t border-white/5 relative">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/3 h-[1px] bg-gradient-to-r from-transparent via-purple-500/50 to-transparent"></div>
             <div className="flex flex-col items-center gap-4 text-center">
-              <span className="text-purple-400 font-semibold tracking-wider uppercase text-sm">Simple Process</span>
-              <h1 className="text-4xl md:text-5xl font-bold leading-tight tracking-tight text-white">How it Works</h1>
-              <p className="text-slate-400 text-lg max-w-[600px]">Create professional, agency-quality designs in three simple steps.</p>
+              <span className="text-purple-400 font-semibold tracking-wider uppercase text-sm">Proses Mudah</span>
+              <h1 className="text-4xl md:text-5xl font-bold leading-tight tracking-tight text-white">Cara Kerjanya</h1>
+              <p className="text-slate-400 text-lg max-w-[600px]">Buat desain berkualitas agensi dalam tiga langkah sederhana.</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 relative z-10">
               <div className="hidden md:block absolute top-[15%] left-[10%] right-[10%] h-[2px] bg-gradient-to-r from-transparent via-white/10 to-transparent -z-10"></div>
@@ -121,8 +121,8 @@ export default function LandingPage() {
                   <Edit3 className="text-purple-400 h-6 w-6" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-white mb-2">1. Write Prompt</h2>
-                  <p className="text-slate-400">Describe your vision, target audience, and style preferences to our advanced AI engine.</p>
+                  <h2 className="text-xl font-bold text-white mb-2">1. Tulis Deskripsi</h2>
+                  <p className="text-slate-400">Jelaskan visi Anda, target audiens, dan preferensi gaya kepada mesin AI canggih kami.</p>
                 </div>
               </div>
 
@@ -132,8 +132,8 @@ export default function LandingPage() {
                   <Sparkles className="text-purple-400 h-6 w-6" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-white mb-2">2. Generate Template</h2>
-                  <p className="text-slate-400">Watch as multiple unique, high-quality templates are created instantly based on your inputs.</p>
+                  <h2 className="text-xl font-bold text-white mb-2">2. Generate Desain</h2>
+                  <p className="text-slate-400">Saksikan beragam desain unik dan berkualitas tinggi terbuat secara instan berdasarkan deskripsi Anda.</p>
                 </div>
               </div>
 
@@ -143,8 +143,8 @@ export default function LandingPage() {
                   <Grid className="text-purple-400 h-6 w-6" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-white mb-2">3. Edit on Canvas</h2>
-                  <p className="text-slate-400">Customize every detail, layout, and layer in our intuitive drag-and-drop editor.</p>
+                  <h2 className="text-xl font-bold text-white mb-2">3. Edit di Canvas</h2>
+                  <p className="text-slate-400">Sesuaikan setiap detail, tata letak, dan layer di editor drag-and-drop kami yang intuitif.</p>
                 </div>
               </div>
             </div>
@@ -159,18 +159,18 @@ export default function LandingPage() {
 
               <div className="inline-flex items-center gap-2 bg-purple-500/20 rounded-full px-5 py-2 border border-purple-500/30 text-purple-300 font-semibold z-10 shadow-[0_0_15px_rgba(108,43,238,0.3)]">
                 <Zap className="h-4 w-4" />
-                <span>Special Offer</span>
+                <span>Penawaran Spesial</span>
               </div>
 
               <div className="z-10">
-                <h1 className="text-4xl md:text-5xl font-black text-white mb-4">Get 10 Free Credits on Sign Up</h1>
+                <h1 className="text-4xl md:text-5xl font-black text-white mb-4">Dapatkan 10 Kredit Gratis Saat Mendaftar</h1>
                 <p className="text-slate-400 text-lg max-w-[600px] mx-auto">
-                  Join thousands of creators building better designs faster. No credit card required to start.
+                  Bergabung dengan ribuan kreator yang membuat desain lebih baik dan lebih cepat. Tidak perlu kartu kredit untuk memulai.
                 </p>
               </div>
 
               <button onClick={handleLogin} className="z-10 flex items-center justify-center gap-2 rounded-xl h-14 px-10 bg-white text-slate-900 text-lg font-bold hover:bg-slate-200 transition-colors shadow-lg mt-4">
-                <span>Claim Free Credits</span>
+                <span>Klaim Kredit Gratis</span>
                 <ArrowRight className="h-5 w-5" />
               </button>
             </div>
@@ -183,9 +183,9 @@ export default function LandingPage() {
               <span className="font-bold text-white">SmartDesign</span>
             </div>
             <div className="flex gap-8 text-sm">
-              <a className="hover:text-white transition-colors" href="#">Privacy Policy</a>
-              <a className="hover:text-white transition-colors" href="#">Terms of Service</a>
-              <a className="hover:text-white transition-colors" href="#">Contact Us</a>
+              <a className="hover:text-white transition-colors" href="#">Kebijakan Privasi</a>
+              <a className="hover:text-white transition-colors" href="#">Syarat & Ketentuan</a>
+              <a className="hover:text-white transition-colors" href="#">Hubungi Kami</a>
             </div>
             <p className="text-sm">© 2026 SmartDesign Studio.</p>
           </footer>

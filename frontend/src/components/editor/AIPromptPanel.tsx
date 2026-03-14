@@ -6,6 +6,8 @@ import { useProjectApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Sparkles, ImagePlus, Wallpaper, RefreshCw, X } from 'lucide-react';
+import { InlineErrorBanner } from '@/components/feedback/InlineErrorBanner';
+import { ErrorModal, ErrorModalType } from '@/components/feedback/ErrorModal';
 
 export const AIPromptPanel: React.FC = () => {
     const { setBackgroundUrl, addElement } = useCanvasStore();
@@ -13,15 +15,26 @@ export const AIPromptPanel: React.FC = () => {
 
     const [prompt, setPrompt] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
-    const [error, setError] = useState<string | null>(null);
     const [generatedUrl, setGeneratedUrl] = useState<string | null>(null);
+
+    // Error state
+    const [inlineError, setInlineError] = useState<{
+        message: string;
+        type: 'error' | 'warning';
+    } | null>(null);
+    const [errorModal, setErrorModal] = useState<{
+        open: boolean;
+        type: ErrorModalType;
+        title?: string;
+        description?: string;
+    }>({ open: false, type: 'system' });
 
     const handleGenerate = async (retryPrompt?: string) => {
         const text = retryPrompt || prompt;
         if (!text.trim()) return;
 
         setIsGenerating(true);
-        setError(null);
+        setInlineError(null);
         setGeneratedUrl(null);
 
         try {
@@ -70,7 +83,33 @@ export const AIPromptPanel: React.FC = () => {
             }
         } catch (err: unknown) {
             console.error('Generation error:', err);
-            setError(err instanceof Error ? err.message : 'Terjadi kesalahan saat generate');
+            const msg = err instanceof Error ? err.message : 'Terjadi kesalahan saat generate';
+            
+            if (msg.toLowerCase().includes("pelanggaran") || msg.toLowerCase().includes("safety") || msg.toLowerCase().includes("nsfw")) {
+                setErrorModal({
+                    open: true,
+                    type: 'safety',
+                    title: 'Deskripsi Tidak Diizinkan',
+                    description: msg,
+                });
+            } else if (msg.toLowerCase().includes("kredit") || msg.toLowerCase().includes("credit")) {
+                setErrorModal({
+                    open: true,
+                    type: 'credits',
+                    title: 'Kredit Habis',
+                    description: msg,
+                });
+            } else if (msg.toLowerCase().includes("timed out") || msg.toLowerCase().includes("timeout")) {
+                setInlineError({
+                    message: "Generasi memakan waktu terlalu lama. Kredit Anda tidak terpotong.",
+                    type: 'warning',
+                });
+            } else {
+                setInlineError({
+                    message: msg,
+                    type: 'error',
+                });
+            }
         } finally {
             setIsGenerating(false);
         }
@@ -128,7 +167,7 @@ export const AIPromptPanel: React.FC = () => {
 
     const handleDiscard = () => {
         setGeneratedUrl(null);
-        setError(null);
+        setInlineError(null);
     };
 
     // Build proxy URL for preview thumbnail
@@ -159,11 +198,17 @@ export const AIPromptPanel: React.FC = () => {
                     />
                 </div>
 
-                {/* Error */}
-                {error && (
-                    <div className="text-xs text-destructive bg-destructive/10 p-2.5 rounded-lg border border-destructive/20">
-                        {error}
-                    </div>
+                {/* Error Banner */}
+                {inlineError && (
+                    <InlineErrorBanner 
+                        message={inlineError.message}
+                        type={inlineError.type}
+                        onRetry={() => {
+                            setInlineError(null);
+                            handleGenerate(prompt);
+                        }}
+                        onDismiss={() => setInlineError(null)}
+                    />
                 )}
 
                 {/* Preview Card */}
@@ -243,6 +288,15 @@ export const AIPromptPanel: React.FC = () => {
                     </Button>
                 </div>
             )}
+
+            {/* Error Modal */}
+            <ErrorModal
+                open={errorModal.open}
+                onClose={() => setErrorModal(prev => ({ ...prev, open: false }))}
+                type={errorModal.type}
+                title={errorModal.title}
+                description={errorModal.description}
+            />
         </div>
     );
 };

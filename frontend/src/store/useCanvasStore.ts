@@ -58,6 +58,7 @@ export interface CanvasState {
     backgroundUrl: string | null;
     backgroundColor: string;
     projectTitle: string;
+    originalPrompt: string | null;
     canvasWidth: number;
     canvasHeight: number;
     history: CanvasElement[][];
@@ -97,7 +98,7 @@ interface CanvasActions {
     setBackgroundColor: (color: string) => void;
     setProjectTitle: (title: string) => void;
     setCanvasDimensions: (width: number, height: number) => void;
-    loadState: (elements: CanvasElement[], backgroundUrl: string | null, title?: string, backgroundColor?: string) => void;
+    loadState: (elements: CanvasElement[], backgroundUrl: string | null, title?: string, backgroundColor?: string, originalPrompt?: string | null) => void;
     setStageRef: (ref: Konva.Stage) => void;
 
     // History
@@ -122,6 +123,7 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set) => ({
     backgroundUrl: null,
     backgroundColor: '#ffffff',
     projectTitle: 'Untitled Design',
+    originalPrompt: null,
     canvasWidth: 1080,
     canvasHeight: 1080,
     history: [[]],
@@ -405,11 +407,12 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set) => ({
 
     setProjectTitle: (title) => set({ projectTitle: title }),
 
-    loadState: (elements, backgroundUrl, title, backgroundColor) => set({
+    loadState: (elements, backgroundUrl, title, backgroundColor, originalPrompt) => set({
         elements,
         backgroundUrl,
         backgroundColor: backgroundColor || '#ffffff',
         projectTitle: title || 'Untitled Design',
+        originalPrompt: originalPrompt || null,
         selectedElementIds: [],
         history: [elements],
         historyIndex: 0

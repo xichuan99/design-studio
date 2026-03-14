@@ -40,9 +40,22 @@ export const CreditBadge = () => {
 
     if (credits === null) return null;
 
+    let badgeColor = "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20";
+    let iconColor = "text-amber-600 dark:text-amber-400";
+    let animationClass = "";
+
+    if (credits === 0) {
+        badgeColor = "bg-destructive/10 text-destructive border-destructive/30";
+        iconColor = "text-destructive";
+        animationClass = "animate-pulse";
+    } else if (credits <= 5) {
+        badgeColor = "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/30";
+        iconColor = "text-orange-600 dark:text-orange-400";
+    }
+
     return (
-        <div className="flex items-center gap-2 bg-amber-500/10 text-amber-400 px-3 py-1.5 rounded-full text-sm font-medium border border-amber-500/20">
-            <Coins className="h-4 w-4 text-amber-400" />
+        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${badgeColor} ${animationClass}`}>
+            <Coins className={`h-4 w-4 ${iconColor}`} />
             <span>{credits} Credits</span>
         </div>
     );

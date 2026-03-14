@@ -19,6 +19,9 @@ import { SidebarActionBar } from "@/components/create/SidebarActionBar";
 import { UnifiedPreviewEditor } from "@/components/create/UnifiedPreviewEditor";
 import { UnifiedResultsView } from "@/components/create/UnifiedResultsView";
 import { CopywritingVariation } from "@/lib/api";
+import { ErrorModal } from "@/components/feedback/ErrorModal";
+import { InlineErrorBanner } from "@/components/feedback/InlineErrorBanner";
+import { toast } from "sonner";
 
 type CreateStep = 'input' | 'brief' | 'results' | 'generating' | 'preview';
 
@@ -59,6 +62,26 @@ export default function CreatePage() {
     const [briefAnswers, setBriefAnswers] = useState<Record<string, string>>({});
     const [removeProductBg, setRemoveProductBg] = useState(false);
     const [copyVariations, setCopyVariations] = useState<CopywritingVariation[]>([]);
+    
+    // Error Handling State
+    const [errorModalState, setErrorModalState] = useState<{
+        isOpen: boolean;
+        title: string;
+        description: string;
+        type: 'safety' | 'credits' | 'system';
+        actionLabel?: string;
+        onAction?: () => void;
+    }>({
+        isOpen: false,
+        title: "",
+        description: "",
+        type: "system"
+    });
+    const [inlineError, setInlineError] = useState<{
+        message: string;
+        type: 'error' | 'warning';
+        onRetry?: () => void;
+    } | null>(null);
     
     // Brand Kit State
     const [activeBrandKit, setActiveBrandKit] = useState<BrandKit | null>(null);
@@ -175,11 +198,11 @@ export default function CreatePage() {
 
     const handleFileSelect = (file: File) => {
         if (!file.type.startsWith("image/")) {
-            alert("Hanya file gambar (PNG, JPG) yang diperbolehkan.");
+            toast.error("Hanya file gambar (PNG, JPG) yang diperbolehkan.");
             return;
         }
         if (file.size > MAX_FILE_SIZE) {
-            alert("Ukuran file maksimal 5MB.");
+            toast.error("Ukuran file maksimal 5MB.");
             return;
         }
         setReferenceFile(file);
@@ -242,7 +265,7 @@ export default function CreatePage() {
 
         } catch (error) {
             console.error(error);
-            alert(error instanceof Error ? error.message : "Gagal menganalisis teks.");
+            toast.error(error instanceof Error ? error.message : "Gagal menganalisis teks.");
         } finally {
             setIsParsing(false);
         }
@@ -287,7 +310,7 @@ export default function CreatePage() {
 
         } catch (error) {
             console.error(error);
-            alert(error instanceof Error ? error.message : "Gagal menghasilkan prompt.");
+            toast.error(error instanceof Error ? error.message : "Gagal menghasilkan prompt.");
         } finally {
             setIsParsing(false);
         }
@@ -387,9 +410,54 @@ export default function CreatePage() {
 
         } catch (error) {
             console.error(error);
-            alert(error instanceof Error ? error.message : "Gagal memproses desain.");
+            const errorMessage = error instanceof Error ? error.message : "Gagal memproses desain.";
+            
             // Revert back to review on failure so they can try again
             setCurrentStep('results');
+            
+            if (errorMessage.toLowerCase().includes("pelanggaran") || errorMessage.toLowerCase().includes("safety") || errorMessage.toLowerCase().includes("nsfw")) {
+                setErrorModalState({
+                    isOpen: true,
+                    title: "Deskripsi Tidak Diizinkan",
+                    description: errorMessage,
+                    type: "safety",
+                    actionLabel: "Ubah Deskripsi",
+                    onAction: () => {
+                        setErrorModalState(prev => ({ ...prev, isOpen: false }));
+                        setCurrentStep('input');
+                    }
+                });
+            } else if (errorMessage.toLowerCase().includes("kredit") || errorMessage.toLowerCase().includes("credit")) {
+                setErrorModalState({
+                    isOpen: true,
+                    title: "Kredit Habis",
+                    description: errorMessage.includes("kredit") ? errorMessage : "Kredit Anda tidak mencukupi untuk melakukan generasi AI ini. Silakan top up kredit Anda.",
+                    type: "credits",
+                    actionLabel: "Beli Kredit",
+                    onAction: () => {
+                        setErrorModalState(prev => ({ ...prev, isOpen: false }));
+                        router.push('/settings');
+                    }
+                });
+            } else if (errorMessage.toLowerCase().includes("timed out") || errorMessage.toLowerCase().includes("timeout")) {
+                setInlineError({
+                    message: "Generasi gambar memakan waktu terlalu lama (timeout). Jangan khawatir, kredit Anda tidak terpotong.",
+                    type: "warning",
+                    onRetry: () => {
+                        setInlineError(null);
+                        handleGenerateImage();
+                    }
+                });
+            } else {
+                setInlineError({
+                    message: `Terjadi kesalahan saat memproses gambar: ${errorMessage}`,
+                    type: "error",
+                    onRetry: () => {
+                        setInlineError(null);
+                        handleGenerateImage();
+                    }
+                });
+            }
         } finally {
             setIsGeneratingImage(false);
         }
@@ -470,14 +538,15 @@ export default function CreatePage() {
                 aspect_ratio: finalAspectRatio, // Use the dynamically detected aspect ratio
                 canvas_state: {
                     backgroundUrl: activeImageUrl || null,
-                    elements: elements
+                    elements: elements,
+                    originalPrompt: parsedData.visual_prompt || rawText
                 }
             });
 
             router.push(`/edit/${newProject.id}`);
         } catch (error) {
             console.error('Failed to create project', error);
-            alert('Gagal melanjutkan ke editor. Silakan coba lagi.');
+            toast.error('Gagal melanjutkan ke editor. Silakan coba lagi.');
             setIsSaving(false);
         }
     };
@@ -564,8 +633,20 @@ export default function CreatePage() {
                 </aside>
 
                 {/* Main Workspace Preview (Week 1 Scope) */}
-                <main className={`flex-1 bg-muted/20 relative flex justify-center items-start ${currentStep === 'preview' ? 'overflow-hidden p-0' : 'overflow-y-auto p-4 md:p-8'}`}>
-                    {currentStep === 'brief' && briefQuestions.length > 0 ? (
+                <main className={`flex-1 bg-muted/20 relative flex flex-col items-center justify-start ${currentStep === 'preview' ? 'overflow-hidden p-0' : 'overflow-y-auto p-4 md:p-8'}`}>
+                    {inlineError && (
+                        <div className="w-full max-w-4xl mx-auto mb-4 z-10 shrink-0">
+                            <InlineErrorBanner 
+                                message={inlineError.message} 
+                                type={inlineError.type} 
+                                onRetry={inlineError.onRetry} 
+                                onDismiss={() => setInlineError(null)} 
+                            />
+                        </div>
+                    )}
+                    
+                    <div className="flex-1 w-full flex justify-center items-start">
+                        {currentStep === 'brief' && briefQuestions.length > 0 ? (
                         <DesignBriefInterview 
                             questions={briefQuestions}
                             onComplete={(answers) => handleGeneratePrompt(answers)}
@@ -634,8 +715,19 @@ export default function CreatePage() {
                             </p>
                         </div>
                     )}
+                    </div>
                 </main>
             </div>
+            
+            <ErrorModal
+                open={errorModalState.isOpen}
+                onClose={() => setErrorModalState(prev => ({ ...prev, isOpen: false }))}
+                title={errorModalState.title}
+                description={errorModalState.description}
+                type={errorModalState.type}
+                actionLabel={errorModalState.actionLabel}
+                onAction={errorModalState.onAction}
+            />
         </div>
     );
 }

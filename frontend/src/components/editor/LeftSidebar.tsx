@@ -12,6 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Sparkles, Image as ImageIcon, Wrench, Type, Square, Circle, Minus, Blocks, Upload, Trash2, ChevronLeft, ChevronRight, Scissors, Palette, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
+import { toast } from 'sonner';
 
 export const LeftSidebar: React.FC = () => {
     const [isCollapsed, setIsCollapsed] = useState(false);
@@ -100,7 +101,7 @@ export const LeftSidebar: React.FC = () => {
             });
         } catch (err) {
             console.error('Failed to upload image', err);
-            alert('Failed to upload image. Please try again.');
+            toast.error('Gagal mengupload gambar. Coba lagi.');
         } finally {
             setSaving(false);
             if (e.target) e.target.value = '';

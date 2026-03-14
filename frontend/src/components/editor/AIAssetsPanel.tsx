@@ -5,6 +5,7 @@ import { useProjectApi } from "@/lib/api";
 import { useCanvasStore } from "@/store/useCanvasStore";
 import { Loader2, Wallpaper, ImagePlus, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface AIGeneration {
     id: string;
@@ -159,10 +160,10 @@ export const AIAssetsPanel: React.FC = () => {
                                                     document.body.appendChild(a);
                                                     a.click();
                                                     a.remove();
-                                                    alert("Gambar berhasil di-download. Buka tab 'Hapus BG' dan upload gambar ini.");
+                                                    toast.success("Gambar berhasil di-download. Buka tab 'Hapus BG' dan upload gambar ini.", { duration: 5000 });
                                                 } catch (e) {
                                                     console.error(e);
-                                                    alert("Gagal mengunduh gambar.");
+                                                    toast.error("Gagal mengunduh gambar.");
                                                 }
                                             }
                                         }}

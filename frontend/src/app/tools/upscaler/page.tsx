@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, ArrowLeft, Download } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { toast } from "sonner";
 
 export default function UpscalerPage() {
   const router = useRouter();
@@ -48,9 +49,9 @@ export default function UpscalerPage() {
       setStep(3);
     } catch (err: unknown) {
       if (err instanceof Error) {
-        alert(err.message);
+        toast.error(err.message);
       } else {
-        alert(String(err));
+        toast.error(String(err));
       }
     } finally {
       setLoading(false);

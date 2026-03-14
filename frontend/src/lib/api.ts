@@ -460,13 +460,11 @@ export function useProjectApi() {
     };
 
     const saveBrandKit = async (data: Omit<BrandKitProfile, 'id' | 'created_at' | 'updated_at' | 'user_id'>): Promise<BrandKitProfile> => {
-        console.log("saveBrandKit payload:", data);
         const res = await fetch(`${API_BASE_URL}/brand-kits`, {
             method: 'POST',
             headers: getHeaders(),
             body: JSON.stringify(data),
         });
-        console.log("saveBrandKit raw response:", res);
         if (!res.ok) {
             const errBase = await res.json().catch(() => ({}));
             console.error("saveBrandKit error response json:", errBase);

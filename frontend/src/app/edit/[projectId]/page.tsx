@@ -98,7 +98,8 @@ export default function EditorPage() {
                         project.canvas_state.elements || [],
                         project.canvas_state.backgroundUrl || null,
                         project.title,
-                        project.canvas_state.backgroundColor
+                        project.canvas_state.backgroundColor,
+                        project.canvas_state.originalPrompt || null
                     );
 
                     if (hasBg) {
