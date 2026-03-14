@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_db
 from app.api.rate_limit import rate_limit_dependency
 from app.models.user import User
-from app.services import bg_removal_service, upscale_service, banner_service
+from app.services import bg_removal_service, upscale_service, banner_service, retouch_service, id_photo_service
 from app.services.storage_service import upload_image # Corrected from upload_imager
 
 router = APIRouter()
@@ -213,3 +213,114 @@ async def text_banner(
         raise HTTPException(
             status_code=500, detail="Failed to generate text banner"
         )
+
+
+@router.post("/retouch")
+async def retouch(
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(rate_limit_dependency),
+):
+    """
+    1. Enhances exposure/color using CLAHE
+    2. Removes blemishes using Bilateral Filtering
+    """
+    if current_user.credits_remaining < 1:
+        raise HTTPException(status_code=402, detail="Insufficient credits")
+
+    content = await file.read()
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Image size exceeds 10MB limit")
+
+    from app.services.credit_service import log_credit_change
+    await log_credit_change(db, current_user, -1, "Auto-Retouch foto")
+    await db.commit()
+
+    try:
+        start_time = time.time()
+        
+        # 1. Upload original for Before/After slider
+        temp_id = str(uuid.uuid4())[:8]
+        mime_type = file.content_type or "image/jpeg"
+        before_url = await upload_image(
+            content,
+            content_type=mime_type,
+            prefix=f"retouch_before_{temp_id}"
+        )
+
+        # 2. Process
+        enhanced_bytes = await retouch_service.auto_enhance(content)
+        final_bytes = await retouch_service.remove_blemishes(enhanced_bytes)
+
+        # 3. Upload result
+        result_url = await upload_image(
+            final_bytes,
+            content_type="image/jpeg",
+            prefix=f"retouch_after_{temp_id}"
+        )
+
+        logger.info(f"Retouch logic took {time.time() - start_time:.2f}s")
+        return {"url": result_url, "before_url": before_url}
+    except Exception as e:
+        from app.services.credit_service import log_credit_change
+        await log_credit_change(db, current_user, 1, "Refund: gagal retouch foto")
+        await db.commit()
+        logger.exception("Retouch failed")
+        raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
+
+
+@router.post("/id-photo")
+async def create_id_photo(
+    file: UploadFile = File(...),
+    bg_color: str = Form("red"),
+    size: str = Form("3x4"),
+    custom_width_cm: float = Form(None),
+    custom_height_cm: float = Form(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(rate_limit_dependency),
+):
+    """
+    1. Removes background
+    2. Detects face and smart crops
+    3. Replaces background with solid color
+    4. Resizes to standard print sizes at 300 DPI
+    """
+    if current_user.credits_remaining < 1:
+        raise HTTPException(status_code=402, detail="Insufficient credits")
+
+    content = await file.read()
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Image size exceeds 10MB limit")
+
+    from app.services.credit_service import log_credit_change
+    await log_credit_change(db, current_user, -1, f"Pasfoto Maker ({size})")
+    await db.commit()
+
+    try:
+        start_time = time.time()
+        
+        # 1. Generate Photo
+        final_bytes = await id_photo_service.generate_id_photo(
+            image_bytes=content,
+            bg_color_name=bg_color,
+            size_name=size,
+            custom_w_cm=custom_width_cm,
+            custom_h_cm=custom_height_cm
+        )
+
+        # 2. Upload result
+        photo_id = str(uuid.uuid4())[:8]
+        result_url = await upload_image(
+            final_bytes,
+            content_type="image/jpeg",
+            prefix=f"idphoto_{photo_id}"
+        )
+
+        logger.info(f"ID Photo logic took {time.time() - start_time:.2f}s")
+        return {"url": result_url, "width_cm": custom_width_cm, "height_cm": custom_height_cm, "bg_color": bg_color}
+    except Exception as e:
+        from app.services.credit_service import log_credit_change
+        await log_credit_change(db, current_user, 1, "Refund: gagal buat pasfoto")
+        await db.commit()
+        logger.exception("ID Photo generation failed")
+        raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")

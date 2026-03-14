@@ -1,6 +1,6 @@
 import { AppHeader } from "@/components/layout/AppHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Wand2, ImagePlus, Eraser, MoveDiagonal } from "lucide-react";
+import { Wand2, ImagePlus, Eraser, MoveDiagonal, Sparkles, Camera } from "lucide-react";
 import Link from "next/link";
 import { BeforeAfterSlider } from "@/components/tools/BeforeAfterSlider";
 
@@ -18,6 +18,20 @@ export default function ToolsHubPage() {
       description: "Pertajam dan perbesar ukuran foto yang buram atau pecah (hingga 4x ukuran asli).",
       icon: <ImagePlus className="w-8 h-8 text-green-500" />,
       href: "/tools/upscaler",
+      isReady: true,
+    },
+    {
+      title: "Quick Retouch",
+      description: "Perbaiki pencahayaan dan bersihkan noda wajah foto Anda secara otomatis dalam satu klik.",
+      icon: <Sparkles className="w-8 h-8 text-yellow-500" />,
+      href: "/tools/retouch",
+      isReady: true,
+    },
+    {
+      title: "ID Photo Maker",
+      description: "Buat pasfoto standar (buku nikah, ijazah, CV) dengan pengaturan warna dan ukuran otomatis.",
+      icon: <Camera className="w-8 h-8 text-blue-500" />,
+      href: "/tools/id-photo",
       isReady: true,
     },
     {

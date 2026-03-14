@@ -1,0 +1,172 @@
+"use client";
+
+import { useState } from "react";
+import { AppHeader } from "@/components/layout/AppHeader";
+import { ImageDropzone } from "@/components/tools/ImageDropzone";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Loader2, ArrowLeft, Download, Camera } from "lucide-react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { toast } from "sonner";
+import { useProjectApi } from "@/lib/api";
+
+export default function IdPhotoPage() {
+  const router = useRouter();
+  const api = useProjectApi();
+  const [step, setStep] = useState(1);
+  const [originalFile, setOriginalFile] = useState<File | null>(null);
+  const [previewOriginal, setPreviewOriginal] = useState<string>("");
+  const [bgColor, setBgColor] = useState("red");
+  const [size, setSize] = useState("3x4");
+  const [customW, setCustomW] = useState("");
+  const [customH, setCustomH] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [resultUrl, setResultUrl] = useState<string>("");
+
+  const handleFileSelect = (file: File) => {
+    setOriginalFile(file);
+    setPreviewOriginal(URL.createObjectURL(file));
+    setStep(2);
+  };
+
+  const handleGenerate = async () => {
+    if (!originalFile) return;
+    if (size === "custom" && (!customW || !customH)) {
+      toast.error("Harap isi ukuran kustom (Lebar & Tinggi)");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const data = await api.generateIdPhoto(originalFile, bgColor, size, customW, customH);
+      setResultUrl(data.url);
+      setStep(3);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        toast.error(err.message);
+      } else {
+        toast.error(String(err));
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <AppHeader />
+      <div className="flex-1 max-w-4xl mx-auto p-6 md:p-8 w-full">
+        <Button variant="ghost" className="mb-6 -ml-4 gap-2 text-foreground/70 hover:text-foreground hover:bg-muted/50 transition-colors" onClick={() => step > 1 && step < 3 ? setStep(1) : router.push("/tools")}>
+          <ArrowLeft className="w-4 h-4" /> Kembali
+        </Button>
+
+        <div className="mb-8">
+          <h1 className="text-3xl font-jakarta font-bold text-foreground flex items-center gap-3">
+            <Camera className="w-8 h-8 text-blue-500" />
+            ID Photo (Pasfoto) Maker
+          </h1>
+          <p className="text-muted-foreground mt-2">Buat pasfoto standar (buku nikah, ijazah, CV) dengan AI cerdas pencari wajah.</p>
+        </div>
+
+        {step === 1 && (
+          <ImageDropzone onFileSelect={handleFileSelect} />
+        )}
+
+        {step === 2 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold border-b pb-2">1. Foto Original</h3>
+              <div className="aspect-[3/4] bg-muted/50 rounded-xl overflow-hidden border border-border shadow-inner relative">
+                <Image src={previewOriginal} alt="Original" fill className="object-contain p-2" unoptimized />
+              </div>
+            </div>
+            
+            <div className="space-y-6">
+              <h3 className="text-lg font-semibold border-b pb-2">2. Pengaturan Pasfoto</h3>
+              
+              {/* Warn Background */}
+              <div className="space-y-3">
+                <label className="text-sm font-medium">Warna Latar Belakang</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div 
+                    onClick={() => setBgColor("red")}
+                    className={`cursor-pointer rounded-lg border-2 p-3 flex items-center gap-3 transition-all ${bgColor === "red" ? "border-red-500 bg-red-50" : "border-border hover:border-red-300"}`}
+                  >
+                    <div className="w-6 h-6 rounded-full bg-[#CC0000] shadow-sm"></div>
+                    <span className="font-medium text-sm">Merah Studio</span>
+                  </div>
+                  <div 
+                    onClick={() => setBgColor("blue")}
+                    className={`cursor-pointer rounded-lg border-2 p-3 flex items-center gap-3 transition-all ${bgColor === "blue" ? "border-blue-500 bg-blue-50" : "border-border hover:border-blue-300"}`}
+                  >
+                    <div className="w-6 h-6 rounded-full bg-[#0047AB] shadow-sm"></div>
+                    <span className="font-medium text-sm">Biru Studio</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Ukuran */}
+              <div className="space-y-3">
+                <label className="text-sm font-medium">Ukuran Pasfoto (cm)</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {["2x3", "3x4", "4x6", "custom"].map(s => (
+                    <Button 
+                      key={s} 
+                      variant={size === s ? "default" : "outline"}
+                      className={`font-semibold ${size === s ? "shadow-md" : "text-muted-foreground"}`}
+                      onClick={() => setSize(s)}
+                    >
+                      {s === "custom" ? "Kustom" : s}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {size === "custom" && (
+                <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">Lebar (cm)</label>
+                    <Input type="number" step="0.1" value={customW} onChange={e => setCustomW(e.target.value)} placeholder="Mis: 3.5" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">Tinggi (cm)</label>
+                    <Input type="number" step="0.1" value={customH} onChange={e => setCustomH(e.target.value)} placeholder="Mis: 4.5" />
+                  </div>
+                </div>
+              )}
+
+              <Button 
+                onClick={handleGenerate} 
+                className="w-full font-bold shadow-md hover:shadow-lg transition-transform active:scale-95 mt-4" 
+                size="lg" 
+                disabled={loading}
+              >
+                {loading ? <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Sedang Memproses GPU (30s)...</> : "Generate Pasfoto"}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="space-y-8 max-w-md mx-auto">
+            <h3 className="text-xl font-bold text-center">Hasil Pasfoto (300 DPI)</h3>
+            <div className="aspect-[3/4] rounded-xl overflow-hidden shadow-2xl border bg-black relative">
+               <Image src={resultUrl} alt="Result" fill className="object-contain" unoptimized />
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <Button size="lg" className="gap-2 font-bold shadow-md w-full" onClick={() => window.open(resultUrl, "_blank")}>
+                <Download className="w-5 h-5" /> Download Resolusi Cetak (HD)
+              </Button>
+              <Button size="lg" variant="outline" className="w-full" onClick={() => setStep(2)}>
+                <span className="mr-2">♻️</span> Generate Ulang
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

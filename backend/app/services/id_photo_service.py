@@ -1,0 +1,141 @@
+import os
+import io
+import cv2
+import numpy as np
+from PIL import Image
+import logging
+
+from app.services import bg_removal_service
+
+logger = logging.getLogger(__name__)
+
+# Standard ID photo pixel sizes at 300 DPI (approximate)
+ID_SIZES = {
+    "2x3": (236, 354),
+    "3x4": (354, 472),
+    "4x6": (472, 709)
+}
+
+BG_COLORS = {
+    "red": (204, 0, 0),    # Pasfoto Studio Red
+    "blue": (0, 71, 171)   # Pasfoto Studio Blue
+}
+
+async def generate_id_photo(
+    image_bytes: bytes,
+    bg_color_name: str = "red",
+    size_name: str = "3x4",
+    custom_w_cm: float = None,
+    custom_h_cm: float = None
+) -> bytes:
+    """
+    Generates a print-ready ID photo (pasfoto) at 300 DPI.
+    Steps: BG removal -> Face Detection -> Face-Centered Crop -> Solid BG Fill -> Resize.
+    """
+    try:
+        # Determine target pixel dimensions based on 300 DPI
+        if size_name == "custom" and custom_w_cm and custom_h_cm:
+            # 300 Px Per Inch = ~118.11 Px Per cm
+            target_w = int(custom_w_cm * 118.11)
+            target_h = int(custom_h_cm * 118.11)
+        else:
+            target_w, target_h = ID_SIZES.get(size_name, ID_SIZES["3x4"])
+
+        bg_rgb = BG_COLORS.get(bg_color_name, BG_COLORS["red"])
+
+        # 1. Remove background (via Fal.ai hirefnet)
+        no_bg_bytes = await bg_removal_service.remove_background(image_bytes)
+        person_img = Image.open(io.BytesIO(no_bg_bytes)).convert("RGBA")
+
+        # 2. Detect face for accurate cropping
+        cv2_base_dir = os.path.dirname(os.path.abspath(cv2.__file__))
+        haar_model = os.path.join(cv2_base_dir, 'data', 'haarcascade_frontalface_default.xml')
+        face_cascade = cv2.CascadeClassifier(haar_model)
+
+        np_img = np.array(person_img.convert('RGB'))
+        bgr_img = cv2.cvtColor(np_img, cv2.COLOR_RGB2BGR)
+        gray = cv2.cvtColor(bgr_img, cv2.COLOR_BGR2GRAY)
+
+        # Detect faces
+        faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(50, 50))
+
+        img_w, img_h = person_img.size
+        target_aspect = target_w / target_h
+
+        # Variables for rendering
+        crop_left, crop_top, crop_right, crop_bottom = 0, 0, target_w, target_h
+        person_img_scaled = person_img
+        new_w, new_h = img_w, img_h
+
+        if len(faces) > 0:
+            # Get largest face (most likely the subject)
+            (x, y, w, h) = max(faces, key=lambda f: f[2] * f[3])
+            
+            # Standard Pasfoto: Face height is ~50-60% of total image height
+            desired_face_h = int(target_h * 0.55)
+            scale = desired_face_h / max(h, 1) # prevent div by zero
+
+            new_w = int(img_w * scale)
+            new_h = int(img_h * scale)
+            person_img_scaled = person_img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+
+            # Recalculate face box relative to new scaled dimensions
+            scaled_x, scaled_y, scaled_w, _ = int(x * scale), int(y * scale), int(w * scale), int(h * scale)
+
+            # Position face: horizontally centered, vertically with ~12% clearance at the top
+            crop_top = scaled_y - int(target_h * 0.12)
+            crop_bottom = crop_top + target_h
+            
+            crop_left = scaled_x + (scaled_w // 2) - (target_w // 2)
+            crop_right = crop_left + target_w
+            
+        else:
+            # FALLBACK: if face detection fails, do a standard top-center crop fit
+            img_aspect = img_w / img_h
+            if img_aspect > target_aspect:
+                new_h = target_h
+                new_w = int(target_h * img_aspect)
+                person_img_scaled = person_img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+                crop_top = 0
+                crop_left = (new_w - target_w) // 2
+            else:
+                new_w = target_w
+                new_h = int(target_w / img_aspect)
+                person_img_scaled = person_img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+                crop_left = 0
+                crop_top = int(new_h * 0.05) # Assume top of head is 5% down
+            
+            crop_right = crop_left + target_w
+            crop_bottom = crop_top + target_h
+
+        # 3. Create infinite transparent canvas to avoid out-of-bounds crops
+        canvas_w = max(new_w, target_w * 3)
+        canvas_h = max(new_h, target_h * 3)
+        # Shift coordinate center so we don't accidentally crop negative coords
+        shift_x = target_w
+        shift_y = target_h
+        
+        canvas = Image.new("RGBA", (canvas_w, canvas_h), (0, 0, 0, 0))
+        canvas.paste(person_img_scaled, (shift_x, shift_y))
+
+        # Adjust crop coordinates given the shift
+        adj_crop_left = crop_left + shift_x
+        adj_crop_top = crop_top + shift_y
+        adj_crop_right = crop_right + shift_x
+        adj_crop_bottom = crop_bottom + shift_y
+
+        # Execute crop
+        cropped_person = canvas.crop((adj_crop_left, adj_crop_top, adj_crop_right, adj_crop_bottom))
+
+        # 4. Fill with requested solid background color
+        final_img = Image.new("RGB", (target_w, target_h), bg_rgb)
+        final_img.paste(cropped_person, (0, 0), cropped_person)
+
+        # 5. Export as print-ready JPEG at 300 DPI
+        out_buffer = io.BytesIO()
+        final_img.save(out_buffer, format="JPEG", quality=100, dpi=(300, 300))
+        return out_buffer.getvalue()
+
+    except Exception as e:
+        logger.exception(f"Failed to generate ID photo: {str(e)}")
+        raise

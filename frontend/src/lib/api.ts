@@ -446,6 +446,42 @@ export function useProjectApi() {
         return response.json();
     };
 
+    const retouchImage = async (file: File): Promise<{ url: string, before_url: string }> => {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch(`${API_BASE_URL}/api/tools/retouch`, {
+            method: 'POST',
+            headers: getHeaders(true),
+            body: formData,
+        });
+        if (!response.ok) {
+            const errBase = await response.json().catch(() => ({}));
+            throw new Error(errBase.detail || 'Failed to retouch image');
+        }
+        return response.json();
+    };
+
+    const generateIdPhoto = async (file: File, bgColor: string, size: string, customW?: string, customH?: string): Promise<{ url: string }> => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('bg_color', bgColor);
+        formData.append('size', size);
+        if (customW) formData.append('custom_width_cm', customW);
+        if (customH) formData.append('custom_height_cm', customH);
+
+        const response = await fetch(`${API_BASE_URL}/api/tools/id-photo`, {
+            method: 'POST',
+            headers: getHeaders(true),
+            body: formData,
+        });
+        if (!response.ok) {
+            const errBase = await response.json().catch(() => ({}));
+            throw new Error(errBase.detail || 'Failed to generate ID photo');
+        }
+        return response.json();
+    };
+
 
 
     // --- Brand Kit API ---
@@ -525,5 +561,7 @@ export function useProjectApi() {
         generateTextBanner,
         generateProjectTitle,
         getCreditHistory,
+        retouchImage,
+        generateIdPhoto,
     };
 }

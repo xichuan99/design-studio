@@ -127,3 +127,60 @@ def test_text_banner_endpoint_success():
             color_hint="merah kuning",
             quality="standard"
         )
+
+
+def test_retouch_endpoint_success():
+    """Test auto-retouch endpoint."""
+    mock_file_content = b"fake_image_bytes"
+    files = {"file": ("test.png", mock_file_content, "image/png")}
+
+    with patch("app.services.retouch_service.auto_enhance", new_callable=AsyncMock) as mock_enhance, \
+         patch("app.services.retouch_service.remove_blemishes", new_callable=AsyncMock) as mock_blemish, \
+         patch("app.api.ai_tools.upload_image", new_callable=AsyncMock) as mock_upload:
+
+        mock_enhance.return_value = b"enhanced"
+        mock_blemish.return_value = b"blemish_free"
+        mock_upload.side_effect = ["http://storage.com/before.jpg", "http://storage.com/after.jpg"]
+
+        res = client.post(
+            "/api/tools/retouch",
+            files=files,
+        )
+
+        assert res.status_code == 200
+        assert res.json() == {"url": "http://storage.com/after.jpg", "before_url": "http://storage.com/before.jpg"}
+        mock_enhance.assert_called_once()
+        mock_blemish.assert_called_once()
+        assert mock_upload.call_count == 2
+
+def test_id_photo_endpoint_success():
+    """Test generating ID photo."""
+    mock_file_content = b"fake_image_bytes"
+    files = {"file": ("test.png", mock_file_content, "image/png")}
+    data = {
+        "bg_color": "red",
+        "size": "3x4"
+    }
+
+    with patch("app.services.id_photo_service.generate_id_photo", new_callable=AsyncMock) as mock_gen, \
+         patch("app.api.ai_tools.upload_image", new_callable=AsyncMock) as mock_upload:
+
+        mock_gen.return_value = b"id_photo"
+        mock_upload.return_value = "http://storage.com/idphoto.jpg"
+
+        res = client.post(
+            "/api/tools/id-photo",
+            data=data,
+            files=files,
+        )
+
+        assert res.status_code == 200
+        assert res.json() == {"url": "http://storage.com/idphoto.jpg", "width_cm": None, "height_cm": None, "bg_color": "red"}
+        mock_gen.assert_called_once_with(
+            image_bytes=b"fake_image_bytes",
+            bg_color_name="red",
+            size_name="3x4",
+            custom_w_cm=None,
+            custom_h_cm=None
+        )
+        mock_upload.assert_called_once()

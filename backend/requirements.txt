@@ -12,6 +12,7 @@ python-jose[cryptography]==3.*
 httpx==0.28.*
 fal-client==0.*
 Pillow==11.*
+opencv-python-headless==4.*
 scikit-learn==1.*
 numpy==2.*
 pytest==8.*
