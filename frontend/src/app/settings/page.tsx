@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { useProjectApi, BrandKit } from "@/lib/api";
+import { useProjectApi, BrandKit, CreditTransaction } from "@/lib/api";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +33,9 @@ import {
     Sparkles,
     Mail,
     ChevronRight,
+    ArrowUpRight,
+    ArrowDownRight,
+    Clock,
 } from "lucide-react";
 
 const NAME_MIN_LENGTH = 2;
@@ -90,6 +93,10 @@ export default function SettingsPage() {
     const [activeBrandKitId, setActiveBrandKitId] = useState<string | null>(null);
     const [isLoadingKits, setIsLoadingKits] = useState(true);
 
+    // Credit History State
+    const [creditHistory, setCreditHistory] = useState<CreditTransaction[]>([]);
+    const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+
     // Route guard: redirect if unauthenticated
     useEffect(() => {
         if (sessionStatus === "unauthenticated") {
@@ -128,12 +135,26 @@ export default function SettingsPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    const fetchCreditHistory = useCallback(async () => {
+        try {
+            setIsLoadingHistory(true);
+            const historyData = await api.getCreditHistory(20, 0); // initial load 20
+            setCreditHistory(historyData.transactions);
+        } catch (err) {
+            console.error("Failed to load credit history", err);
+        } finally {
+            setIsLoadingHistory(false);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     useEffect(() => {
         if (sessionStatus === "authenticated") {
             fetchProfile();
             fetchBrandKits();
+            fetchCreditHistory();
         }
-    }, [sessionStatus, fetchProfile, fetchBrandKits]);
+    }, [sessionStatus, fetchProfile, fetchBrandKits, fetchCreditHistory]);
 
     // Auto-clear success message
     useEffect(() => {
@@ -367,6 +388,71 @@ export default function SettingsPage() {
                                 </div>
                             </CardContent>
                         </Card>
+                        
+                        {/* Transaction History Sub-section */}
+                        <div className="mt-8">
+                            <h4 className="font-semibold text-base mb-4 flex items-center gap-2 text-foreground">
+                                <Clock className="h-4 w-4 text-muted-foreground" />
+                                Riwayat Transaksi
+                            </h4>
+                            
+                            {isLoadingHistory ? (
+                                <div className="flex justify-center items-center py-8">
+                                    <Loader2 className="h-6 w-6 animate-spin text-indigo-500/50" />
+                                </div>
+                            ) : creditHistory.length === 0 ? (
+                                <div className="text-center py-10 bg-muted/20 border border-dashed border-border/60 rounded-xl">
+                                    <p className="text-sm text-muted-foreground">Belum ada riwayat transaksi.</p>
+                                </div>
+                            ) : (
+                                <div className="rounded-xl border bg-card/50 overflow-hidden text-sm">
+                                    <table className="w-full text-left">
+                                        <thead className="bg-muted/30">
+                                            <tr>
+                                                <th className="py-3 px-4 font-medium text-muted-foreground w-[160px]">Tanggal</th>
+                                                <th className="py-3 px-4 font-medium text-muted-foreground w-[120px]">Perubahan</th>
+                                                <th className="py-3 px-4 font-medium text-muted-foreground">Sisa Kredit</th>
+                                                <th className="py-3 px-4 font-medium text-muted-foreground">Deskripsi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-border/40">
+                                            {creditHistory.map((tx) => (
+                                                <tr key={tx.id} className="hover:bg-muted/20 transition-colors">
+                                                    <td className="py-3 px-4 whitespace-nowrap text-muted-foreground">
+                                                        {new Date(tx.created_at).toLocaleString("id-ID", {
+                                                            day: "2-digit",
+                                                            month: "short",
+                                                            year: "numeric",
+                                                            hour: "2-digit",
+                                                            minute: "2-digit",
+                                                        })}
+                                                    </td>
+                                                    <td className="py-3 px-4 font-medium">
+                                                        {tx.amount > 0 ? (
+                                                            <span className="text-emerald-500 flex items-center gap-1">
+                                                                <ArrowUpRight className="h-3.5 w-3.5" />
+                                                                +{tx.amount}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-destructive flex items-center gap-1">
+                                                                <ArrowDownRight className="h-3.5 w-3.5" />
+                                                                {tx.amount}
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                    <td className="py-3 px-4 font-semibold text-foreground/80">
+                                                        {tx.balance_after}
+                                                    </td>
+                                                    <td className="py-3 px-4 text-foreground/90">
+                                                        {tx.description}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
                     </SettingsSection>
 
                     {/* -- SECTION BRAND KIT -- */}

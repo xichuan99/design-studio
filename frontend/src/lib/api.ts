@@ -38,6 +38,21 @@ export interface BrandKit {
     created_at: string;
 }
 
+// --- Credit History Types ---
+export interface CreditTransaction {
+    id: string;
+    user_id: string;
+    amount: number;
+    balance_after: number;
+    description: string;
+    created_at: string;
+}
+
+export interface CreditHistoryResponse {
+    transactions: CreditTransaction[];
+    total_count: number;
+}
+
 // --- Copywriting Types ---
 export interface CopywritingVariation {
     style: string;
@@ -158,6 +173,18 @@ export function useProjectApi() {
             const errBody = await res.json().catch(() => ({}));
             throw new Error(errBody.detail || 'Gagal menghapus akun');
         }
+    };
+
+    const getCreditHistory = async (limit: number = 50, offset: number = 0): Promise<CreditHistoryResponse> => {
+        const qs = new URLSearchParams({ limit: limit.toString(), offset: offset.toString() }).toString();
+        const res = await fetch(`${API_BASE_URL}/users/me/credits/history?${qs}`, {
+            headers: getHeaders(),
+        });
+        if (!res.ok) {
+            const errBody = await res.json().catch(() => ({}));
+            throw new Error(errBody.detail || 'Failed to fetch credit history');
+        }
+        return res.json();
     };
 
     const generateDesign = async (payload: {
@@ -474,5 +501,6 @@ export function useProjectApi() {
         upscaleImage,
         generateTextBanner,
         generateProjectTitle,
+        getCreditHistory,
     };
 }

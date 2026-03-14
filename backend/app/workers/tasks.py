@@ -101,7 +101,8 @@ async def _execute_pipeline(job_id: str, raw_text: str, aspect_ratio: str, style
                 from app.models.user import User
                 user_record = await session.get(User, job_record.user_id)
                 if user_record:
-                    user_record.credits_remaining += 1
+                    from app.services.credit_service import log_credit_change
+                    await log_credit_change(session, user_record, 1, "Refund: server task gagal")
             await session.commit()
         raise
 

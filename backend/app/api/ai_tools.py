@@ -38,7 +38,8 @@ async def background_swap(
     if len(content) > 10 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="Image size exceeds 10MB limit")
 
-    current_user.credits_remaining -= 1
+    from app.services.credit_service import log_credit_change
+    await log_credit_change(db, current_user, -1, "Hapus background")
     await db.commit()
 
     try:
@@ -81,7 +82,8 @@ async def background_swap(
 
         return {"url": result_url}
     except Exception as e:
-        current_user.credits_remaining += 1
+        from app.services.credit_service import log_credit_change
+        await log_credit_change(db, current_user, 1, "Refund: gagal hapus background")
         await db.commit()
         logging.exception("Background swap failed")
         raise HTTPException(
@@ -146,8 +148,8 @@ async def upscale(
             prefix=f"upscaled/{final_id}"
         )
 
-        current_user.credits_remaining -= 1
-        db.add(current_user)
+        from app.services.credit_service import log_credit_change
+        await log_credit_change(db, current_user, -1, "Upscale gambar")
         await db.commit()
 
         logger.info(f"Upscale logic took {time.time() - start_time:.2f}s")
@@ -197,8 +199,8 @@ async def text_banner(
         )
 
         # Deduct credits
-        current_user.credits_remaining -= cost
-        db.add(current_user)
+        from app.services.credit_service import log_credit_change
+        await log_credit_change(db, current_user, -cost, f"Generate text banner ({quality})")
         await db.commit()
 
         logger.info(f"Text banner generation ({quality}) took {time.time() - start_time:.2f}s")

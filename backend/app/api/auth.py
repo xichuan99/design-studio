@@ -35,6 +35,13 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
     )
 
     db.add(user)
+    
+    # Needs a flush to get the user ID
+    await db.flush()
+    
+    from app.services.credit_service import log_credit_change
+    await log_credit_change(db, user, 10, "Bonus pendaftaran")
+
     await db.commit()
     await db.refresh(user)
 

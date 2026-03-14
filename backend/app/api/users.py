@@ -1,11 +1,15 @@
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status
-from app.api.deps import get_current_user
-from app.models.user import User
-from app.models.job import Job
-from app.core.database import get_db
+from sqlalchemy import desc, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+
+from app.api.deps import get_current_user
+from app.core.database import get_db
+from app.models.credit_transaction import CreditTransaction
+from app.models.job import Job
+from app.models.user import User
+from app.schemas.credit import CreditHistoryResponse
 from app.schemas.user import UserUpdate, UserResponse
 
 logger = logging.getLogger(__name__)
@@ -60,4 +64,30 @@ async def delete_my_account(
             detail="Failed to delete account. Please try again."
         )
     return None
+
+
+@router.get("/me/credits/history", response_model=CreditHistoryResponse)
+async def get_my_credit_history(
+    limit: int = 50,
+    offset: int = 0,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Returns the user's credit transaction history."""
+    query = select(CreditTransaction).where(
+        CreditTransaction.user_id == current_user.id
+    ).order_by(desc(CreditTransaction.created_at))
+
+    result = await db.execute(query.offset(offset).limit(limit))
+    transactions = result.scalars().all()
+
+    # Get total count
+    count_query = select(func.count()).where(CreditTransaction.user_id == current_user.id)
+    count_result = await db.execute(count_query)
+    total_count = count_result.scalar_one()
+
+    return CreditHistoryResponse(
+        transactions=transactions,
+        total_count=total_count
+    )
 

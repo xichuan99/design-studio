@@ -248,7 +248,8 @@ async def generate_design(
         )
 
     # Deduct credit
-    current_user.credits_remaining -= 1
+    from app.services.credit_service import log_credit_change
+    await log_credit_change(db, current_user, -1, "Generate desain")
 
     # Create a job record in the database
     job = Job(
@@ -286,7 +287,8 @@ async def generate_design(
         except Exception as e:
             job.status = "failed"
             job.error_message = f"Failed to dispatch task: {str(e)}"
-            current_user.credits_remaining += 1
+            from app.services.credit_service import log_credit_change
+            await log_credit_change(db, current_user, 1, "Refund: gagal generate desain")
             await db.commit()
             raise HTTPException(status_code=500, detail=f"Image generation failed to start: {str(e)}")
     import logging
@@ -456,7 +458,8 @@ async def generate_design(
             job.error_message = "Prompt rejected by Gemini safety filters (e.g. contains minors, sensitive topics). Please try rephrasing the prompt."
             job.completed_at = datetime.now(timezone.utc)
             # Refund credit
-            current_user.credits_remaining += 1
+            from app.services.credit_service import log_credit_change
+            await log_credit_change(db, current_user, 1, "Refund: prompt ditolak AI")
 
         await db.commit()
         await db.refresh(job)
@@ -470,7 +473,8 @@ async def generate_design(
     except Exception as e:
         job.status = "failed"
         job.error_message = str(e)
-        current_user.credits_remaining += 1
+        from app.services.credit_service import log_credit_change
+        await log_credit_change(db, current_user, 1, "Refund: sistem error")
         await db.commit()
         raise HTTPException(status_code=500, detail=f"Image generation failed: {str(e)}")
 
