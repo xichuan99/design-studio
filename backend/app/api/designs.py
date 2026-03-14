@@ -455,7 +455,7 @@ async def generate_design(
             job.completed_at = datetime.now(timezone.utc)
         else:
             job.status = "failed"
-            job.error_message = "Prompt rejected by Gemini safety filters (e.g. contains minors, sensitive topics). Please try rephrasing the prompt."
+            job.error_message = "Desain ditolak oleh sistem keamanan AI karena mengandung unsur yang dilindungi hak cipta (misal: nama tokoh terkenal, karakter kartun, atau brand spesifik seperti 'Avengers', 'Disney', dll) atau konten sensitif lainnya. Mohon ubah deskripsi Anda menggunakan kata-kata yang lebih umum."
             job.completed_at = datetime.now(timezone.utc)
             # Refund credit
             from app.services.credit_service import log_credit_change

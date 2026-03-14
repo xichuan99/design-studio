@@ -667,8 +667,12 @@ async def generate_project_title(prompt: str) -> str:
                 max_output_tokens=20,
             ),
         )
-        title = response.text.strip().replace('"', '')
-        return title if title else "Desain AI Baru"
+        )
+        if hasattr(response, 'text') and response.text:
+            title = response.text.strip().replace('"', '')
+            return title if title else "Desain AI Baru"
+        else:
+            raise ValueError("Empty response from LLM (potentially blocked by safety filters)")
     except Exception as e:
         import logging
         logging.exception(f"Failed to generate project title: {e}")
