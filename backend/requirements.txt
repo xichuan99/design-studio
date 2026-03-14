@@ -68,7 +68,7 @@ networkx==3.4.2
 numba==0.64.0
 numpy==2.2.6
 onnxruntime==1.23.2
-opencv-contrib-python==4.13.0.92
+opencv-contrib-python-headless==4.13.0.92
 opencv-python-headless==4.13.0.92
 packaging==26.0
 passlib==1.7.4
