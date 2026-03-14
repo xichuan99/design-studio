@@ -14,7 +14,7 @@ async def apply_watermark(
 ) -> bytes:
     """
     Applies a watermark (logo or text image) over a base image.
-    
+
     Args:
         base_image_bytes: The original product image
         watermark_bytes: The logo or watermark image (supports PNG with transparency)
@@ -22,7 +22,7 @@ async def apply_watermark(
         opacity: Transparency level from 0.0 (invisible) to 1.0 (fully opaque)
         scale: The size of the watermark relative to the base image (0.1 to 1.0)
         padding_ratio: Margin from the edge of the image
-        
+
     Returns:
         Bytes of the composited image (always JPEG to save space, but preserves visual transparency of watermark)
     """
@@ -31,7 +31,7 @@ async def apply_watermark(
 
     # Ensure opacity is within bounds
     opacity = max(0.0, min(1.0, float(opacity)))
-    
+
     # Ensure scale is reasonable (0.05 to 1.0)
     scale = max(0.05, min(1.0, float(scale)))
 
@@ -43,7 +43,7 @@ async def apply_watermark(
         # Convert base to RGBA to support alpha compositing safely, even if outputting to JPEG
         if base_img.mode != 'RGBA':
             base_img = base_img.convert('RGBA')
-            
+
         # Convert watermark to RGBA to ensure it has an alpha channel
         if watermark_img.mode != 'RGBA':
             watermark_img = watermark_img.convert('RGBA')
@@ -55,14 +55,14 @@ async def apply_watermark(
         # Calculate target size (bound by scale * base_dimension)
         target_wm_w = int(base_w * scale)
         target_wm_h = int(base_h * scale)
-        
+
         # Maintain aspect ratio for watermark
         ratio = min(target_wm_w / wm_w, target_wm_h / wm_h)
         new_wm_w = int(wm_w * ratio)
         new_wm_h = int(wm_h * ratio)
-        
+
         watermark_img = watermark_img.resize((new_wm_w, new_wm_h), Image.Resampling.LANCZOS)
-        
+
         # 2. Apply Opacity
         if opacity < 1.0:
             # Get alpha channel of the resized watermark
@@ -89,7 +89,7 @@ async def apply_watermark(
             # Single placement logic
             x = pad_x
             y = pad_y
-            
+
             if position == "bottom-right":
                 x = base_w - new_wm_w - pad_x
                 y = base_h - new_wm_h - pad_y
@@ -105,7 +105,7 @@ async def apply_watermark(
             elif position == "center":
                 x = (base_w - new_wm_w) // 2
                 y = (base_h - new_wm_h) // 2
-                
+
             transparent_layer.paste(watermark_img, (x, y), mask=watermark_img)
 
         # 4. Composite the layers together
@@ -113,7 +113,7 @@ async def apply_watermark(
 
         # 5. Convert back to RGB for JPEG saving (drops alpha, but visual composite is baked in)
         final_img = final_img.convert('RGB')
-        
+
         # Save to bytes
         img_byte_arr = io.BytesIO()
         final_img.save(img_byte_arr, format='JPEG', quality=90)

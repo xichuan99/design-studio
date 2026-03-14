@@ -47,14 +47,14 @@ async def generate_product_scene(
     3. Composites the product onto the background with a shadow
     """
     logger.info(f"Generating product scene with theme: {theme}")
-    
+
     # 1. Background removal using existing service
     logger.debug("Removing background...")
     no_bg_bytes: bytes = await bg_removal_service.remove_background(image_bytes)
 
     # 2. Map theme to prompt
     theme_config = SCENE_THEMES.get(theme, SCENE_THEMES["studio"])
-    
+
     # 3. Generate background with Fal.ai
     logger.debug(f"Generating background prompt: {theme_config['visual_prompt']}")
     bg_result: Dict[str, Any] = await generate_background(
@@ -63,7 +63,7 @@ async def generate_product_scene(
         aspect_ratio=aspect_ratio,
         integrated_text=False
     )
-    
+
     # 4. Fetch the generated background image
     logger.debug("Downloading generated background...")
     async with httpx.AsyncClient() as http_client:
@@ -81,6 +81,6 @@ async def generate_product_scene(
         offset_y_ratio=0.55,    # Slightly lower Y
         add_shadow=True
     )
-    
+
     logger.info("Product scene generation complete")
     return final_bytes

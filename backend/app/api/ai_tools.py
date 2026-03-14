@@ -549,7 +549,7 @@ async def apply_watermark(
     """
     content = await file.read()
     logo_content = await logo.read()
-    
+
     if len(content) > 10 * 1024 * 1024 or len(logo_content) > 5 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="File sizes exceed limits (10MB for image, 5MB for logo)")
 
@@ -607,22 +607,22 @@ async def create_product_scene(
 
     try:
         start_time = time.time()
-        
+
         # 1. Process scene
         final_bytes = await product_scene_service.generate_product_scene(
             image_bytes=content,
             theme=theme,
             aspect_ratio=aspect_ratio
         )
-        
+
         # 2. Upload result
         scene_id = str(uuid.uuid4())[:8]
         result_url = await upload_image(
-            final_bytes, 
-            content_type="image/jpeg", 
+            final_bytes,
+            content_type="image/jpeg",
             prefix=f"product_scene_{scene_id}"
         )
-        
+
         logger.info(f"Product Scene Generation took {time.time() - start_time:.2f}s")
         return {"url": result_url}
 
@@ -664,7 +664,7 @@ async def process_batch_images(
     per_file_cost = 0
     if operation == "remove_bg" or operation == "product_scene":
         per_file_cost = 1
-    
+
     total_cost = per_file_cost * len(files)
 
     if current_user.credits_remaining < total_cost:
@@ -682,7 +682,7 @@ async def process_batch_images(
     elif operation == "watermark":
          raise HTTPException(status_code=400, detail="Logo wajib untuk watermark")
 
-    # Read files 
+    # Read files
     # Only limit individual files to 5MB here for batch to save memory
     file_data = []
     for f in files:
@@ -690,7 +690,7 @@ async def process_batch_images(
         if len(content) > 5 * 1024 * 1024:
             raise HTTPException(status_code=400, detail=f"File {f.filename} terlalu besar (Max 5MB)")
         file_data.append((f.filename, content))
-        
+
     from app.services.credit_service import log_credit_change
 
     if total_cost > 0:
@@ -699,24 +699,24 @@ async def process_batch_images(
 
     try:
         start_time = time.time()
-        
+
         # 1. Process batch
         zip_bytes, errors = await batch_service.process_batch(
             files=file_data,
             operation=operation,
             params=params
         )
-        
+
         # 2. Upload ZIP result
         batch_id = str(uuid.uuid4())[:8]
         result_url = await upload_image(
-            zip_bytes, 
-            content_type="application/zip", 
+            zip_bytes,
+            content_type="application/zip",
             prefix=f"batch_{operation}_{batch_id}"
         )
-        # Note: upload_image typically adds .jpg or respects format, it might need tweaking if storage_service forces extension, 
+        # Note: upload_image typically adds .jpg or respects format, it might need tweaking if storage_service forces extension,
         # assuming storage handles generic bytes and content_types fine here, we modify prefix manually.
-        
+
         logger.info(f"Batch Processing took {time.time() - start_time:.2f}s")
         return {
             "url": result_url,
