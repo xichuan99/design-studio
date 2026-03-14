@@ -14,13 +14,13 @@ async def auto_enhance(image_bytes: bytes, output_format: str = "jpeg") -> bytes
     try:
         # Load image via Pillow then convert to cv2 numpy array
         img = Image.open(io.BytesIO(image_bytes))
-        
+
         # Extract alpha if present and we're outputting png
         alpha = None
         if output_format.lower() == "png" and (img.mode in ('RGBA', 'LA') or (img.mode == 'P' and 'transparency' in img.info)):
             img = img.convert("RGBA")
             alpha = img.split()[3]
-            
+
         img = img.convert('RGB')
         np_img = np.array(img)
         # Convert RGB to BGR for OpenCV
@@ -63,12 +63,12 @@ async def remove_blemishes(image_bytes: bytes, output_format: str = "jpeg") -> b
     """
     try:
         img = Image.open(io.BytesIO(image_bytes))
-        
+
         alpha = None
         if output_format.lower() == "png" and (img.mode in ('RGBA', 'LA') or (img.mode == 'P' and 'transparency' in img.info)):
             img = img.convert("RGBA")
             alpha = img.split()[3]
-            
+
         img = img.convert('RGB')
         np_img = np.array(img)
         bgr_img = cv2.cvtColor(np_img, cv2.COLOR_RGB2BGR)

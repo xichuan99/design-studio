@@ -332,12 +332,12 @@ async def create_id_photo(
             content_type=mime_type,
             prefix=f"idphoto_{photo_id}"
         )
-        
+
         # 3. Generate Print Sheet if requested
         print_sheet_url = None
         if include_print_sheet:
             sheet_bytes = id_photo_service.generate_print_sheet(
-                photo_bytes=final_bytes, 
+                photo_bytes=final_bytes,
                 output_format=output_format
             )
             print_sheet_url = await upload_image(
@@ -348,9 +348,9 @@ async def create_id_photo(
 
         logger.info(f"ID Photo logic took {time.time() - start_time:.2f}s")
         return {
-            "url": result_url, 
-            "width_cm": custom_width_cm, 
-            "height_cm": custom_height_cm, 
+            "url": result_url,
+            "width_cm": custom_width_cm,
+            "height_cm": custom_height_cm,
             "bg_color": bg_color,
             "print_sheet_url": print_sheet_url
         }
