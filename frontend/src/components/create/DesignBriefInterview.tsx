@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, Sparkles, Send } from "lucide-react";
 import { BriefQuestion } from "@/app/create/types";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 interface DesignBriefInterviewProps {
     questions: BriefQuestion[];
@@ -84,11 +84,12 @@ export function DesignBriefInterview({
 
                         {q.type === 'text' && (
                             <div className="ml-8">
-                                <Input 
+                                <Textarea 
                                     placeholder="Ketik jawaban Anda di sini..."
                                     value={answers[q.id] || ""}
                                     onChange={(e) => handleAnswer(q.id, e.target.value)}
-                                    className="max-w-md bg-background dark:bg-zinc-800 text-foreground border-border/50 focus-visible:ring-primary placeholder:text-muted-foreground"
+                                    className="max-w-md bg-background dark:bg-zinc-800 text-foreground border-border/50 focus-visible:ring-primary placeholder:text-muted-foreground resize-none"
+                                    rows={2}
                                     disabled={isGeneratingPrompt}
                                 />
                             </div>
