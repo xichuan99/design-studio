@@ -21,7 +21,8 @@ export function useBrandKit() {
         } finally {
             setIsLoading(false);
         }
-    }, [api]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     useEffect(() => {
         fetchBrandKits();
