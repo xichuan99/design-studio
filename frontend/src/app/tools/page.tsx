@@ -1,6 +1,6 @@
 import { AppHeader } from "@/components/layout/AppHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Wand2, ImagePlus, Eraser, MoveDiagonal, Sparkles, Camera } from "lucide-react";
+import { Wand2, ImagePlus, Eraser, MoveDiagonal, Sparkles, Camera, ShieldCheck, RefreshCw, Stamp, Layers } from "lucide-react";
 import Link from "next/link";
 import { BeforeAfterSlider } from "@/components/tools/BeforeAfterSlider";
 
@@ -28,6 +28,20 @@ export default function ToolsHubPage() {
       isReady: true,
     },
     {
+      title: "AI Product Scene",
+      description: "Buat foto produk profesional dengan background studio, alam, atau cafe.",
+      icon: <Sparkles className="w-8 h-8 text-amber-500" />,
+      href: "/tools/product-scene",
+      isReady: true,
+    },
+    {
+      title: "Batch Photo Processor",
+      description: "Proses puluhan foto sekaligus (Hapus BG, Watermark).",
+      icon: <Layers className="w-8 h-8 text-indigo-500" />,
+      href: "/tools/batch-process",
+      isReady: true,
+    },
+    {
       title: "ID Photo Maker",
       description: "Buat pasfoto standar (buku nikah, ijazah, CV) dengan pengaturan warna dan ukuran otomatis.",
       icon: <Camera className="w-8 h-8 text-blue-500" />,
@@ -46,6 +60,13 @@ export default function ToolsHubPage() {
       description: "Perluas area (outpaint) foto Anda menyesuaikan rasio tanpa memotong objek utama.",
       icon: <MoveDiagonal className="w-8 h-8 text-indigo-500" />,
       href: "/tools/generative-expand",
+      isReady: true,
+    },
+    {
+      title: "AI Watermark Placer",
+      description: "Lindungi foto produk dengan menambahkan logo atau teks watermark otomatis.",
+      icon: <ShieldCheck className="w-8 h-8 text-orange-500" />,
+      href: "/tools/watermark-placer",
       isReady: true,
     },
   ];

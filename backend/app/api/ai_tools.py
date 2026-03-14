@@ -19,7 +19,12 @@ from app.services import (
     id_photo_service,
     inpaint_service,
     outpaint_service,
+    watermark_service,
+    product_scene_service,
+    batch_service,
 )
+import json
+from typing import List
 from app.services.storage_service import upload_image  # Corrected from upload_imager
 
 router = APIRouter()
@@ -526,3 +531,213 @@ async def generative_expand(
         raise HTTPException(
             status_code=500, detail=f"Failed to process image: {str(e)}"
         )
+
+
+@router.post("/watermark")
+async def apply_watermark(
+    file: UploadFile = File(...),
+    logo: UploadFile = File(...),
+    position: str = Form("bottom-right"),
+    opacity: float = Form(0.5),
+    scale: float = Form(0.2),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(rate_limit_dependency),
+):
+    """
+    Applies a watermark/logo to an image.
+    Costs 0 credits as it's purely client-side/local image processing.
+    """
+    content = await file.read()
+    logo_content = await logo.read()
+    
+    if len(content) > 10 * 1024 * 1024 or len(logo_content) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File sizes exceed limits (10MB for image, 5MB for logo)")
+
+    try:
+        start_time = time.time()
+
+        # 1. Apply watermark using Pillow
+        final_bytes = await watermark_service.apply_watermark(
+            base_image_bytes=content,
+            watermark_bytes=logo_content,
+            position=position,
+            opacity=opacity,
+            scale=scale
+        )
+
+        # 2. Upload result
+        watermark_id = str(uuid.uuid4())[:8]
+        result_url = await upload_image(
+            final_bytes, content_type="image/jpeg", prefix=f"watermarked_{watermark_id}"
+        )
+
+        logger.info(f"Watermark logic took {time.time() - start_time:.2f}s")
+        return {"url": result_url}
+
+    except Exception as e:
+        logger.exception("Watermark application failed")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to process image: {str(e)}"
+        )
+
+
+@router.post("/product-scene")
+async def create_product_scene(
+    file: UploadFile = File(...),
+    theme: str = Form("studio"),
+    aspect_ratio: str = Form("1:1"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(rate_limit_dependency),
+):
+    """
+    Generate professional product scenes automatically.
+    Cost: 1 credit per generation.
+    """
+    if current_user.credits_remaining < 1:
+        raise HTTPException(status_code=402, detail="Insufficient credits")
+
+    content = await file.read()
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Image size exceeds 10MB limit")
+
+    from app.services.credit_service import log_credit_change
+
+    await log_credit_change(db, current_user, -1, "AI Product Scene Generator")
+    await db.commit()
+
+    try:
+        start_time = time.time()
+        
+        # 1. Process scene
+        final_bytes = await product_scene_service.generate_product_scene(
+            image_bytes=content,
+            theme=theme,
+            aspect_ratio=aspect_ratio
+        )
+        
+        # 2. Upload result
+        scene_id = str(uuid.uuid4())[:8]
+        result_url = await upload_image(
+            final_bytes, 
+            content_type="image/jpeg", 
+            prefix=f"product_scene_{scene_id}"
+        )
+        
+        logger.info(f"Product Scene Generation took {time.time() - start_time:.2f}s")
+        return {"url": result_url}
+
+    except Exception as e:
+        logger.exception("Product Scene Generation failed")
+        try:
+            from app.services.credit_service import log_credit_change
+            await log_credit_change(
+                db, current_user, 1, "Refund: AI Product Scene Generation gagal"
+            )
+            await db.commit()
+        except Exception as refund_err:
+            logger.error(
+                f"CRITICAL: Failed to refund user {current_user.id}: {str(refund_err)}"
+            )
+        raise HTTPException(
+            status_code=500, detail=f"Failed to generate product scene: {str(e)}"
+        )
+
+
+@router.post("/batch")
+async def process_batch_images(
+    files: List[UploadFile] = File(...),
+    operation: str = Form(...),
+    params_json: str = Form("{}"),
+    logo: UploadFile = File(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(rate_limit_dependency),
+):
+    """
+    Process multiple images at once. Returns a ZIP file URL.
+    Cost: Varies by operation * number of files.
+    Max 10 files per batch to prevent timeouts.
+    """
+    if len(files) > 10:
+        raise HTTPException(status_code=400, detail="Maksimal 10 file dalam satu batch")
+
+    # Calculate total cost
+    per_file_cost = 0
+    if operation == "remove_bg" or operation == "product_scene":
+        per_file_cost = 1
+    
+    total_cost = per_file_cost * len(files)
+
+    if current_user.credits_remaining < total_cost:
+        raise HTTPException(status_code=402, detail=f"Kredit tidak cukup. Butuh {total_cost} kredit.")
+
+    # Parse params
+    try:
+        params = json.loads(params_json)
+    except Exception:
+        params = {}
+
+    # Read logo for watermark if provided
+    if operation == "watermark" and logo:
+        params["logo_bytes"] = await logo.read()
+    elif operation == "watermark":
+         raise HTTPException(status_code=400, detail="Logo wajib untuk watermark")
+
+    # Read files 
+    # Only limit individual files to 5MB here for batch to save memory
+    file_data = []
+    for f in files:
+        content = await f.read()
+        if len(content) > 5 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail=f"File {f.filename} terlalu besar (Max 5MB)")
+        file_data.append((f.filename, content))
+        
+    from app.services.credit_service import log_credit_change
+
+    if total_cost > 0:
+        await log_credit_change(db, current_user, -total_cost, f"Batch Processing: {operation} ({len(files)} files)")
+        await db.commit()
+
+    try:
+        start_time = time.time()
+        
+        # 1. Process batch
+        zip_bytes, errors = await batch_service.process_batch(
+            files=file_data,
+            operation=operation,
+            params=params
+        )
+        
+        # 2. Upload ZIP result
+        batch_id = str(uuid.uuid4())[:8]
+        result_url = await upload_image(
+            zip_bytes, 
+            content_type="application/zip", 
+            prefix=f"batch_{operation}_{batch_id}"
+        )
+        # Note: upload_image typically adds .jpg or respects format, it might need tweaking if storage_service forces extension, 
+        # assuming storage handles generic bytes and content_types fine here, we modify prefix manually.
+        
+        logger.info(f"Batch Processing took {time.time() - start_time:.2f}s")
+        return {
+            "url": result_url,
+            "success_count": len(files) - len(errors),
+            "error_count": len(errors),
+            "errors": errors
+        }
+
+    except Exception as e:
+        logger.exception("Batch Processing failed")
+        if total_cost > 0:
+            try:
+                await log_credit_change(
+                    db, current_user, total_cost, f"Refund: Batch {operation} gagal"
+                )
+                await db.commit()
+            except Exception as refund_err:
+                logger.error(
+                    f"CRITICAL: Failed to refund user {current_user.id}: {str(refund_err)}"
+                )
+        raise HTTPException(
+            status_code=500, detail=f"Failed to process batch: {str(e)}"
+        )
+
