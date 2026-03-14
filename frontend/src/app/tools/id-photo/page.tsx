@@ -21,8 +21,11 @@ export default function IdPhotoPage() {
   const [size, setSize] = useState("3x4");
   const [customW, setCustomW] = useState("");
   const [customH, setCustomH] = useState("");
+  const [outputFormat, setOutputFormat] = useState<'jpeg' | 'png'>('jpeg');
+  const [includePrintSheet, setIncludePrintSheet] = useState(false);
   const [loading, setLoading] = useState(false);
   const [resultUrl, setResultUrl] = useState<string>("");
+  const [printSheetUrl, setPrintSheetUrl] = useState<string | null>(null);
 
   const handleFileSelect = (file: File) => {
     setOriginalFile(file);
@@ -42,8 +45,9 @@ export default function IdPhotoPage() {
     setLoading(true);
 
     try {
-      const data = await api.generateIdPhoto(originalFile, bgColor, size, customW, customH);
+      const data = await api.generateIdPhoto(originalFile, bgColor, size, customW, customH, outputFormat, includePrintSheet);
       setResultUrl(data.url);
+      setPrintSheetUrl(data.print_sheet_url || null);
       setStep(3);
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -139,6 +143,42 @@ export default function IdPhotoPage() {
                 </div>
               )}
 
+              {/* Format & Cetak */}
+              <div className="space-y-4 pt-2 border-t mt-4">
+                <div className="flex flex-col space-y-2">
+                  <label className="text-sm font-medium">Format Output</label>
+                  <select 
+                      className="bg-transparent border border-border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" 
+                      value={outputFormat} 
+                      onChange={(e) => setOutputFormat(e.target.value as 'jpeg' | 'png')}
+                  >
+                      <option value="jpeg">JPEG (Ukuran Kecil)</option>
+                      <option value="png">PNG (Kualitas Tinggi)</option>
+                  </select>
+                </div>
+                
+                <div className="flex items-center space-x-3 bg-muted/30 p-3 rounded-lg border border-border">
+                  <input 
+                    type="checkbox"
+                    id="printSheet" 
+                    className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    checked={includePrintSheet} 
+                    onChange={(e) => setIncludePrintSheet(e.target.checked)} 
+                  />
+                  <div className="grid gap-1.5 leading-none">
+                    <label
+                      htmlFor="printSheet"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      Kompilasi Lembar Cetak 4R
+                    </label>
+                    <p className="text-xs text-muted-foreground">
+                      Otomatis menyusun pasfoto ke dalam ukuran kertas 4R (10x15cm) siap cetak.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <Button 
                 onClick={handleGenerate} 
                 className="w-full font-bold shadow-md hover:shadow-lg transition-transform active:scale-95 mt-4" 
@@ -152,21 +192,43 @@ export default function IdPhotoPage() {
         )}
 
         {step === 3 && (
-          <div className="space-y-8 max-w-md mx-auto">
+          <div className={`space-y-8 mx-auto ${printSheetUrl ? 'max-w-4xl' : 'max-w-md'}`}>
             <h3 className="text-xl font-bold text-center">Hasil Pasfoto (300 DPI)</h3>
-            <div className="aspect-[3/4] rounded-xl overflow-hidden shadow-2xl border bg-black relative">
-               <Image src={resultUrl} alt="Result" fill className="object-contain" unoptimized />
+            
+            <div className={`grid gap-8 ${printSheetUrl ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
+              <div className="space-y-4">
+                <h4 className="text-center font-medium text-muted-foreground">Foto Tunggal</h4>
+                <div className="aspect-[3/4] rounded-xl overflow-hidden shadow-2xl border bg-black relative max-w-sm mx-auto">
+                   <Image src={resultUrl} alt="Result" fill className="object-contain" unoptimized />
+                </div>
+                <div className="flex flex-col gap-3">
+                  <Button size="lg" className="gap-2 font-bold shadow-md w-full" onClick={() => window.open(resultUrl, "_blank")}>
+                    <Download className="w-5 h-5" /> Download HD
+                  </Button>
+                  <Button size="lg" variant="secondary" className="gap-2 w-full" onClick={() => router.push(`/create?imageUrl=${encodeURIComponent(resultUrl)}`)}>
+                    <PenSquare className="w-5 h-5" /> Lanjut ke Editor
+                  </Button>
+                </div>
+              </div>
+
+              {printSheetUrl && (
+                <div className="space-y-4">
+                  <h4 className="text-center font-medium text-muted-foreground">Lembar Cetak 4R (10x15cm)</h4>
+                  <div className="aspect-[4/6] rounded-xl overflow-hidden shadow-2xl border bg-white relative max-w-sm mx-auto">
+                     <Image src={printSheetUrl} alt="Print Sheet Result" fill className="object-contain" unoptimized />
+                  </div>
+                  <div className="flex flex-col gap-3">
+                    <Button size="lg" className="gap-2 font-bold shadow-md w-full bg-green-600 hover:bg-green-700 text-white" onClick={() => window.open(printSheetUrl, "_blank")}>
+                      <Download className="w-5 h-5" /> Download Lembar 4R
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div className="flex flex-col gap-3">
-              <Button size="lg" className="gap-2 font-bold shadow-md w-full" onClick={() => window.open(resultUrl, "_blank")}>
-                <Download className="w-5 h-5" /> Download Resolusi Cetak (HD)
-              </Button>
-              <Button size="lg" variant="secondary" className="gap-2 w-full" onClick={() => router.push(`/create?imageUrl=${encodeURIComponent(resultUrl)}`)}>
-                <PenSquare className="w-5 h-5" /> Lanjut ke Editor
-              </Button>
-              <Button size="lg" variant="outline" className="w-full" onClick={() => setStep(2)}>
-                <span className="mr-2">♻️</span> Generate Ulang
+            <div className="flex justify-center pt-6 border-t">
+              <Button size="lg" variant="outline" className="w-full max-w-md" onClick={() => setStep(2)}>
+                <span className="mr-2">♻️</span> Buat Pasfoto Baru
               </Button>
             </div>
           </div>

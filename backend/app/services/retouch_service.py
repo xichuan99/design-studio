@@ -6,14 +6,22 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-async def auto_enhance(image_bytes: bytes) -> bytes:
+async def auto_enhance(image_bytes: bytes, output_format: str = "jpeg") -> bytes:
     """
     Smart exposure and color correction using OpenCV CLAHE on the LAB color space.
     Brightens dark skin tones naturally without overexposing highlights.
     """
     try:
         # Load image via Pillow then convert to cv2 numpy array
-        img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
+        img = Image.open(io.BytesIO(image_bytes))
+        
+        # Extract alpha if present and we're outputting png
+        alpha = None
+        if output_format.lower() == "png" and (img.mode in ('RGBA', 'LA') or (img.mode == 'P' and 'transparency' in img.info)):
+            img = img.convert("RGBA")
+            alpha = img.split()[3]
+            
+        img = img.convert('RGB')
         np_img = np.array(img)
         # Convert RGB to BGR for OpenCV
         bgr_img = cv2.cvtColor(np_img, cv2.COLOR_RGB2BGR)
@@ -35,21 +43,33 @@ async def auto_enhance(image_bytes: bytes) -> bytes:
         enhanced_rgb = cv2.cvtColor(enhanced_bgr, cv2.COLOR_BGR2RGB)
 
         out_img = Image.fromarray(enhanced_rgb)
+        if alpha is not None:
+            out_img.putalpha(alpha)
 
         out_buffer = io.BytesIO()
-        out_img.save(out_buffer, format="JPEG", quality=95)
+        if output_format.lower() == "png":
+            out_img.save(out_buffer, format="PNG")
+        else:
+            out_img.save(out_buffer, format="JPEG", quality=95)
         return out_buffer.getvalue()
     except Exception as e:
         logger.exception(f"Failed to auto enhance image: {str(e)}")
         raise
 
-async def remove_blemishes(image_bytes: bytes) -> bytes:
+async def remove_blemishes(image_bytes: bytes, output_format: str = "jpeg") -> bytes:
     """
     Smooths skin blemishes using bilateral filtering and median blur
     while preserving sharp edges (eyes, hair, etc).
     """
     try:
-        img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
+        img = Image.open(io.BytesIO(image_bytes))
+        
+        alpha = None
+        if output_format.lower() == "png" and (img.mode in ('RGBA', 'LA') or (img.mode == 'P' and 'transparency' in img.info)):
+            img = img.convert("RGBA")
+            alpha = img.split()[3]
+            
+        img = img.convert('RGB')
         np_img = np.array(img)
         bgr_img = cv2.cvtColor(np_img, cv2.COLOR_RGB2BGR)
 
@@ -64,9 +84,14 @@ async def remove_blemishes(image_bytes: bytes) -> bytes:
 
         enhanced_rgb = cv2.cvtColor(blended, cv2.COLOR_BGR2RGB)
         out_img = Image.fromarray(enhanced_rgb)
+        if alpha is not None:
+            out_img.putalpha(alpha)
 
         out_buffer = io.BytesIO()
-        out_img.save(out_buffer, format="JPEG", quality=95)
+        if output_format.lower() == "png":
+            out_img.save(out_buffer, format="PNG")
+        else:
+            out_img.save(out_buffer, format="JPEG", quality=95)
         return out_buffer.getvalue()
     except Exception as e:
         logger.exception(f"Failed to remove blemishes: {str(e)}")

@@ -3,6 +3,7 @@ import io
 from typing import Optional
 import cv2
 import numpy as np
+import mediapipe as mp
 from PIL import Image
 import logging
 
@@ -23,11 +24,11 @@ BG_COLORS = {
 }
 
 async def generate_id_photo(
-    image_bytes: bytes,
     bg_color_name: str = "red",
     size_name: str = "3x4",
     custom_w_cm: Optional[float] = None,
-    custom_h_cm: Optional[float] = None
+    custom_h_cm: Optional[float] = None,
+    output_format: str = "jpeg"
 ) -> bytes:
     """
     Generates a print-ready ID photo (pasfoto) at 300 DPI.
@@ -49,18 +50,23 @@ async def generate_id_photo(
         person_img = Image.open(io.BytesIO(no_bg_bytes)).convert("RGBA")
 
         # 2. Detect face for accurate cropping
-        cv2_base_dir = os.path.dirname(os.path.abspath(cv2.__file__))
-        haar_model = os.path.join(cv2_base_dir, 'data', 'haarcascade_frontalface_default.xml')
-        face_cascade = cv2.CascadeClassifier(haar_model)
-        if face_cascade.empty():
-            logger.warning("Haar cascade model failed to load from: %s", haar_model)
-
+        mp_face_detection = mp.solutions.face_detection
         np_img = np.array(person_img.convert('RGB'))
-        bgr_img = cv2.cvtColor(np_img, cv2.COLOR_RGB2BGR)
-        gray = cv2.cvtColor(bgr_img, cv2.COLOR_BGR2GRAY)
 
-        # Detect faces
-        faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(50, 50))
+        faces = []
+        with mp_face_detection.FaceDetection(model_selection=1, min_detection_confidence=0.5) as face_detection:
+            results = face_detection.process(np_img)
+            if results.detections:
+                for detection in results.detections:
+                    bboxC = detection.location_data.relative_bounding_box
+                    ih, iw, _ = np_img.shape
+                    # Convert normalized coordinates to pixel coordinates
+                    x = int(bboxC.xmin * iw)
+                    y = int(bboxC.ymin * ih)
+                    w = int(bboxC.width * iw)
+                    h = int(bboxC.height * ih)
+                    faces.append((x, y, w, h))
+
         logger.info("Face detection found %d face(s)", len(faces))
 
         img_w, img_h = person_img.size
@@ -135,11 +141,62 @@ async def generate_id_photo(
         final_img = Image.new("RGB", (target_w, target_h), bg_rgb)
         final_img.paste(cropped_person, (0, 0), cropped_person)
 
-        # 5. Export as print-ready JPEG at 300 DPI
+        # 5. Export as print-ready output at 300 DPI
         out_buffer = io.BytesIO()
-        final_img.save(out_buffer, format="JPEG", quality=100, dpi=(300, 300))
+        if output_format.lower() == "png":
+            final_img.save(out_buffer, format="PNG", dpi=(300, 300))
+        else:
+            final_img.save(out_buffer, format="JPEG", quality=100, dpi=(300, 300))
         return out_buffer.getvalue()
 
     except Exception as e:
         logger.exception(f"Failed to generate ID photo: {str(e)}")
+        raise
+
+def generate_print_sheet(photo_bytes: bytes, output_format: str = "jpeg") -> bytes:
+    """
+    Tiles the ID photo onto a 4R print sheet (4x6 inches / 10x15 cm) at 300 DPI.
+    Sheet dimensions: 1200x1800 pixels.
+    """
+    try:
+        sheet_w, sheet_h = 1200, 1800  # 4R at 300 DPI (portrait)
+        sheet = Image.new("RGB", (sheet_w, sheet_h), (255, 255, 255))
+
+        photo = Image.open(io.BytesIO(photo_bytes)).convert("RGB")
+        pw, ph = photo.size
+
+        margin = 60  # 5mm at 300 DPI (0.2 * 300)
+        spacing = 24  # 2mm at 300 DPI (0.08 * 300)
+
+        # How many fit?
+        avail_w = sheet_w - (2 * margin)
+        avail_h = sheet_h - (2 * margin)
+
+        cols = (avail_w + spacing) // (pw + spacing)
+        rows = (avail_h + spacing) // (ph + spacing)
+
+        if cols <= 0 or rows <= 0:
+            raise ValueError("Photo is too large to fit on a 4R sheet.")
+
+        # Center the grid
+        grid_w = cols * pw + (cols - 1) * spacing
+        grid_h = rows * ph + (rows - 1) * spacing
+
+        start_x = (sheet_w - grid_w) // 2
+        start_y = (sheet_h - grid_h) // 2
+
+        for r in range(rows):
+            for c in range(cols):
+                x = start_x + c * (pw + spacing)
+                y = start_y + r * (ph + spacing)
+                sheet.paste(photo, (x, y))
+
+        out_buffer = io.BytesIO()
+        if output_format.lower() == "png":
+            sheet.save(out_buffer, format="PNG", dpi=(300, 300))
+        else:
+             sheet.save(out_buffer, format="JPEG", quality=100, dpi=(300, 300))
+        return out_buffer.getvalue()
+    except Exception as e:
+        logger.exception(f"Failed to generate print sheet: {str(e)}")
         raise

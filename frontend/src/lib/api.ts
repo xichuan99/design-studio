@@ -446,9 +446,10 @@ export function useProjectApi() {
         return response.json();
     };
 
-    const retouchImage = async (file: File): Promise<{ url: string, before_url: string }> => {
+    const retouchImage = async (file: File, outputFormat: 'jpeg' | 'png' = 'jpeg'): Promise<{ url: string, before_url: string }> => {
         const formData = new FormData();
         formData.append('file', file);
+        formData.append('output_format', outputFormat);
 
         const response = await fetch(`${API_BASE_URL}/api/tools/retouch`, {
             method: 'POST',
@@ -462,13 +463,23 @@ export function useProjectApi() {
         return response.json();
     };
 
-    const generateIdPhoto = async (file: File, bgColor: string, size: string, customW?: string, customH?: string): Promise<{ url: string }> => {
+    const generateIdPhoto = async (
+        file: File, 
+        bgColor: string, 
+        size: string, 
+        customW?: string, 
+        customH?: string,
+        outputFormat: 'jpeg' | 'png' = 'jpeg',
+        includePrintSheet: boolean = false
+    ): Promise<{ url: string, print_sheet_url?: string }> => {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('bg_color', bgColor);
         formData.append('size', size);
         if (customW) formData.append('custom_width_cm', customW);
         if (customH) formData.append('custom_height_cm', customH);
+        formData.append('output_format', outputFormat);
+        formData.append('include_print_sheet', includePrintSheet ? 'true' : 'false');
 
         const response = await fetch(`${API_BASE_URL}/api/tools/id-photo`, {
             method: 'POST',

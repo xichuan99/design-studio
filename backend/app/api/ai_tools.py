@@ -218,6 +218,7 @@ async def text_banner(
 @router.post("/retouch")
 async def retouch(
     file: UploadFile = File(...),
+    output_format: str = Form("jpeg"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(rate_limit_dependency),
 ):
@@ -241,7 +242,7 @@ async def retouch(
 
         # 1. Upload original for Before/After slider
         temp_id = str(uuid.uuid4())[:8]
-        mime_type = file.content_type or "image/jpeg"
+        mime_type = "image/png" if output_format.lower() == "png" else "image/jpeg"
         before_url = await upload_image(
             content,
             content_type=mime_type,
@@ -249,23 +250,26 @@ async def retouch(
         )
 
         # 2. Process
-        enhanced_bytes = await retouch_service.auto_enhance(content)
-        final_bytes = await retouch_service.remove_blemishes(enhanced_bytes)
+        enhanced_bytes = await retouch_service.auto_enhance(content, output_format=output_format)
+        final_bytes = await retouch_service.remove_blemishes(enhanced_bytes, output_format=output_format)
 
         # 3. Upload result
         result_url = await upload_image(
             final_bytes,
-            content_type="image/jpeg",
+            content_type=mime_type,
             prefix=f"retouch_after_{temp_id}"
         )
 
         logger.info(f"Retouch logic took {time.time() - start_time:.2f}s")
         return {"url": result_url, "before_url": before_url}
     except Exception as e:
-        from app.services.credit_service import log_credit_change
-        await log_credit_change(db, current_user, 1, "Refund: gagal retouch foto")
-        await db.commit()
         logger.exception("Retouch failed")
+        try:
+            from app.services.credit_service import log_credit_change
+            await log_credit_change(db, current_user, 1, "Refund: gagal retouch foto")
+            await db.commit()
+        except Exception as refund_err:
+            logger.error(f"CRITICAL: Failed to refund user {current_user.id}: {str(refund_err)}")
         raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
 
 
@@ -276,6 +280,8 @@ async def create_id_photo(
     size: str = Form("3x4"),
     custom_width_cm: float = Form(None),
     custom_height_cm: float = Form(None),
+    output_format: str = Form("jpeg"),
+    include_print_sheet: bool = Form(False),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(rate_limit_dependency),
 ):
@@ -314,22 +320,46 @@ async def create_id_photo(
             bg_color_name=bg_color,
             size_name=size,
             custom_w_cm=custom_width_cm,
-            custom_h_cm=custom_height_cm
+            custom_h_cm=custom_height_cm,
+            output_format=output_format
         )
 
+        mime_type = "image/png" if output_format.lower() == "png" else "image/jpeg"
         # 2. Upload result
         photo_id = str(uuid.uuid4())[:8]
         result_url = await upload_image(
             final_bytes,
-            content_type="image/jpeg",
+            content_type=mime_type,
             prefix=f"idphoto_{photo_id}"
         )
+        
+        # 3. Generate Print Sheet if requested
+        print_sheet_url = None
+        if include_print_sheet:
+            sheet_bytes = id_photo_service.generate_print_sheet(
+                photo_bytes=final_bytes, 
+                output_format=output_format
+            )
+            print_sheet_url = await upload_image(
+                sheet_bytes,
+                content_type=mime_type,
+                prefix=f"idphoto_sheet_{photo_id}"
+            )
 
         logger.info(f"ID Photo logic took {time.time() - start_time:.2f}s")
-        return {"url": result_url, "width_cm": custom_width_cm, "height_cm": custom_height_cm, "bg_color": bg_color}
+        return {
+            "url": result_url, 
+            "width_cm": custom_width_cm, 
+            "height_cm": custom_height_cm, 
+            "bg_color": bg_color,
+            "print_sheet_url": print_sheet_url
+        }
     except Exception as e:
-        from app.services.credit_service import log_credit_change
-        await log_credit_change(db, current_user, 1, "Refund: gagal buat pasfoto")
-        await db.commit()
         logger.exception("ID Photo generation failed")
+        try:
+            from app.services.credit_service import log_credit_change
+            await log_credit_change(db, current_user, 1, "Refund: gagal buat pasfoto")
+            await db.commit()
+        except Exception as refund_err:
+            logger.error(f"CRITICAL: Failed to refund user {current_user.id}: {str(refund_err)}")
         raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")

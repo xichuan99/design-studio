@@ -16,12 +16,13 @@ export default function RetouchPage() {
   const [step, setStep] = useState(1);
   const [resultUrl, setResultUrl] = useState<string>("");
   const [beforeUrl, setBeforeUrl] = useState<string>("");
+  const [outputFormat, setOutputFormat] = useState<'jpeg' | 'png'>('jpeg');
 
   const handleFileSelect = async (file: File) => {
     setStep(2); // Show loading state
 
     try {
-      const data = await api.retouchImage(file);
+      const data = await api.retouchImage(file, outputFormat);
       setResultUrl(data.url);
       setBeforeUrl(data.before_url);
       setStep(3); // Show result
@@ -52,7 +53,20 @@ export default function RetouchPage() {
         </div>
 
         {step === 1 && (
-          <ImageDropzone onFileSelect={handleFileSelect} />
+          <div className="space-y-4">
+            <div className="flex justify-end items-center mr-2">
+              <label className="text-sm font-medium mr-2 text-foreground/80">Format Output:</label>
+              <select 
+                  className="bg-transparent border border-border rounded-lg p-1.5 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" 
+                  value={outputFormat} 
+                  onChange={(e) => setOutputFormat(e.target.value as 'jpeg' | 'png')}
+              >
+                  <option value="jpeg">JPEG (Kecil)</option>
+                  <option value="png">PNG (Transparan/High Quality)</option>
+              </select>
+            </div>
+            <ImageDropzone onFileSelect={handleFileSelect} />
+          </div>
         )}
 
         {step === 2 && (

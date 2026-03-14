@@ -175,12 +175,84 @@ def test_id_photo_endpoint_success():
         )
 
         assert res.status_code == 200
-        assert res.json() == {"url": "http://storage.com/idphoto.jpg", "width_cm": None, "height_cm": None, "bg_color": "red"}
+        assert res.json() == {
+            "url": "http://storage.com/idphoto.jpg", 
+            "width_cm": None, 
+            "height_cm": None, 
+            "bg_color": "red",
+            "print_sheet_url": None
+        }
         mock_gen.assert_called_once_with(
             image_bytes=b"fake_image_bytes",
             bg_color_name="red",
             size_name="3x4",
             custom_w_cm=None,
-            custom_h_cm=None
+            custom_h_cm=None,
+            output_format="jpeg"
         )
         mock_upload.assert_called_once()
+
+def test_id_photo_invalid_bg_color():
+    files = {"file": ("test.png", b"fake", "image/png")}
+    data = {"bg_color": "green", "size": "3x4"}
+    res = client.post("/api/tools/id-photo", data=data, files=files)
+    assert res.status_code == 400
+    assert "Invalid bg_color" in res.json()["detail"]
+
+def test_id_photo_invalid_size():
+    files = {"file": ("test.png", b"fake", "image/png")}
+    data = {"bg_color": "red", "size": "10x10"}
+    res = client.post("/api/tools/id-photo", data=data, files=files)
+    assert res.status_code == 400
+    assert "Invalid size" in res.json()["detail"]
+
+def test_id_photo_custom_size_missing_dimensions():
+    files = {"file": ("test.png", b"fake", "image/png")}
+    data = {"bg_color": "red", "size": "custom"}
+    res = client.post("/api/tools/id-photo", data=data, files=files)
+    assert res.status_code == 400
+    assert "are required when size is 'custom'" in res.json()["detail"]
+
+def test_id_photo_oversized_file():
+    large_content = b"0" * (11 * 1024 * 1024)
+    files = {"file": ("test.png", large_content, "image/png")}
+    data = {"bg_color": "red", "size": "3x4"}
+    res = client.post("/api/tools/id-photo", data=data, files=files)
+    assert res.status_code == 400
+    assert "Image size exceeds 10MB" in res.json()["detail"]
+
+def test_retouch_oversized_file():
+    large_content = b"0" * (11 * 1024 * 1024)
+    files = {"file": ("test.png", large_content, "image/png")}
+    res = client.post("/api/tools/retouch", files=files)
+    assert res.status_code == 400
+    assert "Image size exceeds 10MB" in res.json()["detail"]
+
+def test_id_photo_with_print_sheet():
+    files = {"file": ("test.png", b"fake_image_bytes", "image/png")}
+    data = {"bg_color": "red", "size": "3x4", "include_print_sheet": "true"}
+
+    with patch("app.services.id_photo_service.generate_id_photo", new_callable=AsyncMock) as mock_gen, \
+         patch("app.services.id_photo_service.generate_print_sheet") as mock_sheet, \
+         patch("app.api.ai_tools.upload_image", new_callable=AsyncMock) as mock_upload:
+
+        mock_gen.return_value = b"id_photo"
+        mock_sheet.return_value = b"print_sheet"
+        mock_upload.side_effect = ["http://storage.com/idphoto.jpg", "http://storage.com/sheet.jpg"]
+
+        res = client.post(
+            "/api/tools/id-photo",
+            data=data,
+            files=files,
+        )
+
+        assert res.status_code == 200
+        assert res.json() == {
+            "url": "http://storage.com/idphoto.jpg", 
+            "width_cm": None, 
+            "height_cm": None, 
+            "bg_color": "red",
+            "print_sheet_url": "http://storage.com/sheet.jpg"
+        }
+        mock_sheet.assert_called_once_with(photo_bytes=b"id_photo", output_format="jpeg")
+        assert mock_upload.call_count == 2
