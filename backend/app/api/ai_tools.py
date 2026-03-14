@@ -288,6 +288,15 @@ async def create_id_photo(
     if current_user.credits_remaining < 1:
         raise HTTPException(status_code=402, detail="Insufficient credits")
 
+    valid_bg_colors = ["red", "blue"]
+    valid_sizes = ["2x3", "3x4", "4x6", "custom"]
+    if bg_color not in valid_bg_colors:
+        raise HTTPException(status_code=400, detail=f"Invalid bg_color '{bg_color}'. Must be one of: {valid_bg_colors}")
+    if size not in valid_sizes:
+        raise HTTPException(status_code=400, detail=f"Invalid size '{size}'. Must be one of: {valid_sizes}")
+    if size == "custom" and (not custom_width_cm or not custom_height_cm):
+        raise HTTPException(status_code=400, detail="custom_width_cm and custom_height_cm are required when size is 'custom'")
+
     content = await file.read()
     if len(content) > 10 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="Image size exceeds 10MB limit")

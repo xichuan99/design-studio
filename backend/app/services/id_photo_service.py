@@ -1,5 +1,6 @@
 import os
 import io
+from typing import Optional
 import cv2
 import numpy as np
 from PIL import Image
@@ -25,8 +26,8 @@ async def generate_id_photo(
     image_bytes: bytes,
     bg_color_name: str = "red",
     size_name: str = "3x4",
-    custom_w_cm: float = None,
-    custom_h_cm: float = None
+    custom_w_cm: Optional[float] = None,
+    custom_h_cm: Optional[float] = None
 ) -> bytes:
     """
     Generates a print-ready ID photo (pasfoto) at 300 DPI.
@@ -51,6 +52,8 @@ async def generate_id_photo(
         cv2_base_dir = os.path.dirname(os.path.abspath(cv2.__file__))
         haar_model = os.path.join(cv2_base_dir, 'data', 'haarcascade_frontalface_default.xml')
         face_cascade = cv2.CascadeClassifier(haar_model)
+        if face_cascade.empty():
+            logger.warning("Haar cascade model failed to load from: %s", haar_model)
 
         np_img = np.array(person_img.convert('RGB'))
         bgr_img = cv2.cvtColor(np_img, cv2.COLOR_RGB2BGR)
@@ -58,6 +61,7 @@ async def generate_id_photo(
 
         # Detect faces
         faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(50, 50))
+        logger.info("Face detection found %d face(s)", len(faces))
 
         img_w, img_h = person_img.size
         target_aspect = target_w / target_h

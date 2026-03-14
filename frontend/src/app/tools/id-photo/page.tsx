@@ -5,7 +5,7 @@ import { AppHeader } from "@/components/layout/AppHeader";
 import { ImageDropzone } from "@/components/tools/ImageDropzone";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, ArrowLeft, Download, Camera } from "lucide-react";
+import { Loader2, ArrowLeft, Download, Camera, PenSquare } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { toast } from "sonner";
@@ -26,6 +26,8 @@ export default function IdPhotoPage() {
 
   const handleFileSelect = (file: File) => {
     setOriginalFile(file);
+    // Revoke previous object URL to prevent memory leak
+    if (previewOriginal) URL.revokeObjectURL(previewOriginal);
     setPreviewOriginal(URL.createObjectURL(file));
     setStep(2);
   };
@@ -92,14 +94,14 @@ export default function IdPhotoPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div 
                     onClick={() => setBgColor("red")}
-                    className={`cursor-pointer rounded-lg border-2 p-3 flex items-center gap-3 transition-all ${bgColor === "red" ? "border-red-500 bg-red-50" : "border-border hover:border-red-300"}`}
+                    className={`cursor-pointer rounded-lg border-2 p-3 flex items-center gap-3 transition-all ${bgColor === "red" ? "border-red-500 bg-red-500/10" : "border-border hover:border-red-300"}`}
                   >
                     <div className="w-6 h-6 rounded-full bg-[#CC0000] shadow-sm"></div>
                     <span className="font-medium text-sm">Merah Studio</span>
                   </div>
                   <div 
                     onClick={() => setBgColor("blue")}
-                    className={`cursor-pointer rounded-lg border-2 p-3 flex items-center gap-3 transition-all ${bgColor === "blue" ? "border-blue-500 bg-blue-50" : "border-border hover:border-blue-300"}`}
+                    className={`cursor-pointer rounded-lg border-2 p-3 flex items-center gap-3 transition-all ${bgColor === "blue" ? "border-blue-500 bg-blue-500/10" : "border-border hover:border-blue-300"}`}
                   >
                     <div className="w-6 h-6 rounded-full bg-[#0047AB] shadow-sm"></div>
                     <span className="font-medium text-sm">Biru Studio</span>
@@ -159,6 +161,9 @@ export default function IdPhotoPage() {
             <div className="flex flex-col gap-3">
               <Button size="lg" className="gap-2 font-bold shadow-md w-full" onClick={() => window.open(resultUrl, "_blank")}>
                 <Download className="w-5 h-5" /> Download Resolusi Cetak (HD)
+              </Button>
+              <Button size="lg" variant="secondary" className="gap-2 w-full" onClick={() => router.push(`/create?imageUrl=${encodeURIComponent(resultUrl)}`)}>
+                <PenSquare className="w-5 h-5" /> Lanjut ke Editor
               </Button>
               <Button size="lg" variant="outline" className="w-full" onClick={() => setStep(2)}>
                 <span className="mr-2">♻️</span> Generate Ulang
