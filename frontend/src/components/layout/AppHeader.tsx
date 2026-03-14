@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Brush, LayoutDashboard, PlusCircle, Menu, X, Wand2 } from "lucide-react";
+import { Brush, LayoutDashboard, PlusCircle, Menu, X, Wand2, Palette } from "lucide-react";
 import { UserMenu } from "@/components/auth/user-menu";
 import { CreditBadge } from "@/components/credits/CreditBadge";
 
@@ -32,6 +32,10 @@ export const AppHeader = () => {
                     <Link href="/projects" className={`flex items-center gap-1.5 transition-colors ${isActive('/projects')}`}>
                         <LayoutDashboard className="w-4 h-4" />
                         <span>Desain Saya</span>
+                    </Link>
+                    <Link href="/brand" className={`flex items-center gap-1.5 transition-colors ${isActive('/brand')}`}>
+                        <Palette className="w-4 h-4" />
+                        <span>Brand Kit</span>
                     </Link>
                     <Link href="/tools" className={`flex items-center gap-1.5 transition-colors ${isActive('/tools')}`}>
                         <Wand2 className="w-4 h-4" />
@@ -72,6 +76,14 @@ export const AppHeader = () => {
                         >
                             <LayoutDashboard className="w-4 h-4" />
                             Desain Saya
+                        </Link>
+                        <Link
+                            href="/brand"
+                            className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm transition-colors ${isActive('/brand')} hover:bg-muted`}
+                            onClick={() => setMobileMenuOpen(false)}
+                        >
+                            <Palette className="w-4 h-4" />
+                            Brand Kit
                         </Link>
                         <Link
                             href="/tools"
