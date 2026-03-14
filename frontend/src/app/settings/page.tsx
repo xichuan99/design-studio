@@ -121,6 +121,9 @@ export default function SettingsPage() {
     // Credit History State
     const [creditHistory, setCreditHistory] = useState<CreditTransaction[]>([]);
     const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [hasMoreHistory, setHasMoreHistory] = useState(false);
+    const HISTORY_PAGE_SIZE = 20;
 
     // Route guard: redirect if unauthenticated
     useEffect(() => {
@@ -148,8 +151,9 @@ export default function SettingsPage() {
     const fetchCreditHistory = useCallback(async () => {
         try {
             setIsLoadingHistory(true);
-            const historyData = await api.getCreditHistory(20, 0); // initial load 20
+            const historyData = await api.getCreditHistory(HISTORY_PAGE_SIZE, 0);
             setCreditHistory(historyData.transactions);
+            setHasMoreHistory(historyData.transactions.length < historyData.total_count);
             
             // Calculate total used
             const used = historyData.transactions
@@ -163,6 +167,19 @@ export default function SettingsPage() {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    const loadMoreHistory = async () => {
+        try {
+            setIsLoadingMore(true);
+            const historyData = await api.getCreditHistory(HISTORY_PAGE_SIZE, creditHistory.length);
+            setCreditHistory(prev => [...prev, ...historyData.transactions]);
+            setHasMoreHistory(creditHistory.length + historyData.transactions.length < historyData.total_count);
+        } catch (err) {
+            console.error("Failed to load more credit history", err);
+        } finally {
+            setIsLoadingMore(false);
+        }
+    };
 
     useEffect(() => {
         if (sessionStatus === "authenticated") {
@@ -532,6 +549,25 @@ export default function SettingsPage() {
                                             );
                                         })}
                                     </div>
+                                </div>
+                            )}
+
+                            {/* Load More Button */}
+                            {!isLoadingHistory && hasMoreHistory && (
+                                <div className="flex justify-center pt-4">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={loadMoreHistory}
+                                        disabled={isLoadingMore}
+                                        className="text-xs font-medium text-muted-foreground hover:text-foreground"
+                                    >
+                                        {isLoadingMore ? (
+                                            <><Loader2 className="w-3 h-3 mr-2 animate-spin" /> Memuat...</>
+                                        ) : (
+                                            <>Muat Lebih Banyak ({creditHistory.length} ditampilkan)</>
+                                        )}
+                                    </Button>
                                 </div>
                             )}
                         </div>
