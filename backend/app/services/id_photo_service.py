@@ -1,7 +1,5 @@
-import os
 import io
 from typing import Optional
-import cv2
 import numpy as np
 import mediapipe as mp
 from PIL import Image
