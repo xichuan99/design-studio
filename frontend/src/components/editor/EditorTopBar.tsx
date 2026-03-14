@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Undo, Redo, Download as DownloadIcon, Loader2, ChevronLeft, Cloud, CloudAlert, Check, Keyboard, Info } from 'lucide-react';
 import { ExportDialog } from './ExportDialog';
 import { KeyboardShortcutsDialog } from './KeyboardShortcutsDialog';
+import { AutoResizeDialog } from './AutoResizeDialog';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SaveStatus } from '@/hooks/useAutoSave';
 import { toast } from 'sonner';
@@ -24,6 +25,7 @@ export const EditorTopBar: React.FC<EditorTopBarProps> = ({ projectId, saveStatu
     const [saving, setSaving] = useState(false);
     const [exportOpen, setExportOpen] = useState(false);
     const [shortcutsOpen, setShortcutsOpen] = useState(false);
+    const [autoResizeOpen, setAutoResizeOpen] = useState(false);
 
     // Title Editor State
     const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -203,6 +205,15 @@ export const EditorTopBar: React.FC<EditorTopBarProps> = ({ projectId, saveStatu
                 <ExportDialog
                     open={exportOpen}
                     onOpenChange={setExportOpen}
+                    title={projectTitle || (projectId ? "Smart_Design_Project" : "Untitled_Design")}
+                    onAutoResizeClick={() => {
+                        setExportOpen(false);
+                        setAutoResizeOpen(true);
+                    }}
+                />
+                <AutoResizeDialog
+                    open={autoResizeOpen}
+                    onOpenChange={setAutoResizeOpen}
                     title={projectTitle || (projectId ? "Smart_Design_Project" : "Untitled_Design")}
                 />
                 <KeyboardShortcutsDialog

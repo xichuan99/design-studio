@@ -22,6 +22,8 @@ import { CopywritingVariation } from "@/lib/api";
 import { ErrorModal } from "@/components/feedback/ErrorModal";
 import { InlineErrorBanner } from "@/components/feedback/InlineErrorBanner";
 import { toast } from "sonner";
+import { BrandSwitcher } from '@/components/editor/BrandSwitcher'; // Added BrandSwitcher import
+import { Palette } from "lucide-react"; // Added Palette icon import
 
 type CreateStep = 'input' | 'brief' | 'results' | 'generating' | 'preview';
 
@@ -566,7 +568,27 @@ export default function CreatePage() {
     return (
         <div className="flex flex-col h-screen overflow-hidden bg-background">
             <OnboardingTour />
-            <AppHeader />
+            <AppHeader
+                renderActions={() => (
+                    <div className="flex items-center gap-3">
+                        {/* Brand Kit Switcher Area */}
+                        <div className="flex items-center gap-2 border-r border-border pr-3">
+                            <BrandSwitcher />
+                        </div>
+
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="hidden sm:flex text-xs h-9 bg-card hover:bg-accent/50 group"
+                            onClick={() => router.push('/brand')}
+                            title="Pengaturan Brand Lanjutan"
+                        >
+                            <Palette className="w-4 h-4 mr-2 text-muted-foreground group-hover:text-primary transition-colors" />
+                            Brand Settings
+                        </Button>
+                    </div>
+                )}
+            />
 
             <div className="flex flex-1 overflow-hidden relative">
                 {/* Mobile sidebar toggle */}

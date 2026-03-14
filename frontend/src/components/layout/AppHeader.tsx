@@ -7,7 +7,11 @@ import { Brush, LayoutDashboard, PlusCircle, Menu, X, Wand2, Palette } from "luc
 import { UserMenu } from "@/components/auth/user-menu";
 import { CreditBadge } from "@/components/credits/CreditBadge";
 
-export const AppHeader = () => {
+interface AppHeaderProps {
+    renderActions?: () => React.ReactNode;
+}
+
+export const AppHeader = ({ renderActions }: AppHeaderProps = {}) => {
     const pathname = usePathname();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -45,6 +49,7 @@ export const AppHeader = () => {
             </div>
 
             <div className="flex items-center gap-3">
+                {renderActions ? renderActions() : null}
                 <CreditBadge />
                 <UserMenu />
 

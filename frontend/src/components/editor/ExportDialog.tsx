@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { jsPDF } from "jspdf";
-import { Download, Loader2 } from "lucide-react";
+import { Download, Loader2, Layers } from "lucide-react";
 import { useCanvasStore } from "@/store/useCanvasStore";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -20,9 +20,10 @@ interface ExportDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     title: string;
+    onAutoResizeClick?: () => void;
 }
 
-export const ExportDialog: React.FC<ExportDialogProps> = ({ open, onOpenChange, title }) => {
+export const ExportDialog: React.FC<ExportDialogProps> = ({ open, onOpenChange, title, onAutoResizeClick }) => {
     const { stageRef } = useCanvasStore();
     const [format, setFormat] = useState<"png" | "jpeg" | "pdf">("png");
     const [isExporting, setIsExporting] = useState(false);
@@ -119,6 +120,21 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({ open, onOpenChange, 
                         {isExporting ? "Exporting..." : "Download"}
                     </Button>
                 </div>
+                {onAutoResizeClick && (
+                    <div className="pt-4 border-t mt-2 flex flex-col items-center gap-3">
+                        <p className="text-sm text-muted-foreground text-center">
+                            Need this design in multiple sizes?
+                        </p>
+                        <Button 
+                            variant="secondary" 
+                            className="w-full font-medium"
+                            onClick={onAutoResizeClick}
+                        >
+                            <Layers className="mr-2 w-4 h-4" />
+                            Auto-Resize for Social Media
+                        </Button>
+                    </div>
+                )}
             </DialogContent>
         </Dialog>
     );
