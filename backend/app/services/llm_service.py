@@ -667,7 +667,6 @@ async def generate_project_title(prompt: str) -> str:
                 max_output_tokens=20,
             ),
         )
-        )
         if hasattr(response, 'text') and response.text:
             title = response.text.strip().replace('"', '')
             return title if title else "Desain AI Baru"

@@ -299,7 +299,7 @@ async def generate_design(
         def build_strict_brand_suffix(kit) -> str:
             if not kit:
                 return ""
-            
+
             parts = []
             if kit.colors:
                 color_strs = []
@@ -310,7 +310,7 @@ async def generate_design(
                         color_strs.append(f"{role}: {hex_val}")
                 if color_strs:
                     parts.append("Use ONLY these exact hex colors: " + ", ".join(color_strs) + ".")
-            
+
             if kit.typography:
                 fonts = []
                 if kit.typography.get("primaryFont"):
@@ -319,10 +319,10 @@ async def generate_design(
                     fonts.append(f"Body Font: {kit.typography.get('secondaryFont')}")
                 if fonts:
                     parts.append("Typography constraints: " + ", ".join(fonts) + ".")
-                    
+
             if not parts:
                 return ""
-            
+
             return " CRITICAL INSTRUCTION: " + " ".join(parts) + " Do not improvise or add any other colors or fonts."
 
         # Load brand kit colors if specified
@@ -343,7 +343,7 @@ async def generate_design(
                 if kit and kit.colors:
                     # extract the hex values
                     brand_colors = [c.get("hex") for c in kit.colors if c.get("hex")]
-                
+
                 strict_brand_suffix = build_strict_brand_suffix(kit)
             except Exception as e:
                 logging.error(f"Failed to load brand kit {request.brand_kit_id}: {e}")
