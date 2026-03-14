@@ -64,39 +64,59 @@ async def create_brand_kit(
     """
     Saves a new Brand Kit for the current user.
     """
-    # Check limit for free tier
-    result = await db.execute(
-        select(BrandKit).where(BrandKit.user_id == current_user.id)
-    )
-    existing_kits = result.scalars().all()
+    print(f"DEBUG: create_brand_kit called for user {current_user.id}")
+    try:
+        # Check limit for free tier
+        result = await db.execute(
+            select(BrandKit).where(BrandKit.user_id == current_user.id)
+        )
+        existing_kits = result.scalars().all()
+        print(f"DEBUG: Found {len(existing_kits)} existing kits")
 
-    if len(existing_kits) >= MAX_BRAND_KITS_FREE:
-        raise HTTPException(
-            status_code=400,
-            detail=f"You can only save up to {MAX_BRAND_KITS_FREE} "
-                   "Brand Kits on the free tier."
+        if len(existing_kits) >= MAX_BRAND_KITS_FREE:
+            print("DEBUG: Limit reached")
+            raise HTTPException(
+                status_code=400,
+                detail=f"You can only save up to {MAX_BRAND_KITS_FREE} "
+                       "Brand Kits on the free tier."
+            )
+
+        if existing_kits:
+            print("DEBUG: Updating existing kits to inactive")
+            await db.execute(
+                update(BrandKit)
+                .where(BrandKit.user_id == current_user.id)
+                .values(is_active=False)
+            )
+
+        print("DEBUG: Converting colors")
+        colors_json = [c.model_dump() for c in brand_kit_in.colors]
+
+        print("DEBUG: Creating new BrandKit model object")
+        typography_json = brand_kit_in.typography.model_dump() if brand_kit_in.typography else None
+        
+        new_kit = BrandKit(
+            user_id=current_user.id,
+            name=brand_kit_in.name,
+            logo_url=brand_kit_in.logo_url,
+            logos=brand_kit_in.logos,
+            colors=colors_json,
+            typography=typography_json,
+            is_active=True
         )
 
-    if existing_kits:
-        await db.execute(
-            update(BrandKit)
-            .where(BrandKit.user_id == current_user.id)
-            .values(is_active=False)
-        )
-
-    colors_json = [c.model_dump() for c in brand_kit_in.colors]
-
-    new_kit = BrandKit(
-        user_id=current_user.id,
-        name=brand_kit_in.name,
-        logo_url=brand_kit_in.logo_url,
-        colors=colors_json,
-        is_active=True
-    )
-
-    db.add(new_kit)
-    await db.commit()
-    await db.refresh(new_kit)
+        print("DEBUG: Adding to db")
+        db.add(new_kit)
+        print("DEBUG: Committing to db")
+        await db.commit()
+        print("DEBUG: Refreshing kit")
+        await db.refresh(new_kit)
+        
+        print("DEBUG: Returned kit", new_kit.id)
+        return new_kit
+    except Exception as e:
+        print(f"DEBUG EXCEPTION: {e}")
+        raise
 
     return new_kit
 
@@ -164,8 +184,11 @@ async def update_brand_kit(
             .values(is_active=False)
         )
 
-    if "colors" in update_data:
+    if "colors" in update_data and kit_update.colors is not None:
         update_data["colors"] = [c.model_dump() for c in kit_update.colors]
+        
+    if "typography" in update_data and kit_update.typography is not None:
+        update_data["typography"] = kit_update.typography.model_dump()
 
     for key, value in update_data.items():
         setattr(kit, key, value)

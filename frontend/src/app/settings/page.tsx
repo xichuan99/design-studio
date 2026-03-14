@@ -4,11 +4,11 @@ import { useState, useEffect, useCallback } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { useProjectApi, BrandKit, CreditTransaction } from "@/lib/api";
+import { useProjectApi, CreditTransaction } from "@/lib/api";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -20,6 +20,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import BrandSettings from "@/components/settings/BrandSettings";
 import {
     Trash2,
     User,
@@ -28,11 +29,9 @@ import {
     CheckCircle2,
     Coins,
     Palette,
-    Plus,
     ShieldAlert,
     Sparkles,
     Mail,
-    ChevronRight,
     ArrowUpRight,
     ArrowDownRight,
     Clock,
@@ -88,11 +87,6 @@ export default function SettingsPage() {
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
 
-    // Brand Kit State
-    const [brandKits, setBrandKits] = useState<BrandKit[]>([]);
-    const [activeBrandKitId, setActiveBrandKitId] = useState<string | null>(null);
-    const [isLoadingKits, setIsLoadingKits] = useState(true);
-
     // Credit History State
     const [creditHistory, setCreditHistory] = useState<CreditTransaction[]>([]);
     const [isLoadingHistory, setIsLoadingHistory] = useState(true);
@@ -118,23 +112,6 @@ export default function SettingsPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const fetchBrandKits = useCallback(async () => {
-        try {
-            setIsLoadingKits(true);
-            const [allKits, active] = await Promise.all([
-                api.getBrandKits(),
-                api.getActiveBrandKit(),
-            ]);
-            setBrandKits(allKits);
-            if (active) setActiveBrandKitId(active.id);
-        } catch (err) {
-            console.error("Failed to load brand kits", err);
-        } finally {
-            setIsLoadingKits(false);
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
     const fetchCreditHistory = useCallback(async () => {
         try {
             setIsLoadingHistory(true);
@@ -151,10 +128,9 @@ export default function SettingsPage() {
     useEffect(() => {
         if (sessionStatus === "authenticated") {
             fetchProfile();
-            fetchBrandKits();
             fetchCreditHistory();
         }
-    }, [sessionStatus, fetchProfile, fetchBrandKits, fetchCreditHistory]);
+    }, [sessionStatus, fetchProfile, fetchCreditHistory]);
 
     // Auto-clear success message
     useEffect(() => {
@@ -209,30 +185,6 @@ export default function SettingsPage() {
         }
     };
 
-    const handleSetActiveBrandKit = async (id: string) => {
-        try {
-            await api.updateBrandKit(id, { is_active: true });
-            setActiveBrandKitId(id);
-            setSuccess("Brand Kit berhasil diaktifkan.");
-            setTimeout(() => setSuccess(null), 3000);
-            await fetchBrandKits();
-        } catch (err) {
-            console.error(err);
-            setError("Gagal mengaktifkan Brand Kit.");
-        }
-    };
-
-    const handleDeleteBrandKit = async (id: string) => {
-        try {
-            await api.deleteBrandKit(id);
-            setSuccess("Brand Kit berhasil dihapus.");
-            setTimeout(() => setSuccess(null), 3000);
-            await fetchBrandKits();
-        } catch (err) {
-            console.error(err);
-            setError("Gagal menghapus Brand Kit.");
-        }
-    };
 
     if (isLoading && sessionStatus !== "unauthenticated") {
         return (
@@ -457,162 +409,11 @@ export default function SettingsPage() {
 
                     {/* -- SECTION BRAND KIT -- */}
                     <SettingsSection
-                        title="Brand Kit"
-                        description="Kelola palet warna otentik merek Anda. Tetapkan sebagai default agar senantiasa teraplikasikan pada setiap desain baru yang Anda buat."
+                        title="Smart Brand Kit"
+                        description="Kelola warna, font, dan logo cerdas Anda. Pilih brand aktif untuk menerapkan aturan warna secara ketat pada desain AI Anda."
                         icon={Palette}
                     >
-                        <Card className="shadow-sm border-border/60 overflow-hidden bg-card/50 backdrop-blur-sm">
-                            <CardHeader className="flex flex-row items-center justify-between bg-muted/20 border-b border-border/40 px-6 sm:px-8 py-5">
-                                <CardTitle className="text-base font-semibold">
-                                    Daftar Brand Kit
-                                </CardTitle>
-                                <Button
-                                    size="sm"
-                                    className="gap-1.5 h-8 font-medium"
-                                    onClick={() => router.push("/create")}
-                                >
-                                    <Plus className="h-4 w-4" />
-                                    Buat Baru
-                                </Button>
-                            </CardHeader>
-                            <CardContent className="p-6 sm:p-8">
-                                {isLoadingKits ? (
-                                    <div className="flex flex-col items-center justify-center py-12 gap-3">
-                                        <Loader2 className="w-8 h-8 animate-spin text-indigo-500/50" />
-                                        <span className="text-sm text-muted-foreground font-medium">Memuat palet...</span>
-                                    </div>
-                                ) : brandKits.length === 0 ? (
-                                    <div className="text-center py-14 bg-muted/20 rounded-xl border border-dashed border-border/60 transition-colors hover:bg-muted/30 hover:border-border">
-                                        <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4 border border-border/50">
-                                            <Palette className="w-8 h-8 text-muted-foreground/60" />
-                                        </div>
-                                        <h3 className="text-base font-semibold mb-2 text-foreground/90">
-                                            Belum Ada Brand Kit
-                                        </h3>
-                                        <p className="text-sm text-muted-foreground mb-6 max-w-xs mx-auto">
-                                            Lakukan ekstraksi warna otomatis dari logo Anda di editor lalu simpan sebagai preset.
-                                        </p>
-                                        <Button
-                                            variant="secondary"
-                                            onClick={() => router.push("/create")}
-                                            className="font-medium group"
-                                        >
-                                            Buat Sekarang
-                                            <ChevronRight className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1" />
-                                        </Button>
-                                    </div>
-                                ) : (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                                        {brandKits.map((kit) => {
-                                            const isActive = kit.id === activeBrandKitId;
-                                            return (
-                                                <div
-                                                    key={kit.id}
-                                                    className={`p-6 rounded-2xl border flex flex-col gap-6 relative overflow-hidden transition-all duration-300 group ${
-                                                        isActive
-                                                            ? "bg-indigo-50/60 dark:bg-indigo-950/20 border-indigo-200 dark:border-indigo-800 shadow-sm ring-1 ring-indigo-500/30"
-                                                            : "bg-background border-border hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-md"
-                                                    }`}
-                                                >
-                                                    {/* Glow subtle if active */}
-                                                    {isActive && (
-                                                        <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none opacity-50 dark:opacity-30">
-                                                            <div className="absolute top-[-50px] right-[-50px] w-full h-full bg-indigo-400 rounded-full blur-[40px]"></div>
-                                                        </div>
-                                                    )}
-
-                                                    <div className="flex justify-between items-start z-10">
-                                                        <div className="flex flex-col">
-                                                            <span className="font-bold text-base text-foreground flex items-center gap-2">
-                                                                {kit.name}
-                                                                {isActive && (
-                                                                    <div className="flex items-center justify-center bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded-full px-2 py-0.5 text-[10px] gap-1 border border-indigo-200 dark:border-indigo-800">
-                                                                        <CheckCircle2 className="w-3 h-3" />
-                                                                        DEFAULT
-                                                                    </div>
-                                                                )}
-                                                            </span>
-                                                            <span className="text-xs text-muted-foreground mt-1 font-medium">
-                                                                Ditambahkan{" "}
-                                                                {new Date(kit.created_at).toLocaleDateString("id-ID", {
-                                                                    year: "numeric",
-                                                                    month: "short",
-                                                                    day: "numeric",
-                                                                })}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="flex items-center gap-3">
-                                                        {kit.colors.map((c, i) => (
-                                                            <div
-                                                                key={i}
-                                                                className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-black/10 dark:border-white/10 shadow-sm relative group/color cursor-crosshair transform transition-all duration-300 hover:scale-110 hover:-translate-y-1 hover:z-10 hover:shadow-md"
-                                                                style={{ backgroundColor: c.hex }}
-                                                            >
-                                                                <div className="absolute opacity-0 group-hover/color:opacity-100 bg-zinc-900 text-white text-[11px] font-semibold py-1.5 px-3 rounded-md -top-11 left-1/2 -translate-x-1/2 pointer-events-none transition-all duration-200 translate-y-2 group-hover/color:translate-y-0 shadow-xl whitespace-nowrap z-50">
-                                                                    {c.hex}
-                                                                    <div className="absolute bottom-[-5px] left-1/2 -translate-x-1/2 border-[5px] border-transparent border-t-zinc-900"></div>
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-
-                                                    <div className="flex items-center justify-between mt-auto pt-5 border-t border-border/50 z-10">
-                                                        {!isActive ? (
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                className="h-9 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 hover:bg-indigo-100/50 dark:hover:bg-indigo-900/30 px-4 -ml-2 rounded-lg"
-                                                                onClick={() => handleSetActiveBrandKit(kit.id)}
-                                                            >
-                                                                Set Default
-                                                            </Button>
-                                                        ) : (
-                                                            <span className="text-xs font-semibold text-muted-foreground px-2">
-                                                                Sedang digunakan
-                                                            </span>
-                                                        )}
-
-                                                        <AlertDialog>
-                                                            <AlertDialogTrigger asChild>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    className="h-9 w-9 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full transition-colors opacity-40 group-hover:opacity-100 focus:opacity-100"
-                                                                >
-                                                                    <Trash2 className="w-4 h-4" />
-                                                                </Button>
-                                                            </AlertDialogTrigger>
-                                                            <AlertDialogContent className="sm:max-w-md">
-                                                                <AlertDialogHeader>
-                                                                    <AlertDialogTitle className="flex items-center gap-2">
-                                                                        <Trash2 className="w-5 h-5 text-destructive" />
-                                                                        Hapus Brand Kit?
-                                                                    </AlertDialogTitle>
-                                                                    <AlertDialogDescription className="text-base">
-                                                                        Menghapus <strong>{kit.name}</strong> tidak dapat dibatalkan. Desain yang telah Anda buat sebelumnya dengan brand kit ini tidak akan terpengaruh.
-                                                                    </AlertDialogDescription>
-                                                                </AlertDialogHeader>
-                                                                <AlertDialogFooter className="mt-6">
-                                                                    <AlertDialogCancel className="font-medium">Batalkan</AlertDialogCancel>
-                                                                    <AlertDialogAction
-                                                                        onClick={() => handleDeleteBrandKit(kit.id)}
-                                                                        className="bg-destructive hover:bg-destructive/90 text-white font-medium"
-                                                                    >
-                                                                        Ya, Hapus Palette
-                                                                    </AlertDialogAction>
-                                                                </AlertDialogFooter>
-                                                            </AlertDialogContent>
-                                                        </AlertDialog>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
+                        <BrandSettings />
                     </SettingsSection>
 
                     {/* -- SECTION DANGER ZONE -- */}

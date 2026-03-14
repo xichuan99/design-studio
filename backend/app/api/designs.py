@@ -296,6 +296,35 @@ async def generate_design(
     try:
         from datetime import datetime, timezone
 
+        def build_strict_brand_suffix(kit) -> str:
+            if not kit:
+                return ""
+            
+            parts = []
+            if kit.colors:
+                color_strs = []
+                for c in kit.colors:
+                    role = c.get("role", "color").upper()
+                    hex_val = c.get("hex", "")
+                    if hex_val:
+                        color_strs.append(f"{role}: {hex_val}")
+                if color_strs:
+                    parts.append("Use ONLY these exact hex colors: " + ", ".join(color_strs) + ".")
+            
+            if kit.typography:
+                fonts = []
+                if kit.typography.get("primaryFont"):
+                    fonts.append(f"Headline Font: {kit.typography.get('primaryFont')}")
+                if kit.typography.get("secondaryFont"):
+                    fonts.append(f"Body Font: {kit.typography.get('secondaryFont')}")
+                if fonts:
+                    parts.append("Typography constraints: " + ", ".join(fonts) + ".")
+                    
+            if not parts:
+                return ""
+            
+            return " CRITICAL INSTRUCTION: " + " ".join(parts) + " Do not improvise or add any other colors or fonts."
+
         # Load brand kit colors if specified
         brand_colors = None
         if request.brand_kit_id:
@@ -314,8 +343,13 @@ async def generate_design(
                 if kit and kit.colors:
                     # extract the hex values
                     brand_colors = [c.get("hex") for c in kit.colors if c.get("hex")]
+                
+                strict_brand_suffix = build_strict_brand_suffix(kit)
             except Exception as e:
                 logging.error(f"Failed to load brand kit {request.brand_kit_id}: {e}")
+                strict_brand_suffix = ""
+        else:
+            strict_brand_suffix = ""
 
         # Parse text first (reuse existing logic)
         parsed = await parse_design_text(
@@ -385,7 +419,7 @@ async def generate_design(
 
         enhanced_prompt = (
             f"{sanitize_prompt_for_imagen(visual_prompt_final)}, {style_suffix}, "
-            f"{text_instruction}, high quality, 4k"
+            f"{text_instruction}, high quality, 4k{strict_brand_suffix}"
         )
 
         client = genai.Client(api_key=app_settings.GEMINI_API_KEY)

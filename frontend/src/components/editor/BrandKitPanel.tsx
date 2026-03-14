@@ -118,7 +118,10 @@ export default function BrandKitPanel({ onClose, onApplyColors }: BrandKitPanelP
                 api.saveBrandKit({
                     name: kitName,
                     colors: extractedColors,
-                    logo_url: null // We skip logo_url for now unless we upload it to s3/supabase
+                    logo_url: null, // We skip logo_url for now unless we upload it to s3/supabase
+                    logos: [],
+                    typography: { primaryFont: 'Inter', secondaryFont: 'Inter' },
+                    is_active: false
                 }),
                 timeoutPromise
             ]);

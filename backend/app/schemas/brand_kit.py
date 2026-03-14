@@ -11,6 +11,9 @@ class ColorSwatch(BaseModel):
         ...,
         description="Logical role: primary, secondary, accent, background, text"
     )
+class Typography(BaseModel):
+    primaryFont: Optional[str] = Field(None, description="Primary font family name")
+    secondaryFont: Optional[str] = Field(None, description="Secondary font family name")
 
 
 class BrandKitBase(BaseModel):
@@ -19,9 +22,17 @@ class BrandKitBase(BaseModel):
     )
     logo_url: Optional[str] = Field(
         None,
-        description="URL of the uploaded logo"
+        description="URL of the uploaded logo (legacy/single logo)"
+    )
+    logos: Optional[List[str]] = Field(
+        default_factory=list,
+        description="List of logo URLs"
     )
     colors: List[ColorSwatch] = Field(..., min_length=1, max_length=10)
+    typography: Optional[Typography] = Field(
+        None,
+        description="Typography settings"
+    )
 
 
 class BrandKitCreate(BrandKitBase):
@@ -31,7 +42,9 @@ class BrandKitCreate(BrandKitBase):
 class BrandKitUpdate(BaseModel):
     name: Optional[str] = None
     logo_url: Optional[str] = None
+    logos: Optional[List[str]] = None
     colors: Optional[List[ColorSwatch]] = None
+    typography: Optional[Typography] = None
     is_active: Optional[bool] = None
 
 

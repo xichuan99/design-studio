@@ -22,10 +22,17 @@ export interface HistoryEntry {
 }
 
 // --- Brand Kit Types ---
+export type ColorRole = 'background' | 'primary_text' | 'secondary_text' | 'accent' | 'primary' | 'secondary' | string;
+
 export interface ColorSwatch {
     hex: string;
     name: string;
-    role: string;
+    role: ColorRole;
+}
+
+export interface Typography {
+    primaryFont?: string;
+    secondaryFont?: string;
 }
 
 export interface BrandKit {
@@ -33,10 +40,15 @@ export interface BrandKit {
     user_id: string;
     name: string;
     logo_url: string | null;
+    logos: string[];
     colors: ColorSwatch[];
+    typography?: Typography;
     is_active: boolean;
     created_at: string;
 }
+
+// Alias for semantic clarity in hooks and UI
+export type BrandKitProfile = BrandKit;
 
 // --- Credit History Types ---
 export interface CreditTransaction {
@@ -447,14 +459,17 @@ export function useProjectApi() {
         return res.json();
     };
 
-    const saveBrandKit = async (data: { name: string; logo_url: string | null; colors: ColorSwatch[] }): Promise<BrandKit> => {
+    const saveBrandKit = async (data: Omit<BrandKitProfile, 'id' | 'created_at' | 'updated_at' | 'user_id'>): Promise<BrandKitProfile> => {
+        console.log("saveBrandKit payload:", data);
         const res = await fetch(`${API_BASE_URL}/brand-kits`, {
             method: 'POST',
             headers: getHeaders(),
             body: JSON.stringify(data),
         });
+        console.log("saveBrandKit raw response:", res);
         if (!res.ok) {
             const errBase = await res.json().catch(() => ({}));
+            console.error("saveBrandKit error response json:", errBase);
             throw new Error(errBase.detail || 'Failed to save Brand Kit');
         }
         return res.json();
