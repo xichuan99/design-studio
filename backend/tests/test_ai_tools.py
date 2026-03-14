@@ -39,7 +39,7 @@ def test_background_swap_endpoint_success():
 
         mock_rm.return_value = b"nobg"
         mock_gen.return_value = {"image_url": "http://fake-url.com/fg.jpg"}
-        
+
         # Mock httpx response
         mock_response = MagicMock()
         mock_response.content = b"bg_bytes"

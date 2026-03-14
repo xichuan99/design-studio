@@ -93,7 +93,7 @@ def test_resize_to_aspect_square():
     img = Image.new("RGB", (200, 100), color="red")
     buf = io.BytesIO()
     img.save(buf, format="JPEG")
-    
+
     resized_bytes = resize_to_aspect(buf.getvalue(), "1:1")
     result = Image.open(io.BytesIO(resized_bytes))
     assert result.size == (1024, 1024)
@@ -106,7 +106,7 @@ def test_resize_to_aspect_story():
     img = Image.new("RGB", (300, 300), color="blue")
     buf = io.BytesIO()
     img.save(buf, format="JPEG")
-    
+
     resized_bytes = resize_to_aspect(buf.getvalue(), "9:16")
     result = Image.open(io.BytesIO(resized_bytes))
     assert result.size == (768, 1344)
@@ -121,7 +121,7 @@ def test_extract_dominant_colors():
     img.putpixel((0, 0), (0, 0, 255))
     buf = io.BytesIO()
     img.save(buf, format="JPEG")
-    
+
     colors = extract_dominant_colors(buf.getvalue(), n=1)
     assert len(colors) == 1
     assert colors[0].startswith("#")

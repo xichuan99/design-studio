@@ -53,7 +53,7 @@ async def test_modify_visual_prompt():
     instruction = "Buat lebih gelap dan dramatis"
 
     result = await modify_visual_prompt(original_parts, original_visual_prompt, instruction)
-    
+
     assert "modified_prompt_parts" in result
     assert "modified_visual_prompt" in result
     assert isinstance(result["modified_prompt_parts"], list)

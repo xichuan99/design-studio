@@ -59,7 +59,7 @@ TEMPLATES = [
         "prompt_suffix": "coffee cup, latte art, warm morning light, wooden table, cafe aesthetic, cozy",
         "thumbnail_url": "https://images.unsplash.com/photo-1497935586351-b67a49e012bf?w=800&h=450&fit=crop",
     },
-    
+
     # 🛍️ Flash Sale / Discount
     {
         "name": "Mega Sale - Square",
@@ -362,10 +362,10 @@ async def seed():
         # Fetch existing templates to prevent duplicates
         result = await session.execute(select(Template))
         existing_templates = {t.name: t for t in result.scalars().all()}
-        
+
         added = 0
         updated = 0
-        
+
         for tmpl_data in TEMPLATES:
             if tmpl_data["name"] in existing_templates:
                 # Update existing template
@@ -391,7 +391,7 @@ async def seed():
                 )
                 session.add(tmpl)
                 added += 1
-                
+
         await session.commit()
         print(f"✅ Seeded {added} new templates and updated {updated} existing templates successfully!")
 

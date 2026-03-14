@@ -13,12 +13,12 @@ DATABASE_URL = "postgresql+asyncpg://dev:devpass@localhost:5433/designstudio"
 async def main():
     engine = create_async_engine(DATABASE_URL)
     async_session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
-    
+
     async with async_session() as session:
         # check if it exists
         result = await session.execute(select(User).where(User.email == "demo@example.com"))
         user = result.scalar_one_or_none()
-        
+
         if not user:
             print("Creating test user demo@example.com...")
             hashed_pw = get_password_hash("password123")

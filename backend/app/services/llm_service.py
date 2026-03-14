@@ -650,7 +650,7 @@ async def generate_project_title(prompt: str) -> str:
         return " ".join(words[:4]).title() if words else "Desain AI Baru"
 
     client = genai.Client(api_key=settings.GEMINI_API_KEY)
-    
+
     system_instruction = (
         "You are an assistant that creates short, descriptive, and catchy project titles "
         "(2 to 5 words max) based on a description. Respond ONLY with the title. "
