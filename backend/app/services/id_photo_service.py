@@ -22,6 +22,7 @@ BG_COLORS = {
 }
 
 async def generate_id_photo(
+    image_bytes: bytes,
     bg_color_name: str = "red",
     size_name: str = "3x4",
     custom_w_cm: Optional[float] = None,
