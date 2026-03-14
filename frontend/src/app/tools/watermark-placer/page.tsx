@@ -77,8 +77,9 @@ export default function WatermarkPlacerPage() {
       const data = await res.json();
       setResultImage(data.url);
       // Success
-    } catch (error: any) {
-      alert(error.message || "Terjadi kesalahan pada server");
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Terjadi kesalahan pada server";
+      alert(errorMessage);
     } finally {
       setIsProcessing(false);
     }
@@ -233,6 +234,7 @@ export default function WatermarkPlacerPage() {
               </div>
             ) : imagePreview ? (
                 <div className="relative w-full h-full p-4 flex items-center justify-center">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={imagePreview} alt="Original" className="max-w-full max-h-full object-contain rounded-lg shadow-sm" />
                      {logoPreview && (
                          <div className="absolute inset-0 pointer-events-none flex items-center justify-center bg-black/40 backdrop-blur-sm opacity-0 hover:opacity-100 transition-opacity">

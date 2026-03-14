@@ -4,7 +4,6 @@ import React, { useRef, useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Undo2, Eraser, Trash2 } from "lucide-react";
-import Image from "next/image";
 
 interface CanvasMaskPainterProps {
   imageUrl: string;
@@ -287,6 +286,7 @@ export function CanvasMaskPainter({ imageUrl, onMaskComplete, className = "" }: 
       >
         <div className="relative inline-block max-w-full">
           {/* Base Image */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             ref={imgRef}
             src={imageUrl}

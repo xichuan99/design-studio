@@ -8,7 +8,6 @@ import { BeforeAfterSlider } from "@/components/tools/BeforeAfterSlider";
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowLeft, Download, PenSquare } from "lucide-react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { toast } from "sonner";
 import { useProjectApi } from "@/lib/api";
 
@@ -19,7 +18,6 @@ export default function MagicEraserPage() {
   const [step, setStep] = useState(1);
   const [originalFile, setOriginalFile] = useState<File | null>(null);
   const [previewOriginal, setPreviewOriginal] = useState<string>("");
-  const [loading, setLoading] = useState(false);
   const [resultUrl, setResultUrl] = useState<string>("");
 
   const handleFileSelect = (file: File) => {
@@ -31,7 +29,6 @@ export default function MagicEraserPage() {
   const handleMaskComplete = async (maskBlob: Blob) => {
     if (!originalFile) return;
     
-    setLoading(true);
     setStep(3); // Loading state
 
     try {
@@ -51,7 +48,7 @@ export default function MagicEraserPage() {
       }
       setStep(2); // Back to drawing board on error
     } finally {
-      setLoading(false);
+      // Done processing
     }
   };
 

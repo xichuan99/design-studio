@@ -4,9 +4,8 @@ import { useState } from "react";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { BatchImageDropzone } from "@/components/tools/BatchImageDropzone";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, Download, Layers, ShieldCheck, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, ArrowLeft, Download, Layers, CheckCircle2, XCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 
 const OPERATIONS = [
   { id: "remove_bg", name: "Hapus Latar Belakang", cost: 1, desc: "Hapus background foto produk secara otomatis" },
@@ -32,7 +31,7 @@ export default function BatchProcessPage() {
 
   const [loading, setLoading] = useState(false);
   const [resultUrl, setResultUrl] = useState<string>("");
-  const [batchResult, setBatchResult] = useState<{success: number, error: number, errors: any[]}>({success: 0, error: 0, errors: []});
+  const [batchResult, setBatchResult] = useState<{success: number, error: number, errors: Array<{filename: string, error: string}>}>({success: 0, error: 0, errors: []});
 
   const handleFilesSelect = (selectedFiles: File[]) => {
     setFiles(selectedFiles);
@@ -58,7 +57,7 @@ export default function BatchProcessPage() {
       files.forEach(f => formData.append("files", f));
       formData.append("operation", operation);
 
-      const params: any = {};
+      const params: Record<string, string> = {};
       if (operation === "product_scene") {
           params.theme = theme;
       }
