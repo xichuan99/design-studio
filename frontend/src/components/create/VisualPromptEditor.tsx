@@ -128,66 +128,8 @@ export function VisualPromptEditor({
                 </div>
             )}
 
-            {/* Prompt Parts Toggles */}
-            <div className="space-y-3 mt-2">
-                <div className="flex items-center justify-between px-2">
-                    <h3 className="font-semibold text-foreground/80 text-sm tracking-wide uppercase">Pengaturan Visual</h3>
-                    {hasModified && (
-                        <Button variant="ghost" size="sm" onClick={handleUndo} className="h-8 text-muted-foreground hover:text-foreground">
-                            <Undo2 className="w-3.5 h-3.5 mr-1.5" /> Batal Perubahan
-                        </Button>
-                    )}
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {parsedData.visual_prompt_parts?.map((part, idx) => (
-                        <div 
-                            key={idx} 
-                            className={`rounded-xl border transition-all duration-300 p-4 flex flex-col gap-3 group
-                                ${part.enabled 
-                                    ? 'bg-card border-border/50 shadow-sm' 
-                                    : 'bg-muted/30 opacity-60 hover:opacity-80 border-border/20'}`}
-                        >
-                            <div className="flex items-center justify-between">
-                                <label 
-                                    htmlFor={`switch-${idx}`}
-                                    className={`text-sm font-bold tracking-wide cursor-pointer select-none transition-all
-                                        ${part.enabled ? 'text-foreground' : 'text-muted-foreground'}`}
-                                >
-                                    {LABEL_ID[part.label] || part.label}
-                                </label>
-                                <Switch 
-                                    checked={part.enabled}
-                                    onCheckedChange={() => onTogglePromptPart(idx)}
-                                    id={`switch-${idx}`}
-                                />
-                            </div>
-                            
-                            {/* Hide English prompt behind details for clean UI */}
-                            {part.enabled && (
-                                <details className="group/details">
-                                    <summary className="text-[10px] text-muted-foreground hover:text-foreground cursor-pointer list-none [&::-webkit-details-marker]:hidden flex items-center gap-1 w-fit transition-colors">
-                                        <ChevronDown className="w-3 h-3 transition-transform duration-200 group-open/details:rotate-180" />
-                                        Lihat English AI Prompt
-                                    </summary>
-                                    <div className="mt-2 text-xs font-mono text-muted-foreground/80 bg-muted/40 p-2 rounded-md break-words">
-                                        {part.value}
-                                    </div>
-                                </details>
-                            )}
-                        </div>
-                    ))}
-                </div>
-                
-                {(!parsedData.visual_prompt_parts || parsedData.visual_prompt_parts.length === 0) && (
-                    <div className="w-full text-sm rounded-lg p-4 bg-muted/30 border border-border text-muted-foreground">
-                        {parsedData.visual_prompt}
-                    </div>
-                )}
-            </div>
-
-            {/* AI Modification Box - Moved to bottom */}
-            <div className="bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-2xl p-5 sm:p-6 shadow-[0_0_30px_rgba(var(--primary),0.05)] mt-4">
+            {/* AI Modification Box - Moved to TOP as requested */}
+            <div className="bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-2xl p-5 sm:p-6 shadow-[0_0_30px_rgba(var(--primary),0.05)] mt-2">
                 <div className="mb-3">
                     <h4 className="text-sm font-semibold text-foreground">✏️ Revisi Prompt</h4>
                     <p className="text-xs text-muted-foreground mt-0.5">Ingin mengubah hasil gambar? Tulis revisi Anda di bawah, lalu klik Terapkan.</p>
@@ -243,7 +185,133 @@ export function VisualPromptEditor({
                         {isGeneratingImage ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generate...</> : "🔄 Generate Ulang"}
                     </Button>
                 )}
-            </div>            
+            </div>
+
+            {/* Prompt Parts Toggles - Wrapped in details for compact mode */}
+            {compact ? (
+                <details className="group/settings border border-border/50 rounded-xl bg-card overflow-hidden">
+                    <summary className="flex items-center justify-between p-4 cursor-pointer list-none [&::-webkit-details-marker]:hidden hover:bg-muted/30 transition-colors">
+                        <div className="flex items-center gap-2">
+                            <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform duration-200 group-open/settings:-rotate-180" />
+                            <h3 className="font-semibold text-foreground/80 text-sm tracking-wide uppercase">Pengaturan Visual</h3>
+                        </div>
+                        <div className="text-xs text-muted-foreground/80 font-medium">
+                            {parsedData.visual_prompt_parts?.filter(p => p.enabled).length || 0}/{parsedData.visual_prompt_parts?.length || 0} Aktif
+                        </div>
+                    </summary>
+                    <div className="p-4 pt-0 border-t border-border/20 space-y-3">
+                        {hasModified && (
+                            <div className="flex justify-end mb-2">
+                                <Button variant="ghost" size="sm" onClick={handleUndo} className="h-8 py-0 px-2 text-muted-foreground hover:text-foreground">
+                                    <Undo2 className="w-3.5 h-3.5 mr-1.5" /> Batal Perubahan
+                                </Button>
+                            </div>
+                        )}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {parsedData.visual_prompt_parts?.map((part, idx) => (
+                                <div 
+                                    key={idx} 
+                                    className={`rounded-xl border transition-all duration-300 p-4 flex flex-col gap-3 group
+                                        ${part.enabled 
+                                            ? 'bg-card border-border/50 shadow-sm' 
+                                            : 'bg-muted/30 opacity-60 hover:opacity-80 border-border/20'}`}
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <label 
+                                            htmlFor={`switch-${idx}`}
+                                            className={`text-sm font-bold tracking-wide cursor-pointer select-none transition-all
+                                                ${part.enabled ? 'text-foreground' : 'text-muted-foreground'}`}
+                                        >
+                                            {LABEL_ID[part.label] || part.label}
+                                        </label>
+                                        <Switch 
+                                            checked={part.enabled}
+                                            onCheckedChange={() => onTogglePromptPart(idx)}
+                                            id={`switch-${idx}`}
+                                        />
+                                    </div>
+                                    
+                                    {/* Hide English prompt behind details for clean UI */}
+                                    {part.enabled && (
+                                        <details className="group/details">
+                                            <summary className="text-[10px] text-muted-foreground hover:text-foreground cursor-pointer list-none [&::-webkit-details-marker]:hidden flex items-center gap-1 w-fit transition-colors">
+                                                <ChevronDown className="w-3 h-3 transition-transform duration-200 group-open/details:rotate-180" />
+                                                Lihat English AI Prompt
+                                            </summary>
+                                            <div className="mt-2 text-xs font-mono text-muted-foreground/80 bg-muted/40 p-2 rounded-md break-words">
+                                                {part.value}
+                                            </div>
+                                        </details>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                        
+                        {(!parsedData.visual_prompt_parts || parsedData.visual_prompt_parts.length === 0) && (
+                            <div className="w-full text-sm rounded-lg p-4 bg-muted/30 border border-border text-muted-foreground">
+                                {parsedData.visual_prompt}
+                            </div>
+                        )}
+                    </div>
+                </details>
+            ) : (
+                <div className="space-y-3 mt-2">
+                    <div className="flex items-center justify-between px-2">
+                        <h3 className="font-semibold text-foreground/80 text-sm tracking-wide uppercase">Pengaturan Visual</h3>
+                        {hasModified && (
+                            <Button variant="ghost" size="sm" onClick={handleUndo} className="h-8 text-muted-foreground hover:text-foreground">
+                                <Undo2 className="w-3.5 h-3.5 mr-1.5" /> Batal Perubahan
+                            </Button>
+                        )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {parsedData.visual_prompt_parts?.map((part, idx) => (
+                            <div 
+                                key={idx} 
+                                className={`rounded-xl border transition-all duration-300 p-4 flex flex-col gap-3 group
+                                    ${part.enabled 
+                                        ? 'bg-card border-border/50 shadow-sm' 
+                                        : 'bg-muted/30 opacity-60 hover:opacity-80 border-border/20'}`}
+                            >
+                                <div className="flex items-center justify-between">
+                                    <label 
+                                        htmlFor={`switch-${idx}`}
+                                        className={`text-sm font-bold tracking-wide cursor-pointer select-none transition-all
+                                            ${part.enabled ? 'text-foreground' : 'text-muted-foreground'}`}
+                                    >
+                                        {LABEL_ID[part.label] || part.label}
+                                    </label>
+                                    <Switch 
+                                        checked={part.enabled}
+                                        onCheckedChange={() => onTogglePromptPart(idx)}
+                                        id={`switch-${idx}`}
+                                    />
+                                </div>
+                                
+                                {/* Hide English prompt behind details for clean UI */}
+                                {part.enabled && (
+                                    <details className="group/details">
+                                        <summary className="text-[10px] text-muted-foreground hover:text-foreground cursor-pointer list-none [&::-webkit-details-marker]:hidden flex items-center gap-1 w-fit transition-colors">
+                                            <ChevronDown className="w-3 h-3 transition-transform duration-200 group-open/details:rotate-180" />
+                                            Lihat English AI Prompt
+                                        </summary>
+                                        <div className="mt-2 text-xs font-mono text-muted-foreground/80 bg-muted/40 p-2 rounded-md break-words">
+                                            {part.value}
+                                        </div>
+                                    </details>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                    
+                    {(!parsedData.visual_prompt_parts || parsedData.visual_prompt_parts.length === 0) && (
+                        <div className="w-full text-sm rounded-lg p-4 bg-muted/30 border border-border text-muted-foreground">
+                            {parsedData.visual_prompt}
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Generate AI Button - Only in non-compact mode */}
             {!compact && onGenerate && (
