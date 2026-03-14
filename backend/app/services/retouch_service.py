@@ -26,14 +26,14 @@ async def auto_enhance(image_bytes: bytes) -> bytes:
         clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
         cl = clahe.apply(l_chan)
 
-        # Merge back 
+        # Merge back
         limg = cv2.merge((cl, a_chan, b_chan))
         enhanced_bgr = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
 
         # Subtle warm tint (optional, improves skin tones slightly)
         # We can blend this with original to keep it natural
         enhanced_rgb = cv2.cvtColor(enhanced_bgr, cv2.COLOR_BGR2RGB)
-        
+
         out_img = Image.fromarray(enhanced_rgb)
 
         out_buffer = io.BytesIO()
@@ -55,7 +55,7 @@ async def remove_blemishes(image_bytes: bytes) -> bytes:
 
         # Bilateral filter for skin smoothing while keeping edges sharp
         smoothed = cv2.bilateralFilter(bgr_img, d=9, sigmaColor=75, sigmaSpace=75)
-        
+
         # Slight median blur to remove spot noise (acne/blemishes)
         cleaned = cv2.medianBlur(smoothed, 3)
 

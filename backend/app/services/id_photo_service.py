@@ -70,7 +70,7 @@ async def generate_id_photo(
         if len(faces) > 0:
             # Get largest face (most likely the subject)
             (x, y, w, h) = max(faces, key=lambda f: f[2] * f[3])
-            
+
             # Standard Pasfoto: Face height is ~50-60% of total image height
             desired_face_h = int(target_h * 0.55)
             scale = desired_face_h / max(h, 1) # prevent div by zero
@@ -85,10 +85,10 @@ async def generate_id_photo(
             # Position face: horizontally centered, vertically with ~12% clearance at the top
             crop_top = scaled_y - int(target_h * 0.12)
             crop_bottom = crop_top + target_h
-            
+
             crop_left = scaled_x + (scaled_w // 2) - (target_w // 2)
             crop_right = crop_left + target_w
-            
+
         else:
             # FALLBACK: if face detection fails, do a standard top-center crop fit
             img_aspect = img_w / img_h
@@ -104,7 +104,7 @@ async def generate_id_photo(
                 person_img_scaled = person_img.resize((new_w, new_h), Image.Resampling.LANCZOS)
                 crop_left = 0
                 crop_top = int(new_h * 0.05) # Assume top of head is 5% down
-            
+
             crop_right = crop_left + target_w
             crop_bottom = crop_top + target_h
 
@@ -114,7 +114,7 @@ async def generate_id_photo(
         # Shift coordinate center so we don't accidentally crop negative coords
         shift_x = target_w
         shift_y = target_h
-        
+
         canvas = Image.new("RGBA", (canvas_w, canvas_h), (0, 0, 0, 0))
         canvas.paste(person_img_scaled, (shift_x, shift_y))
 

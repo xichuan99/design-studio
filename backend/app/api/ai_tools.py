@@ -238,7 +238,7 @@ async def retouch(
 
     try:
         start_time = time.time()
-        
+
         # 1. Upload original for Before/After slider
         temp_id = str(uuid.uuid4())[:8]
         mime_type = file.content_type or "image/jpeg"
@@ -298,7 +298,7 @@ async def create_id_photo(
 
     try:
         start_time = time.time()
-        
+
         # 1. Generate Photo
         final_bytes = await id_photo_service.generate_id_photo(
             image_bytes=content,
