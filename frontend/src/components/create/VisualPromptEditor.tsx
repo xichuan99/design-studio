@@ -138,7 +138,7 @@ export function VisualPromptEditor({
                     <div className="relative flex-1">
                         <Input 
                             placeholder="Apa yang ingin diubah? (Contoh: Buat lebih gelap)"
-                            className="h-12 bg-background/80 backdrop-blur-sm border-primary/20 focus:border-primary/50 text-foreground"
+                            className="h-12 bg-background border-primary/30 focus:border-primary/50 text-foreground placeholder:text-muted-foreground"
                             value={instruction}
                             onChange={(e) => setInstruction(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleApplyModification()}
