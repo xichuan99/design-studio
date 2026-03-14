@@ -137,7 +137,7 @@ export function VisualPromptEditor({
                 <div className="flex flex-col sm:flex-row gap-3">
                     <div className="relative flex-1">
                         <Input 
-                            placeholder="Apa yang ingin diubah? (Contoh: Buat lebih gelap)"
+                            placeholder="Tulis revisi Anda di sini..."
                             className="h-12 bg-background dark:bg-white/5 border-primary/30 focus:border-primary/50 text-foreground placeholder:text-muted-foreground"
                             value={instruction}
                             onChange={(e) => setInstruction(e.target.value)}
