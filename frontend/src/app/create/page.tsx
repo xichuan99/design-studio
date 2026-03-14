@@ -600,19 +600,6 @@ export default function CreatePage() {
                 {/* Sidebar Inputs */}
                 <aside className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 absolute md:relative w-full max-w-[420px] md:w-[420px] border-r flex flex-col bg-card overflow-y-auto shrink-0 z-20 shadow-xl h-full transition-transform duration-200`}>
                     <div className="p-4 space-y-6 flex-1 relative">
-                        {/* Reset Button */}
-                        {(rawText || currentStep !== 'input') && (
-                            <div className="absolute top-2 right-4 z-10 transition-opacity animation-fade-in">
-                                <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    onClick={handleResetState} 
-                                    className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 h-8 text-xs font-medium px-2"
-                                >
-                                    <X className="w-3 h-3 mr-1" /> Mulai Baru
-                                </Button>
-                            </div>
-                        )}
 
                         <SidebarInputForm
                             rawText={rawText}
@@ -654,6 +641,18 @@ export default function CreatePage() {
 
                 {/* Main Workspace Preview (Week 1 Scope) */}
                 <main className={`flex-1 bg-muted/20 relative flex flex-col items-center justify-start ${currentStep === 'preview' ? 'overflow-hidden p-0' : 'overflow-y-auto p-4 md:p-8'}`}>
+                    {/* Reset Button - Top right of main content */}
+                    {(rawText || currentStep !== 'input') && currentStep !== 'preview' && (
+                        <div className="w-full max-w-3xl mx-auto flex justify-end mb-1 shrink-0 animation-fade-in">
+                            <button 
+                                type="button"
+                                onClick={handleResetState} 
+                                className="text-xs text-muted-foreground/60 hover:text-destructive transition-colors flex items-center gap-1"
+                            >
+                                <X className="w-3 h-3" /> Mulai Baru
+                            </button>
+                        </div>
+                    )}
                     {inlineError && (
                         <div className="w-full max-w-4xl mx-auto mb-4 z-10 shrink-0">
                             <InlineErrorBanner 
