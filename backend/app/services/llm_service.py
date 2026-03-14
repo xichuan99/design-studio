@@ -373,7 +373,8 @@ async def parse_design_text(
     raw_text: str,
     integrated_text: bool = False,
     clarification_answers: Optional[dict] = None,
-    brand_colors: Optional[list[str]] = None
+    brand_colors: Optional[list[str]] = None,
+    brand_typography: Optional[dict] = None
 ) -> ParsedTextElements:
     """Parses raw text into structured design elements and a visual prompt."""
 
@@ -407,7 +408,20 @@ async def parse_design_text(
         In the visual_prompt_parts 'colors' category, explicitly mention these hex codes or their nearest color name equivalents.
         """
 
-    final_prompt = SYSTEM_PROMPT + prompt_modifier + clarification_modifier + brand_colors_modifier
+    brand_typography_modifier = ""
+    if brand_typography:
+        primary_font = brand_typography.get("primary_font", "")
+        secondary_font = brand_typography.get("secondary_font", "")
+        if primary_font or secondary_font:
+            brand_typography_modifier = f"""
+        BRAND TYPOGRAPHY:
+        The user has an active Brand Kit with specific fonts. You MUST use these fonts:
+        - Primary Font: "{primary_font}" -> Use this for headline_layout.font_family
+        - Secondary Font: "{secondary_font}" -> Use this for sub_headline_layout.font_family AND cta_layout.font_family
+        Do NOT use any other font. These brand fonts are mandatory.
+        """
+
+    final_prompt = SYSTEM_PROMPT + prompt_modifier + clarification_modifier + brand_colors_modifier + brand_typography_modifier
 
     if not settings.GEMINI_API_KEY:
         # Dev-mode mock: return sample parsed elements so the app is usable without an API key
