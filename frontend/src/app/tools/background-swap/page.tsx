@@ -173,7 +173,7 @@ export default function BackgroundSwapPage() {
               <Button size="lg" className="gap-2 font-bold shadow-md" onClick={() => window.open(resultUrl, "_blank")}>
                 <Download className="w-5 h-5" /> Download HD
               </Button>
-              <Button size="lg" variant="secondary" className="gap-2" onClick={() => toast.info("Integrasi editor ke proyek spesifik akan hadir di fase berikutnya!")}>
+              <Button size="lg" variant="secondary" className="gap-2" onClick={() => router.push(`/create?imageUrl=${encodeURIComponent(resultUrl)}`)}>
                 <PenSquare className="w-5 h-5" /> Lanjut ke Editor
               </Button>
             </div>
