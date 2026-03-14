@@ -422,3 +422,93 @@ def test_ai_tools_oversized_files():
     files2 = {"file": ("test.png", large_content, "image/png")}
     res2 = client.post("/api/tools/generative-expand", files=files2)
     assert res2.status_code == 400
+
+
+def test_watermark_endpoint_success():
+    """Test /watermark endpoint"""
+    files = {
+        "file": ("test.png", b"fake_base", "image/png"),
+        "logo": ("logo.png", b"fake_logo", "image/png"),
+    }
+    data = {
+        "position": "bottom-right",
+        "opacity": "0.7",
+        "scale": "0.3"
+    }
+
+    with (
+        patch("app.services.watermark_service.apply_watermark", new_callable=AsyncMock) as mock_wm,
+        patch("app.api.ai_tools.upload_image", new_callable=AsyncMock) as mock_upload,
+    ):
+        mock_wm.return_value = b"watermarked_bytes"
+        mock_upload.return_value = "http://storage.com/watermarked.jpg"
+
+        res = client.post("/api/tools/watermark", data=data, files=files)
+
+        assert res.status_code == 200
+        assert res.json() == {"url": "http://storage.com/watermarked.jpg"}
+        mock_wm.assert_called_once_with(
+            base_image_bytes=b"fake_base",
+            watermark_bytes=b"fake_logo",
+            position="bottom-right",
+            opacity=0.7,
+            scale=0.3
+        )
+        mock_upload.assert_called_once()
+
+
+def test_product_scene_endpoint_success():
+    """Test /product-scene endpoint"""
+    files = {"file": ("test.png", b"fake_product", "image/png")}
+    data = {"theme": "minimalist", "aspect_ratio": "16:9"}
+
+    with (
+        patch("app.services.product_scene_service.generate_product_scene", new_callable=AsyncMock) as mock_scene,
+        patch("app.api.ai_tools.upload_image", new_callable=AsyncMock) as mock_upload,
+    ):
+        mock_scene.return_value = b"scene_bytes"
+        mock_upload.return_value = "http://storage.com/scene.jpg"
+
+        res = client.post("/api/tools/product-scene", data=data, files=files)
+
+        assert res.status_code == 200
+        assert res.json() == {"url": "http://storage.com/scene.jpg"}
+        mock_scene.assert_called_once_with(
+            image_bytes=b"fake_product",
+            theme="minimalist",
+            aspect_ratio="16:9"
+        )
+        mock_upload.assert_called_once()
+
+
+def test_batch_endpoint_success():
+    """Test /batch endpoint"""
+    files = [
+        ("files", ("image1.jpg", b"fake1", "image/jpeg")),
+        ("files", ("image2.png", b"fake2", "image/png")),
+    ]
+    data = {"operation": "remove_bg"}
+
+    with (
+        patch("app.services.batch_service.process_batch", new_callable=AsyncMock) as mock_batch,
+        patch("app.api.ai_tools.upload_image", new_callable=AsyncMock) as mock_upload,
+    ):
+        mock_batch.return_value = (b"fake_zip_bytes", [])
+        mock_upload.return_value = "http://storage.com/batch.zip"
+
+        res = client.post("/api/tools/batch", data=data, files=files)
+
+        assert res.status_code == 200
+        assert res.json() == {
+            "url": "http://storage.com/batch.zip",
+            "success_count": 2,
+            "error_count": 0,
+            "errors": []
+        }
+        
+        # Verify passed files structure
+        args, kwargs = mock_batch.call_args
+        assert len(kwargs["files"]) == 2
+        assert kwargs["files"][0][0] == "image1.jpg"
+        assert kwargs["files"][0][1] == b"fake1"
+        assert kwargs["operation"] == "remove_bg"
