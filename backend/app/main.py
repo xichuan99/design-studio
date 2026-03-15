@@ -25,10 +25,19 @@ app = FastAPI(title="Smart Design Studio API")
 
 # Configure CORS for Next.js frontend
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+
+# Ensure no wildcard in allow_origins when allow_credentials=True
+if "*" in CORS_ORIGINS:
+    allow_origins = ["*"]
+    allow_credentials = False
+else:
+    allow_origins = CORS_ORIGINS
+    allow_credentials = True
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=CORS_ORIGINS,
-    allow_credentials=True,
+    allow_origins=allow_origins,
+    allow_credentials=allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )

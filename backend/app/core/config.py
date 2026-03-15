@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379/0"
 
     # Auth
-    NEXTAUTH_SECRET: str = "your_super_secret_key_here_for_dev"
+    NEXTAUTH_SECRET: str = ""
 
     # LLM
     GEMINI_API_KEY: str = ""

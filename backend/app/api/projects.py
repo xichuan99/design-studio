@@ -105,7 +105,7 @@ async def delete_project(
     project_id: UUID,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
-):
+) -> None:
     """Delete a saved project."""
     result = await db.execute(
         select(Project).where(

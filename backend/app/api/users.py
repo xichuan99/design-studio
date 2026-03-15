@@ -42,7 +42,7 @@ async def update_my_profile(
 @router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_my_account(
     current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
-):
+) -> None:
     """Deletes the current user's account and all related data."""
     user_id = current_user.id
     try:
