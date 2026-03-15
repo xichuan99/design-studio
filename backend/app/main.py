@@ -29,7 +29,38 @@ if SENTRY_DSN:
         profiles_sample_rate=float(os.getenv("SENTRY_PROFILES_SAMPLE_RATE", "0.1")),
     )
 
-app = FastAPI(title="Smart Design Studio API")
+# Read version
+version_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "VERSION")
+try:
+    with open(version_path, "r") as f:
+        __version__ = f.read().strip()
+except Exception:
+    __version__ = "1.0.0"
+
+tags_metadata = [
+    {"name": "Authentication", "description": "Operations with users and authentications."},
+    {"name": "Designs", "description": "Operations with canvas designs and related tools."},
+    {"name": "Templates", "description": "Access to pre-made templates."},
+    {"name": "Projects", "description": "Manage user projects and canvases."},
+    {"name": "Users", "description": "Manage user accounts and info."},
+    {"name": "History", "description": "User activity and generation history."},
+    {"name": "Brand Kits", "description": "Manage user brand assets (colors, typography, logos)."},
+    {"name": "AI Tools", "description": "General AI tooling operations."},
+    {"name": "Health", "description": "Health checks."},
+]
+
+app = FastAPI(
+    title="Smart Design Studio API",
+    description="Backend API for Smart Design Studio - a web-based design tool for Indonesian UMKM.",
+    version=__version__,
+    contact={
+        "name": "Smart Design Studio Team",
+    },
+    license_info={
+        "name": "Proprietary",
+    },
+    openapi_tags=tags_metadata,
+)
 
 # Configure CORS for Next.js frontend
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
@@ -97,8 +128,11 @@ app.include_router(brand_kits_router, prefix="/api/brand-kits", tags=["Brand Kit
 app.include_router(ai_tools_router, prefix="/api/tools", tags=["AI Tools"])
 
 
-@app.get("/health")
+@app.get("/health", tags=["Health"], summary="Health Check", description="Check if the API is running.", response_model=dict, status_code=200)
 async def health_check():
+    """
+    Returns the health status of the API.
+    """
     return {"status": "ok"}
 
 

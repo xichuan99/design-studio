@@ -5,18 +5,26 @@ import time
 import uuid
 import json
 from typing import List
-from fastapi import APIRouter, Depends, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.services import banner_service, product_scene_service, batch_service
 from app.api.deps import get_db
 from app.api.rate_limit import rate_limit_dependency
 from app.models.user import User
 from app.services.storage_service import upload_image
+from app.schemas.error import ERROR_RESPONSES
 
-router = APIRouter()
+router = APIRouter(tags=["AI Tools"])
 logger = logging.getLogger(__name__)
 
-@router.post("/text-banner", responses=ERROR_RESPONSES)
+@router.post(
+    "/text-banner",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="Generate Text Banner",
+    description="Generate a decorative AI-generated text banner with transparent background.",
+    responses=ERROR_RESPONSES,
+)
 async def text_banner(
     text: str = Form(...),
     style: str = Form("ribbon"),
@@ -66,7 +74,14 @@ async def text_banner(
         logger.exception(f"Failed to generate text banner: {str(e)}")
         raise InternalServerError(detail="Failed to generate text banner")
 
-@router.post("/product-scene", responses=ERROR_RESPONSES)
+@router.post(
+    "/product-scene",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="Create Product Scene",
+    description="Generate professional product scenes automatically from a product image.",
+    responses=ERROR_RESPONSES,
+)
 async def create_product_scene(
     file: UploadFile = File(...),
     theme: str = Form("studio"),
@@ -123,7 +138,14 @@ async def create_product_scene(
         raise InternalServerError(detail=f"Failed to generate product scene: {str(e)}"
         )
 
-@router.post("/batch", responses=ERROR_RESPONSES)
+@router.post(
+    "/batch",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="Process Batch Images",
+    description="Process multiple images at once for background removal or product scenes.",
+    responses=ERROR_RESPONSES,
+)
 async def process_batch_images(
     files: List[UploadFile] = File(...),
     operation: str = Form(...),
@@ -224,4 +246,3 @@ async def process_batch_images(
                 )
         raise InternalServerError(detail=f"Failed to process batch: {str(e)}"
         )
-

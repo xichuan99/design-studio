@@ -1,6 +1,5 @@
-from app.core.exceptions import AppException, NotFoundError, ValidationError, InsufficientCreditsError, UnauthorizedError, ForbiddenError, ConflictError, InternalServerError
-from app.schemas.error import ERROR_RESPONSES
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
+from app.core.exceptions import InternalServerError
 from app.schemas.design import (
     CopywritingClarifyRequest,
     CopywritingRequest,
@@ -8,11 +7,18 @@ from app.schemas.design import (
 )
 from app.api.rate_limit import rate_limit_dependency
 from app.models.user import User
+from app.schemas.error import ERROR_RESPONSES
 
-router = APIRouter()
+router = APIRouter(tags=["Designs - Copywriting"])
 
-
-@router.post("/clarify-copywriting", responses=ERROR_RESPONSES)
+@router.post(
+    "/clarify-copywriting",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="Clarify Copywriting",
+    description="Generates 3-4 clarification questions for copywriting.",
+    responses=ERROR_RESPONSES,
+)
 async def clarify_copywriting(
     request: CopywritingClarifyRequest,
     current_user: User = Depends(rate_limit_dependency),
@@ -29,7 +35,14 @@ async def clarify_copywriting(
         logging.exception("Failed to clarify copywriting")
         raise InternalServerError(detail="Failed to clarify copywriting")
 
-@router.post("/generate-copywriting", response_model=CopywritingResponse, responses=ERROR_RESPONSES)
+@router.post(
+    "/generate-copywriting",
+    response_model=CopywritingResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Generate Copywriting",
+    description="Generates 3 variations of copywriting based on product description and clarifications.",
+    responses=ERROR_RESPONSES,
+)
 async def generate_copywriting(
     request: CopywritingRequest,
     current_user: User = Depends(rate_limit_dependency),
@@ -50,4 +63,3 @@ async def generate_copywriting(
 
         logging.exception("Failed to generate copywriting")
         raise InternalServerError(detail="Failed to generate copywriting")
-

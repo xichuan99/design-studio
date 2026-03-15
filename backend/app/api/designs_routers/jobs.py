@@ -8,11 +8,18 @@ from app.core.database import get_db
 from app.models.job import Job
 from app.api.deps import get_current_user
 from app.models.user import User
+from app.schemas.error import ERROR_RESPONSES
 
-router = APIRouter()
+router = APIRouter(tags=["Designs - Jobs"])
 
-
-@router.get("/my-generations", responses=ERROR_RESPONSES)
+@router.get(
+    "/my-generations",
+    response_model=list,
+    status_code=status.HTTP_200_OK,
+    summary="Get My Generations",
+    description="Fetch completed AI design generations for the current user.",
+    responses=ERROR_RESPONSES,
+)
 async def get_my_generations(
     limit: int = 20,
     offset: int = 0,
@@ -44,7 +51,14 @@ async def get_my_generations(
         for job in jobs
     ]
 
-@router.get("/jobs/{job_id}", responses=ERROR_RESPONSES)
+@router.get(
+    "/jobs/{job_id}",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="Get Job Status",
+    description="Poll job status. Returns result URL when completed.",
+    responses=ERROR_RESPONSES,
+)
 async def get_job_status(
     job_id: str,
     db: AsyncSession = Depends(get_db),
@@ -80,7 +94,13 @@ async def get_job_status(
 
     return response
 
-@router.delete("/jobs/{job_id}", status_code=status.HTTP_204_NO_CONTENT, responses=ERROR_RESPONSES)
+@router.delete(
+    "/jobs/{job_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete Job",
+    description="Delete a generation job and reclaim storage quota.",
+    responses=ERROR_RESPONSES,
+)
 async def delete_job(
     job_id: str,
     db: AsyncSession = Depends(get_db),
@@ -114,4 +134,3 @@ async def delete_job(
 
     await db.delete(job)
     await db.commit()
-

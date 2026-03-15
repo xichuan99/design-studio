@@ -1,6 +1,5 @@
-from app.core.exceptions import AppException, NotFoundError, ValidationError, InsufficientCreditsError, UnauthorizedError, ForbiddenError, ConflictError, InternalServerError
-from app.schemas.error import ERROR_RESPONSES
-from fastapi import APIRouter, Depends
+from fastapi import status
+from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.schemas.design import (
@@ -11,11 +10,19 @@ from app.schemas.design import (
 from app.models.job import Job
 from app.api.rate_limit import rate_limit_dependency
 from app.models.user import User
+from app.schemas.error import ERROR_RESPONSES
 
-router = APIRouter()
+router = APIRouter(tags=["Designs - Generation"])
 
 
-@router.post("/clarify", responses=ERROR_RESPONSES)
+@router.post(
+    "/clarify",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="Clarify Design Brief",
+    description="Analyze raw text and return 3-4 specific clarifying questions.",
+    responses=ERROR_RESPONSES,
+)
 async def clarify_design_brief(request: DesignGenerationRequest) -> dict:
     """Analyze raw text and return 3-4 specific clarifying questions."""
     from app.services.llm_service import generate_design_brief_questions
@@ -30,7 +37,14 @@ async def clarify_design_brief(request: DesignGenerationRequest) -> dict:
         raise InternalServerError(detail=f"Failed to generate clarification questions: {str(e)}",
         )
 
-@router.post("/clarify-unified", responses=ERROR_RESPONSES)
+@router.post(
+    "/clarify-unified",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="Clarify Unified Brief",
+    description="Analyze raw text and return combined clarifying questions for both design and copywriting.",
+    responses=ERROR_RESPONSES,
+)
 async def clarify_unified_brief(request: DesignGenerationRequest) -> dict:
     """Analyze raw text and return combined clarifying questions for both design and copywriting."""
     from app.services.llm_service import generate_unified_brief_questions
@@ -45,7 +59,14 @@ async def clarify_unified_brief(request: DesignGenerationRequest) -> dict:
         raise InternalServerError(detail=f"Failed to generate unified clarification questions: {str(e)}",
         )
 
-@router.post("/magic-text", responses=ERROR_RESPONSES)
+@router.post(
+    "/magic-text",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="Magic Text Layout",
+    description="Uses Vision AI to layout user text onto an existing canvas image.",
+    responses=ERROR_RESPONSES,
+)
 async def magic_text_layout(
     request: dict,
     current_user: User = Depends(rate_limit_dependency),
@@ -83,7 +104,14 @@ async def magic_text_layout(
         raise InternalServerError(detail=f"Failed to generate layout: {str(e)}"
         )
 
-@router.post("/generate-title", response_model=GenerateTitleResponse, responses=ERROR_RESPONSES)
+@router.post(
+    "/generate-title",
+    response_model=GenerateTitleResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Generate Project Title",
+    description="Generates a short project title from a prompt via LLM.",
+    responses=ERROR_RESPONSES,
+)
 async def api_generate_project_title(
     request: GenerateTitleRequest,
     current_user: User = Depends(rate_limit_dependency),
@@ -100,7 +128,14 @@ async def api_generate_project_title(
         logging.exception("Failed to generate project title")
         raise InternalServerError(detail="Failed to generate project title")
 
-@router.post("/generate", responses=ERROR_RESPONSES)
+@router.post(
+    "/generate",
+    response_model=dict,
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Generate Design",
+    description="Accepts generation request, charges credits, and queues or executes generation.",
+    responses=ERROR_RESPONSES,
+)
 async def generate_design(
     request: DesignGenerationRequest,
     db: AsyncSession = Depends(get_db),

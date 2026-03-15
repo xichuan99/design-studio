@@ -18,13 +18,21 @@ from app.schemas.brand_kit import (
     ColorExtractionResponse,
 )
 from app.services.brand_kit_service import extract_colors_from_image
+from app.schemas.error import ERROR_RESPONSES
 
-router = APIRouter()
+router = APIRouter(tags=["Brand Kits"])
 
 MAX_BRAND_KITS_FREE = 3
 
 
-@router.post("/extract", response_model=ColorExtractionResponse, responses=ERROR_RESPONSES)
+@router.post(
+    "/extract",
+    response_model=ColorExtractionResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Extract Brand Colors",
+    description="Extracts exactly 5 dominant brand colors from an uploaded logo or image using AI.",
+    responses=ERROR_RESPONSES,
+)
 async def extract_brand_colors(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
@@ -48,14 +56,21 @@ async def extract_brand_colors(
     return ColorExtractionResponse(colors=colors)
 
 
-@router.post("", response_model=BrandKitResponse, status_code=status.HTTP_201_CREATED, responses=ERROR_RESPONSES)
+@router.post(
+    "",
+    response_model=BrandKitResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create Brand Kit",
+    description="Saves a new Brand Kit for the current user.",
+    responses=ERROR_RESPONSES,
+)
 async def create_brand_kit(
     brand_kit_in: BrandKitCreate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Saves a new Brand Kit for the current user.
+    Saves a new Brand Kit for the current user. Enforces limits on free tier.
     """
     try:
         # Check limit for free tier
@@ -101,7 +116,14 @@ async def create_brand_kit(
         raise
 
 
-@router.get("", response_model=List[BrandKitResponse], responses=ERROR_RESPONSES)
+@router.get(
+    "",
+    response_model=List[BrandKitResponse],
+    status_code=status.HTTP_200_OK,
+    summary="List Brand Kits",
+    description="Get all Brand Kits belonging to the current user.",
+    responses=ERROR_RESPONSES,
+)
 async def list_brand_kits(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -118,7 +140,14 @@ async def list_brand_kits(
     return kits
 
 
-@router.get("/active", response_model=Optional[BrandKitResponse], responses=ERROR_RESPONSES)
+@router.get(
+    "/active",
+    response_model=Optional[BrandKitResponse],
+    status_code=status.HTTP_200_OK,
+    summary="Get Active Brand Kit",
+    description="Get the currently active Brand Kit for the user.",
+    responses=ERROR_RESPONSES,
+)
 async def get_active_brand_kit(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -136,7 +165,14 @@ async def get_active_brand_kit(
     return active_kit
 
 
-@router.put("/{kit_id}", response_model=BrandKitResponse, responses=ERROR_RESPONSES)
+@router.put(
+    "/{kit_id}",
+    response_model=BrandKitResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Update Brand Kit",
+    description="Update a specific Brand Kit and optionally set it as active.",
+    responses=ERROR_RESPONSES,
+)
 async def update_brand_kit(
     kit_id: UUID,
     kit_update: BrandKitUpdate,
@@ -180,14 +216,20 @@ async def update_brand_kit(
     return kit
 
 
-@router.delete("/{kit_id}", status_code=status.HTTP_204_NO_CONTENT, responses=ERROR_RESPONSES)
+@router.delete(
+    "/{kit_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete Brand Kit",
+    description="Delete a Brand Kit from the user's account.",
+    responses=ERROR_RESPONSES,
+)
 async def delete_brand_kit(
     kit_id: UUID,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> None:
     """
-    Delete a Brand Kit.
+    Delete a Brand Kit and decrement associated storage usage.
     """
     result = await db.execute(
         select(BrandKit).where(
