@@ -31,6 +31,8 @@ export function CanvasMaskPainter({ imageUrl, onMaskComplete, className = "" }: 
   const [paths, setPaths] = useState<Path[]>([]);
   const [currentPath, setCurrentPath] = useState<Path | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [cursorPos, setCursorPos] = useState<Point | null>(null);
+  const [isHovering, setIsHovering] = useState(false);
   
   // High-res canvas scale for better mask quality
   const scale = 2;
@@ -96,6 +98,32 @@ export function CanvasMaskPainter({ imageUrl, onMaskComplete, className = "" }: 
     }
     setIsDrawing(false);
     setCurrentPath(null);
+  };
+
+  const handleMouseMove = useCallback((e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) => {
+    if (!canvasRef.current) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    
+    let clientX, clientY;
+    if ('touches' in e) {
+      if (e.touches.length > 0) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+        setCursorPos({ x: clientX - rect.left, y: clientY - rect.top });
+      }
+    } else {
+      clientX = (e as React.MouseEvent | MouseEvent).clientX;
+      clientY = (e as React.MouseEvent | MouseEvent).clientY;
+      setCursorPos({ x: clientX - rect.left, y: clientY - rect.top });
+    }
+
+    draw(e);
+  }, [draw]);
+
+  const handleMouseOut = () => {
+    setIsHovering(false);
+    setCursorPos(null);
+    stopDrawing();
   };
 
   // Prevent scrolling when touching the canvas
@@ -299,12 +327,28 @@ export function CanvasMaskPainter({ imageUrl, onMaskComplete, className = "" }: 
           {/* Drawing Canvas */}
           <canvas
             ref={canvasRef}
-            className="absolute top-0 left-0 w-full h-full touch-none cursor-crosshair opacity-80"
+            className="absolute top-0 left-0 w-full h-full touch-none cursor-none opacity-80"
             onMouseDown={startDrawing}
-            onMouseMove={draw}
+            onMouseMove={handleMouseMove}
             onMouseUp={stopDrawing}
-            onMouseLeave={stopDrawing}
+            onMouseLeave={handleMouseOut}
+            onMouseEnter={() => setIsHovering(true)}
+            onTouchStart={() => setIsHovering(true)}
+            onTouchEnd={() => { setIsHovering(false); setCursorPos(null); }}
           />
+
+          {/* Dynamic Brush Cursor */}
+          {isHovering && cursorPos && (
+            <div 
+              className="absolute pointer-events-none rounded-full border-2 border-white bg-white/30 shadow-[0_0_2px_rgba(0,0,0,0.5)] transform -translate-x-1/2 -translate-y-1/2 z-10 transition-transform duration-75"
+              style={{
+                left: cursorPos.x,
+                top: cursorPos.y,
+                width: brushSize[0],
+                height: brushSize[0]
+              }}
+            />
+          )}
         </div>
       </div>
 
