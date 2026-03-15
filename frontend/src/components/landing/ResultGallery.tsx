@@ -8,55 +8,55 @@ import Image from "next/image";
 const galleryItems = [
   {
     id: 1,
-    category: "Foto Produk",
-    image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=800&auto=format&fit=crop",
-    title: "Sepatu Sport Neo",
-    tags: ["AI Background", "Studio Lighting"],
+    category: "Makanan & Minuman",
+    image: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=800&auto=format&fit=crop", // Sate/Indonesian food
+    title: "Sate Ayam Nusantara",
+    tags: ["Background Remover", "Color Enhance"],
     aspectRatio: "aspect-square"
   },
   {
     id: 2,
-    category: "Banner Promo",
-    image: "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?q=80&w=800&auto=format&fit=crop",
-    title: "Flash Sale 50%",
-    tags: ["Template Banner", "AI Text"],
+    category: "Fashion",
+    image: "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?q=80&w=800&auto=format&fit=crop", // Shoes/Fashion
+    title: "Sepatu Lokal Kulit",
+    tags: ["Product Scene", "AI Shadows"],
     aspectRatio: "aspect-[16/9]"
   },
   {
     id: 3,
-    category: "Sosmed",
-    image: "https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=800&auto=format&fit=crop",
-    title: "Instagram Feed",
-    tags: ["Magic Eraser", "Template Sosmed"],
+    category: "Aksesoris & Lainnya",
+    image: "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=800&auto=format&fit=crop", // Accessories/Craft
+    title: "Tas Rajut Handmade",
+    tags: ["Magic Eraser", "Upscale 4K"],
     aspectRatio: "aspect-[4/5]"
   },
   {
     id: 4,
-    category: "Foto Produk",
-    image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800&auto=format&fit=crop",
-    title: "Headphone Premium",
-    tags: ["Scene Generator", "Shadow AI"],
+    category: "Makanan & Minuman",
+    image: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=800&auto=format&fit=crop", // Coffee
+    title: "Kopi Susu Gula Aren",
+    tags: ["Scene Generator", "Retouch"],
     aspectRatio: "aspect-square"
   },
   {
     id: 5,
-    category: "Sosmed",
-    image: "https://images.unsplash.com/photo-1600096194534-75cf5ead4111?q=80&w=600&auto=format&fit=crop",
-    title: "TikTok Story Highlight",
-    tags: ["Template Story", "Upscale 4K"],
+    category: "Fashion",
+    image: "https://images.unsplash.com/photo-1589310243389-96a5483213a8?q=80&w=600&auto=format&fit=crop", // Hijab/Women's wear
+    title: "Katalog Hijab & Dress",
+    tags: ["Auto-Resize", "Background Eraser"],
     aspectRatio: "aspect-[9/16]"
   },
   {
     id: 6,
-    category: "Banner Promo",
-    image: "https://images.unsplash.com/photo-1555529771-835f59bfc50c?q=80&w=800&auto=format&fit=crop",
-    title: "Promo Restoran",
-    tags: ["Food Preset", "Template Menu"],
+    category: "Aksesoris & Lainnya",
+    image: "https://images.unsplash.com/photo-1615397323114-63300a89d2fa?q=80&w=800&auto=format&fit=crop", // Skincare/Beauty
+    title: "Skincare Organik",
+    tags: ["Studio Lighting AI", "Batch Process"],
     aspectRatio: "aspect-square"
   }
 ];
 
-const categories = ["Semua", "Foto Produk", "Banner Promo", "Sosmed"];
+const categories = ["Semua", "Makanan & Minuman", "Fashion", "Aksesoris & Lainnya"];
 
 export function ResultGallery() {
   const [activeCategory, setActiveCategory] = useState("Semua");
@@ -70,7 +70,7 @@ export function ResultGallery() {
       <div className="text-center mb-10">
         <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Showcase Portofolio UMKM</h2>
         <p className="text-slate-400 max-w-2xl mx-auto">
-          Dari foto katalog sederhana hingga banner promo siap tayang. Lihat berbagai karya yang dihasilkan pengguna kami dengan bantuan AI & ribuan template.
+          Lihat bagaimana UMKM Indonesia mengubah foto HP biasa menjadi foto katalog profesional dan jernih menggunakan AI.
         </p>
       </div>
 
@@ -87,9 +87,9 @@ export function ResultGallery() {
             }`}
           >
             {cat === "Semua" && <Layers className="w-4 h-4" />}
-            {cat === "Foto Produk" && <ImageIcon className="w-4 h-4" />}
-            {cat === "Banner Promo" && <LayoutTemplate className="w-4 h-4" />}
-            {cat === "Sosmed" && <Sparkles className="w-4 h-4" />}
+            {cat === "Makanan & Minuman" && <ImageIcon className="w-4 h-4" />}
+            {cat === "Fashion" && <LayoutTemplate className="w-4 h-4" />}
+            {cat === "Aksesoris & Lainnya" && <Sparkles className="w-4 h-4" />}
             {cat}
           </button>
         ))}
