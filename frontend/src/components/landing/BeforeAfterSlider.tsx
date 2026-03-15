@@ -7,9 +7,10 @@ interface BeforeAfterSliderProps {
   beforeImage: string;
   afterImage: string;
   className?: string;
+  altText?: string;
 }
 
-export function BeforeAfterSlider({ beforeImage, afterImage, className = "" }: BeforeAfterSliderProps) {
+export function BeforeAfterSlider({ beforeImage, afterImage, className = "", altText = "Perbandingan Gambar" }: BeforeAfterSliderProps) {
   const [sliderPosition, setSliderPosition] = useState(50);
   const [isHovered, setIsHovered] = useState(false);
 
@@ -31,19 +32,25 @@ export function BeforeAfterSlider({ beforeImage, afterImage, className = "" }: B
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* After Image (Background) */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(${afterImage})` }}
+      <img
+        src={afterImage}
+        alt={altText + " (Sesudah)"}
+        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+        draggable="false"
       />
-      
-      {/* Before Image (Foreground/Clipped) */}
+
+      {/* Before Image (Foreground, Clipped) */}
       <div 
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ 
-          backgroundImage: `url(${beforeImage})`,
-          clipPath: `inset(0 ${100 - sliderPosition}% 0 0)`
-        }}
-      />
+        className="absolute inset-0 overflow-hidden" 
+        style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
+      >
+        <img
+          src={beforeImage}
+          alt={altText + " (Sebelum)"}
+          className="absolute inset-0 w-full h-full object-cover"
+          draggable="false"
+        />
+      </div>
       
       {/* Slider Line */}
       <div 
