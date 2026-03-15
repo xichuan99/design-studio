@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Upload, X, Loader2, Save, Palette, CheckCircle2 } from 'lucide-react';
 import { useProjectApi, ColorSwatch, BrandKit } from '@/lib/api';
 import Image from 'next/image';
+import { toast } from 'sonner';
 
 interface BrandKitPanelProps {
     onClose: () => void;
@@ -50,7 +51,6 @@ export default function BrandKitPanel({ onClose, onApplyColors }: BrandKitPanelP
             if (active) setActiveKitId(active.id);
         } catch (err: unknown) {
             console.error(err);
-            setIsLoadingKits(false);
         } finally {
             setIsLoadingKits(false);
         }
@@ -114,6 +114,7 @@ export default function BrandKitPanel({ onClose, onApplyColors }: BrandKitPanelP
                     uploadedLogoUrl = uploadResult.url;
                 } catch (uploadErr) {
                     console.error("Failed to upload logo:", uploadErr);
+                    toast.error("Gagal mengunggah logo, brand kit akan disimpan tanpa logo.");
                     // Silently fail upload and proceed saving with null logo
                 }
             }
@@ -122,14 +123,15 @@ export default function BrandKitPanel({ onClose, onApplyColors }: BrandKitPanelP
                 setTimeout(() => reject(new Error("Gagal menyimpan (Request timeout)")), 10000)
             );
 
+            const isActive = !activeKitId;
+
             await Promise.race([
                 api.saveBrandKit({
                     name: newKitName,
                     colors: extractedColors,
                     logo_url: uploadedLogoUrl,
                     logos: uploadedLogoUrl ? [uploadedLogoUrl] : [],
-                    typography: { primaryFont: 'Inter', secondaryFont: 'Inter' },
-                    is_active: false
+                    is_active: isActive
                 }),
                 timeoutPromise
             ]);

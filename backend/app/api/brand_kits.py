@@ -62,7 +62,6 @@ async def create_brand_kit(
             select(BrandKit).where(BrandKit.user_id == current_user.id)
         )
         existing_kits = result.scalars().all()
-        existing_kits = result.scalars().all()
 
         if len(existing_kits) >= MAX_BRAND_KITS_FREE:
             raise HTTPException(
@@ -102,7 +101,6 @@ async def create_brand_kit(
         logging.exception(f"Exception creating brand kit: {e}")
         raise
 
-    return new_kit
 
 
 @router.get("", response_model=List[BrandKitResponse])

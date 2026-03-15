@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ConfigDict, Field
-from typing import List, Optional
+from typing import List, Optional, Literal
 from uuid import UUID
 from datetime import datetime
 
@@ -7,7 +7,7 @@ from datetime import datetime
 class ColorSwatch(BaseModel):
     hex: str = Field(..., description="Hex color code, e.g., #FF5733")
     name: str = Field(..., description="Color name in Indonesian")
-    role: str = Field(
+    role: Literal["primary", "secondary", "accent", "background", "text"] = Field(
         ..., description="Logical role: primary, secondary, accent, background, text"
     )
 

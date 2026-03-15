@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Trash2, CheckCircle2, Palette, Loader2, Save } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -37,7 +38,7 @@ export default function BrandSettings() {
         setEditingBrand({
             name: 'New Brand Kit',
             logos: [],
-            colors: [{ hex: '#000000', name: 'Dark', role: 'primary_text' }],
+            colors: [{ hex: '#000000', name: 'Dark', role: 'text' }],
             typography: { primaryFont: 'Inter', secondaryFont: 'Inter' }
         });
     };
@@ -81,7 +82,7 @@ export default function BrandSettings() {
             setEditingBrand({ ...editingBrand, logos: newLogos });
         } catch (err) {
             console.error("Failed to upload logo:", err);
-            alert("Gagal mengunggah logo.");
+            toast.error("Gagal mengunggah logo.");
         } finally {
             setIsUploadingLogo(false);
             if (fileInputRef.current) fileInputRef.current.value = '';
@@ -131,6 +132,15 @@ export default function BrandSettings() {
         if (!kitToDelete) return;
         try {
             await api.deleteBrandKit(kitToDelete);
+            
+            // Auto-activate fallback
+            if (activeBrandProfile?.id === kitToDelete) {
+                const remainingKits = brandKits.filter(k => k.id !== kitToDelete);
+                if (remainingKits.length > 0) {
+                     await api.updateBrandKit(remainingKits[0].id, { is_active: true });
+                }
+            }
+            
             refreshKits();
         } catch(e) {
             console.error(e);
@@ -287,11 +297,10 @@ export default function BrandSettings() {
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="background">Background</SelectItem>
-                                            <SelectItem value="primary_text">Primary Text</SelectItem>
-                                            <SelectItem value="secondary_text">Secondary Text</SelectItem>
-                                            <SelectItem value="accent">Accent</SelectItem>
                                             <SelectItem value="primary">Primary</SelectItem>
                                             <SelectItem value="secondary">Secondary</SelectItem>
+                                            <SelectItem value="accent">Accent</SelectItem>
+                                            <SelectItem value="text">Text</SelectItem>
                                         </SelectContent>
                                     </Select>
                                     <Button variant="ghost" size="icon" onClick={() => handleRemoveColor(i)}><Trash2 className="w-4 h-4 text-destructive" /></Button>

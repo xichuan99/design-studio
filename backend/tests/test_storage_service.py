@@ -1,6 +1,5 @@
 import pytest
 from unittest.mock import patch, MagicMock, mock_open
-import os
 
 from app.services.storage_service import upload_image, download_image, generate_key
 

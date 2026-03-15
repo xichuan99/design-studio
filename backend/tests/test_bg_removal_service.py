@@ -2,7 +2,6 @@ import pytest
 from unittest.mock import patch, MagicMock
 import io
 from PIL import Image
-import os
 
 from app.services.bg_removal_service import remove_background, composite_product_on_background, composite_with_shadow
 
