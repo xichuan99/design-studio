@@ -68,28 +68,31 @@ async def generate_product_scene(
         no_bg_bytes: bytes = await bg_removal_service.remove_background(image_bytes)
     except Exception as e:
         logger.error(f"Background removal failed for product scene: {e}")
-        raise RuntimeError(f"Gagal menghapus background gambar asli. Pastikan foto produk cukup jelas. Error: {str(e)}")
+        raise RuntimeError(
+            f"Gagal menghapus background gambar asli. Pastikan foto produk cukup jelas. Error: {str(e)}"
+        )
 
     # Analyze if it's a closeup photo
     try:
         img = Image.open(io.BytesIO(no_bg_bytes))
         bbox = img.getbbox()
         scale_factor = 0.65
-        
+
         if bbox:
             obj_w = bbox[2] - bbox[0]
             obj_h = bbox[3] - bbox[1]
             img_w, img_h = img.size
-            
+
             area_ratio = (obj_w * obj_h) / (img_w * img_h)
-            
+
             if area_ratio > 0.6 or (obj_w / img_w) > 0.8 or (obj_h / img_h) > 0.8:
                 scale_factor = 0.85
-                logger.info(f"Detected closeup product (area_ratio: {area_ratio:.2f}), increasing scale_factor to {scale_factor}")
+                logger.info(
+                    f"Detected closeup product (area_ratio: {area_ratio:.2f}), increasing scale_factor to {scale_factor}"
+                )
     except Exception as e:
         logger.warning(f"Error analyzing image bounding box: {e}")
         scale_factor = 0.65
-
 
     # 2. Map theme to prompt
     theme_config = SCENE_THEMES.get(theme, SCENE_THEMES["studio"])
@@ -123,7 +126,9 @@ async def generate_product_scene(
         )
     except Exception as e:
         logger.error(f"Compositing failed for product scene: {e}")
-        raise RuntimeError(f"Gagal menggabungkan produk dengan background baru. Error: {str(e)}")
+        raise RuntimeError(
+            f"Gagal menggabungkan produk dengan background baru. Error: {str(e)}"
+        )
 
     logger.info("Product scene generation complete")
     return final_bytes
