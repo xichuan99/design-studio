@@ -110,7 +110,7 @@ export default function WatermarkPlacerPage() {
               AI Watermark Placer
             </h1>
             <p className="text-muted-foreground mt-2">
-              Lindungi foto produk Anda dengan menambahkan logo atau watermark secara otomatis.
+              Pasang logo toko Anda di foto produk supaya tidak dicuri kompetitor. Bisa atur posisi dan transparansi.
             </p>
           </div>
 

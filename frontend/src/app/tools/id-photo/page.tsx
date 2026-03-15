@@ -73,7 +73,7 @@ export default function IdPhotoPage() {
             <Camera className="w-8 h-8 text-blue-500" />
             ID Photo (Pasfoto) Maker
           </h1>
-          <p className="text-muted-foreground mt-2">Buat pasfoto standar (buku nikah, ijazah, CV) dengan AI cerdas pencari wajah.</p>
+          <p className="text-muted-foreground mt-2">Buat pasfoto resmi langsung dari foto selfie. Ukuran otomatis sesuai standar Indonesia.</p>
         </div>
 
         {step === 1 && (

@@ -49,7 +49,7 @@ export default function RetouchPage() {
             <Sparkles className="w-8 h-8 text-yellow-500" />
             Auto-Retouch & Color Correction
           </h1>
-          <p className="text-muted-foreground mt-2">Perbaiki exposure, warna kulit, dan hilangkan noda secara otomatis dalam satu klik.</p>
+          <p className="text-muted-foreground mt-2">Foto gelap atau ada noda di wajah? AI kami otomatis perbaiki pencahayaan dan kulit \u2014 hasilnya tetap natural.</p>
         </div>
 
         {step === 1 && (

@@ -1,70 +1,69 @@
 import { AppHeader } from "@/components/layout/AppHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Wand2, ImagePlus, Eraser, MoveDiagonal, Sparkles, Camera, ShieldCheck, Layers } from "lucide-react";
+import { Wand2, ImagePlus, Eraser, MoveDiagonal, Sparkles, Camera, ShieldCheck, Layers, Upload, Download, ShoppingBag, ImageOff, Copy, Banknote } from "lucide-react";
 import Link from "next/link";
-import { BeforeAfterSlider } from "@/components/tools/BeforeAfterSlider";
 
 export default function ToolsHubPage() {
   const tools = [
     {
       title: "AI Background Swap",
-      description: "Hapus background foto produk dan ganti dengan suasana profesional lengkap dengan bayangan.",
+      description: "Ganti background foto produk Anda jadi studio profesional \u2014 cocok untuk Shopee & Tokopedia.",
       icon: <Wand2 className="w-8 h-8 text-blue-500" />,
       href: "/tools/background-swap",
       isReady: true,
     },
     {
       title: "AI Image Upscaler",
-      description: "Pertajam dan perbesar ukuran foto yang buram atau pecah (hingga 4x ukuran asli).",
+      description: "Foto HP buram atau kecil? Perbesar dan pertajam otomatis supaya layak upload ke marketplace.",
       icon: <ImagePlus className="w-8 h-8 text-green-500" />,
       href: "/tools/upscaler",
       isReady: true,
     },
     {
       title: "Quick Retouch",
-      description: "Perbaiki pencahayaan dan bersihkan noda wajah foto Anda secara otomatis dalam satu klik.",
+      description: "Foto kurang terang atau ada noda? Cerahkan dan bersihkan otomatis, hasilnya natural.",
       icon: <Sparkles className="w-8 h-8 text-yellow-500" />,
       href: "/tools/retouch",
       isReady: true,
     },
     {
       title: "AI Product Scene",
-      description: "Buat foto produk profesional dengan background studio, alam, atau cafe.",
+      description: "Ubah foto produk biasa jadi tampil di meja kafe, studio, atau taman \u2014 tanpa pemotretan ulang.",
       icon: <Sparkles className="w-8 h-8 text-amber-500" />,
       href: "/tools/product-scene",
       isReady: true,
     },
     {
       title: "Batch Photo Processor",
-      description: "Proses puluhan foto sekaligus (Hapus BG, Watermark).",
+      description: "Punya 50 foto produk? Upload semuanya \u2014 background bersih dan watermark terpasang otomatis.",
       icon: <Layers className="w-8 h-8 text-indigo-500" />,
       href: "/tools/batch-process",
       isReady: true,
     },
     {
       title: "ID Photo Maker",
-      description: "Buat pasfoto standar (buku nikah, ijazah, CV) dengan pengaturan warna dan ukuran otomatis.",
+      description: "Buat pasfoto untuk keperluan resmi (KTP, ijazah, CV, visa) langsung dari foto selfie.",
       icon: <Camera className="w-8 h-8 text-blue-500" />,
       href: "/tools/id-photo",
       isReady: true,
     },
     {
       title: "Magic Eraser",
-      description: "Hapus objek yang mengganggu atau noda dari foto Anda dengan sekali usap.",
+      description: "Ada tangan orang nyangkut di foto produk? Hapus bersih tanpa bekas \u2014 cukup usap saja.",
       icon: <Eraser className="w-8 h-8 text-pink-500" />,
       href: "/tools/magic-eraser",
       isReady: true,
     },
     {
       title: "Generative Expand",
-      description: "Perluas area (outpaint) foto Anda menyesuaikan rasio tanpa memotong objek utama.",
+      description: "Foto terlalu sempit untuk banner? Perluas sisi foto tanpa kehilangan objek utama.",
       icon: <MoveDiagonal className="w-8 h-8 text-indigo-500" />,
       href: "/tools/generative-expand",
       isReady: true,
     },
     {
       title: "AI Watermark Placer",
-      description: "Lindungi foto produk dengan menambahkan logo atau teks watermark otomatis.",
+      description: "Tempelkan logo atau nama toko di semua foto produk secara otomatis \u2014 anti dicuri kompetitor.",
       icon: <ShieldCheck className="w-8 h-8 text-orange-500" />,
       href: "/tools/watermark-placer",
       isReady: true,
@@ -114,27 +113,94 @@ export default function ToolsHubPage() {
           ))}
         </div>
 
-        {/* Contoh Hasil Section */}
-        <div className="mt-10 sm:mt-16 mb-8">
-          <h2 className="text-xl sm:text-2xl font-jakarta font-bold text-foreground mb-4 sm:mb-6">Contoh Hasil Memukau</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold flex items-center gap-2"><Wand2 className="w-5 h-5 text-blue-500" /> AI Background Swap</h3>
-              <div className="aspect-[4/3] rounded-xl overflow-hidden shadow-lg border">
-                <BeforeAfterSlider 
-                  beforeImage="/images/examples/bg-swap-before.png" 
-                  afterImage="/images/examples/bg-swap-after.png"
-                />
+        {/* Cara Kerjanya Section */}
+        <div className="mt-12 sm:mt-20 mb-8 max-w-4xl mx-auto">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl sm:text-3xl font-jakarta font-bold text-foreground">Cara Kerjanya</h2>
+            <p className="text-muted-foreground mt-2">Sangat mudah, tidak perlu jago desain.</p>
+          </div>
+          <div className="relative grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Connector Lines (only visible on md+) */}
+            <div className="hidden md:block absolute top-[2.5rem] left-[16%] right-[16%] h-[2px] bg-border opacity-50 z-0" />
+            
+            <div className="relative z-10 flex flex-col items-center text-center">
+              <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-4 border-4 border-background animate-pulse">
+                <Upload className="w-8 h-8 text-primary" />
               </div>
+              <h3 className="text-lg font-bold mb-2">1. Upload Foto</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Foto dari HP pun bisa! Langsung drag & drop ke alat yang Anda pilih.
+              </p>
             </div>
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold flex items-center gap-2"><ImagePlus className="w-5 h-5 text-green-500" /> AI Image Upscaler</h3>
-               <div className="aspect-[4/3] rounded-xl overflow-hidden shadow-lg border">
-                <BeforeAfterSlider 
-                  beforeImage="https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=1000&auto=format&fit=crop&blur=10" 
-                  afterImage="https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=1000&auto=format&fit=crop" 
-                />
+            
+            <div className="relative z-10 flex flex-col items-center text-center">
+              <div className="w-20 h-20 rounded-full bg-blue-500/10 flex items-center justify-center mb-4 border-4 border-background hover:scale-105 transition-transform cursor-default">
+                <Wand2 className="w-8 h-8 text-blue-500" />
               </div>
+              <h3 className="text-lg font-bold mb-2">2. Pilih Tools AI</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Pilih tool yang Anda butuhkan \u2014 misalnya hapus background. Hasilnya otomatis.
+              </p>
+            </div>
+
+            <div className="relative z-10 flex flex-col items-center text-center">
+              <div className="w-20 h-20 rounded-full bg-green-500/10 flex items-center justify-center mb-4 border-4 border-background hover:scale-105 transition-transform cursor-default">
+                <Download className="w-8 h-8 text-green-500" />
+              </div>
+              <h3 className="text-lg font-bold mb-2">3. Download & Pakai</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Unduh hasil resolusi tinggi dan langsung pasang di toko online Anda.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* UMKM Feature Highlights Section */}
+        <div className="mt-16 sm:mt-24 mb-12">
+          <div className="mb-8">
+            <h2 className="text-2xl sm:text-3xl font-jakarta font-bold text-foreground">Kenapa UMKM Pilih Tools Kami?</h2>
+            <p className="text-muted-foreground mt-2">Didesain khusus untuk mempercepat jualan Anda.</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="p-6 rounded-2xl border bg-gradient-to-br from-background to-amber-500/5 hover:scale-[1.02] transition-transform duration-300">
+              <div className="w-12 h-12 bg-amber-500/20 text-amber-600 rounded-xl flex items-center justify-center mb-4">
+                <ShoppingBag className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-bold mb-2">Foto Produk Siap Jual</h3>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                Upload foto biasa dari HP, langsung disulap jadi foto produk profesional ala studio untuk etalase Shopee & Tokopedia Anda.
+              </p>
+            </div>
+
+            <div className="p-6 rounded-2xl border bg-gradient-to-br from-background to-blue-500/5 hover:scale-[1.02] transition-transform duration-300">
+              <div className="w-12 h-12 bg-blue-500/20 text-blue-600 rounded-xl flex items-center justify-center mb-4">
+                <ImageOff className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-bold mb-2">Background Bersih Otomatis</h3>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                Tidak perlu sewa desainer Photoshop. Berapapun ribetnya background asli, klik sekali langsung transparan atau berubah jadi background estetis.
+              </p>
+            </div>
+
+            <div className="p-6 rounded-2xl border bg-gradient-to-br from-background to-indigo-500/5 hover:scale-[1.02] transition-transform duration-300">
+              <div className="w-12 h-12 bg-indigo-500/20 text-indigo-600 rounded-xl flex items-center justify-center mb-4">
+                <Copy className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-bold mb-2">Proses 50 Foto Sekaligus</h3>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                Mengerjakan upload produk baru? Upload puluhan foto sekaligus, hasilnya langsung jadi berbarengan dalam hitungan menit, bukan berjam-jam.
+              </p>
+            </div>
+
+            <div className="p-6 rounded-2xl border bg-gradient-to-br from-background to-emerald-500/5 hover:scale-[1.02] transition-transform duration-300">
+              <div className="w-12 h-12 bg-emerald-500/20 text-emerald-600 rounded-xl flex items-center justify-center mb-4">
+                <Banknote className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-bold mb-2">Hemat Biaya Desainer</h3>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                Simpan margin keuntungan Anda. Tidak perlu lagi bayar jasa edit foto mingguan karena semua bisa Anda kerjakan sendiri, kapan saja.
+              </p>
             </div>
           </div>
         </div>

@@ -77,7 +77,7 @@ export default function BackgroundSwapPage() {
 
         <div className="mb-8">
           <h1 className="text-3xl font-jakarta font-bold text-foreground">AI Background Swap</h1>
-          <p className="text-muted-foreground mt-2">Hapus latar belakang foto produk Anda dan ganti dengan suasana profesional.</p>
+          <p className="text-muted-foreground mt-2">Foto produk pakai HP? Ganti backgroundnya jadi studio profesional dalam satu klik.</p>
         </div>
 
         {step === 1 && (

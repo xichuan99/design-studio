@@ -111,7 +111,7 @@ export default function BatchProcessPage() {
           <h1 className="text-3xl font-jakarta font-bold text-foreground flex items-center gap-3">
             <Layers className="w-8 h-8 text-primary" /> Batch Photo Processor
           </h1>
-          <p className="text-muted-foreground mt-2">Proses banyak foto sekaligus. Praktis dan menghemat waktu Anda.</p>
+          <p className="text-muted-foreground mt-2">Upload banyak foto sekaligus \u2014 semua diproses otomatis. Hemat waktu berjam-jam.</p>
         </div>
 
         {step === 1 && (

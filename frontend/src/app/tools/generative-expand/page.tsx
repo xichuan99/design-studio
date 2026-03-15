@@ -174,8 +174,7 @@ export default function GenerativeExpandPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-jakarta font-bold text-foreground">Generative Expand</h1>
           <p className="text-muted-foreground mt-2">
-            Perluas foto atau ubah rasio kanvas dengan AI yang mengisi kekosongan secara natural.
-            Cocok untuk menyesuaikan foto square (1:1) menjadi format Instagram Story (9:16).
+            Foto kepotong atau mau dijadikan banner toko? Perluas sisi foto \u2014 AI yang gambar sisanya.
           </p>
         </div>
 

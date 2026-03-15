@@ -85,7 +85,7 @@ export default function ProductScenePage() {
 
         <div className="mb-8">
           <h1 className="text-3xl font-jakarta font-bold text-foreground">AI Product Scene</h1>
-          <p className="text-muted-foreground mt-2">Buat foto produk profesional hanya dengan satu klik menggunakan AI.</p>
+          <p className="text-muted-foreground mt-2">Tidak perlu sewa studio. Upload foto produk Anda, pilih suasana, dan langsung dapat foto profesional.</p>
         </div>
 
         {step === 1 && (

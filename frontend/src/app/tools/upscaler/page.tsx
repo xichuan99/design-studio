@@ -57,7 +57,7 @@ export default function UpscalerPage() {
 
         <div className="mb-8">
           <h1 className="text-3xl font-jakarta font-bold text-foreground">AI Image Upscaler</h1>
-          <p className="text-muted-foreground mt-2">Menjernihkan, mempertajam, dan memperbesar gambar yang buram atau low-res (Up to 4x).</p>
+          <p className="text-muted-foreground mt-2">Foto dari HP buram atau kecil? Perbesar hingga 4x lipat supaya layak pajang di toko online.</p>
         </div>
 
         {step === 1 && (

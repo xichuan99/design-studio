@@ -67,7 +67,7 @@ export default function MagicEraserPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-jakarta font-bold text-foreground">Magic Eraser</h1>
           <p className="text-muted-foreground mt-2">
-            Hapus objek mengganggu, teks, atau noda dari gambar hanya dengan sapuan kuas.
+            Coret bagian yang ingin dihapus dari foto \u2014 bisa orang, noda, atau objek apapun. AI yang bersihkan.
           </p>
         </div>
 
