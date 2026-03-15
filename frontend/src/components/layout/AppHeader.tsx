@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Brush, LayoutDashboard, PlusCircle, Menu, X, Wand2, Palette } from "lucide-react";
 import { UserMenu } from "@/components/auth/user-menu";
 import { CreditBadge } from "@/components/credits/CreditBadge";
+import { StorageBadge } from "@/components/credits/StorageBadge";
 
 interface AppHeaderProps {
     renderActions?: () => React.ReactNode;
@@ -50,6 +51,7 @@ export const AppHeader = ({ renderActions }: AppHeaderProps = {}) => {
 
             <div className="flex items-center gap-3">
                 {renderActions ? renderActions() : null}
+                <div className="hidden sm:block"><StorageBadge /></div>
                 <CreditBadge />
                 <UserMenu />
 

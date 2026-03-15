@@ -1,6 +1,6 @@
 import { AppHeader } from "@/components/layout/AppHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Wand2, ImagePlus, Eraser, MoveDiagonal, Sparkles, Camera, ShieldCheck, Layers, Upload, Download, ShoppingBag, ImageOff, Copy, Banknote } from "lucide-react";
+import { Wand2, ImagePlus, Eraser, MoveDiagonal, Sparkles, Camera, ShieldCheck, Layers } from "lucide-react";
 import Link from "next/link";
 
 export default function ToolsHubPage() {
@@ -111,98 +111,6 @@ export default function ToolsHubPage() {
               )}
             </Card>
           ))}
-        </div>
-
-        {/* Cara Kerjanya Section */}
-        <div className="mt-12 sm:mt-20 mb-8 max-w-4xl mx-auto">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl sm:text-3xl font-jakarta font-bold text-foreground">Cara Kerjanya</h2>
-            <p className="text-muted-foreground mt-2">Sangat mudah, tidak perlu jago desain.</p>
-          </div>
-          <div className="relative grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Connector Lines (only visible on md+) */}
-            <div className="hidden md:block absolute top-[2.5rem] left-[16%] right-[16%] h-[2px] bg-border opacity-50 z-0" />
-            
-            <div className="relative z-10 flex flex-col items-center text-center">
-              <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-4 border-4 border-background animate-pulse">
-                <Upload className="w-8 h-8 text-primary" />
-              </div>
-              <h3 className="text-lg font-bold mb-2">1. Upload Foto</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Foto dari HP pun bisa! Langsung drag & drop ke alat yang Anda pilih.
-              </p>
-            </div>
-            
-            <div className="relative z-10 flex flex-col items-center text-center">
-              <div className="w-20 h-20 rounded-full bg-blue-500/10 flex items-center justify-center mb-4 border-4 border-background hover:scale-105 transition-transform cursor-default">
-                <Wand2 className="w-8 h-8 text-blue-500" />
-              </div>
-              <h3 className="text-lg font-bold mb-2">2. Pilih Tools AI</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Pilih tool yang Anda butuhkan \u2014 misalnya hapus background. Hasilnya otomatis.
-              </p>
-            </div>
-
-            <div className="relative z-10 flex flex-col items-center text-center">
-              <div className="w-20 h-20 rounded-full bg-green-500/10 flex items-center justify-center mb-4 border-4 border-background hover:scale-105 transition-transform cursor-default">
-                <Download className="w-8 h-8 text-green-500" />
-              </div>
-              <h3 className="text-lg font-bold mb-2">3. Download & Pakai</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Unduh hasil resolusi tinggi dan langsung pasang di toko online Anda.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* UMKM Feature Highlights Section */}
-        <div className="mt-16 sm:mt-24 mb-12">
-          <div className="mb-8">
-            <h2 className="text-2xl sm:text-3xl font-jakarta font-bold text-foreground">Kenapa UMKM Pilih Tools Kami?</h2>
-            <p className="text-muted-foreground mt-2">Didesain khusus untuk mempercepat jualan Anda.</p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="p-6 rounded-2xl border bg-gradient-to-br from-background to-amber-500/5 hover:scale-[1.02] transition-transform duration-300">
-              <div className="w-12 h-12 bg-amber-500/20 text-amber-600 rounded-xl flex items-center justify-center mb-4">
-                <ShoppingBag className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-bold mb-2">Foto Produk Siap Jual</h3>
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                Upload foto biasa dari HP, langsung disulap jadi foto produk profesional ala studio untuk etalase Shopee & Tokopedia Anda.
-              </p>
-            </div>
-
-            <div className="p-6 rounded-2xl border bg-gradient-to-br from-background to-blue-500/5 hover:scale-[1.02] transition-transform duration-300">
-              <div className="w-12 h-12 bg-blue-500/20 text-blue-600 rounded-xl flex items-center justify-center mb-4">
-                <ImageOff className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-bold mb-2">Background Bersih Otomatis</h3>
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                Tidak perlu sewa desainer Photoshop. Berapapun ribetnya background asli, klik sekali langsung transparan atau berubah jadi background estetis.
-              </p>
-            </div>
-
-            <div className="p-6 rounded-2xl border bg-gradient-to-br from-background to-indigo-500/5 hover:scale-[1.02] transition-transform duration-300">
-              <div className="w-12 h-12 bg-indigo-500/20 text-indigo-600 rounded-xl flex items-center justify-center mb-4">
-                <Copy className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-bold mb-2">Proses 50 Foto Sekaligus</h3>
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                Mengerjakan upload produk baru? Upload puluhan foto sekaligus, hasilnya langsung jadi berbarengan dalam hitungan menit, bukan berjam-jam.
-              </p>
-            </div>
-
-            <div className="p-6 rounded-2xl border bg-gradient-to-br from-background to-emerald-500/5 hover:scale-[1.02] transition-transform duration-300">
-              <div className="w-12 h-12 bg-emerald-500/20 text-emerald-600 rounded-xl flex items-center justify-center mb-4">
-                <Banknote className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-bold mb-2">Hemat Biaya Desainer</h3>
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                Simpan margin keuntungan Anda. Tidak perlu lagi bayar jasa edit foto mingguan karena semua bisa Anda kerjakan sendiri, kapan saja.
-              </p>
-            </div>
-          </div>
         </div>
       </div>
     </div>

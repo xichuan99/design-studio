@@ -157,3 +157,49 @@ async def download_image(url: str) -> bytes:
         response = await client.get(url, follow_redirects=True)
         response.raise_for_status()
         return response.content
+
+
+async def upload_image_tracked(
+    image_bytes: bytes,
+    user_id,
+    db,
+    key: str | None = None,
+    content_type: str = "image/jpeg",
+    prefix: str = "generated",
+) -> str:
+    """
+    Upload an image with storage quota tracking.
+
+    Checks the user's quota before uploading, performs the upload,
+    then increments the user's storage_used. Returns the public URL.
+
+    Args:
+        image_bytes: The raw bytes of the image to upload.
+        user_id: The UUID of the user uploading the file.
+        db: AsyncSession for database access.
+        key: Optional specific S3 key.
+        content_type: MIME type of the image.
+        prefix: S3 key prefix.
+
+    Returns:
+        str: The public URL of the uploaded image.
+
+    Raises:
+        HTTPException(413): If the user's storage quota would be exceeded.
+    """
+    from app.services.storage_quota_service import check_quota, increment_usage
+
+    file_size = len(image_bytes)
+
+    # Pre-upload quota check
+    await check_quota(user_id, file_size, db)
+
+    # Perform the actual upload (unchanged original function)
+    url = await upload_image(
+        image_bytes, key=key, content_type=content_type, prefix=prefix
+    )
+
+    # Record the usage
+    await increment_usage(user_id, file_size, db)
+
+    return url

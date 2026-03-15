@@ -30,5 +30,7 @@ class UserResponse(BaseModel):
     name: str
     avatar_url: Optional[str]
     credits_remaining: int
+    storage_used: int = 0
+    storage_quota: int = 104857600
     provider: str
     created_at: datetime

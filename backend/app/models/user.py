@@ -1,8 +1,10 @@
-from sqlalchemy import Column, String, Integer, DateTime
+from sqlalchemy import Column, String, Integer, BigInteger, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 import uuid
 from app.core.database import Base
+
+STORAGE_QUOTA_FREE = 104857600  # 100 MB in bytes
 
 
 class User(Base):
@@ -15,4 +17,6 @@ class User(Base):
     provider = Column(String, nullable=False, default="google")
     password_hash = Column(String, nullable=True)
     credits_remaining = Column(Integer, nullable=False, default=10)
+    storage_used = Column(BigInteger, nullable=False, default=0)
+    storage_quota = Column(BigInteger, nullable=False, default=STORAGE_QUOTA_FREE)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

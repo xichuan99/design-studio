@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Sparkles, Edit3, Grid, Zap, MonitorPlay, ArrowRight, Brush } from "lucide-react";
+import { Sparkles, Zap, MonitorPlay, ArrowRight, Brush, Wand2, Upload, Download, ShoppingBag, ImageOff, Copy, Banknote } from "lucide-react";
 
 export default function LandingPage() {
   const router = useRouter();
@@ -104,48 +104,101 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* How it Works Section */}
+          {/* Cara Kerjanya Section */}
           <div id="how-it-works" className="flex flex-col gap-12 py-20 border-t border-white/5 relative">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/3 h-[1px] bg-gradient-to-r from-transparent via-purple-500/50 to-transparent"></div>
             <div className="flex flex-col items-center gap-4 text-center">
-              <span className="text-purple-400 font-semibold tracking-wider uppercase text-sm">Proses Mudah</span>
+              <span className="text-purple-400 font-semibold tracking-wider uppercase text-sm">Sangat Mudah</span>
               <h1 className="text-4xl md:text-5xl font-bold leading-tight tracking-tight text-white">Cara Kerjanya</h1>
-              <p className="text-slate-400 text-lg max-w-[600px]">Buat desain berkualitas agensi dalam tiga langkah sederhana.</p>
+              <p className="text-slate-400 text-lg max-w-[600px]">Tidak perlu jago desain atau sewa fotografer.</p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 relative z-10">
-              <div className="hidden md:block absolute top-[15%] left-[10%] right-[10%] h-[2px] bg-gradient-to-r from-transparent via-white/10 to-transparent -z-10"></div>
-
+            
+            <div className="relative grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10 px-4 md:px-0">
+              {/* Connector Lines (only visible on md+) */}
+              <div className="hidden md:block absolute top-[2.5rem] left-[16%] right-[16%] h-[2px] bg-white/10 z-0" />
+              
               {/* Step 1 */}
-              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 flex flex-col gap-6 hover:bg-white/10 transition-all duration-300">
-                <div className="size-14 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center border border-purple-500/30">
-                  <Edit3 className="text-purple-400 h-6 w-6" />
+              <div className="relative z-10 flex flex-col items-center text-center bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 hover:bg-white/10 transition-all duration-300">
+                <div className="w-20 h-20 rounded-full bg-purple-500/20 flex items-center justify-center mb-6 border-4 border-slate-900 shadow-[0_0_15px_rgba(108,43,238,0.3)]">
+                  <Upload className="w-8 h-8 text-purple-400" />
                 </div>
-                <div>
-                  <h2 className="text-xl font-bold text-white mb-2">1. Tulis Deskripsi</h2>
-                  <p className="text-slate-400">Jelaskan visi Anda, target audiens, dan preferensi gaya kepada mesin AI canggih kami.</p>
-                </div>
+                <h3 className="text-xl font-bold text-white mb-3">1. Upload Foto</h3>
+                <p className="text-slate-400 leading-relaxed text-sm">
+                  Foto dari HP pun bisa! Langsung drag & drop produk Anda ke alat AI yang dipilih.
+                </p>
               </div>
-
+              
               {/* Step 2 */}
-              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 flex flex-col gap-6 hover:bg-white/10 transition-all duration-300">
-                <div className="size-14 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center border border-purple-500/30">
-                  <Sparkles className="text-purple-400 h-6 w-6" />
+              <div className="relative z-10 flex flex-col items-center text-center bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 hover:bg-white/10 transition-all duration-300">
+                <div className="w-20 h-20 rounded-full bg-blue-500/20 flex items-center justify-center mb-6 border-4 border-slate-900 shadow-[0_0_15px_rgba(59,130,246,0.3)] hover:scale-105 transition-transform cursor-default">
+                  <Wand2 className="w-8 h-8 text-blue-400" />
                 </div>
-                <div>
-                  <h2 className="text-xl font-bold text-white mb-2">2. Generate Desain</h2>
-                  <p className="text-slate-400">Saksikan beragam desain unik dan berkualitas tinggi terbuat secara instan berdasarkan deskripsi Anda.</p>
-                </div>
+                <h3 className="text-xl font-bold text-white mb-3">2. Pilih Tools AI</h3>
+                <p className="text-slate-400 leading-relaxed text-sm">
+                  Pilih tool yang Anda butuhkan — ganti background, hapus noda, atau perbaiki kualitas.
+                </p>
               </div>
 
               {/* Step 3 */}
-              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 flex flex-col gap-6 hover:bg-white/10 transition-all duration-300">
-                <div className="size-14 rounded-xl bg-gradient-to-br from-purple-500/20 to-indigo-500/20 flex items-center justify-center border border-purple-500/30">
-                  <Grid className="text-purple-400 h-6 w-6" />
+              <div className="relative z-10 flex flex-col items-center text-center bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 hover:bg-white/10 transition-all duration-300">
+                <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center mb-6 border-4 border-slate-900 shadow-[0_0_15px_rgba(34,197,94,0.3)] hover:scale-105 transition-transform cursor-default">
+                  <Download className="w-8 h-8 text-green-400" />
                 </div>
-                <div>
-                  <h2 className="text-xl font-bold text-white mb-2">3. Edit di Canvas</h2>
-                  <p className="text-slate-400">Sesuaikan setiap detail, tata letak, dan layer di editor drag-and-drop kami yang intuitif.</p>
+                <h3 className="text-xl font-bold text-white mb-3">3. Download & Pakai</h3>
+                <p className="text-slate-400 leading-relaxed text-sm">
+                  Unduh hasil bersih resolusi tinggi dan langsung upload ke toko online / marketplace Anda.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* UMKM Feature Highlights Section */}
+          <div className="flex flex-col gap-12 py-20 border-t border-white/5 relative">
+            <div className="flex flex-col items-center gap-4 text-center">
+              <span className="text-blue-400 font-semibold tracking-wider uppercase text-sm">Solusi Bisnis</span>
+              <h2 className="text-4xl md:text-5xl font-bold leading-tight tracking-tight text-white mb-2">Kenapa UMKM Pilih Tools Kami?</h2>
+              <p className="text-slate-400 text-lg max-w-[600px]">Didesain khusus untuk mempercepat jualan Anda, memotong biaya produksi foto.</p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+              <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-2xl hover:bg-white/10 transition-all duration-300">
+                <div className="w-14 h-14 bg-amber-500/20 text-amber-500 border border-amber-500/30 rounded-xl flex items-center justify-center mb-6">
+                  <ShoppingBag className="w-7 h-7" />
                 </div>
+                <h3 className="text-xl font-bold text-white mb-3">Foto Produk Siap Jual</h3>
+                <p className="text-slate-400 text-sm leading-relaxed">
+                  Upload foto biasa dari HP, langsung disulap jadi foto produk profesional ala studio untuk etalase Shopee & Tokopedia Anda. Tingkatkan rasio klik pembeli.
+                </p>
+              </div>
+
+              <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-2xl hover:bg-white/10 transition-all duration-300">
+                <div className="w-14 h-14 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-xl flex items-center justify-center mb-6">
+                  <ImageOff className="w-7 h-7" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">Background Bersih Otomatis</h3>
+                <p className="text-slate-400 text-sm leading-relaxed">
+                  Tidak perlu sewa desainer Photoshop. Berapapun ribetnya background asli, klik sekali langsung tembus pandang atau berubah jadi pemandangan estetis.
+                </p>
+              </div>
+
+              <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-2xl hover:bg-white/10 transition-all duration-300">
+                <div className="w-14 h-14 bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 rounded-xl flex items-center justify-center mb-6">
+                  <Copy className="w-7 h-7" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">Proses 50 Foto Sekaligus</h3>
+                <p className="text-slate-400 text-sm leading-relaxed">
+                  Mengerjakan upload produk baru yang banyak? Upload puluhan foto sekaligus, AI kami akan proses berbarengan dalam hitungan menit, bukan jam. Pangkas waktu admin.
+                </p>
+              </div>
+
+              <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-2xl hover:bg-white/10 transition-all duration-300">
+                <div className="w-14 h-14 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl flex items-center justify-center mb-6">
+                  <Banknote className="w-7 h-7" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">Hemat Biaya Operasional</h3>
+                <p className="text-slate-400 text-sm leading-relaxed">
+                  Simpan margin keuntungan Anda. Tidak perlu lagi bayar jasa edit foto mingguan atau berlangganan software desain mahal, karena Anda bisa kerjakan sendiri.
+                </p>
               </div>
             </div>
           </div>

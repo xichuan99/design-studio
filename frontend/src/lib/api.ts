@@ -75,6 +75,15 @@ export interface CreditHistoryResponse {
     total_count: number;
 }
 
+// --- Storage Quota Types ---
+export interface StorageUsage {
+    used: number;
+    quota: number;
+    percentage: number;
+    used_mb: number;
+    quota_mb: number;
+}
+
 // --- Copywriting Types ---
 export interface CopywritingVariation {
     style: string;
@@ -205,6 +214,17 @@ export function useProjectApi() {
         if (!res.ok) {
             const errBody = await res.json().catch(() => ({}));
             throw new Error(errBody.detail || 'Failed to fetch credit history');
+        }
+        return res.json();
+    };
+
+    const getStorageUsage = async (): Promise<StorageUsage> => {
+        const res = await fetch(`${API_BASE_URL}/users/me/storage`, {
+            headers: getHeaders(),
+        });
+        if (!res.ok) {
+            const errBody = await res.json().catch(() => ({}));
+            throw new Error(errBody.detail || 'Failed to fetch storage usage');
         }
         return res.json();
     };
@@ -721,6 +741,7 @@ export function useProjectApi() {
         generateTextBanner,
         generateProjectTitle,
         getCreditHistory,
+        getStorageUsage,
         retouchImage,
         generateIdPhoto,
         magicEraser,

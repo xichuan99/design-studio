@@ -1,6 +1,6 @@
 """Updated designs API with generate and job status endpoints."""
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import desc
@@ -28,9 +28,10 @@ router = APIRouter()
 async def upload_user_image(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     """Uploads a user image (for canvas or reference) and returns the public URL."""
-    from app.services.storage_service import upload_image
+    from app.services.storage_service import upload_image_tracked
 
     if file.size and file.size > 5 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="File too large. Max 5MB.")
@@ -40,8 +41,10 @@ async def upload_user_image(
 
     content = await file.read()
     try:
-        url = await upload_image(
+        url = await upload_image_tracked(
             image_bytes=content,
+            user_id=current_user.id,
+            db=db,
             content_type=file.content_type,
             prefix=f"uploads/{current_user.id}",
         )
@@ -188,6 +191,7 @@ async def api_generate_project_title(
 async def api_remove_background(
     file: UploadFile = File(...),
     current_user: User = Depends(rate_limit_dependency),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Stand-alone endpoint to remove background from an uploaded image.
@@ -207,10 +211,14 @@ async def api_remove_background(
         no_bg_bytes = await remove_background(content)
 
         # Upload the transparent PNG to our storage
-        from app.services.storage_service import upload_image
+        from app.services.storage_service import upload_image_tracked
 
-        result_url = await upload_image(
-            no_bg_bytes, content_type="image/png", prefix=f"nobg_{current_user.id}"
+        result_url = await upload_image_tracked(
+            no_bg_bytes,
+            user_id=current_user.id,
+            db=db,
+            content_type="image/png",
+            prefix=f"nobg_{current_user.id}",
         )
 
         return {"url": result_url}
@@ -557,10 +565,12 @@ async def generate_design(
                     )
                     # We fallback to the raw background image if compositing fails
 
-            from app.services.storage_service import upload_image
+            from app.services.storage_service import upload_image_tracked
 
-            result_url = await upload_image(
+            result_url = await upload_image_tracked(
                 image_bytes,
+                user_id=current_user.id,
+                db=db,
                 content_type="image/png"
                 if not getattr(request, "remove_product_bg", False)
                 else "image/jpeg",
@@ -667,3 +677,34 @@ async def get_job_status(
         response["error_message"] = job.error_message
 
     return response
+
+
+@router.delete("/jobs/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_job(
+    job_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Delete a generation job and reclaim storage quota."""
+    try:
+        import uuid
+        job_uuid = uuid.UUID(job_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid job ID format")
+
+    result = await db.execute(
+        select(Job).where(Job.id == job_uuid, Job.user_id == current_user.id)
+    )
+    job = result.scalar_one_or_none()
+
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    if job.result_url:
+        from app.services.storage_quota_service import estimate_file_size, decrement_usage
+        size = await estimate_file_size(job.result_url)
+        if size > 0:
+            await decrement_usage(current_user.id, size, db)
+
+    await db.delete(job)
+    await db.commit()

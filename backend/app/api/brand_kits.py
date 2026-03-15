@@ -187,7 +187,7 @@ async def delete_brand_kit(
     kit_id: UUID,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-)  -> None:
+) -> None:
     """
     Delete a Brand Kit.
     """
@@ -200,6 +200,14 @@ async def delete_brand_kit(
 
     if not kit:
         raise HTTPException(status_code=404, detail="Brand Kit not found.")
+
+    # Decrement storage usage for all logos in this brand kit
+    from app.services.storage_quota_service import estimate_file_size, decrement_usage
+    if getattr(kit, "logos", None):
+        for logo_url in kit.logos:
+            size = await estimate_file_size(logo_url)
+            if size > 0:
+                await decrement_usage(current_user.id, size, db)
 
     await db.delete(kit)
     await db.commit()

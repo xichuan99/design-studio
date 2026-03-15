@@ -1,8 +1,8 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ShieldAlert, Coins, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { ShieldAlert, Coins, AlertTriangle, CheckCircle2, HardDrive } from "lucide-react";
 
-export type ErrorModalType = 'safety' | 'credits' | 'system';
+export type ErrorModalType = 'safety' | 'credits' | 'system' | 'storage';
 
 interface ErrorModalProps {
     open: boolean;
@@ -45,6 +45,13 @@ export function ErrorModal({
             defaultDesc: "Kami mengalami kendala saat memproses permintaan Anda. Silakan coba beberapa saat lagi.",
             defaultAction: "Coba Lagi",
             iconBg: "bg-destructive/10",
+        },
+        storage: {
+            icon: <HardDrive className="w-10 h-10 text-teal-500" />,
+            defaultTitle: "Penyimpanan Penuh",
+            defaultDesc: "Kuota penyimpanan Anda sudah penuh. Hapus file lama atau upgrade plan untuk menambah ruang.",
+            defaultAction: "Kelola Penyimpanan",
+            iconBg: "bg-teal-100 dark:bg-teal-900/30",
         }
     };
 

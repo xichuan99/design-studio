@@ -90,3 +90,14 @@ async def get_my_credit_history(
     total_count = count_result.scalar_one()
 
     return CreditHistoryResponse(transactions=transactions, total_count=total_count)
+
+
+@router.get("/me/storage")
+async def get_my_storage(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Returns the current user's storage usage and quota."""
+    from app.services.storage_quota_service import get_storage_stats
+
+    return await get_storage_stats(current_user.id, db)
