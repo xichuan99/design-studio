@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ArrowLeftRight } from "lucide-react";
+import Image from "next/image";
 
 interface BeforeAfterSliderProps {
   beforeImage: string;
@@ -32,9 +33,11 @@ export function BeforeAfterSlider({ beforeImage, afterImage, className = "", alt
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* After Image (Background) */}
-      <img
+      <Image
         src={afterImage}
         alt={altText + " (Sesudah)"}
+        fill
+        sizes="(max-width: 768px) 100vw, 800px"
         className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 hover:scale-105"
         draggable="false"
       />
@@ -44,9 +47,11 @@ export function BeforeAfterSlider({ beforeImage, afterImage, className = "", alt
         className="absolute inset-0 overflow-hidden" 
         style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
       >
-        <img
+        <Image
           src={beforeImage}
           alt={altText + " (Sebelum)"}
+          fill
+          sizes="(max-width: 768px) 100vw, 800px"
           className="absolute inset-0 w-full h-full object-cover"
           draggable="false"
         />

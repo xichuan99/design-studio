@@ -21,13 +21,15 @@ export function ScrollReveal({
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const currentRef = ref.current;
+    
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           setIsVisible(true);
           // Optional: Disconnect after first reveal if we only want it to happen once
-          if (ref.current) {
-            observer.unobserve(ref.current);
+          if (currentRef) {
+            observer.unobserve(currentRef);
           }
         }
       },
@@ -38,13 +40,13 @@ export function ScrollReveal({
       }
     );
 
-    if (ref.current) {
-      observer.observe(ref.current);
+    if (currentRef) {
+      observer.observe(currentRef);
     }
 
     return () => {
-      if (ref.current) {
-        observer.unobserve(ref.current);
+      if (currentRef) {
+        observer.unobserve(currentRef);
       }
     };
   }, [threshold]);

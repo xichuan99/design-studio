@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Sparkles, Image as ImageIcon, LayoutTemplate, Layers } from "lucide-react";
+import Image from "next/image";
 
 // Sample data for the gallery (Output-only)
 const galleryItems = [
@@ -99,10 +100,11 @@ export function ResultGallery() {
         {filteredItems.map((item) => (
           <div key={item.id} className="relative group rounded-3xl overflow-hidden border border-white/10 bg-slate-900 break-inside-avoid">
             <div className={`w-full ${item.aspectRatio} relative overflow-hidden bg-slate-800`}>
-              <img
+              <Image
                 src={item.image}
                 alt={item.title}
-                loading="lazy"
+                fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
