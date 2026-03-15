@@ -43,3 +43,6 @@ next-env.d.ts
 .idea/
 *.swp
 *.swo
+
+# Local scripts
+backend/add_credits.py
