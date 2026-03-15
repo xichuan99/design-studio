@@ -409,7 +409,7 @@ export function useProjectApi() {
         formData.append('file', file);
         formData.append('scale', scale.toString());
 
-        const response = await fetch(`${API_BASE_URL}/api/tools/upscale`, {
+        const response = await fetch(`${API_BASE_URL}/tools/upscale`, {
             method: 'POST',
             headers: getHeaders(true), // true implies skipContentType
             body: formData,
@@ -433,7 +433,7 @@ export function useProjectApi() {
         if (payload.color_hint) formData.append('color_hint', payload.color_hint);
         if (payload.quality) formData.append('quality', payload.quality);
 
-        const response = await fetch(`${API_BASE_URL}/api/tools/text-banner`, {
+        const response = await fetch(`${API_BASE_URL}/tools/text-banner`, {
             method: 'POST',
             headers: getHeaders(true),
             body: formData,
@@ -451,7 +451,7 @@ export function useProjectApi() {
         formData.append('file', file);
         formData.append('output_format', outputFormat);
 
-        const response = await fetch(`${API_BASE_URL}/api/tools/retouch`, {
+        const response = await fetch(`${API_BASE_URL}/tools/retouch`, {
             method: 'POST',
             headers: getHeaders(true),
             body: formData,
@@ -481,7 +481,7 @@ export function useProjectApi() {
         formData.append('output_format', outputFormat);
         formData.append('include_print_sheet', includePrintSheet ? 'true' : 'false');
 
-        const response = await fetch(`${API_BASE_URL}/api/tools/id-photo`, {
+        const response = await fetch(`${API_BASE_URL}/tools/id-photo`, {
             method: 'POST',
             headers: getHeaders(true),
             body: formData,
@@ -503,7 +503,7 @@ export function useProjectApi() {
         formData.append('mask', mask);
         if (prompt) formData.append('prompt', prompt);
 
-        const response = await fetch(`${API_BASE_URL}/api/tools/magic-eraser`, {
+        const response = await fetch(`${API_BASE_URL}/tools/magic-eraser`, {
             method: 'POST',
             headers: getHeaders(true),
             body: formData,
@@ -533,7 +533,7 @@ export function useProjectApi() {
         if (targetHeight !== undefined) formData.append('target_height', targetHeight.toString());
         if (prompt) formData.append('prompt', prompt);
 
-        const response = await fetch(`${API_BASE_URL}/api/tools/generative-expand`, {
+        const response = await fetch(`${API_BASE_URL}/tools/generative-expand`, {
             method: 'POST',
             headers: getHeaders(true),
             body: formData,
@@ -542,6 +542,106 @@ export function useProjectApi() {
         if (!response.ok) {
             const errBase = await response.json().catch(() => ({}));
             throw new Error(errBase.detail || 'Failed to apply Generative Expand');
+        }
+        return response.json();
+    };
+
+    const backgroundSwap = async (
+        file: File,
+        prompt?: string,
+        aspectRatio?: string,
+        style?: string
+    ): Promise<{ url: string }> => {
+        const formData = new FormData();
+        formData.append('file', file);
+        if (prompt) formData.append('prompt', prompt);
+        if (aspectRatio) formData.append('aspect_ratio', aspectRatio);
+        if (style) formData.append('style', style);
+
+        const response = await fetch(`${API_BASE_URL}/tools/background-swap`, {
+            method: 'POST',
+            headers: getHeaders(true),
+            body: formData,
+        });
+        
+        if (!response.ok) {
+            const errBase = await response.json().catch(() => ({}));
+            throw new Error(errBase.detail || 'Failed to apply background swap');
+        }
+        return response.json();
+    };
+
+    const productScene = async (
+        file: File,
+        theme: string,
+        aspectRatio: string
+    ): Promise<{ url: string }> => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('theme', theme);
+        formData.append('aspect_ratio', aspectRatio);
+
+        const response = await fetch(`${API_BASE_URL}/tools/product-scene`, {
+            method: 'POST',
+            headers: getHeaders(true),
+            body: formData,
+        });
+        
+        if (!response.ok) {
+            const errBase = await response.json().catch(() => ({}));
+            throw new Error(errBase.detail || 'Failed to generate product scene');
+        }
+        return response.json();
+    };
+
+    const batchProcess = async (
+        files: File[],
+        operation: string,
+        paramsJson: string,
+        logo?: File
+    ): Promise<{ url: string, success_count: number, error_count: number, errors: Array<{filename: string, error: string}> }> => {
+        const formData = new FormData();
+        files.forEach(f => formData.append('files', f));
+        formData.append('operation', operation);
+        formData.append('params_json', paramsJson);
+        if (logo) formData.append('logo', logo);
+
+        const response = await fetch(`${API_BASE_URL}/tools/batch`, {
+            method: 'POST',
+            headers: getHeaders(true),
+            body: formData,
+        });
+        
+        if (!response.ok) {
+            const errBase = await response.json().catch(() => ({}));
+            throw new Error(errBase.detail || 'Failed to process batch');
+        }
+        return response.json();
+    };
+
+    const applyWatermark = async (
+        file: File,
+        logo: File,
+        position: string,
+        opacity: string,
+        scale: string
+    ): Promise<{ url: string }> => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('logo', logo);
+        formData.append('position', position);
+        formData.append('opacity', opacity);
+        formData.append('scale', scale);
+
+        const response = await fetch(`${API_BASE_URL}/tools/watermark`, {
+            method: 'POST',
+            headers: getHeaders(true),
+            body: formData,
+        });
+        
+        if (!response.ok) {
+            const errBase = await response.json().catch(() => ({}));
+            throw new Error(errBase.detail || 'Failed to apply watermark');
         }
         return response.json();
     };    // --- Brand Kit API ---
@@ -625,5 +725,9 @@ export function useProjectApi() {
         generateIdPhoto,
         magicEraser,
         generativeExpand,
+        backgroundSwap,
+        productScene,
+        batchProcess,
+        applyWatermark,
     };
 }

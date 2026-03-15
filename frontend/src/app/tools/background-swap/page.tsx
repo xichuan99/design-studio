@@ -10,6 +10,7 @@ import { Loader2, ArrowLeft, Download, PenSquare } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { toast } from "sonner";
+import { useProjectApi } from "@/lib/api";
 
 export default function BackgroundSwapPage() {
   const router = useRouter();
@@ -21,6 +22,7 @@ export default function BackgroundSwapPage() {
   const [style, setStyle] = useState("bold");
   const [loading, setLoading] = useState(false);
   const [resultUrl, setResultUrl] = useState<string>("");
+  const api = useProjectApi();
 
   const handleFileSelect = (file: File) => {
     setOriginalFile(file);
@@ -33,23 +35,7 @@ export default function BackgroundSwapPage() {
     setLoading(true);
 
     try {
-      const formData = new FormData();
-      formData.append("file", originalFile);
-      formData.append("prompt", prompt);
-      formData.append("aspect_ratio", aspectRatio);
-      formData.append("style", style);
-
-      const res = await fetch("/api/tools/background-swap", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.detail || "Gagal memproses gambar");
-      }
-
-      const data = await res.json();
+      const data = await api.backgroundSwap(originalFile, prompt, aspectRatio, style);
       setResultUrl(data.url);
       setStep(3);
     } catch (err: unknown) {

@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Loader2, ArrowLeft, Download, PenSquare, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { toast } from "sonner";
+import { useProjectApi } from "@/lib/api";
 
 const THEMES = [
   { id: "studio", name: "Studio Profesional", emoji: "📸" },
@@ -27,8 +29,10 @@ export default function ProductScenePage() {
   const [aspectRatio, setAspectRatio] = useState("1:1");
   const [loading, setLoading] = useState(false);
   const [resultUrl, setResultUrl] = useState<string>("");
+  const api = useProjectApi();
 
   const handleFileSelect = (file: File) => {
+    if (previewOriginal) URL.revokeObjectURL(previewOriginal);
     setOriginalFile(file);
     setPreviewOriginal(URL.createObjectURL(file));
     setStep(2);
@@ -39,38 +43,14 @@ export default function ProductScenePage() {
     setLoading(true);
 
     try {
-      const formData = new FormData();
-      formData.append("file", originalFile);
-      formData.append("theme", theme);
-      formData.append("aspect_ratio", aspectRatio);
-
-      // Check for token in localStorage
-      const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
-      const headers: HeadersInit = {};
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-
-      // Try local dev path
-      const res = await fetch("http://localhost:8000/api/tools/product-scene", {
-        method: "POST",
-        headers,
-        body: formData,
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.detail || "Gagal memproses gambar");
-      }
-
-      const data = await res.json();
+      const data = await api.productScene(originalFile, theme, aspectRatio);
       setResultUrl(data.url);
       setStep(3);
     } catch (err: unknown) {
       if (err instanceof Error) {
-        alert(err.message);
+        toast.error(err.message);
       } else {
-        alert(String(err));
+        toast.error(String(err));
       }
     } finally {
       setLoading(false);

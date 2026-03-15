@@ -45,6 +45,7 @@ export default function GenerativeExpandPage() {
   const [prompt, setPrompt] = useState("");
 
   const handleFileSelect = (file: File) => {
+    if (previewOriginal) URL.revokeObjectURL(previewOriginal);
     setOriginalFile(file);
     const url = URL.createObjectURL(file);
     setPreviewOriginal(url);
@@ -333,7 +334,7 @@ export default function GenerativeExpandPage() {
                 <h3 className="font-semibold px-2">Visualisasi</h3>
                 {renderActivePreview()}
                 
-                <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 text-blue-800 text-sm">
+                <div className="bg-blue-500/10 p-4 rounded-xl border border-blue-500/20 text-blue-700 dark:text-blue-400 text-sm">
                     <strong>Catatan:</strong> Generative Expand akan menambah ruang pada gambar. Jika gambar asli terlalu besar (&gt; 2048px), sistem mungkin akan me-resize otomatis agar output optimal.
                 </div>
             </div>
@@ -361,7 +362,7 @@ export default function GenerativeExpandPage() {
               <Button size="lg" className="gap-2 font-bold shadow-md" onClick={() => window.open(resultUrl, "_blank")}>
                 <Download className="w-5 h-5" /> Download Hasil
               </Button>
-              <Button size="lg" variant="secondary" className="gap-2 bg-blue-100 text-blue-700 hover:bg-blue-200 border-blue-200" onClick={() => router.push(`/create?imageUrl=${encodeURIComponent(resultUrl)}`)}>
+              <Button size="lg" variant="secondary" className="gap-2 bg-primary/20 text-primary hover:bg-primary/30 border-primary/20" onClick={() => router.push(`/create?imageUrl=${encodeURIComponent(resultUrl)}`)}>
                 <PenSquare className="w-5 h-5" /> Lanjut ke Editor
               </Button>
             </div>

@@ -11,6 +11,8 @@ import { Upload, Download, ShieldCheck, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { BeforeAfterSlider } from "@/components/tools/BeforeAfterSlider";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { useProjectApi } from "@/lib/api";
 
 export default function WatermarkPlacerPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -24,14 +26,16 @@ export default function WatermarkPlacerPage() {
   const [position, setPosition] = useState<string>("bottom-right");
   const [opacity, setOpacity] = useState<number[]>([50]);
   const [scale, setScale] = useState<number[]>([20]);
+  const api = useProjectApi();
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 10 * 1024 * 1024) {
-        alert("File terlalu besar. Maksimal 10MB");
+        toast.error("File terlalu besar. Maksimal 10MB");
         return;
       }
+      if (imagePreview) URL.revokeObjectURL(imagePreview);
       setImageFile(file);
       setImagePreview(URL.createObjectURL(file));
       setResultImage(null);
@@ -42,9 +46,10 @@ export default function WatermarkPlacerPage() {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        alert("Logo terlalu besar. Maksimal 5MB");
+        toast.error("Logo terlalu besar. Maksimal 5MB");
         return;
       }
+      if (logoPreview) URL.revokeObjectURL(logoPreview);
       setLogoFile(file);
       setLogoPreview(URL.createObjectURL(file));
       setResultImage(null);
@@ -55,31 +60,19 @@ export default function WatermarkPlacerPage() {
     if (!imageFile || !logoFile) return;
 
     setIsProcessing(true);
-    const formData = new FormData();
-    formData.append("file", imageFile);
-    formData.append("logo", logoFile);
-    formData.append("position", position);
-    formData.append("opacity", (opacity[0] / 100).toString());
-    formData.append("scale", (scale[0] / 100).toString());
-
     try {
-      // Use full URL to bypass any Next.js rewrites issues for now
-      const res = await fetch("http://localhost:8000/api/tools/watermark", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.detail || "Gagal memproses gambar");
-      }
-
-      const data = await res.json();
+      const data = await api.applyWatermark(
+        imageFile,
+        logoFile,
+        position,
+        (opacity[0] / 100).toString(),
+        (scale[0] / 100).toString()
+      );
       setResultImage(data.url);
       // Success
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Terjadi kesalahan pada server";
-      alert(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsProcessing(false);
     }

@@ -6,6 +6,8 @@ import { BatchImageDropzone } from "@/components/tools/BatchImageDropzone";
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowLeft, Download, Layers, CheckCircle2, XCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { useProjectApi } from "@/lib/api";
 
 const OPERATIONS = [
   { id: "remove_bg", name: "Hapus Latar Belakang", cost: 1, desc: "Hapus background foto produk secara otomatis" },
@@ -32,6 +34,7 @@ export default function BatchProcessPage() {
   const [loading, setLoading] = useState(false);
   const [resultUrl, setResultUrl] = useState<string>("");
   const [batchResult, setBatchResult] = useState<{success: number, error: number, errors: Array<{filename: string, error: string}>}>({success: 0, error: 0, errors: []});
+  const api = useProjectApi();
 
   const handleFilesSelect = (selectedFiles: File[]) => {
     setFiles(selectedFiles);
@@ -47,44 +50,19 @@ export default function BatchProcessPage() {
   const handleGenerate = async () => {
     if (files.length === 0) return;
     if (operation === "watermark" && !logoFile) {
-        alert("Pilih file logo untuk watermark");
+        toast.error("Pilih file logo untuk watermark");
         return;
     }
     setLoading(true);
 
     try {
-      const formData = new FormData();
-      files.forEach(f => formData.append("files", f));
-      formData.append("operation", operation);
-
       const params: Record<string, string> = {};
       if (operation === "product_scene") {
           params.theme = theme;
       }
-      formData.append("params_json", JSON.stringify(params));
 
-      if (operation === "watermark" && logoFile) {
-          formData.append("logo", logoFile);
-      }
+      const data = await api.batchProcess(files, operation, JSON.stringify(params), logoFile || undefined);
 
-      const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
-      const headers: HeadersInit = {};
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-
-      const res = await fetch("http://localhost:8000/api/tools/batch", {
-        method: "POST",
-        headers,
-        body: formData,
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.detail || "Gagal memproses batch");
-      }
-
-      const data = await res.json();
       setResultUrl(data.url);
       setBatchResult({
           success: data.success_count,
@@ -94,9 +72,9 @@ export default function BatchProcessPage() {
       setStep(3);
     } catch (err: unknown) {
       if (err instanceof Error) {
-        alert(err.message);
+        toast.error(err.message);
       } else {
-        alert(String(err));
+        toast.error(String(err));
       }
     } finally {
       setLoading(false);
@@ -239,7 +217,7 @@ export default function BatchProcessPage() {
             </div>
 
             {batchResult.errors.length > 0 && (
-                <div className="text-left bg-red-50 text-red-800 p-4 rounded-xl text-sm mb-6 max-h-40 overflow-y-auto">
+                <div className="text-left bg-destructive/10 text-destructive p-4 rounded-xl text-sm mb-6 max-h-40 overflow-y-auto">
                     <p className="font-bold mb-2">Beberapa file gagal diproses:</p>
                     <ul className="list-disc pl-5 space-y-1">
                         {batchResult.errors.map((e, i) => (

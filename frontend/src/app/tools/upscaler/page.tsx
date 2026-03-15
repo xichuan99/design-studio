@@ -9,6 +9,7 @@ import { Loader2, ArrowLeft, Download, PenSquare } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { toast } from "sonner";
+import { useProjectApi } from "@/lib/api";
 
 export default function UpscalerPage() {
   const router = useRouter();
@@ -18,8 +19,10 @@ export default function UpscalerPage() {
   const [scale, setScale] = useState<number>(2);
   const [loading, setLoading] = useState(false);
   const [resultUrl, setResultUrl] = useState<string>("");
+  const api = useProjectApi();
 
   const handleFileSelect = (file: File) => {
+    if (previewOriginal) URL.revokeObjectURL(previewOriginal);
     setOriginalFile(file);
     setPreviewOriginal(URL.createObjectURL(file));
     setStep(2);
@@ -30,21 +33,7 @@ export default function UpscalerPage() {
     setLoading(true);
 
     try {
-      const formData = new FormData();
-      formData.append("file", originalFile);
-      formData.append("scale", scale.toString());
-
-      const res = await fetch("/api/tools/upscale", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.detail || "Gagal memproses gambar");
-      }
-
-      const data = await res.json();
+      const data = await api.upscaleImage(originalFile, scale);
       setResultUrl(data.url);
       setStep(3);
     } catch (err: unknown) {
@@ -106,7 +95,7 @@ export default function UpscalerPage() {
                 </Button>
               </div>
 
-              <div className="bg-blue-50/50 border border-blue-100 text-blue-800 p-4 rounded-xl text-sm leading-relaxed shadow-sm">
+              <div className="bg-blue-500/10 border border-blue-500/20 text-blue-700 dark:text-blue-400 p-4 rounded-xl text-sm leading-relaxed shadow-sm">
                 💡 <strong>Tips:</strong> AI Upscaler akan memperbaiki noise dan mengembalikan tekstur yang hilang pada foto produk Anda. Cocok untuk foto dari kamera HP lama agar terlihat seperti standar studio kreatif.
               </div>
 
