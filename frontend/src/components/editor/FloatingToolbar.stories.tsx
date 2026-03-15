@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { FloatingToolbar } from './FloatingToolbar';
+import { useCanvasStore } from '@/store/useCanvasStore';
 
 const meta = {
   title: 'Editor/FloatingToolbar',
@@ -28,13 +29,10 @@ export const Default: Story = {
   },
   decorators: [
     (Story) => {
-      // Since FloatingToolbar expects an element to be present in the Zustand store
-      import('@/store/useCanvasStore').then((module) => {
-        module.useCanvasStore.setState({
-          elements: [
-            { id: 'mock-1', type: 'shape', shapeType: 'rect', x: 0, y: 0, rotation: 0, locked: false }
-          ],
-        });
+      useCanvasStore.setState({
+        elements: [
+          { id: 'mock-1', type: 'shape', shapeType: 'rect', x: 0, y: 0, rotation: 0, locked: false }
+        ],
       });
       return <Story />;
     },
