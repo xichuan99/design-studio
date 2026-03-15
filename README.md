@@ -2,7 +2,7 @@
 
 > **Desain Grafis Instan untuk UMKM** — Platform desain berbasis AI yang membantu pelaku UMKM membuat konten visual profesional dalam hitungan detik.
 
-[![CI/CD](https://github.com/YOUR_USERNAME/design-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/design-studio/actions)
+[![CI/CD](https://github.com/clarinovist/design-studio/actions/workflows/cicd.yml/badge.svg)](https://github.com/clarinovist/design-studio/actions)
 
 ---
 
@@ -12,7 +12,7 @@
 - **5-Step Create Flow** — Flow UI intuitif: 1) Input Teks, 2) **AI Interview** (pilihan ganda/teks), 3) Visual Prompt Review, 4) Generating, 5) Split-view Preview & Editor
 - **AI Text Parsing** — Gemini Flash menghasilkan headline, tagline, CTA, rekomendasi warna, dan layout JSON dari deskripsi teks
 - **AI Image Generation** — Generate background visual profesional via Fal.ai (SDXL/Flux) atau Gemini Imagen sebagai fallback
-- **AI Photo Tools (Stand Alone)** — Hapus background foto produk & integrasikan ke latar profesional baru dengan presisi tinggi, serta Fitur Image Upscaler untuk menjernihkan & memperbesar foto hingga 4x resolusi.
+- **AI Photo Tools (Stand Alone)** — Hapus background foto produk, integrasikan ke latar profesional baru, Text Banner, Retouch & hapus noda/objek, Expand (Outpaint), Watermark, ID Photo, Batch Processing, serta Fitur Image Upscaler untuk menjernihkan & memperbesar foto hingga 4x resolusi. Dilengkapi fitur *Continue to Editor* untuk lanjut mengedit di Canvas utama.
 - **AI Background Removal** — Hapus latar belakang foto produk secara instan menggunakan model U<sup>2</sup>-Net (rembg)
 - **Brand Kit (AI Color Palette)** — Upload logo UMKM, Gemini Vision otomatis mengekstrak 5 warna dominan. Simpan sebagai palet warna utama yang akan otomatis dipakai di setiap desain berikutnya.
 - **AI Copywriting / Headline Generator** — Generate 3 variasi teks promosi (FOMO, Benefit, Social Proof) dari deskripsi produk. Dilengkapi mini-interview klarifikasi, pilihan tone (Persuasif/Kasual/Profesional/Lucu), integrasi Brand Kit, dan re-generate.
@@ -78,7 +78,7 @@
 | **Auth** | NextAuth.js + Google OAuth |
 | **Monitoring** | Sentry, PostHog |
 | **Infra** | Docker Compose, Nginx (reverse proxy + SSL), Let's Encrypt |
-| **CI/CD** | GitHub Actions |
+| **CI/CD** | GitHub Actions (Unified Lint, Build, Deploy, Semantic Auto-Tag) |
 
 ---
 
@@ -273,11 +273,15 @@ npm run build         # Production build verification
 | `⌘Z` | Undo |
 | `⌘⇧Z` | Redo |
 
-### CI/CD
+### CI/CD Pipeline
 
-GitHub Actions automatically runs on every push/PR to `main`:
-- ✅ Backend: `pytest tests/ -v`
-- ✅ Frontend: `npm run build` (includes tsc)
+GitHub Actions automatically runs on every push/PR to `main` using the unified `.github/workflows/cicd.yml` workflow.
+
+**Stages:**
+1. **Lint & Test**: ✅ Backend (`ruff`, `pytest tests/ -v`) & ✅ Frontend (`npm run build`, `npm run lint`)
+2. **Build & Push**: Builds Docker images for the backend and frontend and pushes them to GitHub Container Registry (GHCR). (Runs only on Push to `main`).
+3. **Deploy**: Triggers an SSH deployment to the production VPS if the Build & Push stage succeeds.
+4. **Auto Tag Release**: Parses commit messages (Semantic Versioning) and automatically bumps the version and pushes a new git tag.
 
 ---
 
@@ -286,7 +290,7 @@ GitHub Actions automatically runs on every push/PR to `main`:
 ```
 design-studio/
 ├── .env.example                    # Environment template
-├── .github/workflows/ci.yml       # CI/CD pipeline
+├── .github/workflows/cicd.yml      # Unified CI/CD pipeline (Test, Build, Deploy, Auto-Tag)
 ├── docker-compose.yml              # All services (Postgres, Redis, Backend, Celery, Frontend)
 │
 ├── backend/
