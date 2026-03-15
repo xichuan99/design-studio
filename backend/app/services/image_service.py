@@ -41,14 +41,24 @@ async def generate_background(
     Generates a background image using Fal.ai.
 
     Args:
-        visual_prompt: The image generation prompt (from LLM output).
-        reference_image_url: Optional reference image for style transfer.
-        style: Style preference (bold, minimalist, elegant, playful).
-        aspect_ratio: Target aspect ratio (1:1, 9:16, 16:9).
-        integrated_text: If True, do not block text generation in the negative prompt.
+        visual_prompt (str): The image generation prompt (from LLM output).
+        reference_image_url (str | None): Optional reference image for style transfer. Defaults to None.
+        style (str): Style preference (bold, minimalist, elegant, playful). Defaults to "bold".
+        aspect_ratio (str): Target aspect ratio (1:1, 9:16, 16:9). Defaults to "1:1".
+        integrated_text (bool): If True, do not block text generation in the negative prompt. Defaults to False.
 
     Returns:
-        dict with keys: image_url, width, height, seed
+        dict: A dictionary containing the generated image's information:
+              - image_url (str): The URL of the generated image.
+              - width (int): The width of the image.
+              - height (int): The height of the image.
+              - seed (int): The generation seed used.
+              - content_type (str): The MIME type of the generated image.
+
+    Raises:
+        ValueError: If the FAL_KEY environment variable is missing.
+        RuntimeError: If Fal.ai returns no images.
+        Exception: If the Fal.ai API call fails.
     """
     if not settings.FAL_KEY:
         raise ValueError("FAL_KEY is missing from environment")

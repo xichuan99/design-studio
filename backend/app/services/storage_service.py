@@ -12,7 +12,12 @@ from app.core.config import settings
 
 
 def _get_s3_client():
-    """Create an S3 client configured for the storage provider."""
+    """
+    Create an S3 client configured for the storage provider.
+
+    Returns:
+        botocore.client.BaseClient: The configured S3 client.
+    """
     return boto3.client(
         "s3",
         endpoint_url=settings.S3_ENDPOINT or None,
@@ -23,7 +28,16 @@ def _get_s3_client():
 
 
 def generate_key(prefix: str = "generated", extension: str = "jpg") -> str:
-    """Generate a unique S3 object key."""
+    """
+    Generate a unique S3 object key.
+
+    Args:
+        prefix (str): The folder or prefix for the key. Defaults to "generated".
+        extension (str): The file extension. Defaults to "jpg".
+
+    Returns:
+        str: A unique S3 object key.
+    """
     unique_id = uuid.uuid4().hex[:12]
     return f"{prefix}/{unique_id}.{extension}"
 
@@ -34,7 +48,21 @@ async def upload_image(
     content_type: str = "image/jpeg",
     prefix: str = "generated",
 ) -> str:
-    """Upload an image to S3 and return the public URL."""
+    """
+    Upload an image to S3 (or local filesystem as fallback) and return the public URL.
+
+    Args:
+        image_bytes (bytes): The raw bytes of the image to upload.
+        key (str | None): Optional specific key (filename) to use. Defaults to None (auto-generated).
+        content_type (str): The MIME type of the image. Defaults to "image/jpeg".
+        prefix (str): The prefix (folder) to use if auto-generating the key. Defaults to "generated".
+
+    Returns:
+        str: The public URL of the uploaded image.
+
+    Raises:
+        Exception: The function catches exceptions and falls back to local storage, but underlying filesystem errors could theoretically still raise.
+    """
     if (
         not settings.S3_ACCESS_KEY
         or settings.S3_ACCESS_KEY == "your_b2_application_key_id"
@@ -111,7 +139,18 @@ async def upload_image(
 
 
 async def download_image(url: str) -> bytes:
-    """Download an image from a URL and return the bytes."""
+    """
+    Download an image from a URL and return the bytes.
+
+    Args:
+        url (str): The URL of the image to download.
+
+    Returns:
+        bytes: The raw bytes of the downloaded image.
+
+    Raises:
+        httpx.HTTPError: If the HTTP request fails.
+    """
     import httpx
 
     async with httpx.AsyncClient() as client:

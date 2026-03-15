@@ -1,3 +1,4 @@
+"""Service for generating print-ready ID photos (pasfoto)."""
 import io
 from typing import Optional
 import numpy as np
@@ -29,6 +30,20 @@ async def generate_id_photo(
     """
     Generates a print-ready ID photo (pasfoto) at 300 DPI.
     Steps: BG removal -> Face Detection -> Face-Centered Crop -> Solid BG Fill -> Resize.
+
+    Args:
+        image_bytes (bytes): The raw bytes of the original image.
+        bg_color_name (str): The name of the background color ("red" or "blue"). Defaults to "red".
+        size_name (str): The standard size name (e.g., "2x3", "3x4", "4x6", "custom"). Defaults to "3x4".
+        custom_w_cm (Optional[float]): Custom width in centimeters (used if size_name is "custom"). Defaults to None.
+        custom_h_cm (Optional[float]): Custom height in centimeters (used if size_name is "custom"). Defaults to None.
+        output_format (str): The output format ("jpeg" or "png"). Defaults to "jpeg".
+
+    Returns:
+        bytes: The raw bytes of the processed ID photo.
+
+    Raises:
+        Exception: If background removal, face detection, cropping, or saving fails.
     """
     try:
         # Determine target pixel dimensions based on 300 DPI
@@ -169,6 +184,17 @@ def generate_print_sheet(photo_bytes: bytes, output_format: str = "jpeg") -> byt
     """
     Tiles the ID photo onto a 4R print sheet (4x6 inches / 10x15 cm) at 300 DPI.
     Sheet dimensions: 1200x1800 pixels.
+
+    Args:
+        photo_bytes (bytes): The raw bytes of the ID photo to tile.
+        output_format (str): The output format ("jpeg" or "png"). Defaults to "jpeg".
+
+    Returns:
+        bytes: The raw bytes of the generated print sheet.
+
+    Raises:
+        ValueError: If the photo is too large to fit on a 4R sheet.
+        Exception: If tiling or saving the sheet fails.
     """
     try:
         sheet_w, sheet_h = 1200, 1800  # 4R at 300 DPI (portrait)

@@ -1,3 +1,4 @@
+"""Service for upscaling images using Fal.ai models."""
 import os
 import fal_client
 from typing import Dict, Any
@@ -6,8 +7,19 @@ from app.core.config import settings
 
 async def upscale_image(image_url: str, scale: int = 2) -> Dict[str, Any]:
     """
-    Upscales an image using fal-ai/aura-sr endpoint.
-    Returns the result containing the upscaled image URL.
+    Upscales an image using fal-ai/esrgan endpoint.
+
+    Args:
+        image_url (str): The URL of the image to upscale.
+        scale (int): The scaling factor (2, 4, or 8). Defaults to 2.
+
+    Returns:
+        Dict[str, Any]: A dictionary containing the upscaled image's 'url', 'width', 'height', and 'content_type'.
+
+    Raises:
+        ValueError: If the FAL_KEY environment variable is missing.
+        RuntimeError: If the upscale model returns an invalid result.
+        Exception: If the Fal.ai API call fails.
     """
     if not settings.FAL_KEY:
         raise ValueError("FAL_KEY is missing from environment")

@@ -1,3 +1,4 @@
+"""Service for background removal and image compositing operations."""
 import os
 import io
 import logging
@@ -16,6 +17,18 @@ async def remove_background(image_bytes: bytes) -> bytes:
     """
     Removes the background from an image using Fal.ai (birefnet model).
     This offloads processing to avoid out-of-memory errors on the local VPS.
+
+    Args:
+        image_bytes (bytes): The raw bytes of the image to process.
+
+    Returns:
+        bytes: The raw bytes of the resulting transparent PNG image.
+
+    Raises:
+        ValueError: If the FAL_KEY environment variable is missing.
+        RuntimeError: If the Fal.ai API fails to return a valid image URL.
+        httpx.HTTPError: If downloading the result from Fal.ai fails.
+        Exception: For any other unexpected errors during the process.
     """
     if not settings.FAL_KEY:
         raise ValueError("FAL_KEY is missing from environment")
@@ -61,6 +74,16 @@ async def composite_product_on_background(
     """
     Overlays a transparent product image onto a background image.
     Centers the product and scales it to fit nicely within the background.
+
+    Args:
+        product_png_bytes (bytes): Raw bytes of the transparent product image (PNG).
+        background_bytes (bytes): Raw bytes of the background image.
+
+    Returns:
+        bytes: Raw bytes of the composited image in JPEG format.
+
+    Raises:
+        Exception: If image loading, resizing, pasting, or saving fails.
     """
     try:
         product_img = Image.open(io.BytesIO(product_png_bytes)).convert("RGBA")
@@ -106,6 +129,20 @@ async def composite_with_shadow(
 ) -> bytes:
     """
     Advanced compositing: overlays product on background with scale, offset, and optional drop shadow.
+
+    Args:
+        product_png_bytes (bytes): Raw bytes of the transparent product image (PNG).
+        background_bytes (bytes): Raw bytes of the background image.
+        scale_factor (float): Ratio to scale the product relative to the shortest background dimension. Defaults to 0.7.
+        offset_x_ratio (float): Horizontal position ratio (0.0 left, 1.0 right). Defaults to 0.5.
+        offset_y_ratio (float): Vertical position ratio (0.0 top, 1.0 bottom). Defaults to 0.55.
+        add_shadow (bool): Whether to generate and apply a drop shadow. Defaults to True.
+
+    Returns:
+        bytes: Raw bytes of the composited image in JPEG format.
+
+    Raises:
+        Exception: If compositing or applying the shadow filter fails.
     """
     try:
         from PIL import ImageFilter

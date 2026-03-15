@@ -1,3 +1,4 @@
+"""Service for inpainting (filling) specific areas of an image."""
 from typing import Optional
 
 from fastapi import HTTPException
@@ -11,13 +12,17 @@ async def inpaint_image(
     Inpaints an image using the fal-ai/flux-pro/v1/fill model.
 
     Args:
-        image_url: URL of the base image.
-        mask_url: URL of the mask image (white=fill, black=keep).
-        prompt: Optional prompt to describe the desired fill content.
-                For "magic eraser" object removal, this can be empty or something like "background".
+        image_url (str): URL of the base image.
+        mask_url (str): URL of the mask image (white=fill, black=keep).
+        prompt (Optional[str]): Optional prompt to describe the desired fill content.
+                                For "magic eraser" object removal, this can be empty or something like "background".
+                                Defaults to None.
 
     Returns:
-        dict: Containing the 'url', 'width', and 'height' of the processed image.
+        dict: A dictionary containing the 'url', 'width', and 'height' of the processed image.
+
+    Raises:
+        HTTPException: If the inpainting service fails to return a valid output or encounters an error.
     """
     try:
         arguments = {

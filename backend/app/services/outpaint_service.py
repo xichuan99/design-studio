@@ -1,3 +1,4 @@
+"""Service for outpainting (expanding) an image using Fal.ai."""
 from typing import Optional
 
 from fastapi import HTTPException
@@ -17,15 +18,19 @@ async def outpaint_image(
     Support either directional expansion (left/right/top/bottom) OR target dimensions.
 
     Args:
-        image_url: URL of the base image.
-        direction: Direction to expand ("left", "right", "top", "bottom"). Required if target_dims aren't provided.
-        pixels: Number of pixels to expand. Required if direction is provided.
-        target_width: Desired target width. Used instead of direction/pixels.
-        target_height: Desired target height. Used instead of direction/pixels.
-        prompt: Optional prompt to describe the expanded content.
+        image_url (str): URL of the base image.
+        direction (str, optional): Direction to expand ("left", "right", "top", "bottom"). Required if target_dims aren't provided. Defaults to None.
+        pixels (int, optional): Number of pixels to expand. Required if direction is provided. Defaults to None.
+        target_width (int, optional): Desired target width. Used instead of direction/pixels. Defaults to None.
+        target_height (int, optional): Desired target height. Used instead of direction/pixels. Defaults to None.
+        prompt (Optional[str], optional): Optional prompt to describe the expanded content. Defaults to None.
 
     Returns:
-        dict: Containing the 'url', 'width', and 'height' of the processed image.
+        dict: A dictionary containing the 'url', 'width', and 'height' of the processed image.
+
+    Raises:
+        ValueError: If neither direction/pixels nor target_width/target_height are provided, or if an invalid direction is given.
+        HTTPException: If the Fal.ai service fails or returns an invalid output.
     """
     try:
         arguments = {"image_url": image_url, "output_format": "jpeg"}

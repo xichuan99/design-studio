@@ -1,3 +1,4 @@
+"""Service for processing batches of images."""
 import asyncio
 import io
 import zipfile
@@ -18,7 +19,22 @@ async def process_single_image(
 ) -> Tuple[Optional[str], Optional[bytes], Optional[str]]:
     """
     Processes a single image based on operation.
-    Returns: (success_filename, processed_bytes, error_message)
+
+    Args:
+        filename (str): Original filename of the image.
+        image_bytes (bytes): Raw image data as bytes.
+        operation (str): The operation to apply (e.g., "remove_bg", "watermark", "product_scene").
+        params (Dict[str, Any]): Additional parameters for the operation.
+
+    Returns:
+        Tuple[Optional[str], Optional[bytes], Optional[str]]: A tuple containing:
+            - new_filename (str | None): The new filename if successful, else None.
+            - processed_bytes (bytes | None): The processed image bytes if successful, else None.
+            - error_message (str | None): An error message if failed, else None.
+
+    Raises:
+        ValueError: If required parameters for the operation are missing.
+        Exception: If the underlying operation service fails.
     """
     try:
         if operation == "remove_bg":
@@ -74,7 +90,19 @@ async def process_batch(
 ) -> Tuple[bytes, List[Dict[str, str]]]:
     """
     Processes a batch of images concurrently and packs the successful ones into a ZIP.
-    Returns: (zip_file_bytes, list_of_errors)
+
+    Args:
+        files (List[Tuple[str, bytes]]): A list of tuples containing the filename and image bytes.
+        operation (str): The operation to apply to all images in the batch.
+        params (Dict[str, Any], optional): Additional parameters for the operation. Defaults to None.
+
+    Returns:
+        Tuple[bytes, List[Dict[str, str]]]: A tuple containing:
+            - zip_file_bytes (bytes): The raw bytes of the resulting ZIP file.
+            - errors (List[Dict[str, str]]): A list of dictionaries containing filename and error details for failed items.
+
+    Raises:
+        Exception: Any unhandled exception during the batch processing.
     """
     if params is None:
         params = {}

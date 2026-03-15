@@ -1,3 +1,4 @@
+"""Service for LLM interactions (Gemini API) for text parsing, generation, and design clarification."""
 import json
 from typing import Optional
 from google import genai
@@ -112,7 +113,18 @@ RULES:
 
 
 async def generate_design_brief_questions(raw_text: str) -> dict:
-    """Generates clarifying questions based on the user's initial raw text."""
+    """
+    Generates clarifying questions based on the user's initial raw text.
+
+    Args:
+        raw_text (str): The initial brief provided by the user.
+
+    Returns:
+        dict: A dictionary containing a list of questions structured according to `BriefQuestionsResponse`.
+
+    Raises:
+        Exception: If the LLM call or response parsing fails.
+    """
     from app.schemas.design import BriefQuestionsResponse
 
     if not settings.GEMINI_API_KEY:
@@ -173,7 +185,18 @@ async def generate_design_brief_questions(raw_text: str) -> dict:
 
 
 async def generate_copywriting_questions(raw_text: str) -> dict:
-    """Generates clarifying questions specifically for copywriting using Gemini."""
+    """
+    Generates clarifying questions specifically for copywriting using Gemini.
+
+    Args:
+        raw_text (str): The initial brief provided by the user.
+
+    Returns:
+        dict: A dictionary containing a list of questions structured according to `BriefQuestionsResponse`.
+
+    Raises:
+        Exception: If the LLM call or response parsing fails.
+    """
     from app.schemas.design import BriefQuestionsResponse
 
     if not settings.GEMINI_API_KEY:
@@ -260,7 +283,18 @@ Pastikan opsi "choice" relevan dengan konteks deskripsi user.
 
 
 async def generate_unified_brief_questions(raw_text: str) -> dict:
-    """Generates combined clarifying questions for both design and copywriting."""
+    """
+    Generates combined clarifying questions for both design and copywriting.
+
+    Args:
+        raw_text (str): The initial brief provided by the user.
+
+    Returns:
+        dict: A dictionary containing a list of questions structured according to `BriefQuestionsResponse`.
+
+    Raises:
+        Exception: If the LLM call or response parsing fails.
+    """
     from app.schemas.design import BriefQuestionsResponse
 
     if not settings.GEMINI_API_KEY:
@@ -341,7 +375,21 @@ async def generate_ai_copywriting(
     brand_name: Optional[str] = None,
     clarification_answers: Optional[dict] = None,
 ) -> dict:
-    """Generates 3 variations of copywriting using Gemini."""
+    """
+    Generates 3 variations of copywriting using Gemini.
+
+    Args:
+        product_description (str): A description of the product or service.
+        tone (str): The desired tone for the copy (e.g., "persuasive", "casual", "professional", "funny"). Defaults to "persuasive".
+        brand_name (Optional[str]): The name of the brand to include in the copy. Defaults to None.
+        clarification_answers (Optional[dict]): Answers to previously asked clarifying questions. Defaults to None.
+
+    Returns:
+        dict: A dictionary containing 3 variations of the generated copy, structured according to `CopywritingResponse`.
+
+    Raises:
+        Exception: If the LLM call or response parsing fails.
+    """
     from app.schemas.design import CopywritingResponse
 
     tone_map = {
@@ -431,7 +479,22 @@ async def parse_design_text(
     brand_colors: Optional[list[str]] = None,
     brand_typography: Optional[dict] = None,
 ) -> ParsedTextElements:
-    """Parses raw text into structured design elements and a visual prompt."""
+    """
+    Parses raw text into structured design elements and a visual prompt.
+
+    Args:
+        raw_text (str): The raw text to parse and design from.
+        integrated_text (bool): Whether text should be integrated into the image generation. Defaults to False.
+        clarification_answers (Optional[dict]): User's answers to clarification questions. Defaults to None.
+        brand_colors (Optional[list[str]]): List of hex colors from the active brand kit. Defaults to None.
+        brand_typography (Optional[dict]): Dictionary of fonts from the active brand kit. Defaults to None.
+
+    Returns:
+        ParsedTextElements: An object containing layout details, visual prompt parts, and translations.
+
+    Raises:
+        Exception: If the LLM call or response parsing fails.
+    """
 
     prompt_modifier = ""
     if integrated_text:
@@ -613,7 +676,20 @@ Output JSON must match:
 async def modify_visual_prompt(
     original_parts: list, original_visual_prompt: str, instruction: str
 ) -> dict:
-    """Modifies existing English prompt parts based on an Indonesian user instruction."""
+    """
+    Modifies existing English prompt parts based on an Indonesian user instruction.
+
+    Args:
+        original_parts (list): The list of current visual prompt parts.
+        original_visual_prompt (str): The current full visual prompt string.
+        instruction (str): The user's instruction (in Indonesian) for how to modify the prompt.
+
+    Returns:
+        dict: A dictionary containing the updated parts and full prompt, structured according to `ModifyPromptResponse`.
+
+    Raises:
+        Exception: If the LLM call or response parsing fails.
+    """
     from app.schemas.design import ModifyPromptResponse
 
     if not settings.GEMINI_API_KEY:
@@ -716,7 +792,23 @@ async def generate_magic_text_layout(
     canvas_height: int = 1024,
     brand_colors: Optional[list[str]] = None,
 ) -> dict:
-    """Generates a layout for text overlaid on a specific image."""
+    """
+    Generates a layout for text overlaid on a specific image.
+
+    Args:
+        text (str): The text to overlay.
+        image_base64 (str): The base64-encoded image to analyze.
+        style_hint (Optional[str]): A hint for the desired text style. Defaults to None.
+        canvas_width (int): The width of the target canvas. Defaults to 1024.
+        canvas_height (int): The height of the target canvas. Defaults to 1024.
+        brand_colors (Optional[list[str]]): List of brand hex colors to incorporate. Defaults to None.
+
+    Returns:
+        dict: A dictionary describing the layout of the text elements.
+
+    Raises:
+        Exception: If the LLM call or base64 decoding fails.
+    """
     from app.schemas.design import MagicTextResponse
     import base64
 
@@ -788,7 +880,19 @@ async def generate_magic_text_layout(
 
 
 async def generate_project_title(prompt: str) -> str:
-    """Generates a short, catchy project title based on the user's prompt."""
+    """
+    Generates a short, catchy project title based on the user's prompt.
+
+    Args:
+        prompt (str): The description or prompt used for the project.
+
+    Returns:
+        str: A short, descriptive project title.
+
+    Raises:
+        ValueError: If the LLM returns an empty response.
+        Exception: If the LLM call fails (handled internally by returning a fallback title).
+    """
     if not settings.GEMINI_API_KEY:
         import logging
 

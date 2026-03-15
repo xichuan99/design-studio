@@ -18,7 +18,19 @@ RESOLUTIONS = {
 
 
 def resize_to_aspect(image_bytes: bytes, aspect_ratio: str = "1:1") -> bytes:
-    """Center-crop and resize an image to the target aspect ratio resolution."""
+    """
+    Center-crop and resize an image to the target aspect ratio resolution.
+
+    Args:
+        image_bytes (bytes): The raw bytes of the image to resize.
+        aspect_ratio (str): The target aspect ratio ("1:1", "9:16", "16:9"). Defaults to "1:1".
+
+    Returns:
+        bytes: The raw bytes of the resized and cropped image in JPEG format.
+
+    Raises:
+        Exception: If the image cannot be opened, cropped, resized, or saved.
+    """
     img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
     target_w, target_h = RESOLUTIONS.get(aspect_ratio, RESOLUTIONS["1:1"])
     target_aspect = target_w / target_h
@@ -49,8 +61,20 @@ def resize_to_aspect(image_bytes: bytes, aspect_ratio: str = "1:1") -> bytes:
 
 
 def extract_dominant_colors(image_bytes: bytes, n: int = 3) -> list[str]:
-    """Extract N dominant colors from an image using K-means clustering.
-    Returns a list of hex color strings."""
+    """
+    Extract N dominant colors from an image using K-means clustering.
+    Returns a list of hex color strings.
+
+    Args:
+        image_bytes (bytes): The raw bytes of the image to analyze.
+        n (int): The number of dominant colors to extract. Defaults to 3.
+
+    Returns:
+        list[str]: A list of hex color strings representing the dominant colors.
+
+    Raises:
+        Exception: If the image cannot be opened or processed by K-means clustering.
+    """
     img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
 
     # Downscale for faster processing
@@ -76,8 +100,21 @@ def extract_dominant_colors(image_bytes: bytes, n: int = 3) -> list[str]:
 
 
 async def prepare_reference(image_bytes: bytes, aspect_ratio: str = "1:1") -> dict:
-    """Full pre-processing pipeline for a reference image.
-    Returns a dict with resized image bytes and extracted dominant colors."""
+    """
+    Full pre-processing pipeline for a reference image.
+
+    Args:
+        image_bytes (bytes): The raw bytes of the reference image.
+        aspect_ratio (str): The target aspect ratio for resizing. Defaults to "1:1".
+
+    Returns:
+        dict: A dictionary containing:
+              - 'resized_bytes' (bytes): The bytes of the resized image.
+              - 'dominant_colors' (list[str]): A list of extracted dominant hex colors.
+
+    Raises:
+        Exception: If resizing or color extraction fails.
+    """
     resized = resize_to_aspect(image_bytes, aspect_ratio)
     colors = extract_dominant_colors(image_bytes)
 

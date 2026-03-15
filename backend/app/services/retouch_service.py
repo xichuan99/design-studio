@@ -1,3 +1,4 @@
+"""Service for image retouching, including auto-enhancement and blemish removal."""
 import io
 import cv2
 import numpy as np
@@ -11,6 +12,16 @@ async def auto_enhance(image_bytes: bytes, output_format: str = "jpeg") -> bytes
     """
     Smart exposure and color correction using OpenCV CLAHE on the LAB color space.
     Brightens dark skin tones naturally without overexposing highlights.
+
+    Args:
+        image_bytes (bytes): The raw bytes of the image to enhance.
+        output_format (str): The desired output format ("jpeg" or "png"). Defaults to "jpeg".
+
+    Returns:
+        bytes: The raw bytes of the enhanced image.
+
+    Raises:
+        Exception: If image processing (e.g., OpenCV conversion, CLAHE application) or saving fails.
     """
     try:
         # Load image via Pillow then convert to cv2 numpy array
@@ -65,6 +76,16 @@ async def remove_blemishes(image_bytes: bytes, output_format: str = "jpeg") -> b
     """
     Smooths skin blemishes using bilateral filtering and median blur
     while preserving sharp edges (eyes, hair, etc).
+
+    Args:
+        image_bytes (bytes): The raw bytes of the image to process.
+        output_format (str): The desired output format ("jpeg" or "png"). Defaults to "jpeg".
+
+    Returns:
+        bytes: The raw bytes of the processed image with blemishes removed.
+
+    Raises:
+        Exception: If image processing (e.g., filtering, blending) or saving fails.
     """
     try:
         img = Image.open(io.BytesIO(image_bytes))

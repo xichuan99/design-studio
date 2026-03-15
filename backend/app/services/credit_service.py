@@ -1,3 +1,4 @@
+"""Service for managing user credits and logging transactions."""
 import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.user import User
@@ -12,6 +13,15 @@ async def log_credit_change(
     """
     Modifies the user's credits_remaining and logs a CreditTransaction.
     Note: The caller is responsible for eventually calling db.commit().
+
+    Args:
+        db (AsyncSession): The database session.
+        user (User): The user model instance whose credits are being changed.
+        amount (int): The amount of credits to add (positive) or deduct (negative).
+        description (str): A description of the transaction.
+
+    Raises:
+        Exception: If updating the user's balance or creating the transaction record fails.
     """
     try:
         if amount == 0:

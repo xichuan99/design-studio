@@ -1,3 +1,4 @@
+"""Service for extracting and managing brand colors."""
 import json
 from google import genai
 from app.core.config import settings
@@ -32,6 +33,17 @@ async def extract_colors_from_image(
     """
     Analyzes an image using Gemini Vision to extract a 5-color brand palette.
     Returns a list of dicts: [{'hex': '#...', 'name': '...', 'role': '...'}, ...]
+
+    Args:
+        image_bytes (bytes): The raw bytes of the image to analyze.
+        mime_type (str): The MIME type of the image. Defaults to "image/png".
+
+    Returns:
+        List[Dict[str, Any]]: A list of dictionaries, where each dictionary represents a color
+                              with keys 'hex', 'name', and 'role'.
+
+    Raises:
+        Exception: If the Gemini API call fails (handled internally by returning a fallback palette).
     """
     client = genai.Client(api_key=settings.GEMINI_API_KEY)
 

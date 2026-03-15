@@ -1,3 +1,4 @@
+"""Service for applying watermarks (logos or text) to images."""
 import io
 from PIL import Image, ImageEnhance
 
@@ -16,15 +17,18 @@ async def apply_watermark(
     Applies a watermark (logo or text image) over a base image.
 
     Args:
-        base_image_bytes: The original product image
-        watermark_bytes: The logo or watermark image (supports PNG with transparency)
-        position: Where to place the watermark ("bottom-right", "bottom-left", "top-right", "top-left", "center", "tiled")
-        opacity: Transparency level from 0.0 (invisible) to 1.0 (fully opaque)
-        scale: The size of the watermark relative to the base image (0.1 to 1.0)
-        padding_ratio: Margin from the edge of the image
+        base_image_bytes (bytes): The original product image.
+        watermark_bytes (bytes): The logo or watermark image (supports PNG with transparency).
+        position (str): Where to place the watermark ("bottom-right", "bottom-left", "top-right", "top-left", "center", "tiled"). Defaults to "bottom-right".
+        opacity (float): Transparency level from 0.0 (invisible) to 1.0 (fully opaque). Defaults to 0.5.
+        scale (float): The size of the watermark relative to the base image (0.1 to 1.0). Defaults to 0.2.
+        padding_ratio (float): Margin from the edge of the image. Defaults to 0.05.
 
     Returns:
-        Bytes of the composited image (always JPEG to save space, but preserves visual transparency of watermark)
+        bytes: Raw bytes of the composited image (always JPEG to save space, but preserves visual transparency of watermark).
+
+    Raises:
+        Exception: If opening, resizing, pasting, or saving the images fails.
     """
     if position not in POSITIONS:
         position = "bottom-right"

@@ -176,39 +176,61 @@ All endpoints except `/health`, `/docs`, and `/api/templates` require authentica
 
 ### Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/health` | Health check |
-| `GET` | `/docs` | Swagger UI documentation |
-| **Designs** | | |
-| `POST` | `/api/designs/clarify` | Generate AI clarification questions dari teks singkat |
-| `POST` | `/api/designs/parse` | Parse teks + jawaban interview → prompt & layout JSON |
-| `POST` | `/api/designs/generate` | Generate full design/gambar (credit + rate-limited) |
-| `POST` | `/api/designs/modify-prompt` | Modifikasi prompt via instruksi bahasa Indonesia |
-| `GET` | `/api/designs/jobs/{job_id}` | Poll job status |
-| `GET` | `/api/designs/my-generations` | Riwayat generasi user |
-| `POST` | `/api/designs/upload` | Upload gambar referensi |
-| `POST` | `/api/designs/remove-background` | Hapus background foto via rembg |
-| `POST` | `/api/designs/clarify-copywriting` | Generate pertanyaan klarifikasi untuk copywriting |
-| `POST` | `/api/designs/generate-copywriting` | Generate 3 variasi teks promosi (FOMO/Benefit/Social Proof) |
-| **Brand Kits** | | |
-| `POST` | `/api/brand-kits/extract` | Upload logo/foto → ekstrak 5 warna via Gemini Vision |
-| `POST` | `/api/brand-kits/` | Simpan Brand Kit ke DB |
-| `GET` | `/api/brand-kits/` | List semua Brand Kit |
-| `GET` | `/api/brand-kits/active` | Get profil Brand Kit yang sedang aktif |
-| `PUT` | `/api/brand-kits/{id}` | Update (termasuk Set Active) |
-| `DELETE` | `/api/brand-kits/{id}` | Hapus Brand Kit |
-| **Templates** | | |
-| `GET` | `/api/templates/` | List all templates |
-| `GET` | `/api/templates/{id}` | Get template details |
-| **Projects** | | |
-| `GET` | `/api/projects/` | List user's projects |
-| `POST` | `/api/projects/` | Create a new project |
-| `GET` | `/api/projects/{id}` | Get project details |
-| `PUT` | `/api/projects/{id}` | Update project |
-| `DELETE` | `/api/projects/{id}` | Delete project |
-| **Users** | | |
-| `GET` | `/api/users/me` | Get current user profile + credits |
+| Method | Endpoint | Request | Response | Description | Auth Req |
+|--------|----------|---------|----------|-------------|----------|
+| `GET` | `/health` | None | JSON `{"status": "ok"}` | Health check | No |
+| `GET` | `/docs` | None | HTML | Swagger UI documentation | No |
+| **Designs** | | | | | |
+| `POST` | `/api/designs/clarify` | JSON `{"text": "..."}` | JSON `BriefQuestionsResponse` | Generate AI clarification questions dari teks singkat | Yes |
+| `POST` | `/api/designs/clarify-unified` | JSON `{"text": "..."}` | JSON `BriefQuestionsResponse` | Generate AI combined clarification questions for design and copywriting | Yes |
+| `POST` | `/api/designs/parse` | JSON `ParseRequest` | JSON `ParsedTextElements` | Parse teks + jawaban interview → prompt & layout JSON | Yes |
+| `POST` | `/api/designs/modify-prompt` | JSON `ModifyPromptRequest` | JSON `ModifyPromptResponse` | Modifikasi prompt via instruksi bahasa Indonesia | Yes |
+| `POST` | `/api/designs/magic-text` | JSON `MagicTextRequest` | JSON `MagicTextResponse` | Generates a layout for text overlaid on a specific image | Yes |
+| `POST` | `/api/designs/generate-title` | JSON `{"prompt": "..."}` | JSON `GenerateTitleResponse` | Generate short, catchy project title | Yes |
+| `POST` | `/api/designs/upload` | Multipart form data (file) | JSON `{"url": "..."}` | Upload gambar referensi | Yes |
+| `POST` | `/api/designs/remove-background` | Multipart form data (file) | Image file | Hapus background foto via rembg | Yes |
+| `POST` | `/api/designs/clarify-copywriting` | JSON `{"text": "..."}` | JSON `BriefQuestionsResponse` | Generate pertanyaan klarifikasi untuk copywriting | Yes |
+| `POST` | `/api/designs/generate-copywriting` | JSON `CopywritingRequest` | JSON `CopywritingResponse` | Generate 3 variasi teks promosi (FOMO/Benefit/Social Proof) | Yes |
+| `POST` | `/api/designs/generate` | JSON `GenerateDesignRequest` | JSON `{"job_id": "..."}` | Generate full design/gambar (credit + rate-limited) | Yes |
+| `GET` | `/api/designs/my-generations` | None | JSON `List[dict]` | Riwayat generasi user | Yes |
+| `GET` | `/api/designs/jobs/{job_id}` | None | JSON `{"status": "..."}` | Poll job status | Yes |
+| **AI Tools** | | | | | |
+| `POST` | `/api/ai-tools/background-swap` | Multipart form data | JSON `{"image_url": "..."}` | Swap background of an image using Fal.ai | Yes |
+| `POST` | `/api/ai-tools/upscale` | JSON `UpscaleRequest` | JSON `{"image_url": "..."}` | Upscale an image using Fal.ai | Yes |
+| `POST` | `/api/ai-tools/text-banner` | JSON `TextBannerRequest` | JSON `{"image_url": "..."}` | Generate a decorative text banner | Yes |
+| `POST` | `/api/ai-tools/retouch` | Multipart form data | JSON `{"image_url": "..."}` | Retouch an image (auto-enhance or remove blemishes) | Yes |
+| `POST` | `/api/ai-tools/id-photo` | Multipart form data | JSON `{"image_url": "..."}` | Generate print-ready ID photo (pasfoto) | Yes |
+| `POST` | `/api/ai-tools/magic-eraser` | JSON `InpaintRequest` | JSON `{"image_url": "..."}` | Remove objects using inpainting | Yes |
+| `POST` | `/api/ai-tools/generative-expand`| JSON `OutpaintRequest` | JSON `{"image_url": "..."}` | Expand image boundaries using outpainting | Yes |
+| `POST` | `/api/ai-tools/watermark` | Multipart form data | JSON `{"image_url": "..."}` | Apply a watermark to an image | Yes |
+| `POST` | `/api/ai-tools/product-scene` | Multipart form data | JSON `{"image_url": "..."}` | Generate a professional product scene | Yes |
+| `POST` | `/api/ai-tools/batch` | Multipart form data | ZIP file | Process a batch of images | Yes |
+| **Brand Kits** | | | | | |
+| `POST` | `/api/brand-kits/extract` | Multipart form data | JSON `ColorExtractionResponse` | Upload logo/foto → ekstrak 5 warna via Gemini Vision | Yes |
+| `POST` | `/api/brand-kits/` | JSON `BrandKitCreate` | JSON `BrandKitResponse` | Simpan Brand Kit ke DB | Yes |
+| `GET` | `/api/brand-kits/` | None | JSON `List[BrandKitResponse]` | List semua Brand Kit | Yes |
+| `GET` | `/api/brand-kits/active` | None | JSON `Optional[BrandKitResponse]` | Get profil Brand Kit yang sedang aktif | Yes |
+| `PUT` | `/api/brand-kits/{id}` | JSON `BrandKitUpdate` | JSON `BrandKitResponse` | Update (termasuk Set Active) | Yes |
+| `DELETE` | `/api/brand-kits/{id}` | None | Status 204 | Hapus Brand Kit | Yes |
+| **Templates** | | | | | |
+| `GET` | `/api/templates/` | None | JSON `List[dict]` | List all templates | No |
+| `GET` | `/api/templates/{id}` | None | JSON `dict` | Get template details | No |
+| **Projects** | | | | | |
+| `GET` | `/api/projects/` | None | JSON `List[ProjectResponse]` | List user's projects | Yes |
+| `POST` | `/api/projects/` | JSON `ProjectCreate` | JSON `ProjectResponse` | Create a new project | Yes |
+| `GET` | `/api/projects/{id}` | None | JSON `ProjectResponse` | Get project details | Yes |
+| `PUT` | `/api/projects/{id}` | JSON `ProjectUpdate` | JSON `ProjectResponse` | Update project | Yes |
+| `DELETE` | `/api/projects/{id}` | None | Status 204 | Delete project | Yes |
+| **History** | | | | | |
+| `POST` | `/api/history/` | JSON `HistoryCreate` | JSON `HistoryResponse` | Save a project history state | Yes |
+| `GET` | `/api/history/{project_id}` | None | JSON `List[HistoryResponse]` | Get edit history for a project | Yes |
+| **Users** | | | | | |
+| `GET` | `/api/users/me` | None | JSON `UserResponse` | Get current user profile + credits | Yes |
+| `PUT` | `/api/users/me` | JSON `UserUpdate` | JSON `UserResponse` | Update current user profile | Yes |
+| `DELETE` | `/api/users/me` | None | Status 204 | Delete current user | Yes |
+| `GET` | `/api/users/me/credits/history` | None | JSON `CreditHistoryResponse` | Get user credit transaction history | Yes |
+| **Auth** | | | | | |
+| `POST` | `/api/auth/login` | JSON `LoginRequest` | JSON `AuthResponse` | Authenticate and get token | No |
 
 > 💡 Full interactive API docs available at `http://localhost:8000/docs` when the server is running.
 

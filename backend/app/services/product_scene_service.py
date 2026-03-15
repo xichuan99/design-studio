@@ -1,3 +1,4 @@
+"""Service for orchestrating the generation of professional product scenes."""
 import logging
 import httpx
 from typing import Dict, Any
@@ -45,6 +46,17 @@ async def generate_product_scene(
     1. Removes background from the original product
     2. Generates a new background based on a predefined theme
     3. Composites the product onto the background with a shadow
+
+    Args:
+        image_bytes (bytes): The raw bytes of the original product image.
+        theme (str): The scene theme to use (e.g., "studio", "nature", "cafe"). Defaults to "studio".
+        aspect_ratio (str): The target aspect ratio for the scene. Defaults to "1:1".
+
+    Returns:
+        bytes: The raw bytes of the composited product scene in JPEG format.
+
+    Raises:
+        Exception: If background removal, background generation, image downloading, or compositing fails.
     """
     logger.info(f"Generating product scene with theme: {theme}")
 

@@ -1,3 +1,4 @@
+"""Service for generating decorative text banners."""
 import os
 import logging
 import httpx
@@ -36,6 +37,20 @@ async def generate_text_banner(
     - draft:    fal-ai/flux/schnell (fast, cheap)
     - standard: fal-ai/flux/dev (good quality)
     - premium:  gemini-3.1-flash-image-preview (best text rendering)
+
+    Args:
+        text (str): The text to display on the banner.
+        style (str): The visual style of the banner (e.g., "ribbon", "badge"). Defaults to "ribbon".
+        color_hint (str): A hint for the color palette. Defaults to "colorful".
+        quality (str): Quality tier for the generation ("draft", "standard", "premium"). Defaults to "standard".
+
+    Returns:
+        dict: A dictionary containing the generated image's "url", "width", and "height".
+
+    Raises:
+        ValueError: If a required API key (GEMINI_API_KEY or FAL_KEY) is missing.
+        RuntimeError: If the external API fails to return a valid image.
+        Exception: For any other errors during the generation or upload process.
     """
     try:
         # 1. Prepare Prompt — support both preset keys and free-text
