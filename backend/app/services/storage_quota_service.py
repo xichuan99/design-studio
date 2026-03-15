@@ -7,7 +7,7 @@ per-user storage usage against their quota.
 
 from __future__ import annotations
 
-from fastapi import HTTPException, status
+from app.core.exceptions import AppException, status
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -38,7 +38,7 @@ async def get_storage_stats(user_id, db: AsyncSession) -> dict:
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise AppException(status_code=404, detail="User not found")
 
     used = user.storage_used or 0
     quota = user.storage_quota or 0
@@ -61,7 +61,7 @@ async def check_quota(user_id, incoming_size: int, db: AsyncSession) -> None:
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise AppException(status_code=404, detail="User not found")
 
     used = user.storage_used or 0
     quota = user.storage_quota or 0
@@ -69,7 +69,7 @@ async def check_quota(user_id, incoming_size: int, db: AsyncSession) -> None:
     if used + incoming_size > quota:
         used_mb = round(used / (1024 * 1024), 1)
         quota_mb = round(quota / (1024 * 1024), 1)
-        raise HTTPException(
+        raise AppException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail=(
                 f"Storage penuh. Anda sudah menggunakan {used_mb} MB "

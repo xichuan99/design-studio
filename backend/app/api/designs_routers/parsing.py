@@ -1,4 +1,6 @@
-from fastapi import APIRouter, HTTPException
+from app.core.exceptions import AppException, NotFoundError, ValidationError, InsufficientCreditsError, UnauthorizedError, ForbiddenError, ConflictError, InternalServerError
+from app.schemas.error import ERROR_RESPONSES
+from fastapi import APIRouter
 from app.schemas.design import (
     DesignGenerationRequest,
     ParsedTextElements,
@@ -9,7 +11,7 @@ from app.services.llm_service import parse_design_text
 
 router = APIRouter()
 
-@router.post("/parse", response_model=ParsedTextElements)
+@router.post("/parse", response_model=ParsedTextElements, responses=ERROR_RESPONSES)
 async def parse_text(request: DesignGenerationRequest) -> ParsedTextElements:
     """Preview functionality: parse text into structured elements without generating the image."""
     try:
@@ -22,9 +24,9 @@ async def parse_text(request: DesignGenerationRequest) -> ParsedTextElements:
         )
         return parsed
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to parse text: {str(e)}")
+        raise InternalServerError(detail=f"Failed to parse text: {str(e)}")
 
-@router.post("/modify-prompt")
+@router.post("/modify-prompt", responses=ERROR_RESPONSES)
 async def modify_prompt(request: ModifyPromptRequest) -> dict:
     """Modifies visual prompt parts via Gemini based on Indonesian text instructions."""
     from app.services.llm_service import modify_visual_prompt
@@ -40,7 +42,6 @@ async def modify_prompt(request: ModifyPromptRequest) -> dict:
         import logging
 
         logging.exception("Failed to modify prompt")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to modify prompt: {str(e)}"
+        raise InternalServerError(detail=f"Failed to modify prompt: {str(e)}"
         )
 

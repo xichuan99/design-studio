@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from app.core.exceptions import AppException, NotFoundError, ValidationError, InsufficientCreditsError, UnauthorizedError, ForbiddenError, ConflictError, InternalServerError
+from app.schemas.error import ERROR_RESPONSES
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -12,7 +14,7 @@ router = APIRouter()
 
 @router.post(
     "/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED
-)
+, responses=ERROR_RESPONSES)
 async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
     """Registers a new user with email and password."""
     # Check if user already exists
@@ -20,9 +22,7 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
     existing_user = result.scalar_one_or_none()
 
     if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email is already registered",
+        raise ValidationError(detail="Email is already registered",
         )
 
     # Create new user
@@ -49,26 +49,22 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
     return user
 
 
-@router.post("/login", response_model=AuthResponse)
+@router.post("/login", response_model=AuthResponse, responses=ERROR_RESPONSES)
 async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
     """Verifies user credentials. Used by frontend NextAuth."""
     result = await db.execute(select(User).where(User.email == data.email))
     user = result.scalar_one_or_none()
 
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password"
+        raise UnauthorizedError(detail="Invalid email or password"
         )
 
     if not user.password_hash:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="This account uses Google Login. Please sign in with Google.",
+        raise UnauthorizedError(detail="This account uses Google Login. Please sign in with Google.",
         )
 
     if not verify_password(data.password, user.password_hash):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password"
+        raise UnauthorizedError(detail="Invalid email or password"
         )
 
     return user

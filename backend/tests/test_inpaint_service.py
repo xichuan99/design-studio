@@ -1,5 +1,6 @@
 import pytest
 from unittest.mock import patch
+from app.core.exceptions import AppException
 from fastapi import HTTPException
 
 from app.services.inpaint_service import inpaint_image
@@ -53,7 +54,7 @@ async def test_inpaint_image_fallback_structure(mock_fal_run):
 async def test_inpaint_image_invalid_output(mock_fal_run):
     mock_fal_run.return_value = {"bad": "data"}
 
-    with pytest.raises(HTTPException) as excinfo:
+    with pytest.raises(AppException) as excinfo:
         await inpaint_image("http://image.url", "http://mask.url")
 
     assert excinfo.value.status_code == 500
@@ -65,7 +66,7 @@ async def test_inpaint_image_invalid_output(mock_fal_run):
 async def test_inpaint_image_fal_exception(mock_fal_run):
     mock_fal_run.side_effect = Exception("Fal API Error")
 
-    with pytest.raises(HTTPException) as excinfo:
+    with pytest.raises(AppException) as excinfo:
         await inpaint_image("http://image.url", "http://mask.url")
 
     assert excinfo.value.status_code == 500

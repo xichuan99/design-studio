@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from app.core.exceptions import AppException, NotFoundError, ValidationError, InsufficientCreditsError, UnauthorizedError, ForbiddenError, ConflictError, InternalServerError
+from app.schemas.error import ERROR_RESPONSES
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import desc
@@ -10,7 +12,7 @@ from app.models.user import User
 router = APIRouter()
 
 
-@router.get("/my-generations")
+@router.get("/my-generations", responses=ERROR_RESPONSES)
 async def get_my_generations(
     limit: int = 20,
     offset: int = 0,
@@ -42,7 +44,7 @@ async def get_my_generations(
         for job in jobs
     ]
 
-@router.get("/jobs/{job_id}")
+@router.get("/jobs/{job_id}", responses=ERROR_RESPONSES)
 async def get_job_status(
     job_id: str,
     db: AsyncSession = Depends(get_db),
@@ -52,7 +54,7 @@ async def get_job_status(
     job = result.scalar_one_or_none()
 
     if not job:
-        raise HTTPException(status_code=404, detail="Job not found")
+        raise NotFoundError(detail="Job not found")
 
     response = {
         "job_id": str(job.id),
@@ -78,7 +80,7 @@ async def get_job_status(
 
     return response
 
-@router.delete("/jobs/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/jobs/{job_id}", status_code=status.HTTP_204_NO_CONTENT, responses=ERROR_RESPONSES)
 async def delete_job(
     job_id: str,
     db: AsyncSession = Depends(get_db),
@@ -90,7 +92,7 @@ async def delete_job(
 
         job_uuid = uuid.UUID(job_id)
     except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid job ID format")
+        raise ValidationError(detail="Invalid job ID format")
 
     result = await db.execute(
         select(Job).where(Job.id == job_uuid, Job.user_id == current_user.id)
@@ -98,7 +100,7 @@ async def delete_job(
     job = result.scalar_one_or_none()
 
     if not job:
-        raise HTTPException(status_code=404, detail="Job not found")
+        raise NotFoundError(detail="Job not found")
 
     if job.result_url:
         from app.services.storage_quota_service import (

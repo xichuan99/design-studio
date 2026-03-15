@@ -1,9 +1,11 @@
+from app.core.exceptions import AppException, NotFoundError, ValidationError, InsufficientCreditsError, UnauthorizedError, ForbiddenError, ConflictError, InternalServerError
+from app.schemas.error import ERROR_RESPONSES
 import logging
 import time
 import uuid
 import json
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, UploadFile, File, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.services import banner_service, product_scene_service, batch_service
 from app.api.deps import get_db
@@ -14,7 +16,7 @@ from app.services.storage_service import upload_image
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-@router.post("/text-banner")
+@router.post("/text-banner", responses=ERROR_RESPONSES)
 async def text_banner(
     text: str = Form(...),
     style: str = Form("ribbon"),
@@ -31,12 +33,12 @@ async def text_banner(
         # Validate quality
         valid_qualities = ["draft", "standard", "premium"]
         if quality not in valid_qualities:
-            raise HTTPException(status_code=400, detail="Invalid quality requested")
+            raise ValidationError(detail="Invalid quality requested")
 
         cost = 2 if quality == "premium" else 1
 
         if current_user.credits_remaining < cost:
-            raise HTTPException(status_code=402, detail="Insufficient credits")
+            raise InsufficientCreditsError(detail="Insufficient credits")
 
         start_time = time.time()
 
@@ -58,13 +60,13 @@ async def text_banner(
         )
         return result
 
-    except HTTPException:
+    except AppException:
         raise
     except Exception as e:
         logger.exception(f"Failed to generate text banner: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to generate text banner")
+        raise InternalServerError(detail="Failed to generate text banner")
 
-@router.post("/product-scene")
+@router.post("/product-scene", responses=ERROR_RESPONSES)
 async def create_product_scene(
     file: UploadFile = File(...),
     theme: str = Form("studio"),
@@ -77,11 +79,11 @@ async def create_product_scene(
     Cost: 1 credit per generation.
     """
     if current_user.credits_remaining < 1:
-        raise HTTPException(status_code=402, detail="Insufficient credits")
+        raise InsufficientCreditsError(detail="Insufficient credits")
 
     content = await file.read()
     if len(content) > 10 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="Image size exceeds 10MB limit")
+        raise ValidationError(detail="Image size exceeds 10MB limit")
 
     from app.services.credit_service import log_credit_change
 
@@ -118,11 +120,10 @@ async def create_product_scene(
             logger.error(
                 f"CRITICAL: Failed to refund user {current_user.id}: {str(refund_err)}"
             )
-        raise HTTPException(
-            status_code=500, detail=f"Failed to generate product scene: {str(e)}"
+        raise InternalServerError(detail=f"Failed to generate product scene: {str(e)}"
         )
 
-@router.post("/batch")
+@router.post("/batch", responses=ERROR_RESPONSES)
 async def process_batch_images(
     files: List[UploadFile] = File(...),
     operation: str = Form(...),
@@ -137,7 +138,7 @@ async def process_batch_images(
     Max 10 files per batch to prevent timeouts.
     """
     if len(files) > 10:
-        raise HTTPException(status_code=400, detail="Maksimal 10 file dalam satu batch")
+        raise ValidationError(detail="Maksimal 10 file dalam satu batch")
 
     # Calculate total cost
     per_file_cost = 0
@@ -147,8 +148,7 @@ async def process_batch_images(
     total_cost = per_file_cost * len(files)
 
     if current_user.credits_remaining < total_cost:
-        raise HTTPException(
-            status_code=402, detail=f"Kredit tidak cukup. Butuh {total_cost} kredit."
+        raise InsufficientCreditsError(detail=f"Kredit tidak cukup. Butuh {total_cost} kredit."
         )
 
     # Parse params
@@ -161,7 +161,7 @@ async def process_batch_images(
     if operation == "watermark" and logo:
         params["logo_bytes"] = await logo.read()
     elif operation == "watermark":
-        raise HTTPException(status_code=400, detail="Logo wajib untuk watermark")
+        raise ValidationError(detail="Logo wajib untuk watermark")
 
     # Read files
     # Only limit individual files to 5MB here for batch to save memory
@@ -169,8 +169,7 @@ async def process_batch_images(
     for f in files:
         content = await f.read()
         if len(content) > 5 * 1024 * 1024:
-            raise HTTPException(
-                status_code=400, detail=f"File {f.filename} terlalu besar (Max 5MB)"
+            raise ValidationError(detail=f"File {f.filename} terlalu besar (Max 5MB)"
             )
         file_data.append((f.filename, content))
 
@@ -223,7 +222,6 @@ async def process_batch_images(
                 logger.error(
                     f"CRITICAL: Failed to refund user {current_user.id}: {str(refund_err)}"
                 )
-        raise HTTPException(
-            status_code=500, detail=f"Failed to process batch: {str(e)}"
+        raise InternalServerError(detail=f"Failed to process batch: {str(e)}"
         )
 

@@ -1,6 +1,8 @@
+from app.core.exceptions import AppException, NotFoundError, ValidationError, InsufficientCreditsError, UnauthorizedError, ForbiddenError, ConflictError, InternalServerError
+from app.schemas.error import ERROR_RESPONSES
 import time
 import redis.asyncio as redis
-from fastapi import HTTPException, Depends
+from fastapi import Depends
 from app.core.config import settings
 from app.api.deps import get_current_user
 from app.models.user import User
@@ -29,9 +31,7 @@ async def rate_limit_dependency(current_user: User = Depends(get_current_user)):
         request_count = results[1]
 
         if request_count >= limit:
-            raise HTTPException(
-                status_code=429,
-                detail="Too many design requests. Please wait a minute before generating again.",
+            raise AppException(status_code=429, detail="Too many design requests. Please wait a minute before generating again.",
             )
     except redis.RedisError as e:
         # If redis fails, fail open instead of breaking the app

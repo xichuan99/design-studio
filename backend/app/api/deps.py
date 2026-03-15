@@ -1,4 +1,6 @@
-from fastapi import Depends, HTTPException, status, Request
+from app.core.exceptions import AppException, NotFoundError, ValidationError, InsufficientCreditsError, UnauthorizedError, ForbiddenError, ConflictError, InternalServerError
+from app.schemas.error import ERROR_RESPONSES
+from fastapi import Depends, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -22,9 +24,7 @@ async def get_current_user(
             email = dev_email
             name = "Dev User"
         else:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Not authenticated",
+            raise UnauthorizedError(detail="Not authenticated",
                 headers={"WWW-Authenticate": "Bearer"},
             )
     else:
@@ -35,12 +35,10 @@ async def get_current_user(
             name = payload.get("name")
 
             if not email:
-                raise HTTPException(status_code=401, detail="Invalid token payload")
+                raise UnauthorizedError(detail="Invalid token payload")
 
         except Exception:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Could not validate credentials",
+            raise UnauthorizedError(detail="Could not validate credentials",
                 headers={"WWW-Authenticate": "Bearer"},
             )
 

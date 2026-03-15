@@ -1,7 +1,9 @@
+from app.core.exceptions import AppException, NotFoundError, ValidationError, InsufficientCreditsError, UnauthorizedError, ForbiddenError, ConflictError, InternalServerError
+from app.schemas.error import ERROR_RESPONSES
 import logging
 import time
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, UploadFile, File, Form
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.services import upscale_service, retouch_service, id_photo_service, watermark_service
@@ -13,7 +15,7 @@ from app.services.storage_service import upload_image
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-@router.post("/upscale")
+@router.post("/upscale", responses=ERROR_RESPONSES)
 async def upscale(
     file: UploadFile = File(...),
     scale: float = Form(2.0),
@@ -22,7 +24,7 @@ async def upscale(
 ):
     try:
         if current_user.credits_remaining < 1:
-            raise HTTPException(status_code=402, detail="Insufficient credits")
+            raise InsufficientCreditsError(detail="Insufficient credits")
 
         start_time = time.time()
 
@@ -52,7 +54,7 @@ async def upscale(
         upscaled_url = result.get("url")
 
         if not upscaled_url:
-            raise HTTPException(status_code=500, detail="Upscale failed to return URL")
+            raise InternalServerError(detail="Upscale failed to return URL")
 
         # 3. Download the result and upload to our S3
         async with httpx.AsyncClient() as http_client:
@@ -76,13 +78,13 @@ async def upscale(
         logger.info(f"Upscale logic took {time.time() - start_time:.2f}s")
         return {"url": stored_url}
 
-    except HTTPException:
+    except AppException:
         raise
     except Exception as e:
         logger.exception(f"Failed to process upscale request: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to process image upscaling")
+        raise InternalServerError(detail="Failed to process image upscaling")
 
-@router.post("/retouch")
+@router.post("/retouch", responses=ERROR_RESPONSES)
 async def retouch(
     file: UploadFile = File(...),
     output_format: str = Form("jpeg"),
@@ -94,11 +96,11 @@ async def retouch(
     2. Removes blemishes using Bilateral Filtering
     """
     if current_user.credits_remaining < 1:
-        raise HTTPException(status_code=402, detail="Insufficient credits")
+        raise InsufficientCreditsError(detail="Insufficient credits")
 
     content = await file.read()
     if len(content) > 10 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="Image size exceeds 10MB limit")
+        raise ValidationError(detail="Image size exceeds 10MB limit")
 
     from app.services.credit_service import log_credit_change
 
@@ -141,11 +143,10 @@ async def retouch(
             logger.error(
                 f"CRITICAL: Failed to refund user {current_user.id}: {str(refund_err)}"
             )
-        raise HTTPException(
-            status_code=500, detail=f"Failed to process image: {str(e)}"
+        raise InternalServerError(detail=f"Failed to process image: {str(e)}"
         )
 
-@router.post("/id-photo")
+@router.post("/id-photo", responses=ERROR_RESPONSES)
 async def create_id_photo(
     file: UploadFile = File(...),
     bg_color: str = Form("red"),
@@ -164,29 +165,23 @@ async def create_id_photo(
     4. Resizes to standard print sizes at 300 DPI
     """
     if current_user.credits_remaining < 1:
-        raise HTTPException(status_code=402, detail="Insufficient credits")
+        raise InsufficientCreditsError(detail="Insufficient credits")
 
     valid_bg_colors = ["red", "blue"]
     valid_sizes = ["2x3", "3x4", "4x6", "custom"]
     if bg_color not in valid_bg_colors:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid bg_color '{bg_color}'. Must be one of: {valid_bg_colors}",
+        raise ValidationError(detail=f"Invalid bg_color '{bg_color}'. Must be one of: {valid_bg_colors}",
         )
     if size not in valid_sizes:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid size '{size}'. Must be one of: {valid_sizes}",
+        raise ValidationError(detail=f"Invalid size '{size}'. Must be one of: {valid_sizes}",
         )
     if size == "custom" and (not custom_width_cm or not custom_height_cm):
-        raise HTTPException(
-            status_code=400,
-            detail="custom_width_cm and custom_height_cm are required when size is 'custom'",
+        raise ValidationError(detail="custom_width_cm and custom_height_cm are required when size is 'custom'",
         )
 
     content = await file.read()
     if len(content) > 10 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="Image size exceeds 10MB limit")
+        raise ValidationError(detail="Image size exceeds 10MB limit")
 
     from app.services.credit_service import log_credit_change
 
@@ -242,11 +237,10 @@ async def create_id_photo(
             logger.error(
                 f"CRITICAL: Failed to refund user {current_user.id}: {str(refund_err)}"
             )
-        raise HTTPException(
-            status_code=500, detail=f"Failed to process image: {str(e)}"
+        raise InternalServerError(detail=f"Failed to process image: {str(e)}"
         )
 
-@router.post("/watermark")
+@router.post("/watermark", responses=ERROR_RESPONSES)
 async def apply_watermark(
     file: UploadFile = File(...),
     logo: UploadFile = File(...),
@@ -264,9 +258,7 @@ async def apply_watermark(
     logo_content = await logo.read()
 
     if len(content) > 10 * 1024 * 1024 or len(logo_content) > 5 * 1024 * 1024:
-        raise HTTPException(
-            status_code=400,
-            detail="File sizes exceed limits (10MB for image, 5MB for logo)",
+        raise ValidationError(detail="File sizes exceed limits (10MB for image, 5MB for logo)",
         )
 
     try:
@@ -292,7 +284,6 @@ async def apply_watermark(
 
     except Exception as e:
         logger.exception("Watermark application failed")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to process image: {str(e)}"
+        raise InternalServerError(detail=f"Failed to process image: {str(e)}"
         )
 

@@ -2,7 +2,7 @@
 
 from typing import Optional
 
-from fastapi import HTTPException
+from app.core.exceptions import AppException
 import fal_client
 
 
@@ -51,7 +51,7 @@ async def inpaint_image(
             image_data = {"url": result.get("image_url") or result.get("url")}
 
         if not image_data or not image_data.get("url"):
-            raise HTTPException(
+            raise AppException(
                 status_code=500, detail="Failed to get valid output from model"
             )
 
@@ -63,6 +63,6 @@ async def inpaint_image(
 
     except Exception as e:
         print(f"Error in inpaint_image: {str(e)}")
-        raise HTTPException(
+        raise AppException(
             status_code=500, detail=f"Inpainting service error: {str(e)}"
         )
