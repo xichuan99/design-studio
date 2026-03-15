@@ -1,6 +1,6 @@
 import asyncio
 import os
-from sqlalchemy import select, func
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
@@ -30,7 +30,7 @@ async def backfill_storage():
         result = await session.execute(select(User))
         users = result.scalars().all()
 
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        async with httpx.AsyncClient(timeout=10.0):
             for user in users:
                 print(f"Processing user: {user.email} ({user.id})")
                 total_size = 0
