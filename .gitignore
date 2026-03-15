@@ -48,3 +48,5 @@ next-env.d.ts
 backend/add_credits.py
 **/__pycache__
 **/*.pyc
+scratch_scripts/
+backend/fix_tests.py

@@ -24,7 +24,7 @@ export const Default: Story = {
         <div className="space-y-4 p-4 border rounded-lg mt-2">
           <h4 className="text-sm font-medium">Account Settings</h4>
           <p className="text-sm text-muted-foreground">
-            Make changes to your account here. Click save when you're done.
+            Make changes to your account here. Click save when you&apos;re done.
           </p>
         </div>
       </TabsContent>
@@ -32,7 +32,7 @@ export const Default: Story = {
         <div className="space-y-4 p-4 border rounded-lg mt-2">
           <h4 className="text-sm font-medium">Password Settings</h4>
           <p className="text-sm text-muted-foreground">
-            Change your password here. After saving, you'll be logged out.
+            Change your password here. After saving, you&apos;ll be logged out.
           </p>
         </div>
       </TabsContent>
