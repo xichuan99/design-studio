@@ -1,7 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Sparkles, Zap, MonitorPlay, ArrowRight, Brush, Wand2, Upload, Download, ShoppingBag, ImageOff, Copy, Banknote } from "lucide-react";
+import { Sparkles, Zap, MonitorPlay, ArrowRight, Brush, Wand2, Upload, Download, ShoppingBag, ImageOff, Copy, Banknote, Store, Smartphone } from "lucide-react";
+import { CapabilityMarquee } from "@/components/landing/CapabilityMarquee";
+import { BeforeAfterSlider } from "@/components/landing/BeforeAfterSlider";
+import { ResultGallery } from "@/components/landing/ResultGallery";
+import { VideoDemoSection } from "@/components/landing/VideoDemoSection";
+import { TestimonialCarousel } from "@/components/landing/TestimonialCarousel";
+import { FAQSection } from "@/components/landing/FAQSection";
 
 export default function LandingPage() {
   const router = useRouter();
@@ -52,65 +58,53 @@ export default function LandingPage() {
               </div>
               <div className="flex flex-col gap-4 text-left">
                 <h1 className="text-5xl lg:text-7xl font-bold leading-tight tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-purple-300">
-                  Desain Profesional, <br />Dibantu oleh AI
+                  Foto HP Biasa → <br />Foto Produk Siap Jual dalam 30 Detik
                 </h1>
                 <h2 className="text-slate-400 text-lg lg:text-xl font-normal leading-relaxed max-w-xl">
-                  Buat grafis yang memukau dan siap pakai dalam hitungan detik dengan alat desain AI canggih kami. Tanpa perlu keahlian desain.
+                  Calon pembeli menilai produk dari fotonya. Ubah foto HP seadanya jadi visual toko online yang memikat — tanpa keahlian desain, tanpa biaya mahal.
                 </h2>
               </div>
               <div className="flex flex-col sm:flex-row gap-4">
                 <button onClick={handleLogin} className="flex items-center justify-center gap-2 rounded-xl h-14 px-8 bg-purple-600 text-white text-lg font-bold shadow-[0_0_20px_rgba(108,43,238,0.5)] hover:bg-purple-500 hover:scale-105 transition-all duration-300">
-                  <span>Mulai Desain Gratis</span>
+                  <span>Coba Gratis — Dapat 3 Kredit</span>
                   <ArrowRight className="h-5 w-5" />
                 </button>
-                <button className="flex items-center justify-center gap-2 rounded-xl h-14 px-8 bg-white/5 border border-white/10 text-white text-lg font-medium hover:bg-white/10 transition-colors">
+                <a href="#showcase" className="flex items-center justify-center gap-2 rounded-xl h-14 px-8 bg-white/5 border border-white/10 text-white text-lg font-medium hover:bg-white/10 transition-colors">
                   <MonitorPlay className="h-5 w-5" />
-                  <span>Tonton Demo</span>
-                </button>
+                  <span>Lihat Hasilnya ↓</span>
+                </a>
               </div>
             </div>
 
-            {/* Hero Image / Abstract Mockup */}
-            <div className="flex-1 w-full relative group perspective-1000">
-              <div className="absolute inset-0 bg-gradient-to-tr from-purple-500/40 to-blue-500/40 rounded-2xl blur-2xl -z-10 group-hover:blur-3xl transition-all duration-500"></div>
-              <div className="bg-white/5 backdrop-blur-xl rounded-2xl aspect-[4/3] w-full border border-white/10 overflow-hidden relative shadow-2xl transform transition-transform duration-500 hover:scale-[1.02]">
-                <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop')] bg-cover bg-center opacity-40 mix-blend-overlay"></div>
-                <div className="absolute inset-4 border border-white/10 rounded-xl flex flex-col p-4 z-10 bg-slate-950/40 backdrop-blur-sm">
-                  <div className="flex justify-between items-center mb-4 pb-4 border-b border-white/10">
-                    <div className="flex gap-2">
-                      <div className="size-3 rounded-full bg-red-500"></div>
-                      <div className="size-3 rounded-full bg-yellow-500"></div>
-                      <div className="size-3 rounded-full bg-green-500"></div>
-                    </div>
-                    <span className="text-xs text-white/50 font-mono">canvas_editor.ai</span>
-                  </div>
-                  <div className="flex-1 flex gap-4">
-                    <div className="w-1/4 flex flex-col gap-2">
-                      <div className="h-8 bg-white/10 rounded-lg w-full"></div>
-                      <div className="h-8 bg-white/5 rounded-lg w-full"></div>
-                      <div className="h-8 bg-purple-500/20 rounded-lg w-full border border-purple-500/30"></div>
-                      <div className="h-8 bg-white/5 rounded-lg w-full"></div>
-                    </div>
-                    <div className="flex-1 bg-gradient-to-br from-white/5 to-transparent rounded-lg border border-white/10 flex items-center justify-center relative overflow-hidden">
-                      <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center opacity-60"></div>
-                      <div className="bg-white/10 backdrop-blur-md p-4 rounded-xl z-10 flex items-center gap-3">
-                        <Zap className="text-purple-400 h-5 w-5 animate-pulse" />
-                        <span className="text-sm font-medium text-white">Sedang membuat aset...</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            {/* Hero Image / Before-After Showcase */}
+            <div id="showcase" className="flex-1 w-full relative group perspective-1000 z-10 scroll-mt-32">
+              <div className="absolute inset-0 bg-gradient-to-tr from-purple-500/40 to-blue-500/40 rounded-2xl blur-3xl -z-10 group-hover:blur-2xl transition-all duration-500"></div>
+              <BeforeAfterSlider 
+                beforeImage="/before-product.png" 
+                afterImage="/after-product.png" 
+                className="shadow-2xl border border-white/10"
+              />
             </div>
           </div>
+
+          {/* Capability Marquee */}
+          <div className="mb-20">
+            <CapabilityMarquee />
+          </div>
+
+          {/* Video Demo Section */}
+          <VideoDemoSection />
+
+          {/* Result Gallery */}
+          <ResultGallery />
 
           {/* Cara Kerjanya Section */}
           <div id="how-it-works" className="flex flex-col gap-12 py-20 border-t border-white/5 relative">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/3 h-[1px] bg-gradient-to-r from-transparent via-purple-500/50 to-transparent"></div>
             <div className="flex flex-col items-center gap-4 text-center">
               <span className="text-purple-400 font-semibold tracking-wider uppercase text-sm">Sangat Mudah</span>
-              <h1 className="text-4xl md:text-5xl font-bold leading-tight tracking-tight text-white">Cara Kerjanya</h1>
-              <p className="text-slate-400 text-lg max-w-[600px]">Tidak perlu jago desain atau sewa fotografer.</p>
+              <h1 className="text-4xl md:text-5xl font-bold leading-tight tracking-tight text-white">3 Langkah. 30 Detik. Selesai.</h1>
+              <p className="text-slate-400 text-lg max-w-[600px]">Tidak perlu jago desain atau sewa fotografer mahal.</p>
             </div>
             
             <div className="relative grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10 px-4 md:px-0">
@@ -133,9 +127,9 @@ export default function LandingPage() {
                 <div className="w-20 h-20 rounded-full bg-blue-500/20 flex items-center justify-center mb-6 border-4 border-slate-900 shadow-[0_0_15px_rgba(59,130,246,0.3)] hover:scale-105 transition-transform cursor-default">
                   <Wand2 className="w-8 h-8 text-blue-400" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-3">2. Pilih Tools AI</h3>
+                <h3 className="text-xl font-bold text-white mb-3">2. Pilih Alat AI</h3>
                 <p className="text-slate-400 leading-relaxed text-sm">
-                  Pilih tool yang Anda butuhkan — ganti background, hapus noda, atau perbaiki kualitas.
+                  Pilih alat yang Anda butuhkan — AI kami akan menghapus background, memperbaiki kualitas, atau membuatkan scene baru.
                 </p>
               </div>
 
@@ -152,12 +146,35 @@ export default function LandingPage() {
             </div>
           </div>
 
+          {/* Marketplace Compatibility Strip */}
+          <div className="w-full py-16 border-t border-white/5 relative bg-gradient-to-b from-transparent to-purple-900/10">
+            <div className="max-w-4xl mx-auto px-4 text-center">
+              <p className="text-sm font-semibold text-slate-400 uppercase tracking-widest mb-8">
+                Hasil siap diunggah ke platform favorit Anda
+              </p>
+              <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-70 grayscale hover:grayscale-0 transition-all duration-500">
+                <div className="flex items-center gap-2 text-xl font-bold text-orange-500">
+                  <ShoppingBag className="w-8 h-8" /> Shopee
+                </div>
+                <div className="flex items-center gap-2 text-xl font-bold text-green-500">
+                  <Store className="w-8 h-8" /> Tokopedia
+                </div>
+                <div className="flex items-center gap-2 text-xl font-bold text-pink-500">
+                  <Smartphone className="w-8 h-8" /> TikTok Shop
+                </div>
+                <div className="flex items-center gap-2 text-xl font-bold text-blue-500">
+                  <MonitorPlay className="w-8 h-8" /> Facebook Ads
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* UMKM Feature Highlights Section */}
           <div className="flex flex-col gap-12 py-20 border-t border-white/5 relative">
             <div className="flex flex-col items-center gap-4 text-center">
               <span className="text-blue-400 font-semibold tracking-wider uppercase text-sm">Solusi Bisnis</span>
-              <h2 className="text-4xl md:text-5xl font-bold leading-tight tracking-tight text-white mb-2">Kenapa UMKM Pilih Tools Kami?</h2>
-              <p className="text-slate-400 text-lg max-w-[600px]">Didesain khusus untuk mempercepat jualan Anda, memotong biaya produksi foto.</p>
+              <h2 className="text-4xl md:text-5xl font-bold leading-tight tracking-tight text-white mb-2">Kenapa UMKM Pilih Kami?</h2>
+              <p className="text-slate-400 text-lg max-w-[600px]">Hemat Rp 2-5 Juta per bulan. 50x lebih cepat dari workflow tradisional.</p>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
@@ -203,6 +220,20 @@ export default function LandingPage() {
             </div>
           </div>
 
+          {/* Testimonials */}
+          <div className="py-20 border-t border-white/5 relative">
+            <div className="text-center mb-10 px-4">
+              <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">Dipercaya oleh Kreator & UMKM</h2>
+              <p className="text-slate-400 max-w-2xl mx-auto text-lg">
+                Lihat apa kata mereka yang sudah membuktikan kecepatan dan kemudahan SmartDesign Studio.
+              </p>
+            </div>
+            <TestimonialCarousel />
+          </div>
+
+          {/* FAQ Section */}
+          <FAQSection />
+
           {/* Pricing Tease / CTA */}
           <div className="py-20 relative">
             <div className="absolute inset-0 bg-gradient-to-b from-purple-500/10 to-transparent rounded-3xl blur-xl -z-10"></div>
@@ -216,14 +247,14 @@ export default function LandingPage() {
               </div>
 
               <div className="z-10">
-                <h1 className="text-4xl md:text-5xl font-black text-white mb-4">Dapatkan 10 Kredit Gratis Saat Mendaftar</h1>
+                <h1 className="text-4xl md:text-5xl font-black text-white mb-4">Mulai dari Rp 10.000</h1>
                 <p className="text-slate-400 text-lg max-w-[600px] mx-auto">
-                  Bergabung dengan ribuan kreator yang membuat desain lebih baik dan lebih cepat. Tidak perlu kartu kredit untuk memulai.
+                  Bayar sesuai pemakaian. Tanpa langganan bulanan. Beli kredit sesuai kebutuhan desain toko online Anda.
                 </p>
               </div>
 
               <button onClick={handleLogin} className="z-10 flex items-center justify-center gap-2 rounded-xl h-14 px-10 bg-white text-slate-900 text-lg font-bold hover:bg-slate-200 transition-colors shadow-lg mt-4">
-                <span>Klaim Kredit Gratis</span>
+                <span>Daftar Gratis — Dapat 3 Kredit</span>
                 <ArrowRight className="h-5 w-5" />
               </button>
             </div>
@@ -236,7 +267,7 @@ export default function LandingPage() {
               <span className="font-bold text-white">SmartDesign</span>
             </div>
             <div className="flex gap-8 text-sm">
-              <a className="hover:text-white transition-colors" href="#">Kebijakan Privasi</a>
+              <a className="hover:text-white transition-colors" href="https://instagram.com/smartdesign">Instagram</a>
               <a className="hover:text-white transition-colors" href="#">Syarat & Ketentuan</a>
               <a className="hover:text-white transition-colors" href="#">Hubungi Kami</a>
             </div>
