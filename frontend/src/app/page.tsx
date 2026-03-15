@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Sparkles, Zap, MonitorPlay, ArrowRight, Brush, Wand2, Upload, Download, ShoppingBag, ImageOff, Copy, Banknote, Store, Smartphone } from "lucide-react";
+import { Sparkles, MonitorPlay, ArrowRight, Brush, Wand2, Upload, Download, ShoppingBag, ImageOff, Copy, Banknote, Store, Smartphone, Menu, X } from "lucide-react";
 import { CapabilityMarquee } from "@/components/landing/CapabilityMarquee";
 import { BeforeAfterSlider } from "@/components/landing/BeforeAfterSlider";
 import { ResultGallery } from "@/components/landing/ResultGallery";
@@ -12,9 +12,11 @@ import { PricingSection } from "@/components/landing/PricingSection";
 import { ScrollReveal } from "@/components/landing/ScrollReveal";
 import { NumberCounter } from "@/components/landing/NumberCounter";
 import { Gift, Mail } from "lucide-react";
+import { useState } from "react";
 
 export default function LandingPage() {
   const router = useRouter();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogin = () => {
     router.push("/login");
@@ -59,6 +61,7 @@ export default function LandingPage() {
               <nav className="flex items-center gap-8">
                 <a className="text-slate-300 hover:text-purple-400 transition-colors text-sm font-medium" href="#features">Fitur</a>
                 <a className="text-slate-300 hover:text-purple-400 transition-colors text-sm font-medium" href="#how-it-works">Cara Kerja</a>
+                <a className="text-slate-300 hover:text-purple-400 transition-colors text-sm font-medium" href="#pricing">Harga</a>
               </nav>
               <div className="flex gap-3">
                 <button onClick={handleLogin} className="rounded-lg h-10 px-5 border border-slate-700 hover:bg-slate-800 text-white text-sm font-medium transition-all">
@@ -69,7 +72,23 @@ export default function LandingPage() {
                 </button>
               </div>
             </div>
+            {/* Mobile hamburger */}
+            <button className="md:hidden text-white" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
           </header>
+          {/* Mobile Menu */}
+          {mobileMenuOpen && (
+            <div className="md:hidden bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-2xl px-6 py-6 mb-4 flex flex-col gap-4 animate-in slide-in-from-top z-40">
+              <a className="text-slate-200 hover:text-purple-400 transition-colors font-medium py-2" href="#features" onClick={() => setMobileMenuOpen(false)}>Fitur</a>
+              <a className="text-slate-200 hover:text-purple-400 transition-colors font-medium py-2" href="#how-it-works" onClick={() => setMobileMenuOpen(false)}>Cara Kerja</a>
+              <a className="text-slate-200 hover:text-purple-400 transition-colors font-medium py-2" href="#pricing" onClick={() => setMobileMenuOpen(false)}>Harga</a>
+              <hr className="border-white/10" />
+              <button onClick={() => { handleLogin(); setMobileMenuOpen(false); }} className="rounded-lg h-12 bg-purple-600 hover:bg-purple-500 text-white font-bold transition-all">
+                Coba Gratis — Dapat 3 Kredit
+              </button>
+            </div>
+          )}
 
           {/* Hero Section */}
           <div className="pt-12 pb-20 flex flex-col lg:flex-row items-center gap-12">
@@ -129,7 +148,7 @@ export default function LandingPage() {
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/3 h-[1px] bg-gradient-to-r from-transparent via-purple-500/50 to-transparent"></div>
               <div className="flex flex-col items-center gap-4 text-center">
                 <span className="text-purple-400 font-semibold tracking-wider uppercase text-sm">Sangat Mudah</span>
-                <h1 className="text-4xl md:text-5xl font-bold leading-tight tracking-tight text-white">3 Langkah. 30 Detik. Selesai.</h1>
+                <h2 className="text-4xl md:text-5xl font-bold leading-tight tracking-tight text-white">3 Langkah. 30 Detik. Selesai.</h2>
                 <p className="text-slate-400 text-lg max-w-[600px]">Tidak perlu jago desain atau sewa fotografer mahal.</p>
               </div>
               
@@ -194,7 +213,7 @@ export default function LandingPage() {
 
           {/* UMKM Feature Highlights Section */}
           <ScrollReveal>
-            <div className="flex flex-col gap-12 py-20 border-t border-white/5 relative">
+            <div id="features" className="flex flex-col gap-12 py-20 border-t border-white/5 relative">
               <div className="flex flex-col items-center gap-4 text-center">
                 <span className="text-blue-400 font-semibold tracking-wider uppercase text-sm">Solusi Bisnis</span>
                 <h2 className="text-4xl md:text-5xl font-bold leading-tight tracking-tight text-white mb-2">Kenapa UMKM Pilih Kami?</h2>
@@ -206,7 +225,7 @@ export default function LandingPage() {
                   <div className="w-14 h-14 bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-xl flex items-center justify-center mb-6">
                     <Sparkles className="w-7 h-7" />
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-3">Kualitas Seprti Studio</h3>
+                  <h3 className="text-xl font-bold text-white mb-3">Kualitas Seperti Studio</h3>
                   <p className="text-slate-400 text-sm leading-relaxed">
                     AI kami dilatih dengan jutaan foto produk premium. Hasilnya? Pencahayaan sempurna, bayangan realistis, dan resolusi tinggi yang siap cetak atau masuk Instagram.
                   </p>

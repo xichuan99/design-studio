@@ -13,7 +13,7 @@ export function PricingSection() {
 
       <div className="max-w-6xl mx-auto px-4 relative z-10">
         <div className="text-center mb-16">
-          <span className="text-purple-400 font-semibold tracking-wider uppercase text-sm">Harga Reseller</span>
+          <span className="text-purple-400 font-semibold tracking-wider uppercase text-sm">Harga Kredit</span>
           <h2 className="text-4xl md:text-5xl font-bold text-white mt-4 mb-6">Bayar Sesuai Kebutuhan</h2>
           <p className="text-slate-400 max-w-2xl mx-auto text-lg">
             Tidak ada biaya langganan bulanan yang hangus. Beli kredit hanya saat Anda butuh mengedit katalog produk. <strong className="text-white">1 Kredit = 1x Proses AI.</strong>
@@ -41,7 +41,7 @@ export function PricingSection() {
                 <span className="font-bold text-white text-lg">10 Kredit</span>
               </div>
               <ul className="space-y-3 text-sm text-slate-300">
-                <li className="flex gap-2"><Check className="w-4 h-4 text-green-400 shrink-0" /> Cocok untuk update produk rutiin</li>
+                <li className="flex gap-2"><Check className="w-4 h-4 text-green-400 shrink-0" /> Cocok untuk update produk rutin</li>
                 <li className="flex gap-2"><Check className="w-4 h-4 text-green-400 shrink-0" /> Akses semua tools AI</li>
               </ul>
             </div>
