@@ -20,10 +20,10 @@ const capabilities = [
 export function CapabilityMarquee() {
   return (
     <div className="w-full bg-slate-900/50 border-y border-white/5 py-6 overflow-hidden relative flex">
-      <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-slate-950 to-transparent z-10"></div>
-      <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-slate-950 to-transparent z-10"></div>
+      <div className="absolute left-0 top-0 bottom-0 w-8 md:w-24 bg-gradient-to-r from-slate-950 to-transparent z-10"></div>
+      <div className="absolute right-0 top-0 bottom-0 w-8 md:w-24 bg-gradient-to-l from-slate-950 to-transparent z-10"></div>
       
-      <div className="flex animate-[scroll_40s_linear_infinite] w-max items-center gap-12 px-6">
+      <div className="flex animate-scroll w-max items-center gap-12 px-6">
         {[...capabilities, ...capabilities].map((cap, i) => (
           <div key={i} className="flex items-center gap-3 text-slate-400 whitespace-nowrap">
             <cap.icon className="w-5 h-5 text-purple-400" />

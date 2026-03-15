@@ -9,7 +9,7 @@ const galleryItems = [
   {
     id: 1,
     category: "Makanan & Minuman",
-    image: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=800&auto=format&fit=crop", // Sate/Indonesian food
+    image: "/images/showcase/sate_ayam.png", 
     title: "Sate Ayam Nusantara",
     tags: ["Background Remover", "Color Enhance"],
     aspectRatio: "aspect-square"
@@ -17,40 +17,40 @@ const galleryItems = [
   {
     id: 2,
     category: "Fashion",
-    image: "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?q=80&w=800&auto=format&fit=crop", // Shoes/Fashion
-    title: "Sepatu Lokal Kulit",
+    image: "/images/showcase/batik_model.png", 
+    title: "Kemeja Batik Modern",
     tags: ["Product Scene", "AI Shadows"],
     aspectRatio: "aspect-[16/9]"
   },
   {
     id: 3,
     category: "Aksesoris & Lainnya",
-    image: "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=800&auto=format&fit=crop", // Accessories/Craft
-    title: "Tas Rajut Handmade",
+    image: "/images/showcase/tas_anyaman.png", 
+    title: "Tas Anyaman Bali",
     tags: ["Magic Eraser", "Upscale 4K"],
     aspectRatio: "aspect-[4/5]"
   },
   {
     id: 4,
     category: "Makanan & Minuman",
-    image: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=800&auto=format&fit=crop", // Coffee
-    title: "Kopi Susu Gula Aren",
+    image: "/images/showcase/es_kopi_susu.png", 
+    title: "Es Kopi Susu Aren",
     tags: ["Scene Generator", "Retouch"],
     aspectRatio: "aspect-square"
   },
   {
     id: 5,
     category: "Fashion",
-    image: "https://images.unsplash.com/photo-1589310243389-96a5483213a8?q=80&w=600&auto=format&fit=crop", // Hijab/Women's wear
-    title: "Katalog Hijab & Dress",
+    image: "/images/showcase/hijab_fashion.png", 
+    title: "Katalog Hijab & Tunik",
     tags: ["Auto-Resize", "Background Eraser"],
     aspectRatio: "aspect-[9/16]"
   },
   {
     id: 6,
     category: "Aksesoris & Lainnya",
-    image: "https://images.unsplash.com/photo-1615397323114-63300a89d2fa?q=80&w=800&auto=format&fit=crop", // Skincare/Beauty
-    title: "Skincare Organik",
+    image: "/images/showcase/skincare_alami.png",
+    title: "Skincare Alami",
     tags: ["Studio Lighting AI", "Batch Process"],
     aspectRatio: "aspect-square"
   }
