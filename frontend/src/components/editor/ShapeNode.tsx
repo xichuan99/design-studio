@@ -67,7 +67,7 @@ export const ShapeNode: React.FC<ShapeNodeProps> = ({
         shadowOffsetX: element.shadowOffsetX,
         shadowOffsetY: element.shadowOffsetY,
         shadowOpacity: element.shadowOpacity,
-        draggable: true,
+        draggable: !element.locked,
         onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) => {
             onChange({
                 x: e.target.x(),

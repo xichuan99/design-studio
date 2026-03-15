@@ -57,7 +57,7 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ onBgStatusChan
     // Floating toolbar position computation
     const [floatingPos, setFloatingPos] = React.useState<{left: number, top: number} | null>(null);
 
-    React.useEffect(() => {
+    const updateFloatingPos = React.useCallback(() => {
         if (!canvasBoxRef.current || selectedElementIds.length !== 1) {
             setFloatingPos(null);
             return;
@@ -81,6 +81,18 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ onBgStatusChan
             top: canvasRect.top - containerRect.top + topY,
         });
     }, [selectedElementIds, elements, zoom]);
+
+    React.useEffect(() => {
+        updateFloatingPos();
+        
+        const container = containerRef.current;
+        if (!container) return;
+        
+        container.addEventListener('scroll', updateFloatingPos);
+        return () => {
+            container.removeEventListener('scroll', updateFloatingPos);
+        };
+    }, [updateFloatingPos]);
 
     // Grid toggle
     const [showGrid, setShowGrid] = React.useState(true);

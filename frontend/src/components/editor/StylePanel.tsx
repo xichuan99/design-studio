@@ -391,7 +391,7 @@ export const StylePanel: React.FC = () => {
                                 </label>
                                 <input
                                     type="range"
-                                    min="0" max="100"
+                                    min="5" max="100"
                                     value={Math.round((selectedElement.opacity ?? 1) * 100)}
                                     onChange={(e) => updateAttr('opacity', parseInt(e.target.value) / 100)}
                                     className="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer"
@@ -417,7 +417,7 @@ export const StylePanel: React.FC = () => {
                     {selectedElement.type === 'text' && (
                         <>
                             <AccordionItem value="typography" className="border-none bg-muted/30 rounded-lg px-3">
-                                <AccordionTrigger className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hover:no-underline py-3">Typography</AccordionTrigger>
+                                <AccordionTrigger className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hover:no-underline py-3">Tipografi</AccordionTrigger>
                                 <AccordionContent className="flex flex-col gap-4 pb-3">
                                     <div className="flex flex-col gap-2">
                                         <textarea
@@ -468,7 +468,7 @@ export const StylePanel: React.FC = () => {
                             </AccordionItem>
 
                             <AccordionItem value="formatting" className="border-none bg-muted/30 rounded-lg px-3">
-                                <AccordionTrigger className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hover:no-underline py-3">Formatting</AccordionTrigger>
+                                <AccordionTrigger className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hover:no-underline py-3">Format</AccordionTrigger>
                                 <AccordionContent className="flex flex-col gap-4 pb-3">
                                     <div className="flex justify-between items-center bg-background p-1 rounded-md border text-muted-foreground">
                                         <Button variant={selectedElement.fontWeight === 'bold' ? 'secondary' : 'ghost'} size="icon" className="h-7 w-7" onClick={() => updateAttr('fontWeight', selectedElement.fontWeight === 'bold' ? 'normal' : 'bold')}>
@@ -492,7 +492,7 @@ export const StylePanel: React.FC = () => {
                                     <div className="flex flex-col gap-3 pt-2">
                                         <div className="flex flex-col gap-2">
                                             <label className="text-[10px] font-medium flex justify-between">
-                                                <span>Letter Spacing</span>
+                                                <span>Jarak Huruf</span>
                                                 <span className="text-muted-foreground">{selectedElement.letterSpacing || 0}px</span>
                                             </label>
                                             <input
@@ -505,7 +505,7 @@ export const StylePanel: React.FC = () => {
                                         </div>
                                         <div className="flex flex-col gap-2">
                                             <label className="text-[10px] font-medium flex justify-between">
-                                                <span>Line Height</span>
+                                                <span>Tinggi Baris</span>
                                                 <span className="text-muted-foreground">{selectedElement.lineHeight || 1.2}</span>
                                             </label>
                                             <input
@@ -525,7 +525,7 @@ export const StylePanel: React.FC = () => {
                     {/* Shapes Specific Sections */}
                     {selectedElement.type === 'shape' && (
                         <AccordionItem value="shape-basic" className="border-none bg-muted/30 rounded-lg px-3">
-                            <AccordionTrigger className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hover:no-underline py-3">Appearance</AccordionTrigger>
+                            <AccordionTrigger className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hover:no-underline py-3">Tampilan</AccordionTrigger>
                             <AccordionContent className="flex flex-col gap-4 pb-3">
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="flex flex-col gap-1.5 col-span-2">
@@ -552,7 +552,7 @@ export const StylePanel: React.FC = () => {
                     {/* Image Specific Sections */}
                     {selectedElement.type === 'image' && (
                         <AccordionItem value="image-appearance" className="border-none bg-muted/30 rounded-lg px-3">
-                            <AccordionTrigger className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hover:no-underline py-3">Appearance</AccordionTrigger>
+                            <AccordionTrigger className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hover:no-underline py-3">Tampilan</AccordionTrigger>
                             <AccordionContent className="flex flex-col gap-4 pb-3">
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="flex flex-col gap-1.5">
@@ -576,7 +576,7 @@ export const StylePanel: React.FC = () => {
                                 </div>
                                 <div className="flex flex-col gap-2 pt-2">
                                     <label className="text-[10px] font-medium flex justify-between">
-                                        <span>Corner Radius</span>
+                                        <span>Radius Sudut</span>
                                         <span className="text-muted-foreground">{selectedElement.cornerRadius || 0}px</span>
                                     </label>
                                     <input
@@ -602,7 +602,7 @@ export const StylePanel: React.FC = () => {
                                         ) : (
                                             <Sparkles className="w-4 h-4" />
                                         )}
-                                        {isUpscaling ? 'Upscaling...' : 'AI Upscale Image'}
+                                        {isUpscaling ? 'Meningkatkan...' : 'AI Tingkatkan Resolusi'}
                                     </Button>
                                 </div>
                             </AccordionContent>
@@ -612,7 +612,7 @@ export const StylePanel: React.FC = () => {
                     {/* Shared Effects Section (Text, Shapes, & Images) */}
                     {(selectedElement.type === 'text' || selectedElement.type === 'shape' || selectedElement.type === 'image') && (
                         <AccordionItem value="effects" className="border-none bg-muted/30 rounded-lg px-3">
-                            <AccordionTrigger className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hover:no-underline py-3">Effects</AccordionTrigger>
+                            <AccordionTrigger className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hover:no-underline py-3">Efek</AccordionTrigger>
                             <AccordionContent className="flex flex-col gap-5 pb-3">
 
                                 {/* Stroke / Outline */}
@@ -633,7 +633,7 @@ export const StylePanel: React.FC = () => {
                                             </div>
                                             {renderBrandSwatches((c) => updateAttr('stroke', c))}
                                             <Button variant="ghost" size="sm" className="h-5 text-[9px] justify-start px-0 text-muted-foreground mt-1" onClick={() => updateAttr('stroke', undefined)} disabled={!selectedElement.stroke}>
-                                                Remove
+                                                Hapus
                                             </Button>
                                         </div>
                                         <div className="flex flex-col gap-1.5">
@@ -652,7 +652,7 @@ export const StylePanel: React.FC = () => {
 
                                 {/* Drop Shadow */}
                                 <div className="flex flex-col gap-3">
-                                    <label className="text-xs font-medium">Drop Shadow</label>
+                                    <label className="text-xs font-medium">Bayangan</label>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="flex flex-col gap-1.5">
                                             <div className="flex items-center gap-2 h-8 border rounded-md px-2 overflow-hidden bg-background">
@@ -673,7 +673,7 @@ export const StylePanel: React.FC = () => {
                                                 updateAttr('shadowOffsetX', undefined);
                                                 updateAttr('shadowOffsetY', undefined);
                                             }} disabled={!selectedElement.shadowColor}>
-                                                Clear Shadow
+                                                Hapus Bayangan
                                             </Button>
                                         </div>
                                     </div>
@@ -681,7 +681,7 @@ export const StylePanel: React.FC = () => {
                                     <div className="space-y-3 pt-2">
                                         <div className="flex flex-col gap-1.5">
                                             <label className="text-[10px] font-medium flex justify-between">
-                                                <span className="text-muted-foreground">Blur Radius</span>
+                                                <span className="text-muted-foreground">Radius Blur</span>
                                                 <span>{selectedElement.shadowBlur || 0}</span>
                                             </label>
                                             <input type="range" min="0" max="50" step="1" value={selectedElement.shadowBlur || 0} onChange={(e) => updateAttr('shadowBlur', parseInt(e.target.value))} className="w-full h-1 bg-muted rounded-lg appearance-none cursor-pointer" />

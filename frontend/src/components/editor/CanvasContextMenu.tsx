@@ -55,14 +55,35 @@ export const CanvasContextMenu: React.FC<ContextMenuProps> = ({ x, y, elementId,
 
     const separator = <div className="my-1 border-t border-border/50" />;
 
+    const menuRef = React.useRef<HTMLDivElement>(null);
+    const [pos, setPos] = React.useState({ top: y, left: x });
+
+    React.useEffect(() => {
+        if (menuRef.current) {
+            const rect = menuRef.current.getBoundingClientRect();
+            let newLeft = x;
+            let newTop = y;
+
+            if (x + rect.width > window.innerWidth) {
+                newLeft = window.innerWidth - rect.width - 5;
+            }
+            if (y + rect.height > window.innerHeight) {
+                newTop = window.innerHeight - rect.height - 5;
+            }
+
+            setPos({ left: Math.max(5, newLeft), top: Math.max(5, newTop) });
+        }
+    }, [x, y]);
+
     return (
         <>
             {/* Backdrop */}
             <div className="fixed inset-0 z-[100]" onClick={onClose} onContextMenu={(e) => { e.preventDefault(); onClose(); }} />
 
             <div
-                className="fixed z-[101] min-w-[180px] bg-popover border border-border rounded-xl shadow-2xl p-1.5 text-sm"
-                style={{ top: `${y}px`, left: `${x}px` }}
+                ref={menuRef}
+                className="fixed z-[101] min-w-[180px] max-h-[80vh] overflow-y-auto bg-popover border border-border rounded-xl shadow-2xl p-1.5 text-sm"
+                style={{ top: `${pos.top}px`, left: `${pos.left}px` }}
             >
                 {/* Copy / Paste */}
                 {element && menuItem(

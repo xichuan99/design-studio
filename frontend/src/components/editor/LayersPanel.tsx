@@ -235,7 +235,7 @@ export const LayersPanel: React.FC = () => {
             return (
                 <div className="w-6 h-6 rounded overflow-hidden bg-muted flex items-center justify-center border flex-shrink-0">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={el.url} alt="Thumbnail" className="w-full h-full object-cover" />
+                    <img src={el.url && el.url.startsWith('http') ? `/api/proxy-image?url=${encodeURIComponent(el.url)}` : el.url} alt="Thumbnail" className="w-full h-full object-cover" />
                 </div>
             );
         }
@@ -283,8 +283,8 @@ export const LayersPanel: React.FC = () => {
                 <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
                     <Layers className="h-5 w-5 opacity-50" />
                 </div>
-                <p className="text-sm font-medium">No layers yet</p>
-                <p className="text-xs opacity-70 mt-1">Add shapes, text, or images to see them listed here.</p>
+                <p className="text-sm font-medium">Belum ada layer</p>
+                <p className="text-xs opacity-70 mt-1">Tambahkan bentuk, teks, atau gambar...</p>
             </div>
         );
     }
@@ -295,7 +295,7 @@ export const LayersPanel: React.FC = () => {
                 <div className="relative">
                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                     <Input 
-                        placeholder="Search layers..." 
+                        placeholder="Cari layer..." 
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="h-8 pl-8 text-xs w-full bg-muted/50"
@@ -336,7 +336,7 @@ export const LayersPanel: React.FC = () => {
                                         toggleSelectElement={toggleSelectElement}
                                         setHighlightElementId={setHighlightElementId}
                                         setColorTag={setColorTag}
-                                        isSortable={true}
+                                        isSortable={!searchQuery}
                                     />
                                     {isGroup && children.length > 0 && (
                                         <div className="pl-6 border-l ml-3 my-1 space-y-1">

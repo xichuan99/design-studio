@@ -214,12 +214,7 @@ export const StageCanvas: React.FC<StageCanvasProps> = ({ width, height, onBgSta
                     onTap={(e) => {
                         e.cancelBubble = true;
                         if (el.locked) return;
-                        const evt = e.evt as TouchEvent;
-                        if (evt.shiftKey || evt.ctrlKey || evt.metaKey) {
-                            useCanvasStore.getState().toggleSelectElement(el.id);
-                        } else {
-                            selectElement(el.id);
-                        }
+                        selectElement(el.id);
                     }}
                     onDragEnd={(e) => {
                         if (el.locked) return;
