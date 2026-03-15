@@ -1,9 +1,10 @@
 import React from "react";
-import { Loader2, ArrowRight, Check } from "lucide-react";
+import { Loader2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ParsedDesignData } from "@/app/create/types";
 import { DesignPreview } from "@/components/create/DesignPreview";
 import { VisualPromptEditor } from "@/components/create/VisualPromptEditor";
+import { GenerationHistoryList } from "./inputs/GenerationHistoryList";
 
 interface UnifiedPreviewEditorProps {
     parsedData: ParsedDesignData;
@@ -43,33 +44,13 @@ export function UnifiedPreviewEditor({
 
                 {/* Left Bottom Controls (Thumbnail Strip & Proceed CTA) */}
                 <div className="shrink-0 border-t border-border/30 bg-background/80 backdrop-blur-sm px-4 py-3 flex gap-4 items-center justify-between">
-                    <div className="flex-1 flex items-center overflow-x-auto gap-2 pb-1 scrollbar-thin scrollbar-thumb-border">
-                        {imageHistory.length > 1 && imageHistory.map((historyItem, idx) => (
-                            <button
-                                key={idx}
-                                onClick={() => setActiveImageIndex(idx)}
-                                className={`relative shrink-0 w-12 h-12 rounded-md overflow-hidden transition-all ${
-                                    activeImageIndex === idx 
-                                        ? 'ring-2 ring-primary ring-offset-1 ring-offset-background scale-105 opacity-100' 
-                                        : 'opacity-60 hover:opacity-100 hover:scale-105 border border-border/50'
-                                }`}
-                                title={historyItem.prompt}
-                            >
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img 
-                                    src={historyItem.url} 
-                                    alt={`Variation ${idx + 1}`}
-                                    className="w-full h-full object-cover"
-                                />
-                                {activeImageIndex === idx && (
-                                    <div className="absolute top-0.5 right-0.5 bg-primary text-primary-foreground rounded-full p-0.5">
-                                        <Check className="w-2.5 h-2.5" />
-                                    </div>
-                                )}
-                            </button>
-                        ))}
-                    </div>
-                    <div className="flex items-center gap-3 shrink-0">
+                    <GenerationHistoryList 
+                        imageHistory={imageHistory}
+                        activeImageIndex={activeImageIndex}
+                        setActiveImageIndex={setActiveImageIndex}
+                    />
+                    
+                    <div className="flex items-center gap-3 shrink-0 ml-auto">
                         <Button
                             size="sm"
                             className="font-bold shadow-lg h-10 px-6 shrink-0"

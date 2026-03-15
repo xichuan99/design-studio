@@ -1,0 +1,89 @@
+import { useApiCore } from './coreApi';
+import * as Types from './types';
+
+export function useProjectEndpoints() {
+    const { API_BASE_URL, getHeaders } = useApiCore();
+
+    const getProject = async (id: string) => {
+            const res = await fetch(`${API_BASE_URL}/projects/${id}`, {
+                headers: getHeaders(),
+            });
+            if (!res.ok) throw new Error('Failed to fetch project');
+            return res.json();
+        };
+
+    const saveProject = async (projectPayload: Types.ProjectPayload) => {
+            // If it has an ID, we update, else create. For our flow right now:
+            // Actually our POST /api/projects creates. PUT /api/projects/:id updates.
+            const method = projectPayload.id ? 'PUT' : 'POST';
+            const url = projectPayload.id
+                ? `${API_BASE_URL}/projects/${projectPayload.id}`
+                : `${API_BASE_URL}/projects/`;
+    
+            const res = await fetch(url, {
+                method,
+                headers: getHeaders(),
+                body: JSON.stringify(projectPayload),
+            });
+            if (!res.ok) throw new Error('Failed to save project');
+            return res.json();
+        };
+
+    const getProjects = async () => {
+            const res = await fetch(`${API_BASE_URL}/projects/`, {
+                headers: getHeaders(),
+            });
+            if (!res.ok) throw new Error('Failed to fetch projects');
+            return res.json();
+        };
+
+    const deleteProject = async (id: string) => {
+            const res = await fetch(`${API_BASE_URL}/projects/${id}`, {
+                method: 'DELETE',
+                headers: getHeaders(),
+            });
+            if (!res.ok) throw new Error('Failed to delete project');
+        };
+
+    const duplicateProject = async (sourceId: string) => {
+            const source = await getProject(sourceId);
+            return saveProject({
+                title: `Copy of ${source.title || 'Untitled Design'}`,
+                canvas_state: source.canvas_state,
+                status: 'draft',
+                aspect_ratio: source.aspect_ratio || '1:1',
+            });
+        };
+
+    const getHistory = async (projectId: string) => {
+            const res = await fetch(`${API_BASE_URL}/history/${projectId}`, {
+                headers: getHeaders(),
+            });
+            if (!res.ok) throw new Error('Failed to fetch history');
+            return res.json();
+        };
+
+    const createHistory = async (data: { project_id: string; background_url: string; text_layers: Record<string, unknown>; generation_params?: Record<string, unknown> }) => {
+            const res = await fetch(`${API_BASE_URL}/history/`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(data),
+            });
+            if (!res.ok) throw new Error('Failed to create history entry');
+            return res.json();
+        };
+
+    const getTemplates = async (category?: string, aspectRatio?: string) => {
+            const params = new URLSearchParams();
+            if (category) params.set('category', category);
+            if (aspectRatio) params.set('aspect_ratio', aspectRatio);
+            const qs = params.toString() ? `?${params.toString()}` : '';
+            const res = await fetch(`${API_BASE_URL}/templates/${qs}`, {
+                headers: getHeaders(),
+            });
+            if (!res.ok) throw new Error('Failed to fetch templates');
+            return res.json();
+        };
+
+    return { getProject, saveProject, getProjects, deleteProject, duplicateProject, getHistory, createHistory, getTemplates };
+}

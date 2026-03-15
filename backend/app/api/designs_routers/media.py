@@ -1,0 +1,84 @@
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.database import get_db
+from app.api.deps import get_current_user
+from app.api.rate_limit import rate_limit_dependency
+from app.models.user import User
+
+router = APIRouter()
+
+
+@router.post("/upload")
+async def upload_user_image(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Uploads a user image (for canvas or reference) and returns the public URL."""
+    from app.services.storage_service import upload_image_tracked
+
+    if file.size and file.size > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File too large. Max 5MB.")
+
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Only image files are allowed.")
+
+    content = await file.read()
+    try:
+        url = await upload_image_tracked(
+            image_bytes=content,
+            user_id=current_user.id,
+            db=db,
+            content_type=file.content_type,
+            prefix=f"uploads/{current_user.id}",
+        )
+        return {"url": url}
+    except Exception as e:
+        import logging
+
+        logging.exception("Upload endpoint failed")
+        raise HTTPException(status_code=500, detail=f"Failed to upload image: {str(e)}")
+
+@router.post("/remove-background")
+async def api_remove_background(
+    file: UploadFile = File(...),
+    current_user: User = Depends(rate_limit_dependency),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Stand-alone endpoint to remove background from an uploaded image.
+    Returns the URL of the processed PNG transparent image.
+    """
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="File must be an image")
+
+    # Read file content safely
+    content = await file.read()
+    if len(content) > 10 * 1024 * 1024:  # 10MB limit
+        raise HTTPException(status_code=400, detail="Image size exceeds 10MB limit")
+
+    from app.services.bg_removal_service import remove_background
+
+    try:
+        no_bg_bytes = await remove_background(content)
+
+        # Upload the transparent PNG to our storage
+        from app.services.storage_service import upload_image_tracked
+
+        result_url = await upload_image_tracked(
+            no_bg_bytes,
+            user_id=current_user.id,
+            db=db,
+            content_type="image/png",
+            prefix=f"nobg_{current_user.id}",
+        )
+
+        return {"url": result_url}
+    except Exception as e:
+        import logging
+
+        logging.exception("Failed to remove background")
+        raise HTTPException(
+            status_code=500, detail=f"Background removal failed: {str(e)}"
+        )
+

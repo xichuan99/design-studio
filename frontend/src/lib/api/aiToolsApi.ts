@@ -1,0 +1,425 @@
+import { useApiCore } from './coreApi';
+import * as Types from './types';
+
+export function useAiToolsEndpoints() {
+    const { API_BASE_URL, getHeaders } = useApiCore();
+
+    const generateDesign = async (payload: {
+            raw_text: string;
+            aspect_ratio: string;
+            style_preference: string;
+            reference_image_url?: string;
+            template_id?: string;
+            integrated_text?: boolean;
+            remove_product_bg?: boolean;
+            product_image_url?: string;
+            brand_kit_id?: string; // Added brand_kit_id
+        }) => {
+            const res = await fetch(`${API_BASE_URL}/designs/generate`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(payload),
+            });
+            if (!res.ok) {
+                const errBase = await res.json().catch(() => ({}));
+                throw new Error(errBase.detail || 'Failed to generate design');
+            }
+            return res.json();
+        };
+
+    const clarifyCopywriting = async (payload: {
+            product_description: string;
+        }) => {
+            const res = await fetch(`${API_BASE_URL}/designs/clarify-copywriting`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(payload),
+            });
+            if (!res.ok) {
+                const errBase = await res.json().catch(() => ({}));
+                throw new Error(errBase.detail || 'Failed to clarify copywriting');
+            }
+            return res.json();
+        };
+
+    const clarifyUnified = async (payload: {
+            raw_text: string;
+        }) => {
+            const res = await fetch(`${API_BASE_URL}/designs/clarify-unified`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(payload),
+            });
+            if (!res.ok) {
+                const errBase = await res.json().catch(() => ({}));
+                throw new Error(errBase.detail || 'Failed to generate unified clarification questions');
+            }
+            return res.json();
+        };
+
+    const generateCopywriting = async (payload: {
+            product_description: string;
+            tone?: string;
+            brand_name?: string;
+            clarification_answers?: Record<string, string>;
+        }): Promise<{ variations: Types.CopywritingVariation[] }> => {
+            const res = await fetch(`${API_BASE_URL}/designs/generate-copywriting`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(payload),
+            });
+            if (!res.ok) {
+                const errBase = await res.json().catch(() => ({}));
+                throw new Error(errBase.detail || 'Failed to generate copywriting');
+            }
+            return res.json();
+        };
+
+    const parseDesignText = async (payload: {
+            raw_text: string;
+            aspect_ratio?: string;
+            style_preference?: string;
+            num_variations?: number;
+            integrated_text?: boolean;
+            clarification_answers?: Record<string, string>;
+        }) => {
+            const res = await fetch(`${API_BASE_URL}/designs/parse`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(payload),
+            });
+            if (!res.ok) {
+                const errBase = await res.json().catch(() => ({}));
+                throw new Error(errBase.detail || 'Failed to parse design text');
+            }
+            return res.json();
+        };
+
+    const uploadImage = async (file: File) => {
+            const formData = new FormData();
+            formData.append('file', file);
+    
+            // Custom headers to avoid application/json content-type
+            // @ts-expect-error session token
+            const token = session?.accessToken;
+            const headers: Record<string, string> = {};
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+    
+            const res = await fetch(`${API_BASE_URL}/designs/upload`, {
+                method: 'POST',
+                headers,
+                body: formData,
+            });
+            if (!res.ok) {
+                const errBase = await res.json().catch(() => ({}));
+                throw new Error(errBase.detail || 'Failed to upload image');
+            }
+            return res.json(); // returns { url: string }
+        };
+
+    const getJobStatus = async (jobId: string) => {
+            const res = await fetch(`${API_BASE_URL}/designs/jobs/${jobId}`, {
+                headers: getHeaders(),
+            });
+            if (!res.ok) throw new Error('Failed to fetch job status');
+            return res.json();
+        };
+
+    const getMyGenerations = async (limit: number = 20, offset: number = 0) => {
+            const qs = new URLSearchParams({ limit: limit.toString(), offset: offset.toString() }).toString();
+            const res = await fetch(`${API_BASE_URL}/designs/my-generations?${qs}`, {
+                headers: getHeaders(),
+            });
+            if (!res.ok) throw new Error('Failed to fetch AI generations');
+            return res.json();
+        };
+
+    const generateMagicTextLayout = async (payload: { image_base64: string; text: string; canvas_width?: number; canvas_height?: number; style_hint?: string }) => {
+            const res = await fetch(`${API_BASE_URL}/designs/magic-text`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(payload),
+            });
+            if (!res.ok) {
+                const errBase = await res.json().catch(() => ({}));
+                throw new Error(errBase.detail || 'Failed to generate magic text layout');
+            }
+            return res.json();
+        };
+
+    const removeBackground = async (file: File) => {
+            const formData = new FormData();
+            formData.append('file', file);
+    
+            // Custom headers to avoid application/json content-type
+            // @ts-expect-error session token
+            const token = session?.accessToken;
+            const headers: Record<string, string> = {};
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+    
+            const res = await fetch(`${API_BASE_URL}/designs/remove-background`, {
+                method: 'POST',
+                headers,
+                body: formData,
+            });
+            if (!res.ok) {
+                const errBase = await res.json().catch(() => ({}));
+                throw new Error(errBase.detail || 'Failed to remove background');
+            }
+            return res.json(); // returns { url: string }
+        };
+
+    const upscaleImage = async (file: File, scale: number = 2.0): Promise<{ url: string }> => {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('scale', scale.toString());
+    
+            const response = await fetch(`${API_BASE_URL}/tools/upscale`, {
+                method: 'POST',
+                headers: getHeaders(true), // true implies skipContentType
+                body: formData,
+            });
+            if (!response.ok) {
+                const errBase = await response.json().catch(() => ({}));
+                throw new Error(errBase.detail || 'Failed to upscale image');
+            }
+            return response.json();
+        };
+
+    const generateTextBanner = async (payload: {
+            text: string;
+            style?: string;
+            color_hint?: string;
+            quality?: string;
+        }): Promise<{ url: string, width?: number, height?: number }> => {
+            const formData = new FormData();
+            formData.append('text', payload.text);
+            if (payload.style) formData.append('style', payload.style);
+            if (payload.color_hint) formData.append('color_hint', payload.color_hint);
+            if (payload.quality) formData.append('quality', payload.quality);
+    
+            const response = await fetch(`${API_BASE_URL}/tools/text-banner`, {
+                method: 'POST',
+                headers: getHeaders(true),
+                body: formData,
+            });
+            
+            if (!response.ok) {
+                const errBase = await response.json().catch(() => ({}));
+                throw new Error(errBase.detail || 'Failed to generate text banner');
+            }
+            return response.json();
+        };
+
+    const retouchImage = async (file: File, outputFormat: 'jpeg' | 'png' = 'jpeg'): Promise<{ url: string, before_url: string }> => {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('output_format', outputFormat);
+    
+            const response = await fetch(`${API_BASE_URL}/tools/retouch`, {
+                method: 'POST',
+                headers: getHeaders(true),
+                body: formData,
+            });
+            if (!response.ok) {
+                const errBase = await response.json().catch(() => ({}));
+                throw new Error(errBase.detail || 'Failed to retouch image');
+            }
+            return response.json();
+        };
+
+    const generateIdPhoto = async (
+            file: File, 
+            bgColor: string, 
+            size: string, 
+            customW?: string, 
+            customH?: string,
+            outputFormat: 'jpeg' | 'png' = 'jpeg',
+            includePrintSheet: boolean = false
+        ): Promise<{ url: string, print_sheet_url?: string }> => {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('bg_color', bgColor);
+            formData.append('size', size);
+            if (customW) formData.append('custom_width_cm', customW);
+            if (customH) formData.append('custom_height_cm', customH);
+            formData.append('output_format', outputFormat);
+            formData.append('include_print_sheet', includePrintSheet ? 'true' : 'false');
+    
+            const response = await fetch(`${API_BASE_URL}/tools/id-photo`, {
+                method: 'POST',
+                headers: getHeaders(true),
+                body: formData,
+            });
+            if (!response.ok) {
+                const errBase = await response.json().catch(() => ({}));
+                throw new Error(errBase.detail || 'Failed to generate ID photo');
+            }
+            return response.json();
+        };
+
+    const magicEraser = async (
+            file: File,
+            mask: File,
+            prompt?: string
+        ): Promise<{ url: string, width?: number, height?: number }> => {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('mask', mask);
+            if (prompt) formData.append('prompt', prompt);
+    
+            const response = await fetch(`${API_BASE_URL}/tools/magic-eraser`, {
+                method: 'POST',
+                headers: getHeaders(true),
+                body: formData,
+            });
+            
+            if (!response.ok) {
+                const errBase = await response.json().catch(() => ({}));
+                throw new Error(errBase.detail || 'Failed to apply Magic Eraser');
+            }
+            return response.json();
+        };
+
+    const generativeExpand = async (
+            file: File,
+            direction?: string,
+            pixels?: number,
+            targetWidth?: number,
+            targetHeight?: number,
+            prompt?: string
+        ): Promise<{ url: string, width?: number, height?: number }> => {
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            if (direction) formData.append('direction', direction);
+            if (pixels !== undefined) formData.append('pixels', pixels.toString());
+            if (targetWidth !== undefined) formData.append('target_width', targetWidth.toString());
+            if (targetHeight !== undefined) formData.append('target_height', targetHeight.toString());
+            if (prompt) formData.append('prompt', prompt);
+    
+            const response = await fetch(`${API_BASE_URL}/tools/generative-expand`, {
+                method: 'POST',
+                headers: getHeaders(true),
+                body: formData,
+            });
+            
+            if (!response.ok) {
+                const errBase = await response.json().catch(() => ({}));
+                throw new Error(errBase.detail || 'Failed to apply Generative Expand');
+            }
+            return response.json();
+        };
+
+    const backgroundSwap = async (
+            file: File,
+            prompt?: string,
+            aspectRatio?: string,
+            style?: string
+        ): Promise<{ url: string }> => {
+            const formData = new FormData();
+            formData.append('file', file);
+            if (prompt) formData.append('prompt', prompt);
+            if (aspectRatio) formData.append('aspect_ratio', aspectRatio);
+            if (style) formData.append('style', style);
+    
+            const response = await fetch(`${API_BASE_URL}/tools/background-swap`, {
+                method: 'POST',
+                headers: getHeaders(true),
+                body: formData,
+            });
+            
+            if (!response.ok) {
+                const errBase = await response.json().catch(() => ({}));
+                throw new Error(errBase.detail || 'Failed to apply background swap');
+            }
+            return response.json();
+        };
+
+    const productScene = async (
+            file: File,
+            theme: string,
+            aspectRatio: string
+        ): Promise<{ url: string }> => {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('theme', theme);
+            formData.append('aspect_ratio', aspectRatio);
+    
+            const response = await fetch(`${API_BASE_URL}/tools/product-scene`, {
+                method: 'POST',
+                headers: getHeaders(true),
+                body: formData,
+            });
+            
+            if (!response.ok) {
+                const errBase = await response.json().catch(() => ({}));
+                throw new Error(errBase.detail || 'Failed to generate product scene');
+            }
+            return response.json();
+        };
+
+    const batchProcess = async (
+            files: File[],
+            operation: string,
+            paramsJson: string,
+            logo?: File
+        ): Promise<{ url: string, success_count: number, error_count: number, errors: Array<{filename: string, error: string}> }> => {
+            const formData = new FormData();
+            files.forEach(f => formData.append('files', f));
+            formData.append('operation', operation);
+            formData.append('params_json', paramsJson);
+            if (logo) formData.append('logo', logo);
+    
+            const response = await fetch(`${API_BASE_URL}/tools/batch`, {
+                method: 'POST',
+                headers: getHeaders(true),
+                body: formData,
+            });
+            
+            if (!response.ok) {
+                const errBase = await response.json().catch(() => ({}));
+                throw new Error(errBase.detail || 'Failed to process batch');
+            }
+            return response.json();
+        };
+
+    const applyWatermark = async (
+            file: File,
+            logo: File,
+            position: string,
+            opacity: string,
+            scale: string
+        ): Promise<{ url: string }> => {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('logo', logo);
+            formData.append('position', position);
+            formData.append('opacity', opacity);
+            formData.append('scale', scale);
+    
+            const response = await fetch(`${API_BASE_URL}/tools/watermark`, {
+                method: 'POST',
+                headers: getHeaders(true),
+                body: formData,
+            });
+            
+            if (!response.ok) {
+                const errBase = await response.json().catch(() => ({}));
+                throw new Error(errBase.detail || 'Failed to apply watermark');
+            }
+            return response.json();
+        };    // --- Brand Kit API ---
+
+    const generateProjectTitle = async (prompt: string) => {
+            const res = await fetch(`${API_BASE_URL}/designs/generate-title`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify({ prompt }),
+            });
+            if (!res.ok) throw new Error('Failed to generate project title');
+            return res.json();
+        };
+
+    return { generateDesign, clarifyCopywriting, clarifyUnified, generateCopywriting, parseDesignText, uploadImage, getJobStatus, getMyGenerations, generateMagicTextLayout, removeBackground, upscaleImage, generateTextBanner, retouchImage, generateIdPhoto, magicEraser, generativeExpand, backgroundSwap, productScene, batchProcess, applyWatermark, generateProjectTitle };
+}
