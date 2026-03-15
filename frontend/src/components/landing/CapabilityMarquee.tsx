@@ -1,17 +1,20 @@
 "use client";
 
-import { Sparkles, Trash2, Maximize, Crop, Layers, Paintbrush, Stamp, MoveHorizontal } from "lucide-react";
+import { Sparkles, Trash2, Maximize, Crop, Layers, Paintbrush, Stamp, MoveHorizontal, LayoutTemplate, Share2, Type } from "lucide-react";
 
 const capabilities = [
   { name: "Background Remover", icon: Trash2 },
   { name: "Image Upscaler", icon: Maximize },
   { name: "AI Retouch", icon: Paintbrush },
   { name: "Scene Generator", icon: Layers },
-  { name: "Batch Processing", icon: Layers }, // Using Layers or a copy icon
+  { name: "Batch Processing", icon: Layers },
   { name: "ID Photo Maker", icon: Crop },
   { name: "Watermark Auto", icon: Stamp },
   { name: "Magic Eraser", icon: Sparkles },
+  { name: "Template Promo", icon: LayoutTemplate },
+  { name: "Ig Story Maker", icon: Share2 },
   { name: "Generative Expand", icon: MoveHorizontal },
+  { name: "Kartu Nama Digital", icon: Type },
 ];
 
 export function CapabilityMarquee() {

@@ -87,9 +87,17 @@ export default function BackgroundSwapPage() {
         {step === 2 && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold border-b pb-2">1. Gambar Original</h3>
-              <div className="aspect-[4/3] bg-muted/50 rounded-xl overflow-hidden border border-border shadow-inner relative">
-                <Image src={previewOriginal} alt="Original" fill className="object-contain p-2" unoptimized />
+              <h3 className="text-lg font-semibold border-b pb-2">1. Gambar Original (Preview)</h3>
+              <div className="flex items-center justify-center p-4 bg-muted/20 border rounded-xl min-h-[300px]">
+                <div 
+                  className={`bg-muted/50 rounded-xl overflow-hidden border border-border shadow-inner relative transition-all duration-500 ease-in-out w-full max-h-[500px] ${
+                    aspectRatio === '1:1' ? 'aspect-square max-w-[400px]' :
+                    aspectRatio === '9:16' ? 'aspect-[9/16] max-w-[280px]' :
+                    'aspect-video max-w-[500px]'
+                  }`}
+                >
+                  <Image src={previewOriginal} alt="Original" fill className="object-contain p-2 transition-all duration-500" unoptimized />
+                </div>
               </div>
             </div>
             

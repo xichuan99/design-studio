@@ -11,6 +11,7 @@ import { FAQSection } from "@/components/landing/FAQSection";
 import { PricingSection } from "@/components/landing/PricingSection";
 import { ScrollReveal } from "@/components/landing/ScrollReveal";
 import { NumberCounter } from "@/components/landing/NumberCounter";
+import { DesignTemplatesSection } from "@/components/landing/DesignTemplatesSection";
 import { Gift, Mail } from "lucide-react";
 import { useState } from "react";
 
@@ -61,6 +62,7 @@ export default function LandingPage() {
               <nav className="flex items-center gap-8">
                 <a className="text-slate-300 hover:text-purple-400 transition-colors text-sm font-medium" href="#features">Fitur</a>
                 <a className="text-slate-300 hover:text-purple-400 transition-colors text-sm font-medium" href="#how-it-works">Cara Kerja</a>
+                <a className="text-slate-300 hover:text-purple-400 transition-colors text-sm font-medium" href="#templates">Template</a>
                 <a className="text-slate-300 hover:text-purple-400 transition-colors text-sm font-medium" href="#pricing">Harga</a>
               </nav>
               <div className="flex gap-3">
@@ -82,6 +84,7 @@ export default function LandingPage() {
             <div className="md:hidden bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-2xl px-6 py-6 mb-4 flex flex-col gap-4 animate-in slide-in-from-top z-40">
               <a className="text-slate-200 hover:text-purple-400 transition-colors font-medium py-2" href="#features" onClick={() => setMobileMenuOpen(false)}>Fitur</a>
               <a className="text-slate-200 hover:text-purple-400 transition-colors font-medium py-2" href="#how-it-works" onClick={() => setMobileMenuOpen(false)}>Cara Kerja</a>
+              <a className="text-slate-200 hover:text-purple-400 transition-colors font-medium py-2" href="#templates" onClick={() => setMobileMenuOpen(false)}>Template</a>
               <a className="text-slate-200 hover:text-purple-400 transition-colors font-medium py-2" href="#pricing" onClick={() => setMobileMenuOpen(false)}>Harga</a>
               <hr className="border-white/10" />
               <button onClick={() => { handleLogin(); setMobileMenuOpen(false); }} className="rounded-lg h-12 bg-purple-600 hover:bg-purple-500 text-white font-bold transition-all">
@@ -139,8 +142,10 @@ export default function LandingPage() {
           {/* Video Demo Section */}
           <VideoDemoSection />
 
-          {/* Result Gallery */}
-          <ResultGallery />
+          {/* Result Gallery (Output Showcase) */}
+          <div id="showcase">
+            <ResultGallery />
+          </div>
 
           {/* Cara Kerjanya Section */}
           <ScrollReveal>
@@ -262,6 +267,11 @@ export default function LandingPage() {
                 </div>
               </div>
             </div>
+          </ScrollReveal>
+
+          {/* Design Templates Section / Graphic Capabilities */}
+          <ScrollReveal direction="up" delay={150}>
+            <DesignTemplatesSection />
           </ScrollReveal>
 
           {/* Testimonials */}

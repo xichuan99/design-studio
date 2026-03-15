@@ -76,9 +76,10 @@ async def generate_background(
     else:
         # Standard behavior: clean background, no text
         enhanced_prompt = (
-            f"{visual_prompt}, {style_suffix}, "
-            "professional graphic design background, copy space area for text overlay, "
-            "no text, no letters, no words, high quality, 4k"
+            f"Exact scene: {visual_prompt}. "
+            f"Style: {style_suffix}. "
+            "Professional photography, copy space area for text overlay, "
+            "empty background for product placement, high quality, 4k"
         )
         actual_negative_prompt = NEGATIVE_PROMPT
 

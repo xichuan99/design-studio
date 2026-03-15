@@ -6,7 +6,7 @@ import logging
 import httpx
 import uuid
 import fal_client
-from PIL import Image
+from PIL import Image, ImageFilter
 
 from app.core.config import settings
 from app.services.storage_service import upload_image
@@ -69,6 +69,17 @@ async def remove_background(image_bytes: bytes) -> bytes:
         raise
 
 
+def _feather_edges(img: Image.Image, radius: float = 1.0) -> Image.Image:
+    """Softens the edges of a transparent PNG to avoid sharp seams."""
+    if img.mode != 'RGBA':
+        return img
+    alpha = img.split()[-1]
+    alpha = alpha.filter(ImageFilter.GaussianBlur(radius=radius))
+    # Erode the alpha slightly to remove the bright rim sometimes left by BG removal
+    img.putalpha(alpha)
+    return img
+
+
 async def composite_product_on_background(
     product_png_bytes: bytes, background_bytes: bytes
 ) -> bytes:
@@ -98,6 +109,9 @@ async def composite_product_on_background(
             (max_product_dim, max_product_dim),
             Image.Resampling.LANCZOS,
         )
+        
+        # Apply edge feathering to hide seam artifacts
+        product_img = _feather_edges(product_img, radius=1.0)
 
         p_w, p_h = product_img.size
 
@@ -146,8 +160,6 @@ async def composite_with_shadow(
         Exception: If compositing or applying the shadow filter fails.
     """
     try:
-        from PIL import ImageFilter
-
         product_img = Image.open(io.BytesIO(product_png_bytes)).convert("RGBA")
         background_img = Image.open(io.BytesIO(background_bytes)).convert("RGBA")
 
@@ -156,6 +168,10 @@ async def composite_with_shadow(
         # Scale product
         max_dim = int(min(bg_w, bg_h) * scale_factor)
         product_img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
+        
+        # Apply edge feathering to hide seam artifacts
+        product_img = _feather_edges(product_img, radius=1.5)
+        
         p_w, p_h = product_img.size
 
         # Calc offset
