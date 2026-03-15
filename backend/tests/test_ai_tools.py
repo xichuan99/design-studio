@@ -43,7 +43,7 @@ def test_background_swap_endpoint_success():
             "app.services.bg_removal_service.composite_with_shadow",
             new_callable=AsyncMock,
         ) as mock_comp,
-        patch("app.api.ai_tools.upload_image", new_callable=AsyncMock) as mock_upload,
+        patch("app.api.ai_tools_routers.background.upload_image", new_callable=AsyncMock) as mock_upload,
     ):
         mock_rm.return_value = b"nobg"
         mock_gen.return_value = {"image_url": "http://fake-url.com/fg.jpg"}
@@ -78,7 +78,7 @@ def test_upscale_endpoint_success():
     data = {"scale": "2"}
 
     with (
-        patch("app.api.ai_tools.upload_image", new_callable=AsyncMock) as mock_upload,
+        patch("app.api.ai_tools_routers.enhancement.upload_image", new_callable=AsyncMock) as mock_upload,
         patch(
             "app.services.upscale_service.upscale_image", new_callable=AsyncMock
         ) as mock_upscale,
@@ -158,7 +158,7 @@ def test_retouch_endpoint_success():
         patch(
             "app.services.retouch_service.remove_blemishes", new_callable=AsyncMock
         ) as mock_blemish,
-        patch("app.api.ai_tools.upload_image", new_callable=AsyncMock) as mock_upload,
+        patch("app.api.ai_tools_routers.enhancement.upload_image", new_callable=AsyncMock) as mock_upload,
     ):
         mock_enhance.return_value = b"enhanced"
         mock_blemish.return_value = b"blemish_free"
@@ -192,7 +192,7 @@ def test_id_photo_endpoint_success():
         patch(
             "app.services.id_photo_service.generate_id_photo", new_callable=AsyncMock
         ) as mock_gen,
-        patch("app.api.ai_tools.upload_image", new_callable=AsyncMock) as mock_upload,
+        patch("app.api.ai_tools_routers.enhancement.upload_image", new_callable=AsyncMock) as mock_upload,
     ):
         mock_gen.return_value = b"id_photo"
         mock_upload.return_value = "http://storage.com/idphoto.jpg"
@@ -272,7 +272,7 @@ def test_id_photo_with_print_sheet():
             "app.services.id_photo_service.generate_id_photo", new_callable=AsyncMock
         ) as mock_gen,
         patch("app.services.id_photo_service.generate_print_sheet") as mock_sheet,
-        patch("app.api.ai_tools.upload_image", new_callable=AsyncMock) as mock_upload,
+        patch("app.api.ai_tools_routers.enhancement.upload_image", new_callable=AsyncMock) as mock_upload,
     ):
         mock_gen.return_value = b"id_photo"
         mock_sheet.return_value = b"print_sheet"
@@ -312,7 +312,7 @@ def test_magic_eraser_success():
         patch(
             "app.services.inpaint_service.inpaint_image", new_callable=AsyncMock
         ) as mock_inpaint,
-        patch("app.api.ai_tools.upload_image", new_callable=AsyncMock) as mock_upload,
+        patch("app.api.ai_tools_routers.background.upload_image", new_callable=AsyncMock) as mock_upload,
     ):
         mock_upload.side_effect = [
             "http://storage.com/input.jpg",
@@ -348,7 +348,7 @@ def test_generative_expand_directional_success():
         patch(
             "app.services.outpaint_service.outpaint_image", new_callable=AsyncMock
         ) as mock_outpaint,
-        patch("app.api.ai_tools.upload_image", new_callable=AsyncMock) as mock_upload,
+        patch("app.api.ai_tools_routers.background.upload_image", new_callable=AsyncMock) as mock_upload,
     ):
         mock_upload.return_value = "http://storage.com/input.jpg"
         mock_outpaint.return_value = {
@@ -384,7 +384,7 @@ def test_generative_expand_target_dims_success():
         patch(
             "app.services.outpaint_service.outpaint_image", new_callable=AsyncMock
         ) as mock_outpaint,
-        patch("app.api.ai_tools.upload_image", new_callable=AsyncMock) as mock_upload,
+        patch("app.api.ai_tools_routers.background.upload_image", new_callable=AsyncMock) as mock_upload,
     ):
         mock_upload.return_value = "http://storage.com/input.jpg"
         mock_outpaint.return_value = {
@@ -436,7 +436,7 @@ def test_watermark_endpoint_success():
         patch(
             "app.services.watermark_service.apply_watermark", new_callable=AsyncMock
         ) as mock_wm,
-        patch("app.api.ai_tools.upload_image", new_callable=AsyncMock) as mock_upload,
+        patch("app.api.ai_tools_routers.enhancement.upload_image", new_callable=AsyncMock) as mock_upload,
     ):
         mock_wm.return_value = b"watermarked_bytes"
         mock_upload.return_value = "http://storage.com/watermarked.jpg"
@@ -465,7 +465,7 @@ def test_product_scene_endpoint_success():
             "app.services.product_scene_service.generate_product_scene",
             new_callable=AsyncMock,
         ) as mock_scene,
-        patch("app.api.ai_tools.upload_image", new_callable=AsyncMock) as mock_upload,
+        patch("app.api.ai_tools_routers.creative.upload_image", new_callable=AsyncMock) as mock_upload,
     ):
         mock_scene.return_value = b"scene_bytes"
         mock_upload.return_value = "http://storage.com/scene.jpg"
@@ -492,7 +492,7 @@ def test_batch_endpoint_success():
         patch(
             "app.services.batch_service.process_batch", new_callable=AsyncMock
         ) as mock_batch,
-        patch("app.api.ai_tools.upload_image", new_callable=AsyncMock) as mock_upload,
+        patch("app.api.ai_tools_routers.creative.upload_image", new_callable=AsyncMock) as mock_upload,
     ):
         mock_batch.return_value = (b"fake_zip_bytes", [])
         mock_upload.return_value = "http://storage.com/batch.zip"
