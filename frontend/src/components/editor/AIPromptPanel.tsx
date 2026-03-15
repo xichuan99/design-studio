@@ -270,19 +270,19 @@ export const AIPromptPanel: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-col h-full bg-card p-4 gap-4">
+        <div className="flex flex-col h-full bg-card p-4 gap-3">
             <div className="flex items-center gap-2 border-b pb-4">
                 <Sparkles className="h-5 w-5 text-primary" />
                 <h2 className="font-semibold text-sm">AI Image Generator</h2>
             </div>
 
-            <div className="flex-1 overflow-y-auto space-y-4 pr-1 pb-4">
+            <div className="flex-1 overflow-y-auto space-y-3 pr-1 pb-4">
                 {/* Prompt Input */}
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Prompt</label>
                     <Textarea
                         placeholder="Contoh: Latar belakang minimalis dengan cahaya alami..."
-                        className="h-28 resize-none text-sm rounded-xl bg-card/80 border-border/60 focus-visible:ring-indigo-500/50"
+                        className="h-20 resize-none text-sm rounded-xl bg-card/80 border-border/60 focus-visible:ring-indigo-500/50"
                         value={prompt}
                         onChange={(e) => setPrompt(e.target.value)}
                         disabled={isGenerating}
@@ -290,7 +290,7 @@ export const AIPromptPanel: React.FC = () => {
                 </div>
 
                 {/* Aspect Ratio Selector */}
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Aspect Ratio</label>
                     <div className="grid grid-cols-4 gap-2">
                         {ASPECT_RATIOS.map((ratio) => {
@@ -317,9 +317,9 @@ export const AIPromptPanel: React.FC = () => {
                 </div>
 
                 {/* Style Selector */}
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Gaya Visual</label>
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="grid grid-cols-2 gap-2">
                         {STYLE_PRESETS.map((preset) => {
                             const Icon = preset.icon;
                             const isSelected = style === preset.id;
@@ -334,9 +334,10 @@ export const AIPromptPanel: React.FC = () => {
                                         isSelected ? "border-primary bg-primary/5 ring-1 ring-primary/20 text-primary" : "border-border text-muted-foreground",
                                         isGenerating && "opacity-50 cursor-not-allowed"
                                     )}
+                                    title={preset.label}
                                 >
                                     <Icon className="h-4 w-4 mb-1" />
-                                    <span className="text-xs font-medium block w-full truncate">{preset.label}</span>
+                                    <span className="text-xs font-medium">{preset.label}</span>
                                 </button>
                             );
                         })}
@@ -350,7 +351,7 @@ export const AIPromptPanel: React.FC = () => {
                         <span className="transition duration-200 group-open:rotate-180">▼</span>
                     </summary>
                     <div className="px-3 pt-3 space-y-5 animate-in fade-in slide-in-from-top-2">
-                <div className="grid grid-cols-2 gap-3 pb-2">
+                <div className="flex flex-col gap-3 pb-2">
                     {/* Template Selector */}
                     <div className="space-y-1.5">
                         <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Template Preset</label>
