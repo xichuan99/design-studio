@@ -55,22 +55,32 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ onBgStatusChan
     const manualZoomRef = useRef(false);
 
     // Floating toolbar position computation
-    const getFloatingToolbarPosition = () => {
-        if (!canvasBoxRef.current || selectedElementIds.length !== 1) return null;
+    const [floatingPos, setFloatingPos] = React.useState<{left: number, top: number} | null>(null);
+
+    React.useEffect(() => {
+        if (!canvasBoxRef.current || selectedElementIds.length !== 1) {
+            setFloatingPos(null);
+            return;
+        }
         const el = elements.find(e => e.id === selectedElementIds[0]);
-        if (!el) return null;
+        if (!el) {
+            setFloatingPos(null);
+            return;
+        }
         const canvasRect = canvasBoxRef.current.getBoundingClientRect();
         const containerRect = containerRef.current?.getBoundingClientRect();
-        if (!containerRect) return null;
+        if (!containerRect) {
+            setFloatingPos(null);
+            return;
+        }
         // Center of element in canvas space, scaled, relative to container
         const centerX = (el.x + (el.width ?? 80) / 2) * zoom;
         const topY = el.y * zoom - 44; // 44px above element
-        return {
+        setFloatingPos({
             left: canvasRect.left - containerRect.left + centerX,
             top: canvasRect.top - containerRect.top + topY,
-        };
-    };
-    const floatingPos = getFloatingToolbarPosition();
+        });
+    }, [selectedElementIds, elements, zoom]);
 
     // Grid toggle
     const [showGrid, setShowGrid] = React.useState(true);
