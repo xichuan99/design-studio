@@ -1,4 +1,5 @@
 """Service for background removal and image compositing operations."""
+
 import os
 import io
 import logging

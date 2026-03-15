@@ -1,4 +1,5 @@
 """Service for managing user credits and logging transactions."""
+
 import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.user import User

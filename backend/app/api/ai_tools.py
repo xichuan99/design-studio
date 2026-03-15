@@ -551,7 +551,10 @@ async def apply_watermark(
     logo_content = await logo.read()
 
     if len(content) > 10 * 1024 * 1024 or len(logo_content) > 5 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="File sizes exceed limits (10MB for image, 5MB for logo)")
+        raise HTTPException(
+            status_code=400,
+            detail="File sizes exceed limits (10MB for image, 5MB for logo)",
+        )
 
     try:
         start_time = time.time()
@@ -562,7 +565,7 @@ async def apply_watermark(
             watermark_bytes=logo_content,
             position=position,
             opacity=opacity,
-            scale=scale
+            scale=scale,
         )
 
         # 2. Upload result
@@ -610,17 +613,13 @@ async def create_product_scene(
 
         # 1. Process scene
         final_bytes = await product_scene_service.generate_product_scene(
-            image_bytes=content,
-            theme=theme,
-            aspect_ratio=aspect_ratio
+            image_bytes=content, theme=theme, aspect_ratio=aspect_ratio
         )
 
         # 2. Upload result
         scene_id = str(uuid.uuid4())[:8]
         result_url = await upload_image(
-            final_bytes,
-            content_type="image/jpeg",
-            prefix=f"product_scene_{scene_id}"
+            final_bytes, content_type="image/jpeg", prefix=f"product_scene_{scene_id}"
         )
 
         logger.info(f"Product Scene Generation took {time.time() - start_time:.2f}s")
@@ -630,6 +629,7 @@ async def create_product_scene(
         logger.exception("Product Scene Generation failed")
         try:
             from app.services.credit_service import log_credit_change
+
             await log_credit_change(
                 db, current_user, 1, "Refund: AI Product Scene Generation gagal"
             )
@@ -668,7 +668,9 @@ async def process_batch_images(
     total_cost = per_file_cost * len(files)
 
     if current_user.credits_remaining < total_cost:
-        raise HTTPException(status_code=402, detail=f"Kredit tidak cukup. Butuh {total_cost} kredit.")
+        raise HTTPException(
+            status_code=402, detail=f"Kredit tidak cukup. Butuh {total_cost} kredit."
+        )
 
     # Parse params
     try:
@@ -680,7 +682,7 @@ async def process_batch_images(
     if operation == "watermark" and logo:
         params["logo_bytes"] = await logo.read()
     elif operation == "watermark":
-         raise HTTPException(status_code=400, detail="Logo wajib untuk watermark")
+        raise HTTPException(status_code=400, detail="Logo wajib untuk watermark")
 
     # Read files
     # Only limit individual files to 5MB here for batch to save memory
@@ -688,13 +690,20 @@ async def process_batch_images(
     for f in files:
         content = await f.read()
         if len(content) > 5 * 1024 * 1024:
-            raise HTTPException(status_code=400, detail=f"File {f.filename} terlalu besar (Max 5MB)")
+            raise HTTPException(
+                status_code=400, detail=f"File {f.filename} terlalu besar (Max 5MB)"
+            )
         file_data.append((f.filename, content))
 
     from app.services.credit_service import log_credit_change
 
     if total_cost > 0:
-        await log_credit_change(db, current_user, -total_cost, f"Batch Processing: {operation} ({len(files)} files)")
+        await log_credit_change(
+            db,
+            current_user,
+            -total_cost,
+            f"Batch Processing: {operation} ({len(files)} files)",
+        )
         await db.commit()
 
     try:
@@ -702,9 +711,7 @@ async def process_batch_images(
 
         # 1. Process batch
         zip_bytes, errors = await batch_service.process_batch(
-            files=file_data,
-            operation=operation,
-            params=params
+            files=file_data, operation=operation, params=params
         )
 
         # 2. Upload ZIP result
@@ -712,7 +719,7 @@ async def process_batch_images(
         result_url = await upload_image(
             zip_bytes,
             content_type="application/zip",
-            prefix=f"batch_{operation}_{batch_id}"
+            prefix=f"batch_{operation}_{batch_id}",
         )
         # Note: upload_image typically adds .jpg or respects format, it might need tweaking if storage_service forces extension,
         # assuming storage handles generic bytes and content_types fine here, we modify prefix manually.
@@ -722,7 +729,7 @@ async def process_batch_images(
             "url": result_url,
             "success_count": len(files) - len(errors),
             "error_count": len(errors),
-            "errors": errors
+            "errors": errors,
         }
 
     except Exception as e:
@@ -740,4 +747,3 @@ async def process_batch_images(
         raise HTTPException(
             status_code=500, detail=f"Failed to process batch: {str(e)}"
         )
-

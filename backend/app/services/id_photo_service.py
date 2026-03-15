@@ -1,4 +1,5 @@
 """Service for generating print-ready ID photos (pasfoto)."""
+
 import io
 from typing import Optional
 import numpy as np

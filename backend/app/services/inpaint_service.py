@@ -1,4 +1,5 @@
 """Service for inpainting (filling) specific areas of an image."""
+
 from typing import Optional
 
 from fastapi import HTTPException

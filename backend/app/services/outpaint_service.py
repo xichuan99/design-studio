@@ -1,4 +1,5 @@
 """Service for outpainting (expanding) an image using Fal.ai."""
+
 from typing import Optional
 
 from fastapi import HTTPException

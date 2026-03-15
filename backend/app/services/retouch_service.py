@@ -1,4 +1,5 @@
 """Service for image retouching, including auto-enhancement and blemish removal."""
+
 import io
 import cv2
 import numpy as np

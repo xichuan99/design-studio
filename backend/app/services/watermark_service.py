@@ -1,17 +1,19 @@
 """Service for applying watermarks (logos or text) to images."""
+
 import io
 from PIL import Image, ImageEnhance
 
 # Constants for watermark positions
 POSITIONS = ["bottom-right", "bottom-left", "top-right", "top-left", "center", "tiled"]
 
+
 async def apply_watermark(
     base_image_bytes: bytes,
     watermark_bytes: bytes,
     position: str = "bottom-right",
     opacity: float = 0.5,
-    scale: float = 0.2, # Watermark max size as a percentage of base image width/height
-    padding_ratio: float = 0.05 # Padding as a percentage of base image dimensions
+    scale: float = 0.2,  # Watermark max size as a percentage of base image width/height
+    padding_ratio: float = 0.05,  # Padding as a percentage of base image dimensions
 ) -> bytes:
     """
     Applies a watermark (logo or text image) over a base image.
@@ -45,12 +47,12 @@ async def apply_watermark(
         watermark_img = Image.open(io.BytesIO(watermark_bytes))
 
         # Convert base to RGBA to support alpha compositing safely, even if outputting to JPEG
-        if base_img.mode != 'RGBA':
-            base_img = base_img.convert('RGBA')
+        if base_img.mode != "RGBA":
+            base_img = base_img.convert("RGBA")
 
         # Convert watermark to RGBA to ensure it has an alpha channel
-        if watermark_img.mode != 'RGBA':
-            watermark_img = watermark_img.convert('RGBA')
+        if watermark_img.mode != "RGBA":
+            watermark_img = watermark_img.convert("RGBA")
 
         # 1. Resize the watermark based on the base image dimensions and scale factor
         base_w, base_h = base_img.size
@@ -65,7 +67,9 @@ async def apply_watermark(
         new_wm_w = int(wm_w * ratio)
         new_wm_h = int(wm_h * ratio)
 
-        watermark_img = watermark_img.resize((new_wm_w, new_wm_h), Image.Resampling.LANCZOS)
+        watermark_img = watermark_img.resize(
+            (new_wm_w, new_wm_h), Image.Resampling.LANCZOS
+        )
 
         # 2. Apply Opacity
         if opacity < 1.0:
@@ -77,7 +81,7 @@ async def apply_watermark(
             watermark_img.putalpha(alpha)
 
         # Create a blank transparent layer the size of the base image
-        transparent_layer = Image.new('RGBA', base_img.size, (0, 0, 0, 0))
+        transparent_layer = Image.new("RGBA", base_img.size, (0, 0, 0, 0))
 
         # Calculate padding
         pad_x = int(base_w * padding_ratio)
@@ -116,14 +120,15 @@ async def apply_watermark(
         final_img = Image.alpha_composite(base_img, transparent_layer)
 
         # 5. Convert back to RGB for JPEG saving (drops alpha, but visual composite is baked in)
-        final_img = final_img.convert('RGB')
+        final_img = final_img.convert("RGB")
 
         # Save to bytes
         img_byte_arr = io.BytesIO()
-        final_img.save(img_byte_arr, format='JPEG', quality=90)
+        final_img.save(img_byte_arr, format="JPEG", quality=90)
         return img_byte_arr.getvalue()
 
     except Exception as e:
         import logging
+
         logging.error(f"Failed to apply watermark: {str(e)}")
         raise e

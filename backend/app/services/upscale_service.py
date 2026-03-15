@@ -1,4 +1,5 @@
 """Service for upscaling images using Fal.ai models."""
+
 import os
 import fal_client
 from typing import Dict, Any

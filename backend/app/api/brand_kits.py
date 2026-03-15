@@ -102,7 +102,6 @@ async def create_brand_kit(
         raise
 
 
-
 @router.get("", response_model=List[BrandKitResponse])
 async def list_brand_kits(
     current_user: User = Depends(get_current_user),
@@ -203,6 +202,7 @@ async def delete_brand_kit(
 
     # Decrement storage usage for all logos in this brand kit
     from app.services.storage_quota_service import estimate_file_size, decrement_usage
+
     if getattr(kit, "logos", None):
         for logo_url in kit.logos:
             size = await estimate_file_size(logo_url)

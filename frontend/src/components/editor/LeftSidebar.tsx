@@ -101,7 +101,8 @@ export const LeftSidebar: React.FC = () => {
             });
         } catch (err) {
             console.error('Failed to upload image', err);
-            toast.error('Gagal mengupload gambar. Coba lagi.');
+            const errorMessage = err instanceof Error ? err.message : "Gagal mengupload gambar. Coba lagi.";
+            toast.error(errorMessage.toLowerCase().includes("quota") || errorMessage.includes("413") ? "Gagal mengupload: Kuota penyimpanan Anda penuh." : "Gagal mengupload gambar. Coba lagi.");
         } finally {
             setSaving(false);
             if (e.target) e.target.value = '';

@@ -1,4 +1,5 @@
 """Service for orchestrating the generation of professional product scenes."""
+
 import logging
 import httpx
 from typing import Dict, Any
@@ -12,34 +13,33 @@ logger = logging.getLogger(__name__)
 SCENE_THEMES = {
     "studio": {
         "visual_prompt": "professional photography studio setup, soft lighting, infinite smooth backdrop gradient, premium product display platform, clean 8k resolution",
-        "style": "minimalist"
+        "style": "minimalist",
     },
     "nature": {
         "visual_prompt": "outdoor nature setting, placed on mossy rock or wooden stump, surrounded by green leaves, dappled sunlight, shallow depth of field, natural lighting",
-        "style": "bold"
+        "style": "bold",
     },
     "cafe": {
         "visual_prompt": "cozy cafe setting, placed on wooden table, blurred coffee shop background with warm fairy lights, morning sunlight coming from window",
-        "style": "elegant"
+        "style": "elegant",
     },
     "minimalist": {
         "visual_prompt": "abstract minimalist geometry, white and cream tones, simple pedestal, harsh sunlight casting sharp modern shadows, architectural feel",
-        "style": "minimalist"
+        "style": "minimalist",
     },
     "kitchen": {
         "visual_prompt": "bright modern kitchen counter top, marble surface, blurred kitchen appliances in background, bright morning light, lifestyle photography",
-        "style": "bold"
+        "style": "bold",
     },
     "bathroom": {
         "visual_prompt": "luxury spa bathroom, placed on white marble sink tray, soft towel textures, spa stones, calm lighting, water reflections",
-        "style": "elegant"
-    }
+        "style": "elegant",
+    },
 }
 
+
 async def generate_product_scene(
-    image_bytes: bytes,
-    theme: str = "studio",
-    aspect_ratio: str = "1:1"
+    image_bytes: bytes, theme: str = "studio", aspect_ratio: str = "1:1"
 ) -> bytes:
     """
     Orchestrates the creation of a professional product scene:
@@ -73,7 +73,7 @@ async def generate_product_scene(
         visual_prompt=theme_config["visual_prompt"],
         style=theme_config["style"],
         aspect_ratio=aspect_ratio,
-        integrated_text=False
+        integrated_text=False,
     )
 
     # 4. Fetch the generated background image
@@ -88,10 +88,10 @@ async def generate_product_scene(
     final_bytes: bytes = await bg_removal_service.composite_with_shadow(
         product_png_bytes=no_bg_bytes,
         background_bytes=bg_bytes,
-        scale_factor=0.65,      # Make product slightly smaller than BG swap
-        offset_x_ratio=0.5,     # Center X
-        offset_y_ratio=0.55,    # Slightly lower Y
-        add_shadow=True
+        scale_factor=0.65,  # Make product slightly smaller than BG swap
+        offset_x_ratio=0.5,  # Center X
+        offset_y_ratio=0.55,  # Slightly lower Y
+        add_shadow=True,
     )
 
     logger.info("Product scene generation complete")

@@ -45,7 +45,7 @@ interface SavedCreateState {
 export default function CreatePage() {
     const { status } = useSession();
     const router = useRouter();
-    const { generateDesign, getJobStatus, saveProject, uploadImage, getActiveBrandKit, clarifyUnified, generateCopywriting, parseDesignText, generateProjectTitle } = useProjectApi();
+    const { generateDesign, getJobStatus, saveProject, uploadImage, getActiveBrandKit, clarifyUnified, generateCopywriting, parseDesignText, generateProjectTitle, getStorageUsage } = useProjectApi();
 
     const [rawText, setRawText] = useState("");
     const [aspectRatio, setAspectRatio] = useState("1:1");
@@ -70,7 +70,7 @@ export default function CreatePage() {
         isOpen: boolean;
         title: string;
         description: string;
-        type: 'safety' | 'credits' | 'system';
+        type: 'safety' | 'credits' | 'system' | 'storage';
         actionLabel?: string;
         onAction?: () => void;
     }>({
@@ -348,6 +348,19 @@ export default function CreatePage() {
                 }
             }
 
+            // Check storage quota before proceeding with uploads and generation
+            try {
+                const storageInfo = await getStorageUsage();
+                if (storageInfo.percentage >= 80 && storageInfo.percentage < 100) {
+                    toast.warning(
+                        `Penyimpanan hampir penuh (${storageInfo.percentage}%). Pertimbangkan menghapus file lama agar tidak gagal.`,
+                        { duration: 5000 }
+                    );
+                }
+            } catch (e) {
+                console.warn("Could not fetch storage usage before generation", e);
+            }
+
             // STEP 0: Upload Reference Image
             let uploadedReferenceUrl = undefined;
             if (referenceFile) {
@@ -436,6 +449,18 @@ export default function CreatePage() {
                     onAction: () => {
                         setErrorModalState(prev => ({ ...prev, isOpen: false }));
                         setCurrentStep('input');
+                    }
+                });
+            } else if (errorMessage.toLowerCase().includes("storage quota") || errorMessage.includes("413") || errorMessage.toLowerCase().includes("penyimpanan penuh")) {
+                 setErrorModalState({
+                    isOpen: true,
+                    title: "Penyimpanan Penuh",
+                    description: "Kuota penyimpanan Anda sudah penuh. Hapus file lama di pengaturan untuk menambah ruang.",
+                    type: "storage",
+                    actionLabel: "Kelola Penyimpanan",
+                    onAction: () => {
+                        setErrorModalState(prev => ({ ...prev, isOpen: false }));
+                        router.push('/settings');
                     }
                 });
             } else if (errorMessage.toLowerCase().includes("kredit") || errorMessage.toLowerCase().includes("credit")) {

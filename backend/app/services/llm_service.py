@@ -1,4 +1,5 @@
 """Service for LLM interactions (Gemini API) for text parsing, generation, and design clarification."""
+
 import json
 from typing import Optional
 from google import genai

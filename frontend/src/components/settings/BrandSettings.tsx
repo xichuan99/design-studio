@@ -82,7 +82,8 @@ export default function BrandSettings() {
             setEditingBrand({ ...editingBrand, logos: newLogos });
         } catch (err) {
             console.error("Failed to upload logo:", err);
-            toast.error("Gagal mengunggah logo.");
+            const errorMessage = err instanceof Error ? err.message : "Gagal mengunggah logo.";
+            toast.error(errorMessage.toLowerCase().includes("quota") || errorMessage.includes("413") ? "Gagal mengunggah: Kuota penyimpanan Anda sudah penuh." : "Gagal mengunggah logo.");
         } finally {
             setIsUploadingLogo(false);
             if (fileInputRef.current) fileInputRef.current.value = '';

@@ -146,6 +146,13 @@ export const AIPromptPanel: React.FC = () => {
                     title: 'Deskripsi Tidak Diizinkan',
                     description: msg,
                 });
+            } else if (msg.toLowerCase().includes("storage quota") || msg.includes("413") || msg.toLowerCase().includes("penyimpanan penuh")) {
+                setErrorModal({
+                    open: true,
+                    type: 'storage',
+                    title: 'Penyimpanan Penuh',
+                    description: 'Kuota penyimpanan Anda sudah penuh. Hapus file lama di pengaturan untuk menambah ruang.',
+                });
             } else if (msg.toLowerCase().includes("kredit") || msg.toLowerCase().includes("credit")) {
                 setErrorModal({
                     open: true,

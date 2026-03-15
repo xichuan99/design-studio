@@ -1,4 +1,5 @@
 """Service for processing batches of images."""
+
 import asyncio
 import io
 import zipfile
@@ -11,11 +12,9 @@ from app.services import product_scene_service
 
 logger = logging.getLogger(__name__)
 
+
 async def process_single_image(
-    filename: str,
-    image_bytes: bytes,
-    operation: str,
-    params: Dict[str, Any]
+    filename: str, image_bytes: bytes, operation: str, params: Dict[str, Any]
 ) -> Tuple[Optional[str], Optional[bytes], Optional[str]]:
     """
     Processes a single image based on operation.
@@ -40,7 +39,7 @@ async def process_single_image(
         if operation == "remove_bg":
             result_bytes = await bg_removal_service.remove_background(image_bytes)
             # Change extension to .png since remove_background outputs PNG
-            new_filename = filename.rsplit('.', 1)[0] + "_nobg.png"
+            new_filename = filename.rsplit(".", 1)[0] + "_nobg.png"
             return new_filename, result_bytes, None
 
         elif operation == "watermark":
@@ -57,10 +56,10 @@ async def process_single_image(
                 watermark_bytes=logo_bytes,
                 position=position,
                 opacity=opacity,
-                scale=scale
+                scale=scale,
             )
             # Default to jpeg for watermarks if original might be jpeg
-            new_filename = filename.rsplit('.', 1)[0] + "_watermarked.jpg"
+            new_filename = filename.rsplit(".", 1)[0] + "_watermarked.jpg"
             return new_filename, result_bytes, None
 
         elif operation == "product_scene":
@@ -68,11 +67,9 @@ async def process_single_image(
             aspect_ratio = params.get("aspect_ratio", "1:1")
 
             result_bytes = await product_scene_service.generate_product_scene(
-                image_bytes=image_bytes,
-                theme=theme,
-                aspect_ratio=aspect_ratio
+                image_bytes=image_bytes, theme=theme, aspect_ratio=aspect_ratio
             )
-            new_filename = filename.rsplit('.', 1)[0] + f"_scene_{theme}.jpg"
+            new_filename = filename.rsplit(".", 1)[0] + f"_scene_{theme}.jpg"
             return new_filename, result_bytes, None
 
         else:
@@ -84,9 +81,7 @@ async def process_single_image(
 
 
 async def process_batch(
-    files: List[Tuple[str, bytes]],
-    operation: str,
-    params: Dict[str, Any] = None
+    files: List[Tuple[str, bytes]], operation: str, params: Dict[str, Any] = None
 ) -> Tuple[bytes, List[Dict[str, str]]]:
     """
     Processes a batch of images concurrently and packs the successful ones into a ZIP.
@@ -124,28 +119,27 @@ async def process_batch(
     errors = []
 
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
-        for original_filename, result in zip(
-            [f[0] for f in files], results
-        ):
+        for original_filename, result in zip([f[0] for f in files], results):
             if isinstance(result, Exception):
-                errors.append({
-                    "filename": original_filename,
-                    "error": f"Unhandled exception: {str(result)}"
-                })
+                errors.append(
+                    {
+                        "filename": original_filename,
+                        "error": f"Unhandled exception: {str(result)}",
+                    }
+                )
                 continue
 
             new_filename, processed_bytes, error_msg = result
 
             if error_msg:
-                errors.append({
-                    "filename": original_filename,
-                    "error": error_msg
-                })
+                errors.append({"filename": original_filename, "error": error_msg})
             elif processed_bytes and new_filename:
                 zip_file.writestr(new_filename, processed_bytes)
 
     # Reset buffer pointer
     zip_buffer.seek(0)
 
-    logger.info(f"Batch completed. {len(files) - len(errors)} successes, {len(errors)} failures.")
+    logger.info(
+        f"Batch completed. {len(files) - len(errors)} successes, {len(errors)} failures."
+    )
     return zip_buffer.getvalue(), errors

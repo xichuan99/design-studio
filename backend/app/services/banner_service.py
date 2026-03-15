@@ -1,4 +1,5 @@
 """Service for generating decorative text banners."""
+
 import os
 import logging
 import httpx

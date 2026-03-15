@@ -688,6 +688,7 @@ async def delete_job(
     """Delete a generation job and reclaim storage quota."""
     try:
         import uuid
+
         job_uuid = uuid.UUID(job_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid job ID format")
@@ -701,7 +702,11 @@ async def delete_job(
         raise HTTPException(status_code=404, detail="Job not found")
 
     if job.result_url:
-        from app.services.storage_quota_service import estimate_file_size, decrement_usage
+        from app.services.storage_quota_service import (
+            estimate_file_size,
+            decrement_usage,
+        )
+
         size = await estimate_file_size(job.result_url)
         if size > 0:
             await decrement_usage(current_user.id, size, db)

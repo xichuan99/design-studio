@@ -5,23 +5,26 @@ from PIL import Image
 
 from app.services.id_photo_service import generate_id_photo, generate_print_sheet
 
+
 @pytest.fixture
 def person_image_bytes():
-    img = Image.new('RGBA', (600, 800), color=(255, 200, 200, 255))
+    img = Image.new("RGBA", (600, 800), color=(255, 200, 200, 255))
     img_byte_arr = io.BytesIO()
-    img.save(img_byte_arr, format='PNG')
+    img.save(img_byte_arr, format="PNG")
     return img_byte_arr.getvalue()
+
 
 @pytest.fixture
 def id_photo_bytes():
-    img = Image.new('RGB', (354, 472), color=(204, 0, 0)) # 3x4 size
+    img = Image.new("RGB", (354, 472), color=(204, 0, 0))  # 3x4 size
     img_byte_arr = io.BytesIO()
-    img.save(img_byte_arr, format='JPEG', dpi=(300, 300))
+    img.save(img_byte_arr, format="JPEG", dpi=(300, 300))
     return img_byte_arr.getvalue()
 
+
 @pytest.mark.asyncio
-@patch('app.services.id_photo_service.bg_removal_service.remove_background')
-@patch('app.services.id_photo_service.mp')
+@patch("app.services.id_photo_service.bg_removal_service.remove_background")
+@patch("app.services.id_photo_service.mp")
 async def test_generate_id_photo_with_face(mock_mp, mock_remove_bg, person_image_bytes):
     mock_remove_bg.return_value = person_image_bytes
 
@@ -42,10 +45,7 @@ async def test_generate_id_photo_with_face(mock_mp, mock_remove_bg, person_image
     mock_face_detection_cls.return_value.__enter__.return_value = mock_face_detection
 
     result = await generate_id_photo(
-        b"raw_bytes",
-        bg_color_name="blue",
-        size_name="3x4",
-        output_format="jpeg"
+        b"raw_bytes", bg_color_name="blue", size_name="3x4", output_format="jpeg"
     )
 
     assert isinstance(result, bytes)
@@ -54,27 +54,27 @@ async def test_generate_id_photo_with_face(mock_mp, mock_remove_bg, person_image
     assert img.size == (354, 472)
     assert img.info.get("dpi") == (300, 300)
 
+
 @pytest.mark.asyncio
-@patch('app.services.id_photo_service.bg_removal_service.remove_background')
-@patch('app.services.id_photo_service.mp')
-async def test_generate_id_photo_fallback_no_face(mock_mp, mock_remove_bg, person_image_bytes):
+@patch("app.services.id_photo_service.bg_removal_service.remove_background")
+@patch("app.services.id_photo_service.mp")
+async def test_generate_id_photo_fallback_no_face(
+    mock_mp, mock_remove_bg, person_image_bytes
+):
     mock_remove_bg.return_value = person_image_bytes
 
     mock_face_detection_cls = MagicMock()
     mock_mp.solutions.face_detection.FaceDetection = mock_face_detection_cls
 
     mock_results = MagicMock()
-    mock_results.detections = None # No faces found
+    mock_results.detections = None  # No faces found
 
     mock_face_detection = MagicMock()
     mock_face_detection.process.return_value = mock_results
     mock_face_detection_cls.return_value.__enter__.return_value = mock_face_detection
 
     result = await generate_id_photo(
-        b"raw_bytes",
-        bg_color_name="red",
-        size_name="2x3",
-        output_format="png"
+        b"raw_bytes", bg_color_name="red", size_name="2x3", output_format="png"
     )
 
     assert isinstance(result, bytes)
@@ -86,10 +86,13 @@ async def test_generate_id_photo_fallback_no_face(mock_mp, mock_remove_bg, perso
     assert round(dpi[0]) == 300
     assert round(dpi[1]) == 300
 
+
 @pytest.mark.asyncio
-@patch('app.services.id_photo_service.bg_removal_service.remove_background')
-@patch('app.services.id_photo_service.mp')
-async def test_generate_id_photo_custom_size(mock_mp, mock_remove_bg, person_image_bytes):
+@patch("app.services.id_photo_service.bg_removal_service.remove_background")
+@patch("app.services.id_photo_service.mp")
+async def test_generate_id_photo_custom_size(
+    mock_mp, mock_remove_bg, person_image_bytes
+):
     mock_remove_bg.return_value = person_image_bytes
 
     mock_face_detection_cls = MagicMock()
@@ -108,7 +111,7 @@ async def test_generate_id_photo_custom_size(mock_mp, mock_remove_bg, person_ima
         size_name="custom",
         custom_w_cm=5.0,
         custom_h_cm=5.0,
-        output_format="jpeg"
+        output_format="jpeg",
     )
 
     assert isinstance(result, bytes)
@@ -117,10 +120,12 @@ async def test_generate_id_photo_custom_size(mock_mp, mock_remove_bg, person_ima
     # 5cm * 118.11 ≈ 590
     assert img.size == (590, 590)
 
+
 @pytest.mark.asyncio
 async def test_generate_id_photo_exception():
     with pytest.raises(Exception):
         await generate_id_photo(b"invalid data")
+
 
 def test_generate_print_sheet(id_photo_bytes):
     result = generate_print_sheet(id_photo_bytes, output_format="jpeg")
@@ -131,10 +136,11 @@ def test_generate_print_sheet(id_photo_bytes):
     assert img.size == (1200, 1800)
     assert img.info.get("dpi") == (300, 300)
 
+
 def test_generate_print_sheet_too_large():
-    huge_img = Image.new('RGB', (1300, 1900), color=(204, 0, 0))
+    huge_img = Image.new("RGB", (1300, 1900), color=(204, 0, 0))
     img_byte_arr = io.BytesIO()
-    huge_img.save(img_byte_arr, format='JPEG')
+    huge_img.save(img_byte_arr, format="JPEG")
 
     with pytest.raises(ValueError, match="Photo is too large to fit on a 4R sheet."):
         generate_print_sheet(img_byte_arr.getvalue())

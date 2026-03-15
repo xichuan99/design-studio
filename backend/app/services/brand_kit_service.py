@@ -1,4 +1,5 @@
 """Service for extracting and managing brand colors."""
+
 import json
 from google import genai
 from app.core.config import settings
