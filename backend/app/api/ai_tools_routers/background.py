@@ -4,7 +4,7 @@ import logging
 import time
 import uuid
 from typing import Optional
-from fastapi import APIRouter, Depends, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.services import bg_removal_service, inpaint_service, outpaint_service
@@ -12,11 +12,19 @@ from app.api.deps import get_db
 from app.api.rate_limit import rate_limit_dependency
 from app.models.user import User
 from app.services.storage_service import upload_image
+from app.schemas.error import ERROR_RESPONSES
 
-router = APIRouter()
+router = APIRouter(tags=["AI Tools"])
 logger = logging.getLogger(__name__)
 
-@router.post("/background-swap", responses=ERROR_RESPONSES)
+@router.post(
+    "/background-swap",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="Background Swap",
+    description="Removes the background of a product image, generates a new one, and composites them.",
+    responses=ERROR_RESPONSES,
+)
 async def background_swap(
     file: UploadFile = File(...),
     prompt: str = Form(...),
@@ -89,7 +97,14 @@ async def background_swap(
         raise InternalServerError(detail=f"Failed to process image: {str(e)}"
         )
 
-@router.post("/magic-eraser", responses=ERROR_RESPONSES)
+@router.post(
+    "/magic-eraser",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="Magic Eraser",
+    description="Uses AI inpainting to remove objects or artifacts from an image.",
+    responses=ERROR_RESPONSES,
+)
 async def magic_eraser(
     file: UploadFile = File(...),
     mask: UploadFile = File(...),
@@ -158,7 +173,14 @@ async def magic_eraser(
         raise InternalServerError(detail=f"Failed to process image: {str(e)}"
         )
 
-@router.post("/generative-expand", responses=ERROR_RESPONSES)
+@router.post(
+    "/generative-expand",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="Generative Expand",
+    description="Expands the borders of an image using AI outpainting.",
+    responses=ERROR_RESPONSES,
+)
 async def generative_expand(
     file: UploadFile = File(...),
     direction: Optional[str] = Form(None),
@@ -223,4 +245,3 @@ async def generative_expand(
             )
         raise InternalServerError(detail=f"Failed to process image: {str(e)}"
         )
-

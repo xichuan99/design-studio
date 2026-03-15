@@ -8,15 +8,25 @@ from app.core.database import get_db
 from app.core.security import get_password_hash, verify_password
 from app.models.user import User
 from app.schemas.auth import RegisterRequest, LoginRequest, AuthResponse
+from app.schemas.error import ERROR_RESPONSES
 
-router = APIRouter()
+router = APIRouter(tags=["Authentication"])
 
 
 @router.post(
-    "/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED
-, responses=ERROR_RESPONSES)
+    "/register",
+    response_model=AuthResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Register a new user",
+    description="Creates a new user account with email and password and grants initial sign-up credits.",
+    responses=ERROR_RESPONSES,
+)
 async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
-    """Registers a new user with email and password."""
+    """
+    Registers a new user with email and password.
+    If the email already exists, returns a 400 error.
+    Otherwise, creates the user, hashes the password, and logs 10 bonus credits for signing up.
+    """
     # Check if user already exists
     result = await db.execute(select(User).where(User.email == data.email))
     existing_user = result.scalar_one_or_none()
@@ -49,9 +59,19 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
     return user
 
 
-@router.post("/login", response_model=AuthResponse, responses=ERROR_RESPONSES)
+@router.post(
+    "/login",
+    response_model=AuthResponse,
+    status_code=status.HTTP_200_OK,
+    summary="User Login",
+    description="Verifies user credentials. Primarily used by the frontend NextAuth implementation.",
+    responses=ERROR_RESPONSES,
+)
 async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
-    """Verifies user credentials. Used by frontend NextAuth."""
+    """
+    Verifies user credentials. Used by frontend NextAuth.
+    Returns 401 if the user does not exist, password does not match, or if the account uses Google Login exclusively.
+    """
     result = await db.execute(select(User).where(User.email == data.email))
     user = result.scalar_one_or_none()
 

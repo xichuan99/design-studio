@@ -1,16 +1,21 @@
-from app.core.exceptions import AppException, NotFoundError, ValidationError, InsufficientCreditsError, UnauthorizedError, ForbiddenError, ConflictError, InternalServerError
-from app.schemas.error import ERROR_RESPONSES
-from fastapi import APIRouter, Depends, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.api.deps import get_current_user
 from app.api.rate_limit import rate_limit_dependency
 from app.models.user import User
+from app.schemas.error import ERROR_RESPONSES
 
-router = APIRouter()
+router = APIRouter(tags=["Designs - Media"])
 
-
-@router.post("/upload", responses=ERROR_RESPONSES)
+@router.post(
+    "/upload",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="Upload User Image",
+    description="Uploads a user image (for canvas or reference) and returns the public URL.",
+    responses=ERROR_RESPONSES,
+)
 async def upload_user_image(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
@@ -41,7 +46,14 @@ async def upload_user_image(
         logging.exception("Upload endpoint failed")
         raise InternalServerError(detail=f"Failed to upload image: {str(e)}")
 
-@router.post("/remove-background", responses=ERROR_RESPONSES)
+@router.post(
+    "/remove-background",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="Remove Background API",
+    description="Stand-alone endpoint to remove background from an uploaded image.",
+    responses=ERROR_RESPONSES,
+)
 async def api_remove_background(
     file: UploadFile = File(...),
     current_user: User = Depends(rate_limit_dependency),
@@ -82,4 +94,3 @@ async def api_remove_background(
         logging.exception("Failed to remove background")
         raise InternalServerError(detail=f"Background removal failed: {str(e)}"
         )
-

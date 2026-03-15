@@ -1,11 +1,11 @@
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator, Field
 from typing import Optional
 import uuid
 from datetime import datetime
 
 
 class UserUpdate(BaseModel):
-    name: Optional[str] = None
+    name: Optional[str] = Field(None, description="Full name of the user to be updated", example="Siti Rahma")
 
     @field_validator("name")
     @classmethod
@@ -21,16 +21,39 @@ class UserUpdate(BaseModel):
             raise ValueError("Name must be at least 2 characters")
         return v
 
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "name": "Siti Rahma"
+            }
+        }
+    )
+
 
 class UserResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID = Field(..., description="Unique user identifier", example="123e4567-e89b-12d3-a456-426614174000")
+    email: str = Field(..., description="User's email address", example="siti@example.com")
+    name: str = Field(..., description="User's full name", example="Siti Rahma")
+    avatar_url: Optional[str] = Field(None, description="URL to user's avatar image", example="https://example.com/avatar.jpg")
+    credits_remaining: int = Field(..., description="Current available credits", example=25)
+    storage_used: int = Field(0, description="Storage used by the user in bytes", example=102400)
+    storage_quota: int = Field(104857600, description="Maximum storage quota in bytes", example=104857600)
+    provider: str = Field(..., description="Authentication provider", example="credentials")
+    created_at: datetime = Field(..., description="Account creation timestamp", example="2024-03-15T12:00:00Z")
 
-    id: uuid.UUID
-    email: str
-    name: str
-    avatar_url: Optional[str]
-    credits_remaining: int
-    storage_used: int = 0
-    storage_quota: int = 104857600
-    provider: str
-    created_at: datetime
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "id": "123e4567-e89b-12d3-a456-426614174000",
+                "email": "siti@example.com",
+                "name": "Siti Rahma",
+                "avatar_url": "https://example.com/avatar.jpg",
+                "credits_remaining": 25,
+                "storage_used": 102400,
+                "storage_quota": 104857600,
+                "provider": "credentials",
+                "created_at": "2024-03-15T12:00:00Z"
+            }
+        }
+    )

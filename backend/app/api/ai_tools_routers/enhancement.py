@@ -3,20 +3,28 @@ from app.schemas.error import ERROR_RESPONSES
 import logging
 import time
 import uuid
-from fastapi import APIRouter, Depends, UploadFile, File, Form
 import httpx
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.services import upscale_service, retouch_service, id_photo_service, watermark_service
 from app.api.deps import get_db
 from app.api.rate_limit import rate_limit_dependency
 from app.models.user import User
 from app.services.storage_service import upload_image
+from app.schemas.error import ERROR_RESPONSES
 
-router = APIRouter()
+router = APIRouter(tags=["AI Tools"])
 logger = logging.getLogger(__name__)
 
-@router.post("/upscale", responses=ERROR_RESPONSES)
-async def upscale(
+@router.post(
+    "/upscale",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="Upscale Image",
+    description="Upscales an image using AI (Fal.ai). Cost: 1 credit.",
+    responses=ERROR_RESPONSES,
+)
+async def upscale_image(
     file: UploadFile = File(...),
     scale: float = Form(2.0),
     db: AsyncSession = Depends(get_db),
@@ -84,7 +92,15 @@ async def upscale(
         logger.exception(f"Failed to process upscale request: {str(e)}")
         raise InternalServerError(detail="Failed to process image upscaling")
 
-@router.post("/retouch", responses=ERROR_RESPONSES)
+
+@router.post(
+    "/retouch",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="Auto Retouch Photo",
+    description="Enhances exposure/color using CLAHE and removes blemishes using Bilateral Filtering.",
+    responses=ERROR_RESPONSES,
+)
 async def retouch(
     file: UploadFile = File(...),
     output_format: str = Form("jpeg"),
@@ -146,7 +162,15 @@ async def retouch(
         raise InternalServerError(detail=f"Failed to process image: {str(e)}"
         )
 
-@router.post("/id-photo", responses=ERROR_RESPONSES)
+
+@router.post(
+    "/id-photo",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="Create ID Photo",
+    description="Removes background, crops face, replaces bg color, and resizes to standard print dimensions.",
+    responses=ERROR_RESPONSES,
+)
 async def create_id_photo(
     file: UploadFile = File(...),
     bg_color: str = Form("red"),
@@ -240,7 +264,15 @@ async def create_id_photo(
         raise InternalServerError(detail=f"Failed to process image: {str(e)}"
         )
 
-@router.post("/watermark", responses=ERROR_RESPONSES)
+
+@router.post(
+    "/watermark",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="Apply Watermark",
+    description="Applies a watermark/logo to an image. Free of charge.",
+    responses=ERROR_RESPONSES,
+)
 async def apply_watermark(
     file: UploadFile = File(...),
     logo: UploadFile = File(...),
@@ -286,4 +318,3 @@ async def apply_watermark(
         logger.exception("Watermark application failed")
         raise InternalServerError(detail=f"Failed to process image: {str(e)}"
         )
-

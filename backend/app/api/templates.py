@@ -2,17 +2,25 @@ from app.core.exceptions import AppException, NotFoundError, ValidationError, In
 from app.schemas.error import ERROR_RESPONSES
 """Templates API: list and retrieve design templates."""
 
-from typing import Optional
-from fastapi import APIRouter, Depends
+from typing import Optional, List, Dict, Any
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.core.database import get_db
 from app.models.template import Template
+from app.schemas.error import ERROR_RESPONSES
 
-router = APIRouter()
+router = APIRouter(tags=["Templates"])
 
 
-@router.get("/", responses=ERROR_RESPONSES)
+@router.get(
+    "/",
+    response_model=List[Dict[str, Any]],
+    status_code=status.HTTP_200_OK,
+    summary="List Templates",
+    description="List all available templates. Optionally filter by category or aspect ratio.",
+    responses=ERROR_RESPONSES,
+)
 async def list_templates(
     category: Optional[str] = None,
     aspect_ratio: Optional[str] = None,
@@ -44,7 +52,14 @@ async def list_templates(
     ]
 
 
-@router.get("/{template_id}", responses=ERROR_RESPONSES)
+@router.get(
+    "/{template_id}",
+    response_model=Dict[str, Any],
+    status_code=status.HTTP_200_OK,
+    summary="Get Template",
+    description="Retrieve a single template by its unique ID.",
+    responses=ERROR_RESPONSES,
+)
 async def get_template(
     template_id: str,
     db: AsyncSession = Depends(get_db),

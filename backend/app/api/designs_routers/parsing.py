@@ -1,17 +1,24 @@
-from app.core.exceptions import AppException, NotFoundError, ValidationError, InsufficientCreditsError, UnauthorizedError, ForbiddenError, ConflictError, InternalServerError
-from app.schemas.error import ERROR_RESPONSES
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, status
 from app.schemas.design import (
     DesignGenerationRequest,
     ParsedTextElements,
     ModifyPromptRequest,
+    ModifyPromptResponse,
 )
 
 from app.services.llm_service import parse_design_text
+from app.schemas.error import ERROR_RESPONSES
 
-router = APIRouter()
+router = APIRouter(tags=["Designs - Parsing"])
 
-@router.post("/parse", response_model=ParsedTextElements, responses=ERROR_RESPONSES)
+@router.post(
+    "/parse",
+    response_model=ParsedTextElements,
+    status_code=status.HTTP_200_OK,
+    summary="Parse Design Text",
+    description="Preview functionality: parse text into structured elements without generating the image.",
+    responses=ERROR_RESPONSES,
+)
 async def parse_text(request: DesignGenerationRequest) -> ParsedTextElements:
     """Preview functionality: parse text into structured elements without generating the image."""
     try:
@@ -26,8 +33,15 @@ async def parse_text(request: DesignGenerationRequest) -> ParsedTextElements:
     except Exception as e:
         raise InternalServerError(detail=f"Failed to parse text: {str(e)}")
 
-@router.post("/modify-prompt", responses=ERROR_RESPONSES)
-async def modify_prompt(request: ModifyPromptRequest) -> dict:
+@router.post(
+    "/modify-prompt",
+    response_model=ModifyPromptResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Modify Visual Prompt",
+    description="Modifies visual prompt parts via Gemini based on Indonesian text instructions.",
+    responses=ERROR_RESPONSES,
+)
+async def modify_prompt(request: ModifyPromptRequest) -> ModifyPromptResponse:
     """Modifies visual prompt parts via Gemini based on Indonesian text instructions."""
     from app.services.llm_service import modify_visual_prompt
 
@@ -37,11 +51,11 @@ async def modify_prompt(request: ModifyPromptRequest) -> dict:
             original_visual_prompt=request.original_visual_prompt,
             instruction=request.user_instruction,
         )
-        return result
+        # Assuming the result is a dict that matches ModifyPromptResponse structure
+        return ModifyPromptResponse(**result)
     except Exception as e:
         import logging
 
         logging.exception("Failed to modify prompt")
         raise InternalServerError(detail=f"Failed to modify prompt: {str(e)}"
         )
-

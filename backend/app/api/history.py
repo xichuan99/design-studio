@@ -2,8 +2,8 @@ from app.core.exceptions import AppException, NotFoundError, ValidationError, In
 from app.schemas.error import ERROR_RESPONSES
 """Design History API: list and create history snapshots for a project."""
 
-from typing import Optional
-from fastapi import APIRouter, Depends
+from typing import Optional, List, Dict, Any
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import desc
@@ -11,19 +11,58 @@ from app.core.database import get_db
 from app.models.design_history import DesignHistory
 from app.api.deps import get_current_user
 from app.models.user import User
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, ConfigDict
+from app.schemas.error import ERROR_RESPONSES
 
-router = APIRouter()
+router = APIRouter(tags=["History"])
 
 
 class DesignHistoryCreate(BaseModel):
-    project_id: str
-    background_url: str
-    text_layers: list
-    generation_params: Optional[dict] = None
+    project_id: str = Field(..., description="Project ID")
+    background_url: str = Field(..., description="URL of the background image")
+    text_layers: list = Field(..., description="List of text layers")
+    generation_params: Optional[dict] = Field(None, description="Parameters used to generate the design")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "project_id": "123e4567-e89b-12d3-a456-426614174000",
+                "background_url": "https://example.com/bg.png",
+                "text_layers": []
+            }
+        }
+    )
 
 
-@router.get("/{project_id}", responses=ERROR_RESPONSES)
+class DesignHistoryResponse(BaseModel):
+    id: str = Field(..., description="History snapshot ID")
+    project_id: str = Field(..., description="Project ID")
+    background_url: str = Field(..., description="URL of the background image")
+    text_layers: list = Field(..., description="List of text layers")
+    generation_params: Optional[dict] = Field(None, description="Parameters used to generate the design")
+    created_at: Optional[str] = Field(None, description="Creation timestamp")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "id": "223e4567-e89b-12d3-a456-426614174000",
+                "project_id": "123e4567-e89b-12d3-a456-426614174000",
+                "background_url": "https://example.com/bg.png",
+                "text_layers": [],
+                "created_at": "2024-03-15T12:00:00Z"
+            }
+        }
+    )
+
+
+@router.get(
+    "/{project_id}",
+    response_model=List[DesignHistoryResponse],
+    status_code=status.HTTP_200_OK,
+    summary="List Project History",
+    description="List all design history snapshots for a specific project, ordered newest first.",
+    responses=ERROR_RESPONSES,
+)
 async def list_history(
     project_id: str,
     db: AsyncSession = Depends(get_db),
@@ -50,7 +89,14 @@ async def list_history(
     ]
 
 
-@router.post("/", responses=ERROR_RESPONSES)
+@router.post(
+    "/",
+    response_model=DesignHistoryResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create History Snapshot",
+    description="Save a design history snapshot for a project.",
+    responses=ERROR_RESPONSES,
+)
 async def create_history(
     data: DesignHistoryCreate,
     db: AsyncSession = Depends(get_db),
