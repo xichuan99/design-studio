@@ -5,6 +5,16 @@ import { useProjectApi } from '@/lib/api';
 import { useCanvasStore } from '@/store/useCanvasStore';
 import { Loader2, History, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface HistoryEntry {
     id: string;
@@ -24,6 +34,7 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({ projectId }) => {
     const { loadState } = useCanvasStore();
     const [entries, setEntries] = useState<HistoryEntry[]>([]);
     const [loading, setLoading] = useState(true);
+    const [entryToRestore, setEntryToRestore] = useState<HistoryEntry | null>(null);
 
     useEffect(() => {
         const fetchHistory = async () => {
@@ -41,11 +52,16 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({ projectId }) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [projectId]);
 
-    const handleRestore = (entry: HistoryEntry) => {
-        if (!confirm('Restore design ini? Perubahan saat ini akan hilang.')) return;
+    const handleRestoreClick = (entry: HistoryEntry) => {
+        setEntryToRestore(entry);
+    };
+
+    const confirmRestore = () => {
+        if (!entryToRestore) return;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const elements = (entry.text_layers as any)?.elements || [];
-        loadState(elements, entry.background_url || null);
+        const elements = (entryToRestore.text_layers as any)?.elements || [];
+        loadState(elements, entryToRestore.background_url || null);
+        setEntryToRestore(null);
     };
 
     const formatDate = (iso: string) => {
@@ -101,16 +117,33 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({ projectId }) => {
                                     variant="ghost"
                                     size="sm"
                                     className="h-7 text-xs gap-1"
-                                    onClick={() => handleRestore(entry)}
+                                    onClick={() => handleRestoreClick(entry)}
                                 >
                                     <RotateCcw className="w-3 h-3" />
-                                    Restore
+                                    Pulihkan
                                 </Button>
                             </div>
                         </div>
                     ))}
                 </div>
             )}
+
+            <AlertDialog open={!!entryToRestore} onOpenChange={(open) => !open && setEntryToRestore(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Pulihkan Desain?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Tindakan ini akan mengganti desain Anda saat ini dengan versi riwayat ini. Perubahan yang belum disimpan akan hilang.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Batal</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmRestore} className="bg-primary text-primary-foreground hover:bg-primary/90">
+                            Ya, Pulihkan
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 };

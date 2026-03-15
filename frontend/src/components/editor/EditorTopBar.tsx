@@ -194,7 +194,7 @@ export const EditorTopBar: React.FC<EditorTopBarProps> = ({ projectId, saveStatu
                 <Button
                     variant="default"
                     size="sm"
-                    className="gap-2 shadow-[0_0_15px_rgba(var(--primary),0.2)] bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all"
+                    className="gap-2 shadow-[0_0_15px_rgba(var(--primary),0.2)] bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all tour-edit-export"
                     onClick={() => setExportOpen(true)}
                     disabled={!stageRef}
                 >

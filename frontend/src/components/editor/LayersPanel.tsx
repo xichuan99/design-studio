@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useCanvasStore, CanvasElement } from '@/store/useCanvasStore';
 import { Button } from '@/components/ui/button';
-import { Eye, EyeOff, Lock, Unlock, Image as ImageIcon, Square, Edit2, Layers, GripVertical } from 'lucide-react';
+import { Eye, EyeOff, Lock, Unlock, Image as ImageIcon, Square, Edit2, Layers, GripVertical, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
@@ -185,9 +185,24 @@ export const LayersPanel: React.FC = () => {
     const { elements, selectedElementIds, selectElement, toggleSelectElement, reorderElements, toggleVisibility, toggleLock, updateName, setHighlightElementId, setColorTag } = useCanvasStore();
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editName, setEditName] = useState("");
+    const [searchQuery, setSearchQuery] = useState("");
+
+    const getLabel = (el: { label?: string; type: string; text?: string; shapeType?: string }) => {
+        if (el.label) return el.label;
+        if (el.type === 'group') return 'Group';
+        if (el.type === 'text') return el.text ? `Text: ${el.text.substring(0, 10)}...` : 'Text';
+        if (el.type === 'image') return 'Image';
+        if (el.type === 'shape') return `Shape (${el.shapeType || 'rect'})`;
+        return 'Element';
+    };
 
     // Create a reversed copy for display since bottom-to-top means first-to-last in array
-    const displayElements = [...elements].reverse();
+    const displayElements = [...elements]
+        .reverse()
+        .filter(el => {
+            if (!searchQuery) return true;
+            return getLabel(el).toLowerCase().includes(searchQuery.toLowerCase());
+        });
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -245,14 +260,7 @@ export const LayersPanel: React.FC = () => {
         return <Square className="h-4 w-4" />;
     };
 
-    const getLabel = (el: { label?: string; type: string; text?: string; shapeType?: string }) => {
-        if (el.label) return el.label;
-        if (el.type === 'group') return 'Group';
-        if (el.type === 'text') return el.text ? `Text: ${el.text.substring(0, 10)}...` : 'Text';
-        if (el.type === 'image') return 'Image';
-        if (el.type === 'shape') return `Shape (${el.shapeType || 'rect'})`;
-        return 'Element';
-    };
+
 
     const startEditing = (id: string, currentLabel: string) => {
         setEditingId(id);
@@ -282,8 +290,19 @@ export const LayersPanel: React.FC = () => {
     }
 
     return (
-        <div className="w-full flex flex-col h-full overflow-y-auto">
-            <div className="p-2 space-y-1 overflow-x-hidden">
+        <div className="w-full flex flex-col h-full overflow-hidden">
+            <div className="p-2 border-b shrink-0">
+                <div className="relative">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                    <Input 
+                        placeholder="Search layers..." 
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="h-8 pl-8 text-xs w-full bg-muted/50"
+                    />
+                </div>
+            </div>
+            <div className="flex-1 p-2 space-y-1 overflow-y-auto overflow-x-hidden">
                 <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}

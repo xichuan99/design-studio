@@ -81,25 +81,25 @@ export const TextBannerPanel = () => {
         <div className="flex flex-col h-full bg-card p-4 gap-4">
             <div className="flex items-center gap-2 border-b pb-4">
                 <Wand2 className="h-5 w-5 text-primary" />
-                <h2 className="font-semibold text-sm">AI Text Banner</h2>
+                <h2 className="font-semibold text-sm">AI Banner Teks</h2>
             </div>
             
             <div className="flex-1 overflow-y-auto space-y-5 pr-1 pb-4">
                 <p className="text-[13px] text-muted-foreground leading-relaxed">
-                    Generate high-quality decorative text banners with transparent backgrounds to composite over your designs.
+                    Buat banner teks dekoratif berkualitas tinggi dengan latar transparan untuk dipadukan ke dalam desain.
                 </p>
 
                 <div className="space-y-5">
                 {/* Text Input */}
                 <div className="space-y-2">
                     <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                        <Type className="w-3.5 h-3.5" /> Banner Text
+                        <Type className="w-3.5 h-3.5" /> Teks Banner
                     </label>
                     <Input
                         type="text"
                         value={text}
                         onChange={(e) => setText(e.target.value)}
-                        placeholder="e.g. SUMMER SALE"
+                        placeholder="Contoh: DISKON BESAR!"
                         className="text-sm focus-visible:ring-primary/50"
                     />
                 </div>
@@ -107,11 +107,11 @@ export const TextBannerPanel = () => {
                 {/* Style Preset Dropdown */}
                 <div className="space-y-2">
                     <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                        <Wand2 className="w-3.5 h-3.5" /> Banner Style
+                        <Wand2 className="w-3.5 h-3.5" /> Gaya Banner
                     </label>
                     <Select value={style} onValueChange={setStyle}>
                         <SelectTrigger className="w-full text-sm">
-                            <SelectValue placeholder="Select a style" />
+                            <SelectValue placeholder="Pilih gaya" />
                         </SelectTrigger>
                         <SelectContent>
                             {STYLE_PRESETS.map(p => (
@@ -125,7 +125,7 @@ export const TextBannerPanel = () => {
                         <Textarea
                             value={customStyle}
                             onChange={(e) => setCustomStyle(e.target.value)}
-                            placeholder="e.g. elegant 3d metallic lettering with neon glow"
+                            placeholder="Contoh: huruf elegan metalik 3d dengan efek neon"
                             className="min-h-[80px] max-h-[160px] resize-y text-sm mt-2 focus-visible:ring-primary/50"
                         />
                     )}
@@ -134,13 +134,13 @@ export const TextBannerPanel = () => {
                 {/* Color Hint */}
                 <div className="space-y-2">
                     <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                        <Palette className="w-3.5 h-3.5" /> Color Hint (Optional)
+                        <Palette className="w-3.5 h-3.5" /> Petunjuk Warna (Opsional)
                     </label>
                     <Input
                         type="text"
                         value={colorHint}
                         onChange={(e) => setColorHint(e.target.value)}
-                        placeholder="e.g. gold and black"
+                        placeholder="Contoh: emas dan hitam"
                         className="text-sm focus-visible:ring-primary/50"
                     />
                 </div>
@@ -148,7 +148,7 @@ export const TextBannerPanel = () => {
                 {/* Quality / Tier Selection */}
                 <div className="space-y-2">
                     <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                        Generation Quality
+                        Kualitas Generasi
                     </label>
                     <div className="grid grid-cols-3 gap-2">
                          <button
@@ -204,12 +204,12 @@ export const TextBannerPanel = () => {
                     {isGenerating ? (
                         <>
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Generating Banner...
+                            Membuat Banner...
                         </>
                     ) : (
                         <>
                             <Wand2 className="w-4 h-4 mr-2" />
-                            Generate AI Banner
+                            Buat AI Banner
                         </>
                     )}
                 </Button>

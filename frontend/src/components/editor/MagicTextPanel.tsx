@@ -100,10 +100,10 @@ export const MagicTextPanel: React.FC = () => {
                     });
                 });
 
-                // Logical canvas dimensions (NOT stageRef.width which is viewport 1080px)
-                // Elements in the store use 1024-based logical coordinates
-                const logicalWidth = 1024;
-                const logicalHeight = 1024;
+                // Logical canvas dimensions match the actual canvas size
+                // Elements in the store use proportional logical coordinates
+                const logicalWidth = canvasWidth;
+                const logicalHeight = canvasHeight;
 
                 // 4. Transform response (proportional 0.0-1.0) to absolute logical coordinates
                 const margin = 40;
@@ -198,7 +198,7 @@ export const MagicTextPanel: React.FC = () => {
                 <div className="space-y-2">
                     <div className="flex items-center justify-between">
                         <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Teks Promosi</label>
-                        <span className="text-[11px] text-muted-foreground">{text.length}/500</span>
+                        <span className="text-xs text-muted-foreground">{text.length}/500</span>
                     </div>
                     <Textarea
                         placeholder="Contoh: Diskon 50% Khusus Hari Ini! Dapatkan sekarang sebelum kehabisan."
@@ -229,8 +229,8 @@ export const MagicTextPanel: React.FC = () => {
                                     )}
                                 >
                                     <Icon className={cn("h-4 w-4 mb-1.5", isSelected ? "text-primary" : "text-muted-foreground")} />
-                                    <span className={cn("text-[11px] font-medium block w-full truncate", isSelected ? "text-foreground" : "text-muted-foreground")}>{preset.label}</span>
-                                    <span className="text-[11px] text-muted-foreground/70 hidden sm:block truncate w-full">{preset.description}</span>
+                                    <span className={cn("text-xs font-medium block w-full truncate", isSelected ? "text-foreground" : "text-muted-foreground")}>{preset.label}</span>
+                                    <span className="text-xs text-muted-foreground/70 hidden sm:block truncate w-full">{preset.description}</span>
                                 </button>
                             );
                         })}

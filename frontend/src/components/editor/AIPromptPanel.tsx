@@ -260,6 +260,15 @@ export const AIPromptPanel: React.FC = () => {
         ? `/api/proxy-image?url=${encodeURIComponent(generatedUrl)}`
         : generatedUrl;
 
+    const getAspectRatioClass = (ratioId: string) => {
+        switch (ratioId) {
+            case '9:16': return 'aspect-[9/16]';
+            case '16:9': return 'aspect-video';
+            case '4:5': return 'aspect-[4/5]';
+            default: return 'aspect-square';
+        }
+    };
+
     return (
         <div className="flex flex-col h-full bg-card p-4 gap-4">
             <div className="flex items-center gap-2 border-b pb-4">
@@ -268,9 +277,21 @@ export const AIPromptPanel: React.FC = () => {
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-4 pr-1 pb-4">
+                {/* Prompt Input */}
+                <div className="space-y-2">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Prompt</label>
+                    <Textarea
+                        placeholder="Contoh: Latar belakang minimalis dengan cahaya alami..."
+                        className="h-28 resize-none text-sm rounded-xl bg-card/80 border-border/60 focus-visible:ring-indigo-500/50"
+                        value={prompt}
+                        onChange={(e) => setPrompt(e.target.value)}
+                        disabled={isGenerating}
+                    />
+                </div>
+
                 {/* Aspect Ratio Selector */}
                 <div className="space-y-2">
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Aspect Ratio</label>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Aspect Ratio</label>
                     <div className="grid grid-cols-4 gap-2">
                         {ASPECT_RATIOS.map((ratio) => {
                             const Icon = ratio.icon;
@@ -288,7 +309,7 @@ export const AIPromptPanel: React.FC = () => {
                                     )}
                                 >
                                     <Icon className="h-4 w-4 mb-1" />
-                                    <span className="text-[10px] font-medium block w-full truncate">{ratio.label}</span>
+                                    <span className="text-xs font-medium block w-full truncate">{ratio.label}</span>
                                 </button>
                             );
                         })}
@@ -297,7 +318,7 @@ export const AIPromptPanel: React.FC = () => {
 
                 {/* Style Selector */}
                 <div className="space-y-2">
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Gaya Visual</label>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Gaya Visual</label>
                     <div className="grid grid-cols-4 gap-2">
                         {STYLE_PRESETS.map((preset) => {
                             const Icon = preset.icon;
@@ -315,18 +336,24 @@ export const AIPromptPanel: React.FC = () => {
                                     )}
                                 >
                                     <Icon className="h-4 w-4 mb-1" />
-                                    <span className="text-[10px] font-medium block w-full truncate">{preset.label}</span>
+                                    <span className="text-xs font-medium block w-full truncate">{preset.label}</span>
                                 </button>
                             );
                         })}
                     </div>
                 </div>
 
-                {/* Advanced Options */}
+                {/* Advanced Options wrapped in <details> */}
+                <details className="group border border-border/60 rounded-lg open:bg-muted/10 open:pb-3">
+                    <summary className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider cursor-pointer list-none flex items-center justify-between hover:bg-muted/30 transition-colors rounded-lg group-open:rounded-b-none">
+                        Pengaturan Lanjutan
+                        <span className="transition duration-200 group-open:rotate-180">▼</span>
+                    </summary>
+                    <div className="px-3 pt-3 space-y-5 animate-in fade-in slide-in-from-top-2">
                 <div className="grid grid-cols-2 gap-3 pb-2">
                     {/* Template Selector */}
                     <div className="space-y-1.5">
-                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Template Preset</label>
+                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Template Preset</label>
                         <Select 
                             value={selectedTemplate} 
                             onValueChange={setSelectedTemplate}
@@ -346,7 +373,7 @@ export const AIPromptPanel: React.FC = () => {
 
                     {/* Brand Kit Selector */}
                     <div className="space-y-1.5">
-                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Brand Kit</label>
+                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Brand Kit</label>
                         <Select 
                             value={selectedBrandKit} 
                             onValueChange={setSelectedBrandKit}
@@ -366,9 +393,9 @@ export const AIPromptPanel: React.FC = () => {
                 </div>
 
                 {/* Product Composite */}
-                <div className="space-y-3 pb-2 border-b">
+                <div className="space-y-3 pb-2 border-b border-border/60">
                     <div className="flex items-center justify-between">
-                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Foto Produk Utama</label>
+                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Foto Produk Utama</label>
                         {productImageUrl && (
                             <Button 
                                 variant="ghost" 
@@ -413,7 +440,7 @@ export const AIPromptPanel: React.FC = () => {
                                 />
                             </div>
                             <div className="flex items-center justify-between bg-muted/30 p-2 rounded-lg border border-border/50">
-                                <label htmlFor="remove-bg" className="text-[10px] font-medium cursor-pointer uppercase tracking-wider">Hapus Background</label>
+                                <label htmlFor="remove-bg" className="text-xs font-medium cursor-pointer uppercase tracking-wider">Hapus Background</label>
                                 <Switch 
                                     id="remove-bg" 
                                     checked={removeProductBg}
@@ -425,20 +452,8 @@ export const AIPromptPanel: React.FC = () => {
                     )}
                 </div>
 
-                {/* Prompt Input */}
-                <div className="space-y-2">
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Prompt</label>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                        Deskripsikan gambar yang ingin di-generate. Setelah jadi, pilih untuk dijadikan background atau elemen canvas.
-                    </p>
-                    <Textarea
-                        placeholder="Contoh: Latar belakang ruang tamu modern minimalis dengan cahaya alami..."
-                        className="h-28 resize-none text-sm rounded-xl bg-card/80 border-border/60 focus-visible:ring-indigo-500/50"
-                        value={prompt}
-                        onChange={(e) => setPrompt(e.target.value)}
-                        disabled={isGenerating}
-                    />
-                </div>
+                    </div>
+                </details>
 
                 {/* Error Banner */}
                 {inlineError && (
@@ -462,7 +477,7 @@ export const AIPromptPanel: React.FC = () => {
                             <img
                                 src={previewUrl}
                                 alt="AI Generated"
-                                className="w-full aspect-square object-cover"
+                                className={cn("w-full object-cover rounded shadow-sm", getAspectRatioClass(aspectRatio))}
                                 crossOrigin="anonymous"
                             />
                         </div>
@@ -514,7 +529,7 @@ export const AIPromptPanel: React.FC = () => {
                     <Button
                         className="w-full gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 shadow-[0_4px_14px_rgba(99,102,241,0.4)] border-0"
                         onClick={() => handleGenerate()}
-                        disabled={isGenerating || !prompt.trim()}
+                        disabled={isGenerating || (!prompt.trim() && !productImageUrl)}
                     >
                         {isGenerating ? (
                             <>

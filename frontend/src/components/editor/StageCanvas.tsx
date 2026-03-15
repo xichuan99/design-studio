@@ -1,10 +1,12 @@
 import React from 'react';
+import Konva from 'konva';
 import { Stage, Layer, Image as KonvaImage, Group } from 'react-konva';
 import useImage from 'use-image';
 import { useCanvasStore, CanvasElement } from '@/store/useCanvasStore';
 import { TextNode } from './TextNode';
 import { ImageNode } from './ImageNode';
 import { ShapeNode } from './ShapeNode';
+import { getLineGuideStops, getObjectSnappingEdges, getGuides, drawGuides } from '@/hooks/useSnapping';
 
 interface StageCanvasProps {
     width: number;
@@ -93,6 +95,45 @@ export const StageCanvas: React.FC<StageCanvasProps> = ({ width, height, onBgSta
         },
         []
     );
+
+    const handleDragMove = (e: Konva.KonvaEventObject<DragEvent>) => {
+        if (!stageRef) return;
+        const layer = stageRef.getLayers()[0];
+        
+        // Remove old guides
+        layer.find('.guid-line').forEach((l) => l.destroy());
+
+        const lineGuideStops = getLineGuideStops(e.target, stageRef);
+        const itemBounds = getObjectSnappingEdges(e.target);
+        const guides = getGuides(lineGuideStops, itemBounds);
+
+        if (!guides.length) {
+            return;
+        }
+
+        drawGuides(guides, layer);
+
+        const absPos = e.target.absolutePosition();
+        let setP = false;
+        guides.forEach((lg) => {
+            if (lg.orientation === 'V') {
+                absPos.x = lg.lineGuide + lg.offset;
+                setP = true;
+            } else if (lg.orientation === 'H') {
+                absPos.y = lg.lineGuide + lg.offset;
+                setP = true;
+            }
+        });
+        if (setP) {
+            e.target.absolutePosition(absPos);
+        }
+    };
+
+    const handleDragEnd = () => {
+        if (!stageRef) return;
+        const layer = stageRef.getLayers()[0];
+        layer.find('.guid-line').forEach((l) => l.destroy());
+    };
 
     const renderNode = (el: CanvasElement) => {
         if (el.visible === false) return null;
@@ -201,6 +242,8 @@ export const StageCanvas: React.FC<StageCanvasProps> = ({ width, height, onBgSta
             height={height}
             onMouseDown={handleStageClick}
             onTouchStart={handleStageClick}
+            onDragMove={handleDragMove}
+            onDragEnd={handleDragEnd}
             ref={handleStageRef}
             style={{ background: backgroundColor || '#ffffff', margin: '0 auto', display: 'flex', justifyContent: 'center' }}
         >

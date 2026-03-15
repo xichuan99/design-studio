@@ -91,9 +91,9 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({ open, onOpenChange, 
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle>Export Design</DialogTitle>
+                    <DialogTitle>Ekspor Desain</DialogTitle>
                     <DialogDescription>
-                        Choose the format to download your design.
+                        Pilih format untuk mengunduh desain Anda.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -101,15 +101,15 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({ open, onOpenChange, 
                     <RadioGroup defaultValue="png" onValueChange={(val: string) => setFormat(val as "png" | "jpeg" | "pdf")}>
                         <div className="flex items-center space-x-2 border p-3 rounded-md cursor-pointer hover:bg-muted transition-colors">
                             <RadioGroupItem value="png" id="r-png" />
-                            <Label htmlFor="r-png" className="flex-1 cursor-pointer text-foreground">PNG (High Quality Image)</Label>
+                            <Label htmlFor="r-png" className="flex-1 cursor-pointer text-foreground">PNG (Gambar Kualitas Tinggi)</Label>
                         </div>
                         <div className="flex items-center space-x-2 border p-3 rounded-md cursor-pointer hover:bg-muted transition-colors">
                             <RadioGroupItem value="jpeg" id="r-jpg" />
-                            <Label htmlFor="r-jpg" className="flex-1 cursor-pointer text-foreground">JPG (Smaller File Size)</Label>
+                            <Label htmlFor="r-jpg" className="flex-1 cursor-pointer text-foreground">JPG (Ukuran File Lebih Kecil)</Label>
                         </div>
                         <div className="flex items-center space-x-2 border p-3 rounded-md cursor-pointer hover:bg-muted transition-colors">
                             <RadioGroupItem value="pdf" id="r-pdf" />
-                            <Label htmlFor="r-pdf" className="flex-1 cursor-pointer text-foreground">PDF (Document Format)</Label>
+                            <Label htmlFor="r-pdf" className="flex-1 cursor-pointer text-foreground">PDF (Format Dokumen)</Label>
                         </div>
                     </RadioGroup>
                 </div>
@@ -117,13 +117,13 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({ open, onOpenChange, 
                 <div className="flex justify-end pt-4 border-t">
                     <Button disabled={isExporting} onClick={handleExport} className="w-full sm:w-auto">
                         {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-                        {isExporting ? "Exporting..." : "Download"}
+                        {isExporting ? "Mengekspor..." : "Unduh"}
                     </Button>
                 </div>
                 {onAutoResizeClick && (
                     <div className="pt-4 border-t mt-2 flex flex-col items-center gap-3">
                         <p className="text-sm text-muted-foreground text-center">
-                            Need this design in multiple sizes?
+                            Butuh desain ini dalam berbagai ukuran?
                         </p>
                         <Button 
                             variant="secondary" 
@@ -131,7 +131,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({ open, onOpenChange, 
                             onClick={onAutoResizeClick}
                         >
                             <Layers className="mr-2 w-4 h-4" />
-                            Auto-Resize for Social Media
+                            Auto-Resize untuk Sosmed
                         </Button>
                     </div>
                 )}

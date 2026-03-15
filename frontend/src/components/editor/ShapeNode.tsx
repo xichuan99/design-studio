@@ -3,6 +3,31 @@ import { Rect, Circle, Transformer } from 'react-konva';
 import Konva from 'konva';
 import { CanvasElement } from '@/store/useCanvasStore';
 
+export const getGradientProps = (element: CanvasElement, width: number, height: number, isCircle = false) => {
+    if (element.fillType === 'gradient' && element.gradientColors) {
+        const w = width;
+        const h = height;
+        let cx = w/2;
+        let cy = h/2;
+        if (isCircle) {
+            cx = 0; cy = 0;
+        }
+        const angleDeg = element.gradientAngle || 90;
+        const angleRad = (angleDeg - 90) * (Math.PI / 180); 
+        const length = Math.abs(w * Math.cos(angleRad)) + Math.abs(h * Math.sin(angleRad));
+        const startX = cx - (length / 2) * Math.cos(angleRad);
+        const startY = cy - (length / 2) * Math.sin(angleRad);
+        const endX = cx + (length / 2) * Math.cos(angleRad);
+        const endY = cy + (length / 2) * Math.sin(angleRad);
+        return {
+            fillLinearGradientStartPoint: { x: startX, y: startY },
+            fillLinearGradientEndPoint: { x: endX, y: endY },
+            fillLinearGradientColorStops: [0, element.gradientColors[0], 1, element.gradientColors[1]],
+        };
+    }
+    return { fill: element.fill || '#e2e8f0' };
+};
+
 interface ShapeNodeProps {
     element: CanvasElement;
     isSelected: boolean;
@@ -33,7 +58,6 @@ export const ShapeNode: React.FC<ShapeNodeProps> = ({
         ref: shapeRef,
         x: element.x,
         y: element.y,
-        fill: element.fill || '#e2e8f0',
         stroke: element.stroke,
         strokeWidth: element.strokeWidth || 0,
         rotation: element.rotation || 0,
@@ -95,6 +119,7 @@ export const ShapeNode: React.FC<ShapeNodeProps> = ({
                 return (
                     <Circle
                         {...commonProps}
+                        {...getGradientProps(element, element.width || 100, element.height || 100, true)}
                         radius={(element.width || 100) / 2}
                         scaleY={(element.height || 100) / (element.width || 100)} // Support ellipses
                     />
@@ -103,6 +128,7 @@ export const ShapeNode: React.FC<ShapeNodeProps> = ({
                 return (
                     <Rect
                         {...commonProps}
+                        {...getGradientProps(element, element.width || 200, element.height || 4, false)}
                         width={element.width || 200}
                         height={element.height || 4} // Use a thin rect for lines so we have fill/stroke & cornerRadius
                         cornerRadius={element.cornerRadius || 0}
@@ -113,6 +139,7 @@ export const ShapeNode: React.FC<ShapeNodeProps> = ({
                 return (
                     <Rect
                         {...commonProps}
+                        {...getGradientProps(element, element.width || 100, element.height || 100, false)}
                         width={element.width || 100}
                         height={element.height || 100}
                         cornerRadius={element.cornerRadius || 0}

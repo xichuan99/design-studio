@@ -19,6 +19,7 @@ import { LeftSidebar } from "@/components/editor/LeftSidebar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Layers, SlidersHorizontal, History as HistoryIcon, PanelLeft, PanelRight } from "lucide-react";
+import { EditorOnboardingTour } from "@/components/onboarding/EditorOnboardingTour";
 
 const PRELOAD_FONTS = ['Inter', 'Poppins', 'Roboto', 'Playfair Display', 'Montserrat', 'Oswald'];
 
@@ -183,7 +184,9 @@ export default function EditorPage() {
                     <LeftSidebar />
                 </div>
 
-                <CanvasWorkspace onBgStatusChange={handleBgStatusChange} />
+                <div className="flex-1 overflow-hidden relative tour-edit-canvas">
+                    <CanvasWorkspace onBgStatusChange={handleBgStatusChange} />
+                </div>
 
                 {/* Mobile Sidebar Backdrops */}
                 {(rightPanelOpen || leftPanelOpen) && (
@@ -209,7 +212,7 @@ export default function EditorPage() {
                             <TabsList className="flex w-full overflow-x-auto no-scrollbar rounded-none border-b border-border/40 bg-transparent h-12 p-0 items-center justify-evenly shrink-0">
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <TabsTrigger value="properties" className="flex-1 rounded-none hover:bg-muted/50 data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-300 h-full px-4" title="Properties">
+                                        <TabsTrigger value="properties" className="flex-1 rounded-none hover:bg-muted/50 data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-300 h-full px-4 tour-edit-styles" title="Properties">
                                             <SlidersHorizontal className="h-[18px] w-[18px]" />
                                         </TabsTrigger>
                                     </TooltipTrigger>
@@ -218,7 +221,7 @@ export default function EditorPage() {
 
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <TabsTrigger value="layers" className="flex-1 rounded-none hover:bg-muted/50 data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-300 h-full px-4" title="Layers">
+                                        <TabsTrigger value="layers" className="flex-1 rounded-none hover:bg-muted/50 data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-300 h-full px-4 tour-edit-layers" title="Layers">
                                             <Layers className="h-[18px] w-[18px]" />
                                         </TabsTrigger>
                                     </TooltipTrigger>
@@ -273,6 +276,8 @@ export default function EditorPage() {
                     </div>
                 </div>
             )}
+
+            <EditorOnboardingTour />
         </div>
     );
 }

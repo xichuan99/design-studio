@@ -165,7 +165,7 @@ export const LeftSidebar: React.FC = () => {
     ];
 
     return (
-        <div className="flex h-full border-r border-border/40 bg-background/80 backdrop-blur-xl shadow-xl z-40 relative transition-all duration-300">
+        <div className="flex h-full border-r border-border/40 bg-background/80 backdrop-blur-xl shadow-xl z-40 relative transition-all duration-300 tour-edit-ai">
             {/* Narrow Navigation Bar */}
             <div className="w-[80px] h-full flex flex-col items-center py-4 border-r border-border/40 gap-3 shrink-0 bg-card/50 z-50">
                 {navItems.map((item) => (

@@ -3,6 +3,7 @@ import { Text, Transformer } from 'react-konva';
 import { Html } from 'react-konva-utils';
 import Konva from 'konva';
 import { CanvasElement } from '@/store/useCanvasStore';
+import { getGradientProps } from './ShapeNode';
 
 interface TextNodeProps {
     element: CanvasElement;
@@ -51,7 +52,7 @@ export const TextNode: React.FC<TextNodeProps> = ({
                 text={element.text}
                 fontSize={element.fontSize || 24}
                 fontFamily={element.fontFamily || 'Inter'}
-                fill={element.fill || '#000000'}
+                {...getGradientProps(element, element.width || 200, element.height || 50)}
                 align={element.align || 'left'}
                 fontStyle={element.fontStyle || 'normal'}
                 fontWeight={element.fontWeight || 'normal'}

@@ -30,6 +30,9 @@ export interface CanvasElement {
     fontFamily?: string;
     fontSize?: number;
     fill?: string;
+    fillType?: 'solid' | 'gradient';
+    gradientColors?: [string, string];
+    gradientAngle?: number;
     align?: 'left' | 'center' | 'right';
     fontWeight?: 'normal' | 'bold';
     fontStyle?: 'normal' | 'italic';
@@ -64,6 +67,7 @@ export interface CanvasState {
     history: CanvasElement[][];
     historyIndex: number;
     stageRef: Konva.Stage | null; // Ref to the Konva Stage for exports
+    clipboard: CanvasElement[] | null;
 }
 
 interface CanvasActions {
@@ -81,6 +85,10 @@ interface CanvasActions {
     setHighlightElementId: (id: string | null) => void;
     groupElements: () => void;
     ungroupElements: () => void;
+
+    // Clipboard
+    copyElements: () => void;
+    pasteElements: () => void;
 
     // Layers
     bringForward: (id: string) => void;
@@ -116,7 +124,10 @@ const saveHistory = (state: CanvasState, newElements: CanvasElement[]) => {
     };
 };
 
-export const useCanvasStore = create<CanvasState & CanvasActions>((set) => ({
+// Debounce timer for history updates
+let updateHistoryTimeout: NodeJS.Timeout | null = null;
+
+export const useCanvasStore = create<CanvasState & CanvasActions>()((set, get) => ({
     elements: [],
     selectedElementIds: [],
     highlightElementId: null,
@@ -129,6 +140,7 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set) => ({
     history: [[]],
     historyIndex: 0,
     stageRef: null,
+    clipboard: null,
 
     setCanvasDimensions: (width, height) => set({ canvasWidth: width, canvasHeight: height }),
 
@@ -181,14 +193,22 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set) => ({
         };
     }),
 
-    updateElement: (id, attrs) => set((state) => {
-        const newElements = state.elements.map(el =>
-            el.id === id ? { ...el, ...attrs } : el
-        );
-        // Don't save history on single rapid updates (e.g. dragging) directly.
-        // In a real app we might debounce this for history, but for now we just push.
-        return { elements: newElements };
-    }),
+    updateElement: (id, attrs) => {
+        set((state) => {
+            const newElements = state.elements.map(el =>
+                el.id === id ? { ...el, ...attrs } : el
+            );
+            return { elements: newElements };
+        });
+
+        // Debounce saving to history to avoid capturing every intermediate drag/scale step
+        if (updateHistoryTimeout) clearTimeout(updateHistoryTimeout);
+        updateHistoryTimeout = setTimeout(() => {
+            const currentState = get();
+            const stateWithHistory = saveHistory(currentState, currentState.elements);
+            set(stateWithHistory);
+        }, 500);
+    },
 
     deleteElement: (id) => set((state) => {
         const newElements = state.elements.filter(el => el.id !== id);
@@ -204,6 +224,29 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set) => ({
         return {
             ...saveHistory(state, newElements),
             selectedElementIds: []
+        };
+    }),
+
+    copyElements: () => set((state) => {
+        if (state.selectedElementIds.length === 0) return state;
+        const elementsToCopy = state.elements.filter(el => state.selectedElementIds.includes(el.id));
+        return { clipboard: elementsToCopy };
+    }),
+
+    pasteElements: () => set((state) => {
+        if (!state.clipboard || state.clipboard.length === 0) return state;
+        
+        const newElements = state.clipboard.map(el => ({
+            ...el,
+            id: uuidv4(),
+            x: el.x + 20,
+            y: el.y + 20,
+        }));
+        
+        const updatedElements = [...state.elements, ...newElements];
+        return {
+            ...saveHistory(state, updatedElements),
+            selectedElementIds: newElements.map(el => el.id)
         };
     }),
 
