@@ -1,8 +1,10 @@
+from app.core.exceptions import AppException, NotFoundError, ValidationError, InsufficientCreditsError, UnauthorizedError, ForbiddenError, ConflictError, InternalServerError
+from app.schemas.error import ERROR_RESPONSES
 import logging
 import time
 import uuid
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, UploadFile, File, Form
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.services import bg_removal_service, inpaint_service, outpaint_service
@@ -14,7 +16,7 @@ from app.services.storage_service import upload_image
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-@router.post("/background-swap")
+@router.post("/background-swap", responses=ERROR_RESPONSES)
 async def background_swap(
     file: UploadFile = File(...),
     prompt: str = Form(...),
@@ -30,11 +32,11 @@ async def background_swap(
     4. Uploads result to storage
     """
     if current_user.credits_remaining <= 0:
-        raise HTTPException(status_code=402, detail="Insufficient credits")
+        raise InsufficientCreditsError(detail="Insufficient credits")
 
     content = await file.read()
     if len(content) > 10 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="Image size exceeds 10MB limit")
+        raise ValidationError(detail="Image size exceeds 10MB limit")
 
     from app.services.credit_service import log_credit_change
 
@@ -84,11 +86,10 @@ async def background_swap(
         await log_credit_change(db, current_user, 1, "Refund: gagal hapus background")
         await db.commit()
         logging.exception("Background swap failed")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to process image: {str(e)}"
+        raise InternalServerError(detail=f"Failed to process image: {str(e)}"
         )
 
-@router.post("/magic-eraser")
+@router.post("/magic-eraser", responses=ERROR_RESPONSES)
 async def magic_eraser(
     file: UploadFile = File(...),
     mask: UploadFile = File(...),
@@ -102,13 +103,12 @@ async def magic_eraser(
     3. Uploads resulting image
     """
     if current_user.credits_remaining < 1:
-        raise HTTPException(status_code=402, detail="Insufficient credits")
+        raise InsufficientCreditsError(detail="Insufficient credits")
 
     content = await file.read()
     mask_content = await mask.read()
     if len(content) > 10 * 1024 * 1024 or len(mask_content) > 10 * 1024 * 1024:
-        raise HTTPException(
-            status_code=400, detail="Image or mask size exceeds 10MB limit"
+        raise ValidationError(detail="Image or mask size exceeds 10MB limit"
         )
 
     from app.services.credit_service import log_credit_change
@@ -155,11 +155,10 @@ async def magic_eraser(
             logger.error(
                 f"CRITICAL: Failed to refund user {current_user.id}: {str(refund_err)}"
             )
-        raise HTTPException(
-            status_code=500, detail=f"Failed to process image: {str(e)}"
+        raise InternalServerError(detail=f"Failed to process image: {str(e)}"
         )
 
-@router.post("/generative-expand")
+@router.post("/generative-expand", responses=ERROR_RESPONSES)
 async def generative_expand(
     file: UploadFile = File(...),
     direction: Optional[str] = Form(None),
@@ -176,11 +175,11 @@ async def generative_expand(
     3. Returns resulting image
     """
     if current_user.credits_remaining < 1:
-        raise HTTPException(status_code=402, detail="Insufficient credits")
+        raise InsufficientCreditsError(detail="Insufficient credits")
 
     content = await file.read()
     if len(content) > 10 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="Image size exceeds 10MB limit")
+        raise ValidationError(detail="Image size exceeds 10MB limit")
 
     from app.services.credit_service import log_credit_change
 
@@ -222,7 +221,6 @@ async def generative_expand(
             logger.error(
                 f"CRITICAL: Failed to refund user {current_user.id}: {str(refund_err)}"
             )
-        raise HTTPException(
-            status_code=500, detail=f"Failed to process image: {str(e)}"
+        raise InternalServerError(detail=f"Failed to process image: {str(e)}"
         )
 

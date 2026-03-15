@@ -1,5 +1,6 @@
 import pytest
 from unittest.mock import patch
+from app.core.exceptions import AppException
 from fastapi import HTTPException
 
 from app.services.outpaint_service import outpaint_image
@@ -53,7 +54,7 @@ async def test_outpaint_image_target_dims_success(mock_fal_run):
 
 @pytest.mark.asyncio
 async def test_outpaint_image_missing_params():
-    with pytest.raises(HTTPException) as excinfo:
+    with pytest.raises(AppException) as excinfo:
         await outpaint_image("http://image.url")
 
     assert excinfo.value.status_code == 500
@@ -65,7 +66,7 @@ async def test_outpaint_image_missing_params():
 
 @pytest.mark.asyncio
 async def test_outpaint_image_invalid_direction():
-    with pytest.raises(HTTPException) as excinfo:
+    with pytest.raises(AppException) as excinfo:
         await outpaint_image("http://image.url", direction="diagonal", pixels=100)
 
     assert excinfo.value.status_code == 500
@@ -77,7 +78,7 @@ async def test_outpaint_image_invalid_direction():
 async def test_outpaint_image_model_failure(mock_fal_run):
     mock_fal_run.return_value = {"bad": "data"}
 
-    with pytest.raises(HTTPException) as excinfo:
+    with pytest.raises(AppException) as excinfo:
         await outpaint_image("http://image.url", direction="top", pixels=100)
 
     assert excinfo.value.status_code == 500

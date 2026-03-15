@@ -2,7 +2,10 @@ import os
 import sentry_sdk
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import Request
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+
 from app.api.auth import router as auth_router
 from app.api.designs import router as designs_router
 from app.api.templates import router as templates_router
@@ -11,6 +14,11 @@ from app.api.users import router as users_router
 from app.api.history import router as history_router
 from app.api.brand_kits import router as brand_kits_router
 from app.api.ai_tools import router as ai_tools_router
+
+from app.core.exceptions import AppException, InternalServerError
+from app.schemas.error import ErrorResponse, ErrorDetail
+from app.middleware.request_id import RequestIDMiddleware
+from app.middleware.logging import StructuredLoggingMiddleware
 
 # Initialize Sentry if DSN is provided
 SENTRY_DSN = os.getenv("SENTRY_DSN")
@@ -34,6 +42,8 @@ else:
     allow_origins = CORS_ORIGINS
     allow_credentials = True
 
+app.add_middleware(StructuredLoggingMiddleware)
+app.add_middleware(RequestIDMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allow_origins,
@@ -41,6 +51,41 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.exception_handler(AppException)
+async def app_exception_handler(request: Request, exc: AppException):
+    request_id = getattr(request.state, "request_id", None)
+
+    error_response = ErrorResponse(
+        error=ErrorDetail(error_code=exc.error_code, detail=exc.detail),
+        request_id=request_id
+    )
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=error_response.model_dump(),
+        headers=exc.headers,
+    )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    # Fallback for unhandled exceptions
+    request_id = getattr(request.state, "request_id", None)
+
+    # Optional: Log the full traceback here or let structured logging/Sentry handle it.
+
+    internal_exc = InternalServerError(detail="An unexpected error occurred.")
+
+    error_response = ErrorResponse(
+        error=ErrorDetail(error_code=internal_exc.error_code, detail=internal_exc.detail),
+        request_id=request_id
+    )
+
+    return JSONResponse(
+        status_code=internal_exc.status_code,
+        content=error_response.model_dump(),
+        headers=internal_exc.headers,
+    )
 
 app.include_router(auth_router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(designs_router, prefix="/api/designs", tags=["Designs"])

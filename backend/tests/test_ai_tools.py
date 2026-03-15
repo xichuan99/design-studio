@@ -226,24 +226,24 @@ def test_id_photo_invalid_bg_color():
     files = {"file": ("test.png", b"fake", "image/png")}
     data = {"bg_color": "green", "size": "3x4"}
     res = client.post("/api/tools/id-photo", data=data, files=files)
-    assert res.status_code == 400
-    assert "Invalid bg_color" in res.json()["detail"]
+    assert res.status_code == 422
+    assert "Invalid bg_color" in str(res.json())
 
 
 def test_id_photo_invalid_size():
     files = {"file": ("test.png", b"fake", "image/png")}
     data = {"bg_color": "red", "size": "10x10"}
     res = client.post("/api/tools/id-photo", data=data, files=files)
-    assert res.status_code == 400
-    assert "Invalid size" in res.json()["detail"]
+    assert res.status_code == 422
+    assert "Invalid size" in str(res.json())
 
 
 def test_id_photo_custom_size_missing_dimensions():
     files = {"file": ("test.png", b"fake", "image/png")}
     data = {"bg_color": "red", "size": "custom"}
     res = client.post("/api/tools/id-photo", data=data, files=files)
-    assert res.status_code == 400
-    assert "are required when size is 'custom'" in res.json()["detail"]
+    assert res.status_code == 422
+    assert "are required when size is 'custom'" in str(res.json())
 
 
 def test_id_photo_oversized_file():
@@ -251,16 +251,16 @@ def test_id_photo_oversized_file():
     files = {"file": ("test.png", large_content, "image/png")}
     data = {"bg_color": "red", "size": "3x4"}
     res = client.post("/api/tools/id-photo", data=data, files=files)
-    assert res.status_code == 400
-    assert "Image size exceeds 10MB" in res.json()["detail"]
+    assert res.status_code == 422
+    assert "Image size exceeds 10MB" in str(res.json())
 
 
 def test_retouch_oversized_file():
     large_content = b"0" * (11 * 1024 * 1024)
     files = {"file": ("test.png", large_content, "image/png")}
     res = client.post("/api/tools/retouch", files=files)
-    assert res.status_code == 400
-    assert "Image size exceeds 10MB" in res.json()["detail"]
+    assert res.status_code == 422
+    assert "Image size exceeds 10MB" in str(res.json())
 
 
 def test_id_photo_with_print_sheet():
@@ -416,12 +416,12 @@ def test_ai_tools_oversized_files():
         "mask": ("mask.png", b"fake", "image/png"),
     }
     res = client.post("/api/tools/magic-eraser", files=files)
-    assert res.status_code == 400
+    assert res.status_code == 422
 
     # Generative Expand
     files2 = {"file": ("test.png", large_content, "image/png")}
     res2 = client.post("/api/tools/generative-expand", files=files2)
-    assert res2.status_code == 400
+    assert res2.status_code == 422
 
 
 def test_watermark_endpoint_success():

@@ -1,6 +1,8 @@
+from app.core.exceptions import AppException, NotFoundError, ValidationError, InsufficientCreditsError, UnauthorizedError, ForbiddenError, ConflictError, InternalServerError
+from app.schemas.error import ERROR_RESPONSES
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import desc
@@ -15,7 +17,7 @@ from app.schemas.project import ProjectResponse, ProjectUpdate
 router = APIRouter()
 
 
-@router.get("/", response_model=List[ProjectResponse])
+@router.get("/", response_model=List[ProjectResponse], responses=ERROR_RESPONSES)
 async def list_projects(
     db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
@@ -28,7 +30,7 @@ async def list_projects(
     return result.scalars().all()
 
 
-@router.post("/", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED, responses=ERROR_RESPONSES)
 async def create_project(
     project_in: ProjectUpdate,
     db: AsyncSession = Depends(get_db),
@@ -48,7 +50,7 @@ async def create_project(
     return db_project
 
 
-@router.get("/{project_id}", response_model=ProjectResponse)
+@router.get("/{project_id}", response_model=ProjectResponse, responses=ERROR_RESPONSES)
 async def get_project(
     project_id: UUID,
     db: AsyncSession = Depends(get_db),
@@ -63,12 +65,12 @@ async def get_project(
     project = result.scalar_one_or_none()
 
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise NotFoundError(detail="Project not found")
 
     return project
 
 
-@router.put("/{project_id}", response_model=ProjectResponse)
+@router.put("/{project_id}", response_model=ProjectResponse, responses=ERROR_RESPONSES)
 async def update_project(
     project_id: UUID,
     project_in: ProjectUpdate,
@@ -84,7 +86,7 @@ async def update_project(
     project = result.scalar_one_or_none()
 
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise NotFoundError(detail="Project not found")
 
     if project_in.title is not None:
         project.title = project_in.title
@@ -100,7 +102,7 @@ async def update_project(
     return project
 
 
-@router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT, responses=ERROR_RESPONSES)
 async def delete_project(
     project_id: UUID,
     db: AsyncSession = Depends(get_db),
@@ -115,7 +117,7 @@ async def delete_project(
     project = result.scalar_one_or_none()
 
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise NotFoundError(detail="Project not found")
 
     await db.delete(project)
     await db.commit()

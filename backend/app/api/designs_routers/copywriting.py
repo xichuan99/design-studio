@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+from app.core.exceptions import AppException, NotFoundError, ValidationError, InsufficientCreditsError, UnauthorizedError, ForbiddenError, ConflictError, InternalServerError
+from app.schemas.error import ERROR_RESPONSES
+from fastapi import APIRouter, Depends
 from app.schemas.design import (
     CopywritingClarifyRequest,
     CopywritingRequest,
@@ -10,7 +12,7 @@ from app.models.user import User
 router = APIRouter()
 
 
-@router.post("/clarify-copywriting")
+@router.post("/clarify-copywriting", responses=ERROR_RESPONSES)
 async def clarify_copywriting(
     request: CopywritingClarifyRequest,
     current_user: User = Depends(rate_limit_dependency),
@@ -25,9 +27,9 @@ async def clarify_copywriting(
         import logging
 
         logging.exception("Failed to clarify copywriting")
-        raise HTTPException(status_code=500, detail="Failed to clarify copywriting")
+        raise InternalServerError(detail="Failed to clarify copywriting")
 
-@router.post("/generate-copywriting", response_model=CopywritingResponse)
+@router.post("/generate-copywriting", response_model=CopywritingResponse, responses=ERROR_RESPONSES)
 async def generate_copywriting(
     request: CopywritingRequest,
     current_user: User = Depends(rate_limit_dependency),
@@ -47,5 +49,5 @@ async def generate_copywriting(
         import logging
 
         logging.exception("Failed to generate copywriting")
-        raise HTTPException(status_code=500, detail="Failed to generate copywriting")
+        raise InternalServerError(detail="Failed to generate copywriting")
 

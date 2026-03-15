@@ -1,3 +1,5 @@
+from app.core.exceptions import AppException, NotFoundError, ValidationError, InsufficientCreditsError, UnauthorizedError, ForbiddenError, ConflictError, InternalServerError
+from app.schemas.error import ERROR_RESPONSES
 """Design History API: list and create history snapshots for a project."""
 
 from typing import Optional
@@ -21,7 +23,7 @@ class DesignHistoryCreate(BaseModel):
     generation_params: Optional[dict] = None
 
 
-@router.get("/{project_id}")
+@router.get("/{project_id}", responses=ERROR_RESPONSES)
 async def list_history(
     project_id: str,
     db: AsyncSession = Depends(get_db),
@@ -48,7 +50,7 @@ async def list_history(
     ]
 
 
-@router.post("/")
+@router.post("/", responses=ERROR_RESPONSES)
 async def create_history(
     data: DesignHistoryCreate,
     db: AsyncSession = Depends(get_db),

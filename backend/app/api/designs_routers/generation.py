@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+from app.core.exceptions import AppException, NotFoundError, ValidationError, InsufficientCreditsError, UnauthorizedError, ForbiddenError, ConflictError, InternalServerError
+from app.schemas.error import ERROR_RESPONSES
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.schemas.design import (
@@ -13,7 +15,7 @@ from app.models.user import User
 router = APIRouter()
 
 
-@router.post("/clarify")
+@router.post("/clarify", responses=ERROR_RESPONSES)
 async def clarify_design_brief(request: DesignGenerationRequest) -> dict:
     """Analyze raw text and return 3-4 specific clarifying questions."""
     from app.services.llm_service import generate_design_brief_questions
@@ -25,12 +27,10 @@ async def clarify_design_brief(request: DesignGenerationRequest) -> dict:
         import logging
 
         logging.exception("Failed to generate clarification questions")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to generate clarification questions: {str(e)}",
+        raise InternalServerError(detail=f"Failed to generate clarification questions: {str(e)}",
         )
 
-@router.post("/clarify-unified")
+@router.post("/clarify-unified", responses=ERROR_RESPONSES)
 async def clarify_unified_brief(request: DesignGenerationRequest) -> dict:
     """Analyze raw text and return combined clarifying questions for both design and copywriting."""
     from app.services.llm_service import generate_unified_brief_questions
@@ -42,12 +42,10 @@ async def clarify_unified_brief(request: DesignGenerationRequest) -> dict:
         import logging
 
         logging.exception("Failed to generate unified clarification questions")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to generate unified clarification questions: {str(e)}",
+        raise InternalServerError(detail=f"Failed to generate unified clarification questions: {str(e)}",
         )
 
-@router.post("/magic-text")
+@router.post("/magic-text", responses=ERROR_RESPONSES)
 async def magic_text_layout(
     request: dict,
     current_user: User = Depends(rate_limit_dependency),
@@ -60,11 +58,11 @@ async def magic_text_layout(
         text = request.get("text")
         style_hint = request.get("style_hint")
         if not image_base64 or not text:
-            raise HTTPException(status_code=400, detail="Missing image_base64 or text")
+            raise ValidationError(detail="Missing image_base64 or text")
 
         # Validate base64 is not unreasonably large (>20MB decoded ≈ ~27MB base64)
         if len(image_base64) > 30_000_000:
-            raise HTTPException(status_code=400, detail="Image too large. Max ~20MB.")
+            raise ValidationError(detail="Image too large. Max ~20MB.")
 
         canvas_width = request.get("canvas_width", 1024)
         canvas_height = request.get("canvas_height", 1024)
@@ -76,17 +74,16 @@ async def magic_text_layout(
             canvas_height=canvas_height,
         )
         return result
-    except HTTPException:
+    except AppException:
         raise
     except Exception as e:
         import logging
 
         logging.exception("Failed to generate magic text layout")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to generate layout: {str(e)}"
+        raise InternalServerError(detail=f"Failed to generate layout: {str(e)}"
         )
 
-@router.post("/generate-title", response_model=GenerateTitleResponse)
+@router.post("/generate-title", response_model=GenerateTitleResponse, responses=ERROR_RESPONSES)
 async def api_generate_project_title(
     request: GenerateTitleRequest,
     current_user: User = Depends(rate_limit_dependency),
@@ -101,9 +98,9 @@ async def api_generate_project_title(
         import logging
 
         logging.exception("Failed to generate project title")
-        raise HTTPException(status_code=500, detail="Failed to generate project title")
+        raise InternalServerError(detail="Failed to generate project title")
 
-@router.post("/generate")
+@router.post("/generate", responses=ERROR_RESPONSES)
 async def generate_design(
     request: DesignGenerationRequest,
     db: AsyncSession = Depends(get_db),
@@ -116,9 +113,7 @@ async def generate_design(
     from app.core.config import settings as app_settings
 
     if current_user.credits_remaining <= 0:
-        raise HTTPException(
-            status_code=402,
-            detail="Insufficient credits. Please upgrade or wait for a refill.",
+        raise InsufficientCreditsError(detail="Insufficient credits. Please upgrade or wait for a refill.",
         )
 
     # Deduct credit
@@ -242,8 +237,7 @@ async def generate_design(
                 db, current_user, 1, "Refund: gagal generate desain"
             )
             await db.commit()
-            raise HTTPException(
-                status_code=500, detail=f"Image generation failed to start: {str(e)}"
+            raise InternalServerError(detail=f"Image generation failed to start: {str(e)}"
             )
 
     import logging
@@ -436,7 +430,6 @@ async def generate_design(
 
         await log_credit_change(db, current_user, 1, "Refund: sistem error")
         await db.commit()
-        raise HTTPException(
-            status_code=500, detail=f"Image generation failed: {str(e)}"
+        raise InternalServerError(detail=f"Image generation failed: {str(e)}"
         )
 

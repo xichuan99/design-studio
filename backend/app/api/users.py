@@ -1,5 +1,7 @@
+from app.core.exceptions import AppException, NotFoundError, ValidationError, InsufficientCreditsError, UnauthorizedError, ForbiddenError, ConflictError, InternalServerError
+from app.schemas.error import ERROR_RESPONSES
 import logging
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy import desc, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -17,13 +19,13 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/me", response_model=UserResponse)
+@router.get("/me", response_model=UserResponse, responses=ERROR_RESPONSES)
 async def get_my_profile(current_user: User = Depends(get_current_user)):
     """Returns the current user's profile and credits."""
     return current_user
 
 
-@router.put("/me", response_model=UserResponse)
+@router.put("/me", response_model=UserResponse, responses=ERROR_RESPONSES)
 async def update_my_profile(
     user_update: UserUpdate,
     current_user: User = Depends(get_current_user),
@@ -39,7 +41,7 @@ async def update_my_profile(
     return current_user
 
 
-@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT, responses=ERROR_RESPONSES)
 async def delete_my_account(
     current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ) -> None:
@@ -58,14 +60,14 @@ async def delete_my_account(
     except Exception:
         await db.rollback()
         logger.exception("Failed to delete user %s", user_id)
-        raise HTTPException(
+        raise AppException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete account. Please try again.",
         )
     return None
 
 
-@router.get("/me/credits/history", response_model=CreditHistoryResponse)
+@router.get("/me/credits/history", response_model=CreditHistoryResponse, responses=ERROR_RESPONSES)
 async def get_my_credit_history(
     limit: int = 50,
     offset: int = 0,
@@ -92,7 +94,7 @@ async def get_my_credit_history(
     return CreditHistoryResponse(transactions=transactions, total_count=total_count)
 
 
-@router.get("/me/storage")
+@router.get("/me/storage", responses=ERROR_RESPONSES)
 async def get_my_storage(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),

@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from app.core.exceptions import AppException, NotFoundError, ValidationError, InsufficientCreditsError, UnauthorizedError, ForbiddenError, ConflictError, InternalServerError
+from app.schemas.error import ERROR_RESPONSES
+from fastapi import APIRouter, Depends, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.api.deps import get_current_user
@@ -8,7 +10,7 @@ from app.models.user import User
 router = APIRouter()
 
 
-@router.post("/upload")
+@router.post("/upload", responses=ERROR_RESPONSES)
 async def upload_user_image(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
@@ -18,10 +20,10 @@ async def upload_user_image(
     from app.services.storage_service import upload_image_tracked
 
     if file.size and file.size > 5 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="File too large. Max 5MB.")
+        raise ValidationError(detail="File too large. Max 5MB.")
 
     if not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="Only image files are allowed.")
+        raise ValidationError(detail="Only image files are allowed.")
 
     content = await file.read()
     try:
@@ -37,9 +39,9 @@ async def upload_user_image(
         import logging
 
         logging.exception("Upload endpoint failed")
-        raise HTTPException(status_code=500, detail=f"Failed to upload image: {str(e)}")
+        raise InternalServerError(detail=f"Failed to upload image: {str(e)}")
 
-@router.post("/remove-background")
+@router.post("/remove-background", responses=ERROR_RESPONSES)
 async def api_remove_background(
     file: UploadFile = File(...),
     current_user: User = Depends(rate_limit_dependency),
@@ -50,12 +52,12 @@ async def api_remove_background(
     Returns the URL of the processed PNG transparent image.
     """
     if not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="File must be an image")
+        raise ValidationError(detail="File must be an image")
 
     # Read file content safely
     content = await file.read()
     if len(content) > 10 * 1024 * 1024:  # 10MB limit
-        raise HTTPException(status_code=400, detail="Image size exceeds 10MB limit")
+        raise ValidationError(detail="Image size exceeds 10MB limit")
 
     from app.services.bg_removal_service import remove_background
 
@@ -78,7 +80,6 @@ async def api_remove_background(
         import logging
 
         logging.exception("Failed to remove background")
-        raise HTTPException(
-            status_code=500, detail=f"Background removal failed: {str(e)}"
+        raise InternalServerError(detail=f"Background removal failed: {str(e)}"
         )
 
