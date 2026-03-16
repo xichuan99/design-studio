@@ -1,6 +1,13 @@
 import time
 import numpy as np
-from pyqpanda import CPUQVM, PauliOperator, OptimizerFactory, QAOA, init_quantum_machine
+from pyqpanda import CPUQVM, PauliOperator, init_quantum_machine
+
+try:
+    from pyqpanda import OptimizerFactory, QAOA
+    HAS_QAOA = True
+except ImportError:
+    HAS_QAOA = False
+    
 from typing import List, Dict, Tuple
 from app.services.qubo_builder import QUBOBuilder
 from app.schemas.layout import LayoutRequest, OptimizedPosition
@@ -41,14 +48,14 @@ class QuantumOptimizer:
         Q, positions = self.builder.build_matrix()
         num_qubits = self.builder.num_vars
         
-        # Fallback to classical simulated annealing if qubits > 25 (pyQPanda CPUQVM limit for fast simulation)
-        if num_qubits > 25:
+        # Fallback if qubits > 25 OR QAOA module is unavailable in this PyQPanda installation
+        if num_qubits > 25 or not HAS_QAOA:
             # Fake/Simulated solver for large N (mocking result for demonstration)
             return self._classical_fallback(positions), 0.0, int((time.time() - start_time) * 1000)
 
-        machine = init_quantum_machine(CPUQVM())
-        
         try:
+            machine = init_quantum_machine(CPUQVM())
+            
             # 1. Create Pauli Operator
             hamiltonian = self._dict_to_pauli(Q, num_qubits)
             
