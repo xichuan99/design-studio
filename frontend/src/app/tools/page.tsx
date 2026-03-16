@@ -2,6 +2,7 @@ import { AppHeader } from "@/components/layout/AppHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Wand2, ImagePlus, Eraser, MoveDiagonal, Sparkles, Camera, ShieldCheck, Layers } from "lucide-react";
 import Link from "next/link";
+import { AiToolsGallery } from "@/components/tools/AiToolsGallery";
 
 export default function ToolsHubPage() {
   const tools = [
@@ -112,7 +113,10 @@ export default function ToolsHubPage() {
             </Card>
           ))}
         </div>
+
+        <AiToolsGallery />
       </div>
     </div>
   );
 }
+

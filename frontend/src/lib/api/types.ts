@@ -88,3 +88,13 @@ export interface CopywritingVariation {
     full_text: string;
 }
 
+// --- AI Tool Results ---
+export interface AiToolResult {
+    id: string;
+    tool_name: string;
+    result_url: string;
+    input_summary: string | null;
+    file_size: number;
+    created_at: string;
+}
+

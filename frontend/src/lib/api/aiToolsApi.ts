@@ -462,7 +462,28 @@ export function useAiToolsEndpoints() {
                 throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to apply watermark');
             }
             return response.json();
-        };    // --- Brand Kit API ---
+        };    const getMyToolResults = async (toolName?: string, limit: number = 20, offset: number = 0) => {
+            const params = new URLSearchParams({ limit: limit.toString(), offset: offset.toString() });
+            if (toolName) params.append('tool_name', toolName);
+            
+            const res = await fetch(`${API_BASE_URL}/tools/my-results?${params.toString()}`, {
+                headers: getHeaders(),
+            });
+            if (!res.ok) throw new Error('Failed to fetch AI tool results');
+            return res.json();
+        };
+
+    const deleteToolResult = async (resultId: string) => {
+            const res = await fetch(`${API_BASE_URL}/tools/results/${resultId}`, {
+                method: 'DELETE',
+                headers: getHeaders(),
+            });
+            if (!res.ok) throw new Error('Failed to delete AI tool result');
+            // Returns 204 No Content, so no JSON parsing needed
+            return true;
+        };
+
+    // --- Brand Kit API ---
 
     const generateProjectTitle = async (prompt: string) => {
             const res = await fetch(`${API_BASE_URL}/designs/generate-title`, {
@@ -474,5 +495,5 @@ export function useAiToolsEndpoints() {
             return res.json();
         };
 
-    return { generateDesign, clarifyCopywriting, clarifyUnified, generateCopywriting, parseDesignText, uploadImage, getJobStatus, getMyGenerations, generateMagicTextLayout, removeBackground, upscaleImage, generateTextBanner, retouchImage, generateIdPhoto, magicEraser, generativeExpand, backgroundSwap, suggestBackgrounds, productScene, batchProcess, applyWatermark, generateProjectTitle };
+    return { generateDesign, clarifyCopywriting, clarifyUnified, generateCopywriting, parseDesignText, uploadImage, getJobStatus, getMyGenerations, generateMagicTextLayout, removeBackground, upscaleImage, generateTextBanner, retouchImage, generateIdPhoto, magicEraser, generativeExpand, backgroundSwap, suggestBackgrounds, productScene, batchProcess, applyWatermark, getMyToolResults, deleteToolResult, generateProjectTitle };
 }
