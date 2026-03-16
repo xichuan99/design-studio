@@ -19,7 +19,7 @@ export function useBrandKitEndpoints() {
             });
             if (!res.ok) {
                 const errBase = await res.json().catch(() => ({}));
-                throw new Error(errBase.detail || 'Failed to extract colors');
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to extract colors');
             }
             return res.json();
         };
@@ -33,7 +33,7 @@ export function useBrandKitEndpoints() {
             if (!res.ok) {
                 const errBase = await res.json().catch(() => ({}));
                 console.error("saveBrandKit error response json:", errBase);
-                throw new Error(errBase.detail || 'Failed to save Brand Kit');
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to save Brand Kit');
             }
             return res.json();
         };

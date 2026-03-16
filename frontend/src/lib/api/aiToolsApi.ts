@@ -22,7 +22,7 @@ export function useAiToolsEndpoints() {
             });
             if (!res.ok) {
                 const errBase = await res.json().catch(() => ({}));
-                throw new Error(errBase.detail || 'Failed to generate design');
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to generate design');
             }
             return res.json();
         };
@@ -37,7 +37,7 @@ export function useAiToolsEndpoints() {
             });
             if (!res.ok) {
                 const errBase = await res.json().catch(() => ({}));
-                throw new Error(errBase.detail || 'Failed to clarify copywriting');
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to clarify copywriting');
             }
             return res.json();
         };
@@ -52,7 +52,7 @@ export function useAiToolsEndpoints() {
             });
             if (!res.ok) {
                 const errBase = await res.json().catch(() => ({}));
-                throw new Error(errBase.detail || 'Failed to generate unified clarification questions');
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to generate unified clarification questions');
             }
             return res.json();
         };
@@ -70,7 +70,7 @@ export function useAiToolsEndpoints() {
             });
             if (!res.ok) {
                 const errBase = await res.json().catch(() => ({}));
-                throw new Error(errBase.detail || 'Failed to generate copywriting');
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to generate copywriting');
             }
             return res.json();
         };
@@ -90,7 +90,7 @@ export function useAiToolsEndpoints() {
             });
             if (!res.ok) {
                 const errBase = await res.json().catch(() => ({}));
-                throw new Error(errBase.detail || 'Failed to parse design text');
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to parse design text');
             }
             return res.json();
         };
@@ -112,7 +112,7 @@ export function useAiToolsEndpoints() {
             });
             if (!res.ok) {
                 const errBase = await res.json().catch(() => ({}));
-                throw new Error(errBase.detail || 'Failed to upload image');
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to upload image');
             }
             return res.json(); // returns { url: string }
         };
@@ -142,7 +142,7 @@ export function useAiToolsEndpoints() {
             });
             if (!res.ok) {
                 const errBase = await res.json().catch(() => ({}));
-                throw new Error(errBase.detail || 'Failed to generate magic text layout');
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to generate magic text layout');
             }
             return res.json();
         };
@@ -164,7 +164,7 @@ export function useAiToolsEndpoints() {
             });
             if (!res.ok) {
                 const errBase = await res.json().catch(() => ({}));
-                throw new Error(errBase.detail || 'Failed to remove background');
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to remove background');
             }
             return res.json(); // returns { url: string }
         };
@@ -181,7 +181,7 @@ export function useAiToolsEndpoints() {
             });
             if (!response.ok) {
                 const errBase = await response.json().catch(() => ({}));
-                throw new Error(errBase.detail || 'Failed to upscale image');
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to upscale image');
             }
             return response.json();
         };
@@ -206,7 +206,7 @@ export function useAiToolsEndpoints() {
             
             if (!response.ok) {
                 const errBase = await response.json().catch(() => ({}));
-                throw new Error(errBase.detail || 'Failed to generate text banner');
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to generate text banner');
             }
             return response.json();
         };
@@ -223,7 +223,7 @@ export function useAiToolsEndpoints() {
             });
             if (!response.ok) {
                 const errBase = await response.json().catch(() => ({}));
-                throw new Error(errBase.detail || 'Failed to retouch image');
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to retouch image');
             }
             return response.json();
         };
@@ -253,7 +253,7 @@ export function useAiToolsEndpoints() {
             });
             if (!response.ok) {
                 const errBase = await response.json().catch(() => ({}));
-                throw new Error(errBase.detail || 'Failed to generate ID photo');
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to generate ID photo');
             }
             return response.json();
         };
@@ -276,7 +276,7 @@ export function useAiToolsEndpoints() {
             
             if (!response.ok) {
                 const errBase = await response.json().catch(() => ({}));
-                throw new Error(errBase.detail || 'Failed to apply Magic Eraser');
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to apply Magic Eraser');
             }
             return response.json();
         };
@@ -306,7 +306,7 @@ export function useAiToolsEndpoints() {
             
             if (!response.ok) {
                 const errBase = await response.json().catch(() => ({}));
-                throw new Error(errBase.detail || 'Failed to apply Generative Expand');
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to apply Generative Expand');
             }
             return response.json();
         };
@@ -331,7 +331,7 @@ export function useAiToolsEndpoints() {
             
             if (!response.ok) {
                 const errBase = await response.json().catch(() => ({}));
-                throw new Error(errBase.detail || 'Failed to apply background swap');
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to apply background swap');
             }
             return response.json();
         };
@@ -354,7 +354,7 @@ export function useAiToolsEndpoints() {
             
             if (!response.ok) {
                 const errBase = await response.json().catch(() => ({}));
-                throw new Error(errBase.detail || 'Failed to generate product scene');
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to generate product scene');
             }
             return response.json();
         };
@@ -379,7 +379,7 @@ export function useAiToolsEndpoints() {
             
             if (!response.ok) {
                 const errBase = await response.json().catch(() => ({}));
-                throw new Error(errBase.detail || 'Failed to process batch');
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to process batch');
             }
             return response.json();
         };
@@ -406,7 +406,7 @@ export function useAiToolsEndpoints() {
             
             if (!response.ok) {
                 const errBase = await response.json().catch(() => ({}));
-                throw new Error(errBase.detail || 'Failed to apply watermark');
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to apply watermark');
             }
             return response.json();
         };    // --- Brand Kit API ---
