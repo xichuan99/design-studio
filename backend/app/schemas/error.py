@@ -10,8 +10,8 @@ class ErrorDetail(BaseModel):
         }
     })
 
-    error_code: str = Field(..., description="A short string code for the error type", example="NOT_FOUND")
-    detail: str = Field(..., description="A human-readable explanation of the error", example="Project not found")
+    error_code: str = Field(..., description="A short string code for the error type", json_schema_extra={"example": "NOT_FOUND"})
+    detail: str = Field(..., description="A human-readable explanation of the error", json_schema_extra={"example": "Project not found"})
 
 
 class ErrorResponse(BaseModel):
@@ -26,7 +26,7 @@ class ErrorResponse(BaseModel):
     })
 
     error: ErrorDetail = Field(..., description="The details of the error")
-    request_id: Optional[str] = Field(None, description="The unique ID of the request that caused the error", example="req_12345")
+    request_id: Optional[str] = Field(None, description="The unique ID of the request that caused the error", json_schema_extra={"example": "req_12345"})
 
 
 ERROR_RESPONSES = {

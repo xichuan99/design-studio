@@ -1,6 +1,9 @@
 from app.core.exceptions import AppException, NotFoundError, ValidationError, InsufficientCreditsError, UnauthorizedError, ForbiddenError, ConflictError, InternalServerError
 from app.schemas.error import ERROR_RESPONSES
+import logging
 import time
+
+logger = logging.getLogger(__name__)
 import redis.asyncio as redis
 from fastapi import Depends
 from app.core.config import settings
@@ -35,7 +38,7 @@ async def rate_limit_dependency(current_user: User = Depends(get_current_user)):
             )
     except redis.RedisError as e:
         # If redis fails, fail open instead of breaking the app
-        print(f"Redis rate limit error: {e}")
+        logger.warning(f"Redis rate limit error: {e}")
         pass
 
     return current_user

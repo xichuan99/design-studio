@@ -1,6 +1,9 @@
 """Service for outpainting (expanding) an image using Fal.ai."""
 
+import logging
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 from app.core.exceptions import AppException
 import fal_client
@@ -85,7 +88,7 @@ async def outpaint_image(
         }
 
     except Exception as e:
-        print(f"Error in outpaint_image: {str(e)}")
+        logger.exception("Error in outpaint_image")
         raise AppException(
             status_code=500, detail=f"Outpainting service error: {str(e)}"
         )

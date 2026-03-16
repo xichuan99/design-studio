@@ -1,6 +1,9 @@
 """Service for extracting and managing brand colors."""
 
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 from google import genai
 from app.core.config import settings
 from typing import List, Dict, Any
@@ -71,8 +74,8 @@ async def extract_colors_from_image(
         parsed = json.loads(result_text)
         return parsed.get("colors", [])
 
-    except Exception as e:
-        print(f"Error extracting colors from image via Gemini: {e}")
+    except Exception:
+        logger.exception("Error extracting colors from image via Gemini")
         # Return a fallback palette if extraction fails
         return [
             {"hex": "#000000", "name": "Hitam", "role": "text"},

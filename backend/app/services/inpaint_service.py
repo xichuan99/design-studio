@@ -1,6 +1,9 @@
 """Service for inpainting (filling) specific areas of an image."""
 
+import logging
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 from app.core.exceptions import AppException
 import fal_client
@@ -62,7 +65,7 @@ async def inpaint_image(
         }
 
     except Exception as e:
-        print(f"Error in inpaint_image: {str(e)}")
+        logger.exception("Error in inpaint_image")
         raise AppException(
             status_code=500, detail=f"Inpainting service error: {str(e)}"
         )

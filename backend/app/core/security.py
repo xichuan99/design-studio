@@ -1,7 +1,7 @@
 from jose import jwt, JWTError
-from fastapi import HTTPException, status
 from passlib.context import CryptContext
 from app.core.config import settings
+from app.core.exceptions import UnauthorizedError
 
 ALGORITHM = "HS256"
 
@@ -35,8 +35,4 @@ def verify_token(token: str) -> dict:
         payload = jwt.decode(token, settings.NEXTAUTH_SECRET, algorithms=[ALGORITHM])
         return payload
     except JWTError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise UnauthorizedError(detail="Could not validate credentials")
