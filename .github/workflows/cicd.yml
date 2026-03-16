@@ -15,6 +15,7 @@ env:
   REGISTRY: ghcr.io
   BACKEND_IMAGE: ghcr.io/clarinovist/design-studio-backend
   FRONTEND_IMAGE: ghcr.io/clarinovist/design-studio-frontend
+  QUANTUM_IMAGE: ghcr.io/clarinovist/design-studio-quantum
   # Silence the Node 20 deprecation warnings by forcing Node 24
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -90,9 +91,15 @@ jobs:
           alembic upgrade head
           python -m scripts.seed_templates
 
-      - name: Run Pytest
+      - name: Run Pytest (Backend)
         run: |
           cd backend
+          pytest tests/ -v --tb=short
+
+      - name: Run Pytest (Quantum Engine)
+        run: |
+          cd quantum-engine
+          python -m pip install -r requirements.txt
           pytest tests/ -v --tb=short
 
       - name: Setup Node.js
@@ -160,6 +167,18 @@ jobs:
           cache-from: type=gha,scope=backend
           cache-to: type=gha,mode=max,scope=backend
 
+      - name: Build & Push Quantum Engine Image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./quantum-engine
+          file: ./quantum-engine/Dockerfile
+          push: true
+          tags: |
+            ${{ env.QUANTUM_IMAGE }}:latest
+            ${{ env.QUANTUM_IMAGE }}:${{ github.sha }}
+          cache-from: type=gha,scope=quantum
+          cache-to: type=gha,mode=max,scope=quantum
+
       - name: Build & Push Frontend Image
         uses: docker/build-push-action@v6
         with:
@@ -212,11 +231,13 @@ jobs:
             # Pull image terbaru dari GHCR
             BACKEND_IMAGE=${{ env.BACKEND_IMAGE }}:${{ github.sha }} \
             FRONTEND_IMAGE=${{ env.FRONTEND_IMAGE }}:${{ github.sha }} \
-              docker compose pull backend frontend celery
+            QUANTUM_IMAGE=${{ env.QUANTUM_IMAGE }}:${{ github.sha }} \
+              docker compose pull backend frontend celery quantum-engine
 
             # Restart containers dengan image baru
             BACKEND_IMAGE=${{ env.BACKEND_IMAGE }}:${{ github.sha }} \
             FRONTEND_IMAGE=${{ env.FRONTEND_IMAGE }}:${{ github.sha }} \
+            QUANTUM_IMAGE=${{ env.QUANTUM_IMAGE }}:${{ github.sha }} \
               docker compose up -d --remove-orphans
 
             # Jalankan database migrations
