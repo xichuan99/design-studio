@@ -130,10 +130,15 @@ async def generate_product_scene(
 
     # 4. Fetch the generated background image
     logger.debug("Downloading generated background...")
-    async with httpx.AsyncClient() as http_client:
-        bg_resp = await http_client.get(bg_result["image_url"], timeout=30.0)
-        bg_resp.raise_for_status()
-        bg_bytes: bytes = bg_resp.content
+    if bg_result["image_url"].startswith("data:"):
+        import base64
+        base64_data = bg_result["image_url"].split(",", 1)[1]
+        bg_bytes: bytes = base64.b64decode(base64_data)
+    else:
+        async with httpx.AsyncClient() as http_client:
+            bg_resp = await http_client.get(bg_result["image_url"], timeout=30.0)
+            bg_resp.raise_for_status()
+            bg_bytes: bytes = bg_resp.content
 
     # 5. Composite product onto background
     logger.debug("Compositing product with shadow...")

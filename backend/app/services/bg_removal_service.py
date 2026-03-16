@@ -67,10 +67,15 @@ async def remove_background(image_bytes: bytes) -> bytes:
                 raise RuntimeError("Both BRIA and birefnet returned no image URL")
 
         # 3. Download the resulting transparent PNG
-        async with httpx.AsyncClient() as http_client:
-            resp = await http_client.get(output_url, timeout=60.0)
-            resp.raise_for_status()
-            final_bytes = resp.content
+        if output_url.startswith("data:"):
+            import base64
+            base64_data = output_url.split(",", 1)[1]
+            final_bytes = base64.b64decode(base64_data)
+        else:
+            async with httpx.AsyncClient() as http_client:
+                resp = await http_client.get(output_url, timeout=60.0)
+                resp.raise_for_status()
+                final_bytes = resp.content
 
         return final_bytes
 
@@ -192,10 +197,15 @@ async def inpaint_background(
         raise RuntimeError("flux-pro/v1/fill returned no image URL")
 
     # 5. Download and return result
-    async with httpx.AsyncClient() as http_client:
-        resp = await http_client.get(output_url, timeout=90.0)
-        resp.raise_for_status()
-        return resp.content
+    if output_url.startswith("data:"):
+        import base64
+        base64_data = output_url.split(",", 1)[1]
+        return base64.b64decode(base64_data)
+    else:
+        async with httpx.AsyncClient() as http_client:
+            resp = await http_client.get(output_url, timeout=90.0)
+            resp.raise_for_status()
+            return resp.content
 
 
 async def composite_product_on_background(
