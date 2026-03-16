@@ -11,7 +11,8 @@ import { InlineErrorBanner } from '@/components/feedback/InlineErrorBanner';
 import { ErrorModal, ErrorModalType } from '@/components/feedback/ErrorModal';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
-
+import { CreditCostBadge } from '@/components/credits/CreditCostBadge';
+import { CreditConfirmDialog } from '@/components/credits/CreditConfirmDialog';
 const ASPECT_RATIOS = [
     { id: '1:1', label: '1:1', icon: Square, desc: 'Persegi' },
     { id: '9:16', label: '9:16', icon: Smartphone, desc: 'Story' },
@@ -527,23 +528,33 @@ export const AIPromptPanel: React.FC = () => {
             {/* Generate Button (shown when no preview is active) */}
             {!generatedUrl && (
                 <div className="pt-4 border-t mt-auto">
-                    <Button
-                        className="w-full gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 shadow-[0_4px_14px_rgba(99,102,241,0.4)] border-0"
-                        onClick={() => handleGenerate()}
+                    <CreditConfirmDialog
+                        title="Generate Foto AI"
+                        description="Pastikan prompt dan pengaturan sudah sesuai sebelum men-generate gambar baru."
+                        cost={40}
+                        onConfirm={() => handleGenerate()}
                         disabled={isGenerating || (!prompt.trim() && !productImageUrl)}
                     >
-                        {isGenerating ? (
-                            <>
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                                Generating...
-                            </>
-                        ) : (
-                            <>
-                                <Sparkles className="h-4 w-4" />
-                                Generate Gambar AI
-                            </>
-                        )}
-                    </Button>
+                        <Button
+                            className="w-full gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 shadow-[0_4px_14px_rgba(99,102,241,0.4)] border-0"
+                            disabled={isGenerating || (!prompt.trim() && !productImageUrl)}
+                        >
+                            {isGenerating ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    Generating...
+                                </>
+                            ) : (
+                                <div className="flex items-center justify-between w-full">
+                                    <span className="flex items-center gap-2">
+                                        <Sparkles className="h-4 w-4" />
+                                        Generate Gambar AI
+                                    </span>
+                                    <CreditCostBadge cost={40} className="bg-white/20 text-white border-white/20" showTooltip={false} />
+                                </div>
+                            )}
+                        </Button>
+                    </CreditConfirmDialog>
                 </div>
             )}
 

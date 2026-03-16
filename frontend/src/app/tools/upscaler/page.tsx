@@ -10,6 +10,8 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { toast } from "sonner";
 import { useProjectApi } from "@/lib/api";
+import { CreditCostBadge } from "@/components/credits/CreditCostBadge";
+import { CreditConfirmDialog } from "@/components/credits/CreditConfirmDialog";
 
 export default function UpscalerPage() {
   const router = useRouter();
@@ -55,9 +57,12 @@ export default function UpscalerPage() {
           <ArrowLeft className="w-4 h-4" /> Kembali
         </Button>
 
-        <div className="mb-8">
-          <h1 className="text-3xl font-jakarta font-bold text-foreground">AI Image Upscaler</h1>
-          <p className="text-muted-foreground mt-2">Foto dari HP buram atau kecil? Perbesar hingga 4x lipat supaya layak pajang di toko online.</p>
+        <div className="mb-8 flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-jakarta font-bold text-foreground">AI Image Upscaler</h1>
+            <p className="text-muted-foreground mt-2">Foto dari HP buram atau kecil? Perbesar hingga 4x lipat supaya layak pajang di toko online.</p>
+          </div>
+          <CreditCostBadge cost={scale === 2 ? 20 : 40} className="mt-2" />
         </div>
 
         {step === 1 && (
@@ -99,14 +104,21 @@ export default function UpscalerPage() {
                 💡 <strong>Tips:</strong> AI Upscaler akan memperbaiki noise dan mengembalikan tekstur yang hilang pada foto produk Anda. Cocok untuk foto dari kamera HP lama agar terlihat seperti standar studio kreatif.
               </div>
 
-              <Button 
-                onClick={handleGenerate} 
-                className="w-full font-bold shadow-md hover:shadow-lg transition-transform active:scale-95" 
-                size="lg" 
-                disabled={loading}
+              <CreditConfirmDialog
+                title="AI Image Upscaler"
+                description={`AI akan meningkatkan resolusi gambar sebanyak ${scale}x lipat. Ini akan memotong ${scale === 2 ? 20 : 40} kredit.`}
+                cost={scale === 2 ? 20 : 40}
+                onConfirm={handleGenerate}
+                disabled={loading || !originalFile}
               >
-                {loading ? <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Sedang Menjernihkan (20s)...</> : "✨ Upscale & Enhance Gambar"}
-              </Button>
+                <Button 
+                  className="w-full font-bold shadow-md hover:shadow-lg transition-transform active:scale-95" 
+                  size="lg" 
+                  disabled={loading || !originalFile}
+                >
+                  {loading ? <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Sedang Menjernihkan (20s)...</> : "✨ Upscale & Enhance Gambar"}
+                </Button>
+              </CreditConfirmDialog>
             </div>
           </div>
         )}

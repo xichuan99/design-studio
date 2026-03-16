@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
+from fastapi import APIRouter, Depends, UploadFile, File, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.api.deps import get_current_user
 from app.api.rate_limit import rate_limit_dependency
 from app.models.user import User
 from app.schemas.error import ERROR_RESPONSES
+from app.core.exceptions import InternalServerError, ValidationError
 
 router = APIRouter(tags=["Designs - Media"])
 

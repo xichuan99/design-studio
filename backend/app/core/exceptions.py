@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Dict, Optional
 
 class AppException(Exception):
     """Base class for all application exceptions."""

@@ -7,6 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { CreditCostBadge } from '@/components/credits/CreditCostBadge';
+import { CreditConfirmDialog } from '@/components/credits/CreditConfirmDialog';
 
 export const TextBannerPanel = () => {
     const { generateTextBanner } = useProjectApi();
@@ -196,23 +198,33 @@ export const TextBannerPanel = () => {
 
             {/* Generate Button */}
             <div className="pt-4 border-t mt-auto">
-                <Button
-                    onClick={handleGenerate}
+                <CreditConfirmDialog
+                    title="Buat Banner Teks"
+                    description={`Membuat banner teks dengan kualitas ${quality}. Ini akan memotong ${quality === 'premium' ? 40 : 10} kredit.`}
+                    cost={quality === 'premium' ? 40 : 10}
+                    onConfirm={handleGenerate}
                     disabled={isGenerating || !text.trim()}
-                    className="w-full gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 shadow-[0_4px_14px_rgba(99,102,241,0.4)] border-0"
                 >
-                    {isGenerating ? (
-                        <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Membuat Banner...
-                        </>
-                    ) : (
-                        <>
-                            <Wand2 className="w-4 h-4 mr-2" />
-                            Buat AI Banner
-                        </>
-                    )}
-                </Button>
+                    <Button
+                        disabled={isGenerating || !text.trim()}
+                        className="w-full gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 shadow-[0_4px_14px_rgba(99,102,241,0.4)] border-0"
+                    >
+                        {isGenerating ? (
+                            <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Membuat Banner...
+                            </>
+                        ) : (
+                            <div className="flex items-center justify-between w-full">
+                                <span className="flex items-center gap-2">
+                                    <Wand2 className="w-4 h-4" />
+                                    Buat AI Banner
+                                </span>
+                                <CreditCostBadge cost={quality === 'premium' ? 40 : 10} className="bg-white/20 text-white border-white/20" showTooltip={false} />
+                            </div>
+                        )}
+                    </Button>
+                </CreditConfirmDialog>
             </div>
         </div>
     );

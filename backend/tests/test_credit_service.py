@@ -13,14 +13,14 @@ def mock_db():
 
 @pytest.fixture
 def test_user():
-    return User(id="user_123", credits_remaining=10)
+    return User(id="user_123", credits_remaining=100)
 
 
 @pytest.mark.asyncio
 async def test_log_credit_change_addition(mock_db, test_user):
     await log_credit_change(mock_db, test_user, 5, "Added credits")
 
-    assert test_user.credits_remaining == 15
+    assert test_user.credits_remaining == 105
 
     # We expect db.add to be called twice: once for user, once for transaction
     assert mock_db.add.call_count == 2
@@ -29,14 +29,14 @@ async def test_log_credit_change_addition(mock_db, test_user):
     added_objects = [call.args[0] for call in mock_db.add.call_args_list]
 
     user_obj = next(obj for obj in added_objects if isinstance(obj, User))
-    assert user_obj.credits_remaining == 15
+    assert user_obj.credits_remaining == 105
 
     transaction_obj = next(
         obj for obj in added_objects if isinstance(obj, CreditTransaction)
     )
     assert transaction_obj.user_id == "user_123"
     assert transaction_obj.amount == 5
-    assert transaction_obj.balance_after == 15
+    assert transaction_obj.balance_after == 105
     assert transaction_obj.description == "Added credits"
 
 
@@ -44,7 +44,7 @@ async def test_log_credit_change_addition(mock_db, test_user):
 async def test_log_credit_change_deduction(mock_db, test_user):
     await log_credit_change(mock_db, test_user, -3, "Used service")
 
-    assert test_user.credits_remaining == 7
+    assert test_user.credits_remaining == 97
     assert mock_db.add.call_count == 2
 
     added_objects = [call.args[0] for call in mock_db.add.call_args_list]
@@ -53,14 +53,14 @@ async def test_log_credit_change_deduction(mock_db, test_user):
     )
 
     assert transaction_obj.amount == -3
-    assert transaction_obj.balance_after == 7
+    assert transaction_obj.balance_after == 97
 
 
 @pytest.mark.asyncio
 async def test_log_credit_change_zero(mock_db, test_user):
     await log_credit_change(mock_db, test_user, 0, "No change")
 
-    assert test_user.credits_remaining == 10
+    assert test_user.credits_remaining == 100
     assert mock_db.add.call_count == 0
 
 

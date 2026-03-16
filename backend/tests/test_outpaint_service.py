@@ -1,7 +1,6 @@
 import pytest
 from unittest.mock import patch
 from app.core.exceptions import AppException
-from fastapi import HTTPException
 
 from app.services.outpaint_service import outpaint_image
 

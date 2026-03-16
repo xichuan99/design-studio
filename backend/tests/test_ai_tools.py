@@ -9,7 +9,8 @@ from app.models.user import User
 # Setup local fixtures
 def override_rate_limit():
     user = User(id="test-user-id", email="test@test.com")
-    user.credits_remaining = 10
+    from app.core.credit_costs import DEFAULT_CREDITS
+    user.credits_remaining = DEFAULT_CREDITS
     return user
 
 

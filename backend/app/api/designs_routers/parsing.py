@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, status
 from app.schemas.design import (
     DesignGenerationRequest,
     ParsedTextElements,
@@ -8,6 +8,7 @@ from app.schemas.design import (
 
 from app.services.llm_service import parse_design_text
 from app.schemas.error import ERROR_RESPONSES
+from app.core.exceptions import InternalServerError
 
 router = APIRouter(tags=["Designs - Parsing"])
 

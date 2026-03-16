@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from app.core.exceptions import InternalServerError
 from app.schemas.design import (
     CopywritingClarifyRequest,

@@ -8,6 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Sparkles, Wand2, AlertTriangle, Type, Crown, Smile } from 'lucide-react';
 import WebFont from 'webfontloader';
 import { cn } from '@/lib/utils';
+import { CreditCostBadge } from '@/components/credits/CreditCostBadge';
+import { CreditConfirmDialog } from '@/components/credits/CreditConfirmDialog';
 
 const STYLE_PRESETS = [
     { id: 'Bold & Impactful', label: 'Bold', icon: Type, description: 'Loud & clear' },
@@ -283,26 +285,36 @@ export const MagicTextPanel: React.FC = () => {
             </div>
 
             <div className="pt-4 border-t mt-auto">
-                <Button
-                    className="w-full gap-2 relative overflow-hidden group bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 shadow-[0_4px_14px_rgba(99,102,241,0.4)] border-0"
-                    onClick={handleGenerate}
+                <CreditConfirmDialog
+                    title="Tata Letak Otomatis (AI)"
+                    description={`AI akan menata teks secara otomatis berdasarkan foto dan prompt. Ini akan memotong 40 kredit.`}
+                    cost={40}
+                    onConfirm={handleGenerate}
                     disabled={isGenerating || !text.trim()}
                 >
-                    {/* Shimmer effect */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
-                    
-                    {isGenerating ? (
-                        <>
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            AI Sedang Berpikir...
-                        </>
-                    ) : (
-                        <>
-                            <Sparkles className="h-4 w-4" />
-                            Tata Letak Otomatis
-                        </>
-                    )}
-                </Button>
+                    <Button
+                        className="w-full gap-2 relative overflow-hidden group bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 shadow-[0_4px_14px_rgba(99,102,241,0.4)] border-0"
+                        disabled={isGenerating || !text.trim()}
+                    >
+                        {/* Shimmer effect */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
+                        
+                        {isGenerating ? (
+                            <>
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                AI Sedang Berpikir...
+                            </>
+                        ) : (
+                            <div className="flex items-center justify-between w-full">
+                                <span className="flex items-center gap-2">
+                                    <Sparkles className="h-4 w-4" />
+                                    Tata Letak Otomatis
+                                </span>
+                                <CreditCostBadge cost={40} className="bg-white/20 text-white border-white/20" showTooltip={false} />
+                            </div>
+                        )}
+                    </Button>
+                </CreditConfirmDialog>
             </div>
         </div>
     );

@@ -7,6 +7,8 @@ import { AccordionItem, AccordionTrigger, AccordionContent } from "@/components/
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Loader2 } from "lucide-react";
+import { CreditCostBadge } from "@/components/credits/CreditCostBadge";
+import { CreditConfirmDialog } from "@/components/credits/CreditConfirmDialog";
 
 export function ImageStyleEditor() {
     const { elements, selectedElementIds, updateElement } = useCanvasStore();
@@ -80,20 +82,30 @@ export function ImageStyleEditor() {
 
                 {/* AI Upscale Button */}
                 <div className="pt-4 mt-2">
-                    <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="w-full gap-2 text-primary hover:text-primary hover:bg-primary/10 border-primary/20"
-                        onClick={handleUpscale}
+                    <CreditConfirmDialog
+                        title="AI Tingkatkan Resolusi"
+                        description="AI akan meningkatkan resolusi gambar ini agar lebih jernih dan tajam. Ini akan memotong 20 kredit."
+                        cost={20}
+                        onConfirm={handleUpscale}
                         disabled={isUpscaling}
                     >
-                        {isUpscaling ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                            <Sparkles className="w-4 h-4" />
-                        )}
-                        {isUpscaling ? 'Meningkatkan...' : 'AI Tingkatkan Resolusi'}
-                    </Button>
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full gap-2 text-primary hover:text-primary hover:bg-primary/10 border-primary/20 flex items-center justify-between"
+                            disabled={isUpscaling}
+                        >
+                            <span className="flex items-center gap-2">
+                                {isUpscaling ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <Sparkles className="w-4 h-4" />
+                                )}
+                                {isUpscaling ? 'Meningkatkan...' : 'AI Tingkatkan Resolusi'}
+                            </span>
+                            {!isUpscaling && <CreditCostBadge cost={20} showTooltip={false} className="h-5 text-[10px]" />}
+                        </Button>
+                    </CreditConfirmDialog>
                 </div>
             </AccordionContent>
         </AccordionItem>

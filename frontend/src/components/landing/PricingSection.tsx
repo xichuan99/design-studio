@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Check, Star, Info } from "lucide-react";
 
 export function PricingSection() {
-  const [creditsSelected, setCreditsSelected] = useState(50); // Default to popular tier
+  const [creditsSelected, setCreditsSelected] = useState(500); // Default to popular tier
 
   return (
     <div className="w-full py-24 relative" id="pricing">
@@ -28,9 +28,9 @@ export function PricingSection() {
             {/* Starter */}
             <div 
               className={`p-6 rounded-3xl border transition-all cursor-pointer ${
-                creditsSelected === 10 ? "bg-white/10 border-purple-500 shadow-[0_0_20px_rgba(168,85,247,0.2)]" : "bg-white/5 border-white/10 hover:bg-white/10"
+                creditsSelected === 100 ? "bg-white/10 border-purple-500 shadow-[0_0_20px_rgba(168,85,247,0.2)]" : "bg-white/5 border-white/10 hover:bg-white/10"
               }`}
-              onClick={() => setCreditsSelected(10)}
+              onClick={() => setCreditsSelected(100)}
             >
               <div className="text-slate-400 font-medium mb-2">Paket Starter</div>
               <div className="flex items-baseline gap-2 mb-4">
@@ -38,10 +38,10 @@ export function PricingSection() {
               </div>
               <div className="flex items-center gap-2 mb-6 p-2 rounded-lg bg-black/30">
                 <Star className="w-5 h-5 text-yellow-500 fill-current" />
-                <span className="font-bold text-white text-lg">10 Kredit</span>
+                <span className="font-bold text-white text-lg">100 Kredit</span>
               </div>
               <ul className="space-y-3 text-sm text-slate-300">
-                <li className="flex gap-2"><Check className="w-4 h-4 text-green-400 shrink-0" /> Cocok untuk update produk rutin</li>
+                <li className="flex gap-2"><Check className="w-4 h-4 text-green-400 shrink-0" /> Termasuk daily claim (10 kr/hari)</li>
                 <li className="flex gap-2"><Check className="w-4 h-4 text-green-400 shrink-0" /> Akses semua tools AI</li>
               </ul>
             </div>
@@ -49,9 +49,9 @@ export function PricingSection() {
             {/* Popular */}
             <div 
               className={`p-6 rounded-3xl border relative transition-all cursor-pointer ${
-                creditsSelected === 50 ? "bg-purple-900/20 border-purple-400 shadow-[0_0_30px_rgba(168,85,247,0.3)]" : "bg-white/5 border-white/10 hover:bg-white/10"
+                creditsSelected === 500 ? "bg-purple-900/20 border-purple-400 shadow-[0_0_30px_rgba(168,85,247,0.3)]" : "bg-white/5 border-white/10 hover:bg-white/10"
               }`}
-              onClick={() => setCreditsSelected(50)}
+              onClick={() => setCreditsSelected(500)}
             >
               <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg">
                 Paling Populer
@@ -63,7 +63,7 @@ export function PricingSection() {
               </div>
               <div className="flex items-center gap-2 mb-6 p-2 rounded-lg bg-purple-500/20 border border-purple-500/30">
                 <Star className="w-5 h-5 text-yellow-500 fill-current" />
-                <span className="font-bold text-white text-lg">50 Kredit</span>
+                <span className="font-bold text-white text-lg">500 Kredit</span>
               </div>
               <ul className="space-y-3 text-sm text-slate-300">
                 <li className="flex gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0" /> Hemat 33%</li>
@@ -74,9 +74,9 @@ export function PricingSection() {
              {/* Business */}
              <div 
               className={`p-6 rounded-3xl border transition-all cursor-pointer sm:col-span-2 ${
-                creditsSelected === 200 ? "bg-white/10 border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.2)]" : "bg-white/5 border-white/10 hover:bg-white/10"
+                creditsSelected === 2000 ? "bg-white/10 border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.2)]" : "bg-white/5 border-white/10 hover:bg-white/10"
               }`}
-              onClick={() => setCreditsSelected(200)}
+              onClick={() => setCreditsSelected(2000)}
             >
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
@@ -88,7 +88,7 @@ export function PricingSection() {
                 </div>
                 <div className="flex items-center gap-2 p-3 rounded-xl bg-black/30 border border-white/10 w-full sm:w-auto justify-center">
                   <Star className="w-6 h-6 text-yellow-500 fill-current" />
-                  <span className="font-bold text-white text-xl">200 Kredit</span>
+                  <span className="font-bold text-white text-xl">2000 Kredit</span>
                 </div>
               </div>
             </div>
@@ -103,7 +103,7 @@ export function PricingSection() {
                  <div className="group relative">
                     <Info className="w-4 h-4 text-slate-400 cursor-help" />
                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-slate-800 text-xs text-slate-300 rounded shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none text-center">
-                      Asumsi 1 produk butuh 2 foto (Hapus BG + Tambah Scene)
+                      Asumsi 1 desain butuh 40 kredit (contoh: Generate AI)
                     </div>
                  </div>
               </h3>
@@ -117,14 +117,14 @@ export function PricingSection() {
                 <div className="flex justify-between items-center pb-4 border-b border-white/5">
                   <span className="text-slate-400">Harga per Edit</span>
                   <span className="text-white font-medium">
-                    Rp {(creditsSelected === 10 ? 15000 : creditsSelected === 50 ? 50000 : 150000) / creditsSelected}
+                    Rp {Math.round((creditsSelected === 100 ? 15000 : creditsSelected === 500 ? 50000 : 150000) / (creditsSelected / 40))}
                   </span>
                 </div>
 
                 <div className="bg-purple-900/20 border border-purple-500/20 rounded-xl p-4 flex flex-col items-center justify-center text-center gap-2">
-                  <span className="text-sm text-slate-300">Cukup untuk mengedit sekitar:</span>
+                  <span className="text-sm text-slate-300">Cukup untuk membuat sekitar:</span>
                   <div className="text-3xl font-black text-white">
-                    {Math.floor(creditsSelected / 2)} <span className="text-xl font-bold text-slate-400">SKU/Produk</span>
+                    {Math.floor(creditsSelected / 40)} <span className="text-xl font-bold text-slate-400">Desain (Full AI)</span>
                   </div>
                 </div>
 

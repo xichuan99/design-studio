@@ -1,5 +1,5 @@
 from fastapi import status
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.schemas.design import (
@@ -11,6 +11,7 @@ from app.models.job import Job
 from app.api.rate_limit import rate_limit_dependency
 from app.models.user import User
 from app.schemas.error import ERROR_RESPONSES
+from app.core.exceptions import InternalServerError, ValidationError, InsufficientCreditsError, AppException
 
 router = APIRouter(tags=["Designs - Generation"])
 
@@ -147,14 +148,15 @@ async def generate_design(
     """
     from app.core.config import settings as app_settings
 
-    if current_user.credits_remaining <= 0:
+    from app.core.credit_costs import COST_GENERATE_DESIGN
+    if current_user.credits_remaining < COST_GENERATE_DESIGN:
         raise InsufficientCreditsError(detail="Insufficient credits. Please upgrade or wait for a refill.",
         )
 
     # Deduct credit
     from app.services.credit_service import log_credit_change
 
-    await log_credit_change(db, current_user, -1, "Generate desain")
+    await log_credit_change(db, current_user, -COST_GENERATE_DESIGN, "Generate desain")
 
     # Create a job record in the database
     job = Job(
@@ -269,7 +271,7 @@ async def generate_design(
             from app.services.credit_service import log_credit_change
 
             await log_credit_change(
-                db, current_user, 1, "Refund: gagal generate desain"
+                db, current_user, COST_GENERATE_DESIGN, "Refund: gagal generate desain"
             )
             await db.commit()
             raise InternalServerError(detail=f"Image generation failed to start: {str(e)}"
@@ -447,7 +449,7 @@ async def generate_design(
             # Refund credit
             from app.services.credit_service import log_credit_change
 
-            await log_credit_change(db, current_user, 1, "Refund: prompt ditolak AI")
+            await log_credit_change(db, current_user, COST_GENERATE_DESIGN, "Refund: prompt ditolak AI")
 
         await db.commit()
         await db.refresh(job)
@@ -463,7 +465,7 @@ async def generate_design(
         job.error_message = str(e)
         from app.services.credit_service import log_credit_change
 
-        await log_credit_change(db, current_user, 1, "Refund: sistem error")
+        await log_credit_change(db, current_user, COST_GENERATE_DESIGN, "Refund: sistem error")
         await db.commit()
         raise InternalServerError(detail=f"Image generation failed: {str(e)}"
         )

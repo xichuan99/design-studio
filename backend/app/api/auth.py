@@ -1,4 +1,4 @@
-from app.core.exceptions import AppException, NotFoundError, ValidationError, InsufficientCreditsError, UnauthorizedError, ForbiddenError, ConflictError, InternalServerError
+from app.core.exceptions import ValidationError, UnauthorizedError
 from app.schemas.error import ERROR_RESPONSES
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,7 +8,6 @@ from app.core.database import get_db
 from app.core.security import get_password_hash, verify_password
 from app.models.user import User
 from app.schemas.auth import RegisterRequest, LoginRequest, AuthResponse
-from app.schemas.error import ERROR_RESPONSES
 
 router = APIRouter(tags=["Authentication"])
 
@@ -50,8 +49,9 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
     await db.flush()
 
     from app.services.credit_service import log_credit_change
+    from app.core.credit_costs import SIGNUP_BONUS
 
-    await log_credit_change(db, user, 10, "Bonus pendaftaran")
+    await log_credit_change(db, user, SIGNUP_BONUS, "Bonus pendaftaran")
 
     await db.commit()
     await db.refresh(user)

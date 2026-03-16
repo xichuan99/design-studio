@@ -1,4 +1,4 @@
-from app.core.exceptions import AppException, NotFoundError, ValidationError, InsufficientCreditsError, UnauthorizedError, ForbiddenError, ConflictError, InternalServerError
+from app.core.exceptions import AppException
 from app.schemas.error import ERROR_RESPONSES
 import logging
 from fastapi import APIRouter, Depends, status
@@ -13,7 +13,6 @@ from app.models.job import Job
 from app.models.user import User
 from app.schemas.credit import CreditHistoryResponse
 from app.schemas.user import UserUpdate, UserResponse
-from app.schemas.error import ERROR_RESPONSES
 
 logger = logging.getLogger(__name__)
 

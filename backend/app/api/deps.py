@@ -1,6 +1,5 @@
-from app.core.exceptions import AppException, NotFoundError, ValidationError, InsufficientCreditsError, UnauthorizedError, ForbiddenError, ConflictError, InternalServerError
-from app.schemas.error import ERROR_RESPONSES
-from fastapi import Depends, status, Request
+from app.core.exceptions import UnauthorizedError
+from fastapi import Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -47,11 +46,12 @@ async def get_current_user(
     user = result.scalar_one_or_none()
 
     if not user:
+        from app.core.credit_costs import DEFAULT_CREDITS
         user = User(
             email=email,
             name=name or "Unknown User",
             provider="google",
-            credits_remaining=10,
+            credits_remaining=DEFAULT_CREDITS,
         )
         db.add(user)
         await db.commit()

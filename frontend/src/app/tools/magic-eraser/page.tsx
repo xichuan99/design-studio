@@ -10,6 +10,7 @@ import { Loader2, ArrowLeft, Download, PenSquare } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useProjectApi } from "@/lib/api";
+import { CreditCostBadge } from "@/components/credits/CreditCostBadge";
 
 export default function MagicEraserPage() {
   const router = useRouter();
@@ -64,11 +65,14 @@ export default function MagicEraserPage() {
           <ArrowLeft className="w-4 h-4" /> Kembali
         </Button>
 
-        <div className="mb-8">
-          <h1 className="text-3xl font-jakarta font-bold text-foreground">Magic Eraser</h1>
-          <p className="text-muted-foreground mt-2">
-            Coret bagian yang ingin dihapus dari foto \u2014 bisa orang, noda, atau objek apapun. AI yang bersihkan.
-          </p>
+        <div className="mb-8 flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-jakarta font-bold text-foreground">Magic Eraser</h1>
+            <p className="text-muted-foreground mt-2">
+              Coret bagian yang ingin dihapus dari foto \u2014 bisa orang, noda, atau objek apapun. AI yang bersihkan.
+            </p>
+          </div>
+          <CreditCostBadge cost={20} className="mt-2" />
         </div>
 
         {step === 1 && (

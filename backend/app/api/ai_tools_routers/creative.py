@@ -1,18 +1,17 @@
-from app.core.exceptions import AppException, NotFoundError, ValidationError, InsufficientCreditsError, UnauthorizedError, ForbiddenError, ConflictError, InternalServerError
+from app.core.exceptions import AppException, ValidationError, InsufficientCreditsError, InternalServerError
 from app.schemas.error import ERROR_RESPONSES
 import logging
 import time
 import uuid
 import json
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
+from fastapi import APIRouter, Depends, UploadFile, File, Form, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.services import banner_service, product_scene_service, batch_service
 from app.api.deps import get_db
 from app.api.rate_limit import rate_limit_dependency
 from app.models.user import User
 from app.services.storage_service import upload_image
-from app.schemas.error import ERROR_RESPONSES
 
 router = APIRouter(tags=["AI Tools"])
 logger = logging.getLogger(__name__)
@@ -43,7 +42,8 @@ async def text_banner(
         if quality not in valid_qualities:
             raise ValidationError(detail="Invalid quality requested")
 
-        cost = 2 if quality == "premium" else 1
+        from app.core.credit_costs import COST_TEXT_BANNER_PREMIUM, COST_TEXT_BANNER_STD
+        cost = COST_TEXT_BANNER_PREMIUM if quality == "premium" else COST_TEXT_BANNER_STD
 
         if current_user.credits_remaining < cost:
             raise InsufficientCreditsError(detail="Insufficient credits")
@@ -93,7 +93,8 @@ async def create_product_scene(
     Generate professional product scenes automatically.
     Cost: 1 credit per generation.
     """
-    if current_user.credits_remaining < 1:
+    from app.core.credit_costs import COST_PRODUCT_SCENE
+    if current_user.credits_remaining < COST_PRODUCT_SCENE:
         raise InsufficientCreditsError(detail="Insufficient credits")
 
     content = await file.read()
@@ -102,7 +103,7 @@ async def create_product_scene(
 
     from app.services.credit_service import log_credit_change
 
-    await log_credit_change(db, current_user, -1, "AI Product Scene Generator")
+    await log_credit_change(db, current_user, -COST_PRODUCT_SCENE, "AI Product Scene Generator")
     await db.commit()
 
     try:
@@ -163,9 +164,12 @@ async def process_batch_images(
         raise ValidationError(detail="Maksimal 10 file dalam satu batch")
 
     # Calculate total cost
+    from app.core.credit_costs import COST_BG_SWAP, COST_PRODUCT_SCENE
     per_file_cost = 0
-    if operation == "remove_bg" or operation == "product_scene":
-        per_file_cost = 1
+    if operation == "remove_bg":
+        per_file_cost = COST_BG_SWAP
+    elif operation == "product_scene":
+        per_file_cost = COST_PRODUCT_SCENE
 
     total_cost = per_file_cost * len(files)
 

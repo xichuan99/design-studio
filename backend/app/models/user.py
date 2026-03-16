@@ -16,7 +16,8 @@ class User(Base):
     avatar_url = Column(String, nullable=True)
     provider = Column(String, nullable=False, default="google")
     password_hash = Column(String, nullable=True)
-    credits_remaining = Column(Integer, nullable=False, default=10)
+    from app.core.credit_costs import DEFAULT_CREDITS
+    credits_remaining = Column(Integer, nullable=False, default=DEFAULT_CREDITS)
     storage_used = Column(BigInteger, nullable=False, default=0)
     storage_quota = Column(BigInteger, nullable=False, default=STORAGE_QUOTA_FREE)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

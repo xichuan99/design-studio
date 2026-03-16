@@ -1,4 +1,4 @@
-from app.core.exceptions import AppException, NotFoundError, ValidationError, InsufficientCreditsError, UnauthorizedError, ForbiddenError, ConflictError, InternalServerError
+from app.core.exceptions import NotFoundError, ValidationError
 from app.schemas.error import ERROR_RESPONSES
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,7 +8,6 @@ from app.core.database import get_db
 from app.models.job import Job
 from app.api.deps import get_current_user
 from app.models.user import User
-from app.schemas.error import ERROR_RESPONSES
 
 router = APIRouter(tags=["Designs - Jobs"])
 

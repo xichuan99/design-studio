@@ -48,7 +48,7 @@ export const CreditBadge = () => {
         badgeColor = "bg-destructive/10 text-destructive border-destructive/30";
         iconColor = "text-destructive";
         animationClass = "animate-pulse";
-    } else if (credits <= 5) {
+    } else if (credits <= 40) {
         badgeColor = "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/30";
         iconColor = "text-orange-600 dark:text-orange-400";
     }

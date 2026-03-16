@@ -1,4 +1,4 @@
-from app.core.exceptions import AppException, NotFoundError, ValidationError, InsufficientCreditsError, UnauthorizedError, ForbiddenError, ConflictError, InternalServerError
+from app.core.exceptions import NotFoundError, ValidationError
 from app.schemas.error import ERROR_RESPONSES
 from fastapi import APIRouter, Depends, UploadFile, File, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,7 +18,6 @@ from app.schemas.brand_kit import (
     ColorExtractionResponse,
 )
 from app.services.brand_kit_service import extract_colors_from_image
-from app.schemas.error import ERROR_RESPONSES
 
 router = APIRouter(tags=["Brand Kits"])
 

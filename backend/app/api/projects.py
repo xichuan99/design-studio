@@ -1,4 +1,4 @@
-from app.core.exceptions import AppException, NotFoundError, ValidationError, InsufficientCreditsError, UnauthorizedError, ForbiddenError, ConflictError, InternalServerError
+from app.core.exceptions import NotFoundError
 from app.schemas.error import ERROR_RESPONSES
 from typing import List
 
@@ -13,7 +13,6 @@ from app.api.deps import get_current_user
 from app.models.user import User
 from app.models.project import Project
 from app.schemas.project import ProjectResponse, ProjectUpdate
-from app.schemas.error import ERROR_RESPONSES
 
 router = APIRouter(tags=["Projects"])
 

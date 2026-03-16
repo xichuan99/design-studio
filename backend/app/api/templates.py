@@ -1,14 +1,13 @@
-from app.core.exceptions import AppException, NotFoundError, ValidationError, InsufficientCreditsError, UnauthorizedError, ForbiddenError, ConflictError, InternalServerError
+from app.core.exceptions import NotFoundError
 from app.schemas.error import ERROR_RESPONSES
 """Templates API: list and retrieve design templates."""
 
 from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.core.database import get_db
 from app.models.template import Template
-from app.schemas.error import ERROR_RESPONSES
 
 router = APIRouter(tags=["Templates"])
 

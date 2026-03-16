@@ -6,6 +6,8 @@ import { useProjectApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Loader2, Scissors, Upload, Plus } from "lucide-react";
 import { MAX_FILE_SIZE } from "@/app/create/types";
+import { CreditCostBadge } from '@/components/credits/CreditCostBadge';
+import { CreditConfirmDialog } from '@/components/credits/CreditConfirmDialog';
 
 export function BackgroundRemovalPanel() {
     const { addElement, elements, canvasWidth, canvasHeight } = useCanvasStore();
@@ -16,10 +18,6 @@ export function BackgroundRemovalPanel() {
     const [isProcessing, setIsProcessing] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
     const fileInputRef = useRef<HTMLInputElement>(null);
-
-    const handleUploadClick = () => {
-        fileInputRef.current?.click();
-    };
 
     const processFile = async (file: File) => {
         if (!file.type.startsWith("image/")) {
@@ -103,13 +101,16 @@ export function BackgroundRemovalPanel() {
 
     return (
         <div className="flex flex-col h-full bg-card">
-            <div className="p-4 border-b">
-                <h2 className="font-semibold flex items-center gap-2">
-                    <Scissors className="w-4 h-4 text-primary" /> Hapus Background
-                </h2>
-                <p className="text-xs text-muted-foreground mt-1">
-                    Upload foto produk, AI akan otomatis memisahkan objek dari latar belakang.
-                </p>
+            <div className="p-4 border-b flex items-center justify-between">
+                <div>
+                    <h2 className="font-semibold flex items-center gap-2">
+                        <Scissors className="w-4 h-4 text-primary" /> Hapus Background
+                    </h2>
+                    <p className="text-xs text-muted-foreground mt-1">
+                        Upload foto produk, AI akan otomatis memisahkan objek dari latar belakang.
+                    </p>
+                </div>
+                <CreditCostBadge cost={10} />
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -120,28 +121,34 @@ export function BackgroundRemovalPanel() {
                 )}
 
                 {!originalImagePreview && !isProcessing && (
-                    <div
-                        onDragOver={handleDragOver}
-                        onDrop={handleDrop}
-                        onClick={handleUploadClick}
-                        className="border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-muted/50 transition-colors group"
+                    <CreditConfirmDialog
+                        title="Hapus Background"
+                        description="AI akan menghapus latar belakang gambar. Biaya untuk operasi ini adalah 10 kredit."
+                        cost={10}
+                        onConfirm={() => fileInputRef.current?.click()}
                     >
-                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                            <Upload className="w-6 h-6 text-primary" />
+                        <div
+                            onDragOver={handleDragOver}
+                            onDrop={handleDrop}
+                            className="border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-muted/50 transition-colors group"
+                        >
+                            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                                <Upload className="w-6 h-6 text-primary" />
+                            </div>
+                            <div className="text-center">
+                                <p className="text-sm font-medium">Klik atau drop gambar</p>
+                                <p className="text-xs text-muted-foreground mt-1">Maks 10MB (JPG/PNG)</p>
+                            </div>
                         </div>
-                        <div className="text-center">
-                            <p className="text-sm font-medium">Klik atau drop gambar</p>
-                            <p className="text-xs text-muted-foreground mt-1">Maks 10MB (JPG/PNG)</p>
-                        </div>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            ref={fileInputRef}
-                            onChange={handleFileInputChange}
-                        />
-                    </div>
+                    </CreditConfirmDialog>
                 )}
+                <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    ref={fileInputRef}
+                    onChange={handleFileInputChange}
+                />
 
                 {isProcessing && (
                     <div className="border rounded-xl p-8 flex flex-col items-center justify-center gap-4 bg-muted/30">

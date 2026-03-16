@@ -1,17 +1,16 @@
-from app.core.exceptions import AppException, NotFoundError, ValidationError, InsufficientCreditsError, UnauthorizedError, ForbiddenError, ConflictError, InternalServerError
+from app.core.exceptions import AppException, ValidationError, InsufficientCreditsError, InternalServerError
 from app.schemas.error import ERROR_RESPONSES
 import logging
 import time
 import uuid
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
+from fastapi import APIRouter, Depends, UploadFile, File, Form, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.services import upscale_service, retouch_service, id_photo_service, watermark_service
 from app.api.deps import get_db
 from app.api.rate_limit import rate_limit_dependency
 from app.models.user import User
 from app.services.storage_service import upload_image
-from app.schemas.error import ERROR_RESPONSES
 
 router = APIRouter(tags=["AI Tools"])
 logger = logging.getLogger(__name__)
@@ -31,7 +30,8 @@ async def upscale_image(
     current_user: User = Depends(rate_limit_dependency),
 ):
     try:
-        if current_user.credits_remaining < 1:
+        from app.core.credit_costs import COST_UPSCALE
+        if current_user.credits_remaining < COST_UPSCALE:
             raise InsufficientCreditsError(detail="Insufficient credits")
 
         start_time = time.time()
@@ -80,7 +80,7 @@ async def upscale_image(
 
         from app.services.credit_service import log_credit_change
 
-        await log_credit_change(db, current_user, -1, "Upscale gambar")
+        await log_credit_change(db, current_user, -COST_UPSCALE, "Upscale gambar")
         await db.commit()
 
         logger.info(f"Upscale logic took {time.time() - start_time:.2f}s")
@@ -111,7 +111,8 @@ async def retouch(
     1. Enhances exposure/color using CLAHE
     2. Removes blemishes using Bilateral Filtering
     """
-    if current_user.credits_remaining < 1:
+    from app.core.credit_costs import COST_RETOUCH
+    if current_user.credits_remaining < COST_RETOUCH:
         raise InsufficientCreditsError(detail="Insufficient credits")
 
     content = await file.read()
@@ -120,7 +121,7 @@ async def retouch(
 
     from app.services.credit_service import log_credit_change
 
-    await log_credit_change(db, current_user, -1, "Auto-Retouch foto")
+    await log_credit_change(db, current_user, -COST_RETOUCH, "Auto-Retouch foto")
     await db.commit()
 
     try:
@@ -153,7 +154,7 @@ async def retouch(
         try:
             from app.services.credit_service import log_credit_change
 
-            await log_credit_change(db, current_user, 1, "Refund: gagal retouch foto")
+            await log_credit_change(db, current_user, COST_RETOUCH, "Refund: gagal retouch foto")
             await db.commit()
         except Exception as refund_err:
             logger.error(
@@ -188,7 +189,8 @@ async def create_id_photo(
     3. Replaces background with solid color
     4. Resizes to standard print sizes at 300 DPI
     """
-    if current_user.credits_remaining < 1:
+    from app.core.credit_costs import COST_ID_PHOTO
+    if current_user.credits_remaining < COST_ID_PHOTO:
         raise InsufficientCreditsError(detail="Insufficient credits")
 
     valid_bg_colors = ["red", "blue"]
@@ -209,7 +211,7 @@ async def create_id_photo(
 
     from app.services.credit_service import log_credit_change
 
-    await log_credit_change(db, current_user, -1, f"Pasfoto Maker ({size})")
+    await log_credit_change(db, current_user, -COST_ID_PHOTO, f"Pasfoto Maker ({size})")
     await db.commit()
 
     try:
@@ -255,7 +257,7 @@ async def create_id_photo(
         try:
             from app.services.credit_service import log_credit_change
 
-            await log_credit_change(db, current_user, 1, "Refund: gagal buat pasfoto")
+            await log_credit_change(db, current_user, COST_ID_PHOTO, "Refund: gagal buat pasfoto")
             await db.commit()
         except Exception as refund_err:
             logger.error(

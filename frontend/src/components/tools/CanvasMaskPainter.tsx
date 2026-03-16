@@ -4,6 +4,7 @@ import React, { useRef, useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Undo2, Eraser, Trash2 } from "lucide-react";
+import { CreditConfirmDialog } from "@/components/credits/CreditConfirmDialog";
 
 interface CanvasMaskPainterProps {
   imageUrl: string;
@@ -353,15 +354,22 @@ export function CanvasMaskPainter({ imageUrl, onMaskComplete, className = "" }: 
       </div>
 
       <div className="flex justify-end pt-4">
-        <Button 
-          size="lg" 
-          onClick={handleDone} 
+        <CreditConfirmDialog
+          title="Magic Eraser"
+          description={`AI akan menghapus objek yang ditandai dan mengisi kekosongan secara natural. Ini akan memotong 20 kredit.`}
+          cost={20}
+          onConfirm={handleDone}
           disabled={paths.length === 0}
-          className="font-bold gap-2 px-8"
         >
-          <Eraser className="w-5 h-5" />
-          Hapus Objek
-        </Button>
+          <Button 
+            size="lg" 
+            disabled={paths.length === 0}
+            className="font-bold gap-2 px-8"
+          >
+            <Eraser className="w-5 h-5" />
+            Hapus Objek
+          </Button>
+        </CreditConfirmDialog>
       </div>
     </div>
   );

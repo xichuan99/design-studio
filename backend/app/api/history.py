@@ -1,8 +1,7 @@
-from app.core.exceptions import AppException, NotFoundError, ValidationError, InsufficientCreditsError, UnauthorizedError, ForbiddenError, ConflictError, InternalServerError
 from app.schemas.error import ERROR_RESPONSES
 """Design History API: list and create history snapshots for a project."""
 
-from typing import Optional, List, Dict, Any
+from typing import Optional, List
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -12,7 +11,6 @@ from app.models.design_history import DesignHistory
 from app.api.deps import get_current_user
 from app.models.user import User
 from pydantic import BaseModel, Field, ConfigDict
-from app.schemas.error import ERROR_RESPONSES
 
 router = APIRouter(tags=["History"])
 

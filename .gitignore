@@ -50,3 +50,6 @@ backend/add_credits.py
 **/*.pyc
 scratch_scripts/
 backend/fix_tests.py
+
+# Business docs (private)
+docs/business/

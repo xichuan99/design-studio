@@ -1,10 +1,10 @@
-from app.core.exceptions import AppException, NotFoundError, ValidationError, InsufficientCreditsError, UnauthorizedError, ForbiddenError, ConflictError, InternalServerError
+from app.core.exceptions import ValidationError, InsufficientCreditsError, InternalServerError
 from app.schemas.error import ERROR_RESPONSES
 import logging
 import time
 import uuid
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
+from fastapi import APIRouter, Depends, UploadFile, File, Form, status
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.services import bg_removal_service, inpaint_service, outpaint_service
@@ -12,7 +12,6 @@ from app.api.deps import get_db
 from app.api.rate_limit import rate_limit_dependency
 from app.models.user import User
 from app.services.storage_service import upload_image
-from app.schemas.error import ERROR_RESPONSES
 
 router = APIRouter(tags=["AI Tools"])
 logger = logging.getLogger(__name__)
@@ -39,7 +38,8 @@ async def background_swap(
     3. Composites the object with shadow
     4. Uploads result to storage
     """
-    if current_user.credits_remaining <= 0:
+    from app.core.credit_costs import COST_BG_SWAP
+    if current_user.credits_remaining < COST_BG_SWAP:
         raise InsufficientCreditsError(detail="Insufficient credits")
 
     content = await file.read()
@@ -48,7 +48,7 @@ async def background_swap(
 
     from app.services.credit_service import log_credit_change
 
-    await log_credit_change(db, current_user, -1, "Hapus background")
+    await log_credit_change(db, current_user, -COST_BG_SWAP, "Hapus background")
     await db.commit()
 
     try:
@@ -91,7 +91,7 @@ async def background_swap(
     except Exception as e:
         from app.services.credit_service import log_credit_change
 
-        await log_credit_change(db, current_user, 1, "Refund: gagal hapus background")
+        await log_credit_change(db, current_user, COST_BG_SWAP, "Refund: gagal hapus background")
         await db.commit()
         logging.exception("Background swap failed")
         raise InternalServerError(detail=f"Failed to process image: {str(e)}"
@@ -117,7 +117,8 @@ async def magic_eraser(
     2. Calls inpaint_service (fal-ai/flux-pro/v1/fill)
     3. Uploads resulting image
     """
-    if current_user.credits_remaining < 1:
+    from app.core.credit_costs import COST_MAGIC_ERASER
+    if current_user.credits_remaining < COST_MAGIC_ERASER:
         raise InsufficientCreditsError(detail="Insufficient credits")
 
     content = await file.read()
@@ -128,7 +129,7 @@ async def magic_eraser(
 
     from app.services.credit_service import log_credit_change
 
-    await log_credit_change(db, current_user, -1, "Magic Eraser")
+    await log_credit_change(db, current_user, -COST_MAGIC_ERASER, "Magic Eraser")
     await db.commit()
 
     try:
@@ -164,7 +165,7 @@ async def magic_eraser(
         try:
             from app.services.credit_service import log_credit_change
 
-            await log_credit_change(db, current_user, 1, "Refund: gagal magic eraser")
+            await log_credit_change(db, current_user, COST_MAGIC_ERASER, "Refund: gagal magic eraser")
             await db.commit()
         except Exception as refund_err:
             logger.error(
@@ -196,7 +197,8 @@ async def generative_expand(
     2. Calls outpaint_service
     3. Returns resulting image
     """
-    if current_user.credits_remaining < 1:
+    from app.core.credit_costs import COST_GENERATIVE_EXPAND
+    if current_user.credits_remaining < COST_GENERATIVE_EXPAND:
         raise InsufficientCreditsError(detail="Insufficient credits")
 
     content = await file.read()
@@ -205,7 +207,7 @@ async def generative_expand(
 
     from app.services.credit_service import log_credit_change
 
-    await log_credit_change(db, current_user, -1, "Generative Expand")
+    await log_credit_change(db, current_user, -COST_GENERATIVE_EXPAND, "Generative Expand")
     await db.commit()
 
     try:
@@ -236,7 +238,7 @@ async def generative_expand(
             from app.services.credit_service import log_credit_change
 
             await log_credit_change(
-                db, current_user, 1, "Refund: gagal generative expand"
+                db, current_user, COST_GENERATIVE_EXPAND, "Refund: gagal generative expand"
             )
             await db.commit()
         except Exception as refund_err:
