@@ -14,6 +14,7 @@ export interface ParsedDesignData {
     visual_prompt_parts?: VisualPromptPart[];
     suggested_colors?: string[];
     generated_image_url?: string;
+    quantum_layout?: string;
 }
 
 export interface BriefQuestion {

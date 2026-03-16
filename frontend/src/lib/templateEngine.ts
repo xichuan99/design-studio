@@ -42,7 +42,9 @@ export function generateCanvasElementsFromTemplate(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     templateLayers: TemplateLayer[] | Record<string, any>,
     canvasLogicalWidth: number = 1024,
-    canvasLogicalHeight: number = 1024
+    canvasLogicalHeight: number = 1024,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    quantumLayout?: any
 ): CanvasElement[] {
     const elements: CanvasElement[] = [];
 
@@ -77,10 +79,11 @@ export function generateCanvasElementsFromTemplate(
         };
         const defaults = defaultPositions[role] || { x: 0.5, y: 0.5 };
 
-        // Priority 1: Template Layer, Priority 2: AI Layout, Priority 3: Defaults
-        const xProp = layer?.x ?? aiLayout?.x ?? defaults.x;
-        const yProp = layer?.y ?? aiLayout?.y ?? defaults.y;
-
+        // Priority 0: Quantum Engine, Priority 1: Template Layer, Priority 2: AI Layout, Priority 3: Defaults
+        
+        let xProp = layer?.x ?? aiLayout?.x ?? defaults.x;
+        let yProp = layer?.y ?? aiLayout?.y ?? defaults.y;
+        
         // Convert proportional (0-1) to pixel coordinates
         // For x, we use the proportional value as the anchor point.
         // If align is left, x is the left edge. If center, x is the center. If right, x is the right edge.
@@ -91,16 +94,30 @@ export function generateCanvasElementsFromTemplate(
             : 'center';
 
         const elWidth = canvasLogicalWidth * 0.8;
+        
         let x = xProp * canvasLogicalWidth;
+        let y = yProp * canvasLogicalHeight;
 
-        // Adjust x based on alignment so the text block stays anchored properly
-        if (align === 'center') {
-            x = x - (elWidth / 2);
-        } else if (align === 'right') {
-            x = x - elWidth;
+        // Extract direct absolute coordinates if Quantum Layout is provided
+        let usedQuantum = false;
+        if (quantumLayout && quantumLayout.variations && quantumLayout.variations.length > 0) {
+            const variant = quantumLayout.variations[0];
+            const qEl = variant.find((v: any) => v.role === role);
+            if (qEl) {
+                x = qEl.x;
+                y = qEl.y;
+                usedQuantum = true;
+            }
         }
 
-        const y = yProp * canvasLogicalHeight;
+        // Adjust x based on alignment so the text block stays anchored properly (ONLY if not using absolute quantum coords)
+        if (!usedQuantum) {
+            if (align === 'center') {
+                x = x - (elWidth / 2);
+            } else if (align === 'right') {
+                x = x - elWidth;
+            }
+        }
 
         // Note: For AI fallback on font_size, we use the defaults because Gemini might output
         // inappropriately small fonts sometimes depending on hallucinations.

@@ -363,7 +363,8 @@ export function useCreateDesign() {
                     
                     setParsedData(prev => prev ? {
                         ...prev,
-                        generated_image_url: newUrl
+                        generated_image_url: newUrl,
+                        quantum_layout: statusData.quantum_layout || undefined
                     } : null);
                     setCurrentStep('preview');
                 } else {
@@ -389,7 +390,8 @@ export function useCreateDesign() {
 
                         setParsedData(prev => prev ? {
                             ...prev,
-                            generated_image_url: newUrl
+                            generated_image_url: newUrl,
+                            quantum_layout: statusData.quantum_layout || undefined
                         } : null);
                         setCurrentStep('preview');
                     } else if (statusData.status === "failed") {
@@ -513,7 +515,10 @@ export function useCreateDesign() {
                 ? []
                 : generateCanvasElementsFromTemplate(
                     parsedData,
-                    []
+                    [],
+                    1024,
+                    1024,
+                    parsedData.quantum_layout ? JSON.parse(parsedData.quantum_layout) : undefined
                 );
 
             const getDynamicTitleFallback = (prompt: string) => {

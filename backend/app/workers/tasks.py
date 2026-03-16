@@ -72,6 +72,38 @@ async def _execute_pipeline(
             visual_prompt=visual_prompt_final,
         )
 
+        # Step 2.5: Quantum Layout Optimization
+        try:
+            import httpx
+            import json
+            elements = []
+            if parsed.headline:
+                elements.append({"role": "headline", "width": 800, "height": 120, "pinned": False})
+            if parsed.sub_headline:
+                elements.append({"role": "sub_headline", "width": 600, "height": 80, "pinned": False})
+            if parsed.cta:
+                elements.append({"role": "cta", "width": 400, "height": 60, "pinned": False})
+                
+            if elements:
+                # Add background placeholder as pinned if we have a way to know, for now just basic text elements
+                payload = {
+                    "canvas_width": 1080, # Assuming standard for now
+                    "canvas_height": 1080,
+                    "elements": elements,
+                    "strategy": "balanced",
+                    "num_variations": 1
+                }
+                
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    resp = await client.post("http://quantum-engine:8001/api/quantum/optimize", json=payload)
+                    if resp.status_code == 200:
+                        quantum_data = resp.json()
+                        await _update_job_status(job_id, quantum_layout=json.dumps(quantum_data))
+                    else:
+                        print(f"Quantum engine warning: status {resp.status_code}")
+        except Exception as e:
+            print(f"Quantum optimization failed, proceeding with fallback. Error: {e}")
+
         # Step 3: Preprocess reference image if provided
         upload_ref_url = reference_url
         if reference_url:

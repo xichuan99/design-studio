@@ -84,6 +84,7 @@ async def get_job_status(
                 "sub_headline": job.parsed_sub_headline,
                 "cta": job.parsed_cta,
                 "visual_prompt": job.visual_prompt,
+                "quantum_layout": job.quantum_layout,
                 "completed_at": job.completed_at.isoformat()
                 if job.completed_at
                 else None,

@@ -43,6 +43,10 @@ export const useAutoResize = () => {
             const scaleY = size.height / originalHeight;
             const scale = Math.min(scaleX, scaleY);
 
+            // TODO(QuantumEngine): Call POST /api/quantum/optimize here with the new size.width & size.height
+            // If the Quantum layout API returns new coordinates, we should apply them instead of 
+            // the uniform scaling group logic below. This will provide "Smart Refit" instead of just zooming.
+
             // Clone stage
             const stageClone = originalStage.clone();
             stageClone.width(size.width);
