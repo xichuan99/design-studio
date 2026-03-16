@@ -1,6 +1,19 @@
 import { useApiCore } from './coreApi';
 import * as Types from './types';
 
+async function fetchWithTimeout(resource: RequestInfo, options: RequestInit & { timeout?: number } = {}) {
+    const { timeout = 120000, ...fetchOptions } = options; // Default 120 seconds
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeout);
+
+    const response = await fetch(resource, {
+        ...fetchOptions,
+        signal: controller.signal
+    });
+    clearTimeout(id);
+    return response;
+}
+
 export function useAiToolsEndpoints() {
     const { API_BASE_URL, getHeaders } = useApiCore();
 
@@ -15,16 +28,28 @@ export function useAiToolsEndpoints() {
             product_image_url?: string;
             brand_kit_id?: string; // Added brand_kit_id
         }) => {
-            const res = await fetch(`${API_BASE_URL}/designs/generate`, {
-                method: 'POST',
-                headers: getHeaders(),
-                body: JSON.stringify(payload),
-            });
-            if (!res.ok) {
-                const errBase = await res.json().catch(() => ({}));
-                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to generate design');
+            try {
+                const res = await fetchWithTimeout(`${API_BASE_URL}/designs/generate`, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify(payload),
+                    timeout: 125000 // 125 seconds, allowing Nginx 120s to trigger first or taking over if it hangs
+                });
+                if (!res.ok) {
+                    const errBase = await res.json().catch(() => ({}));
+                    throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to generate design');
+                }
+                return res.json();
+            } catch (error: unknown) {
+                const err = error as Error;
+                if (err.name === 'AbortError') {
+                    throw new Error('Waktu koneksi habis saat merender gambar. Server mungkin sedang sibuk, silakan coba lagi.');
+                }
+                if (err.message === 'Failed to fetch') {
+                    throw new Error('Koneksi terputus dari server (Timeout). Pembuatan gambar butuh waktu lama, silakan coba lagi.');
+                }
+                throw error;
             }
-            return res.json();
         };
 
     const clarifyCopywriting = async (payload: {
@@ -63,16 +88,28 @@ export function useAiToolsEndpoints() {
             brand_name?: string;
             clarification_answers?: Record<string, string>;
         }): Promise<{ variations: Types.CopywritingVariation[] }> => {
-            const res = await fetch(`${API_BASE_URL}/designs/generate-copywriting`, {
-                method: 'POST',
-                headers: getHeaders(),
-                body: JSON.stringify(payload),
-            });
-            if (!res.ok) {
-                const errBase = await res.json().catch(() => ({}));
-                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to generate copywriting');
+            try {
+                const res = await fetchWithTimeout(`${API_BASE_URL}/designs/generate-copywriting`, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify(payload),
+                    timeout: 60000 // 60 seconds is enough for text generation
+                });
+                if (!res.ok) {
+                    const errBase = await res.json().catch(() => ({}));
+                    throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to generate copywriting');
+                }
+                return res.json();
+            } catch (error: unknown) {
+                const err = error as Error;
+                if (err.name === 'AbortError') {
+                    throw new Error('Waktu koneksi habis saat meracik copywriting. Server mungkin sedang sibuk, silakan coba lagi.');
+                }
+                if (err.message === 'Failed to fetch') {
+                    throw new Error('Koneksi terputus (Timeout). Proses AI butuh waktu lebih lama, silakan coba lagi.');
+                }
+                throw error;
             }
-            return res.json();
         };
 
     const parseDesignText = async (payload: {
