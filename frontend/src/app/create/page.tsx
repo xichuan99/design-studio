@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
-import { Loader2, PanelLeftOpen, PanelLeftClose, X, ImagePlus } from "lucide-react";
+import { Loader2, PanelLeftOpen, PanelLeftClose, ImagePlus } from "lucide-react";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { GenerationProgress } from "@/components/create/GenerationProgress";
@@ -139,18 +139,6 @@ export default function CreatePage() {
 
                 {/* Main Workspace Preview */}
                 <main className={`flex-1 bg-muted/20 relative flex flex-col items-center justify-start ${currentStep === 'preview' ? 'overflow-hidden p-0' : 'overflow-y-auto p-4 md:p-8'}`}>
-                    {/* Reset Button */}
-                    {(rawText || currentStep !== 'input') && currentStep !== 'preview' && (
-                        <div className="w-full max-w-3xl mx-auto flex justify-end mb-1 shrink-0 animation-fade-in">
-                            <button 
-                                type="button"
-                                onClick={handleResetState} 
-                                className="text-xs text-muted-foreground/60 hover:text-destructive transition-colors flex items-center gap-1"
-                            >
-                                <X className="w-3 h-3" /> Mulai Baru
-                            </button>
-                        </div>
-                    )}
                     {inlineError && (
                         <div className="w-full max-w-4xl mx-auto mb-4 z-10 shrink-0">
                             <InlineErrorBanner 
