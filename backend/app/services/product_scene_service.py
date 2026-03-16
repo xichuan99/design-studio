@@ -70,12 +70,12 @@ async def generate_product_scene(
         # Add 15% padding
         pad_w = int(w * 0.15)
         pad_h = int(h * 0.15)
-        
+
         # Sample edge color from top-left to use as fill (better than plain white/black)
         edge_color = orig_img.getpixel((0, 0))
-        
+
         padded_img = ImageOps.expand(orig_img, border=(pad_w, pad_h, pad_w, pad_h), fill=edge_color)
-        
+
         padded_buffer = io.BytesIO()
         padded_img.save(padded_buffer, format="JPEG", quality=95)
         processed_image_bytes = padded_buffer.getvalue()
