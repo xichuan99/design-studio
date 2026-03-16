@@ -7,3 +7,4 @@ from app.models.job import Job as Job
 from app.models.design_history import DesignHistory as DesignHistory
 from app.models.brand_kit import BrandKit as BrandKit
 from app.models.credit_transaction import CreditTransaction as CreditTransaction
+from app.models.ai_tool_result import AiToolResult as AiToolResult

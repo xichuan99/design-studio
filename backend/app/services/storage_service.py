@@ -138,6 +138,73 @@ async def upload_image(
         return f"{base}/static/uploads/{key}"
 
 
+async def delete_image(url: str) -> bool:
+    """
+    Delete an image from S3 (or local filesystem) given its public URL.
+
+    Args:
+        url: The public URL of the image to delete.
+
+    Returns:
+        True if deletion succeeded, False otherwise.
+    """
+    import logging
+    import os
+    import re
+
+    logger = logging.getLogger(__name__)
+
+    if not url:
+        return False
+
+    # Handle local dev fallback files
+    base = settings.BACKEND_BASE_URL.rstrip("/")
+    if url.startswith(base + "/static/uploads/"):
+        key = url.replace(base + "/static/uploads/", "")
+        local_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+            "static",
+            "uploads",
+            key,
+        )
+        try:
+            if os.path.exists(local_path):
+                os.remove(local_path)
+                logger.info(f"Deleted local file: {local_path}")
+            return True
+        except Exception as e:
+            logger.warning(f"Failed to delete local file {local_path}: {e}")
+            return False
+
+    # Extract S3 key from public URL
+    key = None
+    if settings.S3_PUBLIC_URL and url.startswith(settings.S3_PUBLIC_URL):
+        key = url.replace(settings.S3_PUBLIC_URL.rstrip("/") + "/", "", 1)
+    elif settings.S3_ENDPOINT and settings.S3_BUCKET:
+        prefix = f"{settings.S3_ENDPOINT.rstrip('/')}/{settings.S3_BUCKET}/"
+        if url.startswith(prefix):
+            key = url.replace(prefix, "", 1)
+    if not key and settings.S3_BUCKET:
+        # Try standard AWS URL pattern
+        pattern = rf"https?://{re.escape(settings.S3_BUCKET)}\.s3\.amazonaws\.com/(.+)"
+        m = re.match(pattern, url)
+        if m:
+            key = m.group(1)
+
+    if not key:
+        logger.warning(f"Could not extract S3 key from URL: {url}")
+        return False
+
+    try:
+        s3 = _get_s3_client()
+        s3.delete_object(Bucket=settings.S3_BUCKET, Key=key)
+        logger.info(f"Deleted S3 object: {key}")
+        return True
+    except Exception as e:
+        logger.warning(f"Failed to delete S3 object {key}: {e}")
+        return False
+
+
 async def download_image(url: str) -> bytes:
     """
     Download an image from a URL and return the bytes.

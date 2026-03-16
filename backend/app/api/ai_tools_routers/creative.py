@@ -63,9 +63,20 @@ async def text_banner(
         )
         await db.commit()
 
+        # Save to AI tool results gallery
+        from app.api.ai_tools_routers.results import save_tool_result
+
+        banner_url = result.get("url", "")
+        result_id = await save_tool_result(
+            db, current_user.id, "text_banner", banner_url,
+            0, f"{text[:100]} ({style})",
+        )
+        await db.commit()
+
         logger.info(
             f"Text banner generation ({quality}) took {time.time() - start_time:.2f}s"
         )
+        result["result_id"] = result_id
         return result
 
     except AppException:
@@ -120,8 +131,17 @@ async def create_product_scene(
             final_bytes, content_type="image/jpeg", prefix=f"product_scene_{scene_id}"
         )
 
+        # Save to AI tool results gallery
+        from app.api.ai_tools_routers.results import save_tool_result
+
+        result_id = await save_tool_result(
+            db, current_user.id, "product_scene", result_url,
+            len(final_bytes), f"Product scene: {theme}",
+        )
+        await db.commit()
+
         logger.info(f"Product Scene Generation took {time.time() - start_time:.2f}s")
-        return {"url": result_url}
+        return {"url": result_url, "result_id": result_id}
 
     except Exception as e:
         logger.exception("Product Scene Generation failed")
@@ -228,9 +248,19 @@ async def process_batch_images(
         # Note: upload_image typically adds .jpg or respects format, it might need tweaking if storage_service forces extension,
         # assuming storage handles generic bytes and content_types fine here, we modify prefix manually.
 
+        # Save to AI tool results gallery
+        from app.api.ai_tools_routers.results import save_tool_result
+
+        result_id = await save_tool_result(
+            db, current_user.id, "batch", result_url,
+            len(zip_bytes), f"Batch {operation} ({len(files)} files)",
+        )
+        await db.commit()
+
         logger.info(f"Batch Processing took {time.time() - start_time:.2f}s")
         return {
             "url": result_url,
+            "result_id": result_id,
             "success_count": len(files) - len(errors),
             "error_count": len(errors),
             "errors": errors,

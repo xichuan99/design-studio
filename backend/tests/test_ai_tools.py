@@ -52,7 +52,9 @@ def test_background_swap_endpoint_success():
         )
 
         assert res.status_code == 200
-        assert res.json() == {"url": "http://storage.com/result.jpg"}
+        data = res.json()
+        assert data["url"] == "http://storage.com/result.jpg"
+        assert "result_id" in data
         mock_rm.assert_called_once()
         mock_inpaint.assert_called_once_with(
             original_bytes=mock_file_content,
@@ -125,7 +127,9 @@ def test_upscale_endpoint_success():
         )
 
         assert res.status_code == 200
-        assert res.json() == {"url": "http://storage.com/final.png"}
+        data = res.json()
+        assert data["url"] == "http://storage.com/final.png"
+        assert "result_id" in data
         assert mock_upload.call_count == 2
         mock_upscale.assert_called_once_with("http://storage.com/temp.jpg", 2.0)
 
@@ -154,11 +158,11 @@ def test_text_banner_endpoint_success():
         )
 
         assert res.status_code == 200
-        assert res.json() == {
-            "url": "http://storage.com/banner.png",
-            "width": 1024,
-            "height": 1024,
-        }
+        data = res.json()
+        assert data["url"] == "http://storage.com/banner.png"
+        assert data["width"] == 1024
+        assert data["height"] == 1024
+        assert "result_id" in data
         mock_gen.assert_called_once_with(
             text="SALE MANTAP",
             style="ribbon",
@@ -194,10 +198,10 @@ def test_retouch_endpoint_success():
         )
 
         assert res.status_code == 200
-        assert res.json() == {
-            "url": "http://storage.com/after.jpg",
-            "before_url": "http://storage.com/before.jpg",
-        }
+        data = res.json()
+        assert data["url"] == "http://storage.com/after.jpg"
+        assert data["before_url"] == "http://storage.com/before.jpg"
+        assert "result_id" in data
         mock_enhance.assert_called_once()
         mock_blemish.assert_called_once()
         assert mock_upload.call_count == 2
@@ -225,13 +229,11 @@ def test_id_photo_endpoint_success():
         )
 
         assert res.status_code == 200
-        assert res.json() == {
-            "url": "http://storage.com/idphoto.jpg",
-            "width_cm": None,
-            "height_cm": None,
-            "bg_color": "red",
-            "print_sheet_url": None,
-        }
+        data = res.json()
+        assert data["url"] == "http://storage.com/idphoto.jpg"
+        assert data["bg_color"] == "red"
+        assert data["print_sheet_url"] is None
+        assert "result_id" in data
         mock_gen.assert_called_once_with(
             image_bytes=b"fake_image_bytes",
             bg_color_name="red",
@@ -309,13 +311,11 @@ def test_id_photo_with_print_sheet():
         )
 
         assert res.status_code == 200
-        assert res.json() == {
-            "url": "http://storage.com/idphoto.jpg",
-            "width_cm": None,
-            "height_cm": None,
-            "bg_color": "red",
-            "print_sheet_url": "http://storage.com/sheet.jpg",
-        }
+        data = res.json()
+        assert data["url"] == "http://storage.com/idphoto.jpg"
+        assert data["bg_color"] == "red"
+        assert data["print_sheet_url"] == "http://storage.com/sheet.jpg"
+        assert "result_id" in data
         mock_sheet.assert_called_once_with(
             photo_bytes=b"id_photo", output_format="jpeg"
         )
@@ -348,11 +348,11 @@ def test_magic_eraser_success():
         res = client.post("/api/tools/magic-eraser", data=data, files=files)
 
         assert res.status_code == 200
-        assert res.json() == {
-            "url": "http://storage.com/result.jpg",
-            "width": 1024,
-            "height": 1024,
-        }
+        data = res.json()
+        assert data["url"] == "http://storage.com/result.jpg"
+        assert data["width"] == 1024
+        assert data["height"] == 1024
+        assert "result_id" in data
         assert mock_upload.call_count == 2
         mock_inpaint.assert_called_once_with(
             image_url="http://storage.com/input.jpg",
@@ -381,11 +381,11 @@ def test_generative_expand_directional_success():
         res = client.post("/api/tools/generative-expand", data=data, files=files)
 
         assert res.status_code == 200
-        assert res.json() == {
-            "url": "http://storage.com/expanded.jpg",
-            "width": 1124,
-            "height": 1024,
-        }
+        data = res.json()
+        assert data["url"] == "http://storage.com/expanded.jpg"
+        assert data["width"] == 1124
+        assert data["height"] == 1024
+        assert "result_id" in data
         mock_upload.assert_called_once()
         mock_outpaint.assert_called_once_with(
             image_url="http://storage.com/input.jpg",
@@ -465,7 +465,9 @@ def test_watermark_endpoint_success():
         res = client.post("/api/tools/watermark", data=data, files=files)
 
         assert res.status_code == 200
-        assert res.json() == {"url": "http://storage.com/watermarked.jpg"}
+        data = res.json()
+        assert data["url"] == "http://storage.com/watermarked.jpg"
+        assert "result_id" in data
         mock_wm.assert_called_once_with(
             base_image_bytes=b"fake_base",
             watermark_bytes=b"fake_logo",
@@ -494,7 +496,9 @@ def test_product_scene_endpoint_success():
         res = client.post("/api/tools/product-scene", data=data, files=files)
 
         assert res.status_code == 200
-        assert res.json() == {"url": "http://storage.com/scene.jpg"}
+        data = res.json()
+        assert data["url"] == "http://storage.com/scene.jpg"
+        assert "result_id" in data
         mock_scene.assert_called_once_with(
             image_bytes=b"fake_product", theme="minimalist", aspect_ratio="16:9"
         )
@@ -521,12 +525,12 @@ def test_batch_endpoint_success():
         res = client.post("/api/tools/batch", data=data, files=files)
 
         assert res.status_code == 200
-        assert res.json() == {
-            "url": "http://storage.com/batch.zip",
-            "success_count": 2,
-            "error_count": 0,
-            "errors": [],
-        }
+        data = res.json()
+        assert data["url"] == "http://storage.com/batch.zip"
+        assert data["success_count"] == 2
+        assert data["error_count"] == 0
+        assert data["errors"] == []
+        assert "result_id" in data
 
         # Verify passed files structure
         args, kwargs = mock_batch.call_args

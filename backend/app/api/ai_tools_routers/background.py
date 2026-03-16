@@ -68,7 +68,16 @@ async def background_swap(
             prefix=f"tools_bgswap_{current_user.id}",
         )
 
-        return {"url": result_url}
+        # 4. Save to AI tool results gallery
+        from app.api.ai_tools_routers.results import save_tool_result
+
+        result_id = await save_tool_result(
+            db, current_user.id, "background_swap", result_url,
+            len(final_bytes), prompt[:200] if prompt else None,
+        )
+        await db.commit()
+
+        return {"url": result_url, "result_id": result_id}
     except Exception as e:
         from app.services.credit_service import log_credit_change
 
@@ -186,7 +195,18 @@ async def magic_eraser(
         # upscale downloads and re-uploads, but background-swap directly uploads final_bytes.
         # inpaint_service returns a URL. To avoid a huge wait, let's just return the URL directly for now.
 
+        # Save to AI tool results gallery
+        from app.api.ai_tools_routers.results import save_tool_result
+
+        eraser_url = result_data.get("url", "")
+        result_id = await save_tool_result(
+            db, current_user.id, "magic_eraser", eraser_url,
+            0, (prompt or "Object removal")[:200],
+        )
+        await db.commit()
+
         logger.info(f"Magic Eraser logic took {time.time() - start_time:.2f}s")
+        result_data["result_id"] = result_id
         return result_data
 
     except Exception as e:
@@ -258,7 +278,18 @@ async def generative_expand(
             prompt=prompt,
         )
 
+        # Save to AI tool results gallery
+        from app.api.ai_tools_routers.results import save_tool_result
+
+        expand_url = result_data.get("url", "")
+        result_id = await save_tool_result(
+            db, current_user.id, "generative_expand", expand_url,
+            0, (prompt or f"Expand {direction or 'all'}")[:200],
+        )
+        await db.commit()
+
         logger.info(f"Generative Expand logic took {time.time() - start_time:.2f}s")
+        result_data["result_id"] = result_id
         return result_data
 
     except Exception as e:

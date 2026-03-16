@@ -83,8 +83,17 @@ async def upscale_image(
         await log_credit_change(db, current_user, -COST_UPSCALE, "Upscale gambar")
         await db.commit()
 
+        # Save to AI tool results gallery
+        from app.api.ai_tools_routers.results import save_tool_result
+
+        result_id = await save_tool_result(
+            db, current_user.id, "upscale", stored_url,
+            len(final_bytes), f"{scale}x upscale",
+        )
+        await db.commit()
+
         logger.info(f"Upscale logic took {time.time() - start_time:.2f}s")
-        return {"url": stored_url}
+        return {"url": stored_url, "result_id": result_id}
 
     except AppException:
         raise
@@ -147,8 +156,17 @@ async def retouch(
             final_bytes, content_type=mime_type, prefix=f"retouch_after_{temp_id}"
         )
 
+        # Save to AI tool results gallery
+        from app.api.ai_tools_routers.results import save_tool_result
+
+        result_id = await save_tool_result(
+            db, current_user.id, "retouch", result_url,
+            len(final_bytes), "Auto retouch",
+        )
+        await db.commit()
+
         logger.info(f"Retouch logic took {time.time() - start_time:.2f}s")
-        return {"url": result_url, "before_url": before_url}
+        return {"url": result_url, "before_url": before_url, "result_id": result_id}
     except Exception as e:
         logger.exception("Retouch failed")
         try:
@@ -244,6 +262,15 @@ async def create_id_photo(
                 sheet_bytes, content_type=mime_type, prefix=f"idphoto_sheet_{photo_id}"
             )
 
+        # Save to AI tool results gallery
+        from app.api.ai_tools_routers.results import save_tool_result
+
+        result_id = await save_tool_result(
+            db, current_user.id, "id_photo", result_url,
+            len(final_bytes), f"Pasfoto {size} bg {bg_color}",
+        )
+        await db.commit()
+
         logger.info(f"ID Photo logic took {time.time() - start_time:.2f}s")
         return {
             "url": result_url,
@@ -251,6 +278,7 @@ async def create_id_photo(
             "height_cm": custom_height_cm,
             "bg_color": bg_color,
             "print_sheet_url": print_sheet_url,
+            "result_id": result_id,
         }
     except Exception as e:
         logger.exception("ID Photo generation failed")
@@ -313,8 +341,17 @@ async def apply_watermark(
             final_bytes, content_type="image/jpeg", prefix=f"watermarked_{watermark_id}"
         )
 
+        # Save to AI tool results gallery
+        from app.api.ai_tools_routers.results import save_tool_result
+
+        result_id = await save_tool_result(
+            db, current_user.id, "watermark", result_url,
+            len(final_bytes), f"Watermark {position}",
+        )
+        await db.commit()
+
         logger.info(f"Watermark logic took {time.time() - start_time:.2f}s")
-        return {"url": result_url}
+        return {"url": result_url, "result_id": result_id}
 
     except Exception as e:
         logger.exception("Watermark application failed")
