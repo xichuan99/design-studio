@@ -83,7 +83,7 @@ async def _execute_pipeline(
                 elements.append({"role": "sub_headline", "width": 600, "height": 80, "pinned": False})
             if parsed.cta:
                 elements.append({"role": "cta", "width": 400, "height": 60, "pinned": False})
-                
+
             if elements:
                 # Add background placeholder as pinned if we have a way to know, for now just basic text elements
                 payload = {
@@ -93,7 +93,7 @@ async def _execute_pipeline(
                     "strategy": "balanced",
                     "num_variations": 1
                 }
-                
+
                 async with httpx.AsyncClient(timeout=10.0) as client:
                     resp = await client.post("http://quantum-engine:8001/api/quantum/optimize", json=payload)
                     if resp.status_code == 200:
