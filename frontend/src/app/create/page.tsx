@@ -208,6 +208,7 @@ export default function CreatePage() {
                             }}
                             onGenerate={handleGenerateImage}
                             isGeneratingImage={isGeneratingImage}
+                            onReset={handleResetState}
                         />
                     ) : currentStep === 'generating' ? (
                         <GenerationProgress />

@@ -120,14 +120,6 @@ export function VisualPromptEditor({
         <div className={`flex flex-col w-full mx-auto animation-fade-in gap-5 ${compact ? 'pb-4' : 'max-w-3xl pb-20'}`}>
             
 
-            {/* Translation Box */}
-            {parsedData.indonesian_translation && (
-                <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 text-center">
-                    <p className="text-sm font-medium text-primary">Maksud AI saat ini:</p>
-                    <p className="text-sm text-muted-foreground mt-1">&quot;{parsedData.indonesian_translation}&quot;</p>
-                </div>
-            )}
-
             {/* AI Modification Box - Moved to TOP as requested */}
             <div className="bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-2xl p-5 sm:p-6 shadow-[0_0_30px_rgba(var(--primary),0.05)] mt-2">
                 <div className="mb-3">
@@ -173,19 +165,27 @@ export function VisualPromptEditor({
                         </Badge>
                     ))}
                 </div>
-
-                {/* Generate Ulang - compact mode only */}
-                {compact && onGenerate && (
-                    <Button 
-                        onClick={onGenerate} 
-                        disabled={isGeneratingImage || isModifying} 
-                        variant="outline" 
-                        className="w-full mt-4 font-bold border-primary/20 hover:bg-primary/5 hover:text-primary transition-colors"
-                    >
-                        {isGeneratingImage ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generate...</> : "🔄 Generate Ulang"}
-                    </Button>
-                )}
             </div>
+
+            {/* Translation Box (Konfirmasi Maksud AI) - Middle */}
+            {parsedData.indonesian_translation && (
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 text-center mt-4">
+                    <p className="text-sm font-medium text-primary">Maksud AI saat ini:</p>
+                    <p className="text-sm text-muted-foreground mt-1">&quot;{parsedData.indonesian_translation}&quot;</p>
+                </div>
+            )}
+
+            {/* Generate Ulang - Standalone CTA */}
+            {compact && onGenerate && (
+                <Button 
+                    onClick={onGenerate} 
+                    disabled={isGeneratingImage || isModifying} 
+                    variant="default"
+                    className="w-full mt-4 font-bold shadow-lg h-12 rounded-xl transition-all"
+                >
+                    {isGeneratingImage ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generate...</> : "🔄 Generate Ulang Gambar"}
+                </Button>
+            )}
 
             {/* Prompt Parts Toggles - Wrapped in details for compact mode */}
             {compact ? (

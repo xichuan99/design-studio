@@ -18,6 +18,7 @@ interface UnifiedPreviewEditorProps {
     onModifyPromptParts: (newParts: any, newCombined: string, newTranslation?: string) => void;
     onGenerate: () => void;
     isGeneratingImage: boolean;
+    onReset?: () => void;
 }
 
 export function UnifiedPreviewEditor({
@@ -30,7 +31,8 @@ export function UnifiedPreviewEditor({
     onTogglePromptPart,
     onModifyPromptParts,
     onGenerate,
-    isGeneratingImage
+    isGeneratingImage,
+    onReset
 }: UnifiedPreviewEditorProps) {
     return (
         <div className="flex flex-col md:flex-row w-full h-full overflow-hidden bg-background">
@@ -44,13 +46,35 @@ export function UnifiedPreviewEditor({
 
                 {/* Left Bottom Controls (Thumbnail Strip & Proceed CTA) */}
                 <div className="shrink-0 border-t border-border/30 bg-background/80 backdrop-blur-sm px-4 py-3 flex gap-4 items-center justify-between">
-                    <GenerationHistoryList 
-                        imageHistory={imageHistory}
-                        activeImageIndex={activeImageIndex}
-                        setActiveImageIndex={setActiveImageIndex}
-                    />
+                    <div className="flex items-center gap-4">
+                        <GenerationHistoryList 
+                            imageHistory={imageHistory}
+                            activeImageIndex={activeImageIndex}
+                            setActiveImageIndex={setActiveImageIndex}
+                        />
+                        
+                        {/* Mulai Baru Button */}
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors hidden sm:flex"
+                            onClick={onReset}
+                        >
+                            <span className="mr-2">🔄</span> Mulai Baru
+                        </Button>
+                    </div>
                     
                     <div className="flex items-center gap-3 shrink-0 ml-auto">
+                        {/* Mobile Icon-only Mulai Baru */}
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors sm:hidden"
+                            onClick={onReset}
+                            title="Mulai Baru"
+                        >
+                            🔄
+                        </Button>
                         <Button
                             size="sm"
                             className="font-bold shadow-lg h-10 px-6 shrink-0"
