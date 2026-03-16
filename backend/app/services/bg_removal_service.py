@@ -48,8 +48,9 @@ async def remove_background(image_bytes: bytes) -> bytes:
         # 2. Call Fal.ai background removal model
         # Using BRIA RMBG v2 — significantly more accurate than birefnet for
         # fine-detail objects (watch straps, product edges, transparent materials)
+        # Correct endpoint: fal-ai/rmbg-v2
         result = await fal_client.run_async(
-            "fal-ai/bria/rmbg/v2",
+            "fal-ai/rmbg-v2",
             arguments={"image_url": temp_url},
         )
 

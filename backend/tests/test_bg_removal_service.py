@@ -53,9 +53,9 @@ async def test_remove_background_success(
     result = await remove_background(product_image_bytes)
     assert result == b"fake-png-data"
     mock_upload.assert_called_once()
-    # Should now call BRIA RMBG-v2 (upgraded from birefnet)
+    # Should now call BRIA RMBG-v2 (correct endpoint: fal-ai/rmbg-v2)
     mock_fal_run.assert_called_once_with(
-        "fal-ai/bria/rmbg/v2", arguments={"image_url": "http://temp.url"}
+        "fal-ai/rmbg-v2", arguments={"image_url": "http://temp.url"}
     )
 
 
