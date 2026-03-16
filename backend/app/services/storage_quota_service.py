@@ -7,7 +7,9 @@ per-user storage usage against their quota.
 
 from __future__ import annotations
 
-from app.core.exceptions import AppException, status
+from fastapi import status
+
+from app.core.exceptions import AppException
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
