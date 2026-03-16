@@ -11,7 +11,7 @@ DEFAULT_CREDITS = 100
 # Tier 1 (5 Credits) - Very low cost / High Margin
 COST_RETOUCH = 5
 
-# Tier 2 (10 Credits) - Low cost / Good Margin 
+# Tier 2 (10 Credits) - Low cost / Good Margin
 COST_BG_SWAP = 10
 COST_UPSCALE = 10
 COST_ID_PHOTO = 10
