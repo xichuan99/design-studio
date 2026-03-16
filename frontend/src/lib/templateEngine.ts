@@ -81,8 +81,8 @@ export function generateCanvasElementsFromTemplate(
 
         // Priority 0: Quantum Engine, Priority 1: Template Layer, Priority 2: AI Layout, Priority 3: Defaults
         
-        let xProp = layer?.x ?? aiLayout?.x ?? defaults.x;
-        let yProp = layer?.y ?? aiLayout?.y ?? defaults.y;
+        const xProp = layer?.x ?? aiLayout?.x ?? defaults.x;
+        const yProp = layer?.y ?? aiLayout?.y ?? defaults.y;
         
         // Convert proportional (0-1) to pixel coordinates
         // For x, we use the proportional value as the anchor point.
@@ -102,7 +102,7 @@ export function generateCanvasElementsFromTemplate(
         let usedQuantum = false;
         if (quantumLayout && quantumLayout.variations && quantumLayout.variations.length > 0) {
             const variant = quantumLayout.variations[0];
-            const qEl = variant.find((v: any) => v.role === role);
+            const qEl = variant.find((v: { role: string; x: number; y: number }) => v.role === role);
             if (qEl) {
                 x = qEl.x;
                 y = qEl.y;
