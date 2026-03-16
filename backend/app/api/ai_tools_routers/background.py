@@ -58,8 +58,9 @@ async def background_swap(
         no_bg_bytes = await bg_removal_service.remove_background(content)
 
         # 2. Generate Background
+        enhanced_prompt = f"A professional product photograph showing: {prompt}"
         bg_result = await generate_background(
-            visual_prompt=prompt,
+            visual_prompt=enhanced_prompt,
             style=style,
             aspect_ratio=aspect_ratio,
             integrated_text=False,

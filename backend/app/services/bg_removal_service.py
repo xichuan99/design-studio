@@ -111,7 +111,7 @@ async def composite_product_on_background(
         )
 
         # Apply edge feathering to hide seam artifacts
-        product_img = _feather_edges(product_img, radius=1.0)
+        product_img = _feather_edges(product_img, radius=1.5)
 
         p_w, p_h = product_img.size
 
@@ -170,7 +170,7 @@ async def composite_with_shadow(
         product_img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
 
         # Apply edge feathering to hide seam artifacts
-        product_img = _feather_edges(product_img, radius=1.5)
+        product_img = _feather_edges(product_img, radius=2.5)
 
         p_w, p_h = product_img.size
 

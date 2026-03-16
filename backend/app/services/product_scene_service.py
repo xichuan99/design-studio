@@ -62,10 +62,32 @@ async def generate_product_scene(
     """
     logger.info(f"Generating product scene with theme: {theme}")
 
+    # 0. Auto-pad the image to help background removal for closeups
+    try:
+        from PIL import ImageOps
+        orig_img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+        w, h = orig_img.size
+        # Add 15% padding
+        pad_w = int(w * 0.15)
+        pad_h = int(h * 0.15)
+        
+        # Sample edge color from top-left to use as fill (better than plain white/black)
+        edge_color = orig_img.getpixel((0, 0))
+        
+        padded_img = ImageOps.expand(orig_img, border=(pad_w, pad_h, pad_w, pad_h), fill=edge_color)
+        
+        padded_buffer = io.BytesIO()
+        padded_img.save(padded_buffer, format="JPEG", quality=95)
+        processed_image_bytes = padded_buffer.getvalue()
+        logger.debug("Successfully auto-padded image before background removal.")
+    except Exception as e:
+        logger.warning(f"Failed to auto-pad image, proceeding with original: {e}")
+        processed_image_bytes = image_bytes
+
     # 1. Background removal using existing service
     logger.debug("Removing background...")
     try:
-        no_bg_bytes: bytes = await bg_removal_service.remove_background(image_bytes)
+        no_bg_bytes: bytes = await bg_removal_service.remove_background(processed_image_bytes)
     except Exception as e:
         logger.error(f"Background removal failed for product scene: {e}")
         raise RuntimeError(
