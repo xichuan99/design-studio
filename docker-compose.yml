@@ -57,6 +57,7 @@ services:
     restart: unless-stopped
 
   quantum-engine:
+    image: ${QUANTUM_IMAGE:-design-studio-quantum}
     build:
       context: ./quantum-engine
       dockerfile: Dockerfile
