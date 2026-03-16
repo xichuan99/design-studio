@@ -3,7 +3,7 @@
 import io
 from typing import Optional
 import numpy as np
-import mediapipe as mp
+import cv2
 from PIL import Image
 import logging
 
@@ -61,25 +61,24 @@ async def generate_id_photo(
         no_bg_bytes = await bg_removal_service.remove_background(image_bytes)
         person_img = Image.open(io.BytesIO(no_bg_bytes)).convert("RGBA")
 
-        # 2. Detect face for accurate cropping
-        mp_face_detection = mp.solutions.face_detection
+        # 2. Detect face for accurate cropping using OpenCV
         np_img = np.array(person_img.convert("RGB"))
-
+        gray = cv2.cvtColor(np_img, cv2.COLOR_RGB2GRAY)
+        
+        # Load the pre-trained Haar Cascade classifier for face detection
+        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        
+        # Detect faces
+        faces_rects = face_cascade.detectMultiScale(
+            gray, 
+            scaleFactor=1.1, 
+            minNeighbors=5, 
+            minSize=(30, 30)
+        )
+        
         faces = []
-        with mp_face_detection.FaceDetection(
-            model_selection=1, min_detection_confidence=0.5
-        ) as face_detection:
-            results = face_detection.process(np_img)
-            if results.detections:
-                for detection in results.detections:
-                    bboxC = detection.location_data.relative_bounding_box
-                    ih, iw, _ = np_img.shape
-                    # Convert normalized coordinates to pixel coordinates
-                    x = int(bboxC.xmin * iw)
-                    y = int(bboxC.ymin * ih)
-                    w = int(bboxC.width * iw)
-                    h = int(bboxC.height * ih)
-                    faces.append((x, y, w, h))
+        for (x, y, w, h) in faces_rects:
+            faces.append((x, y, w, h))
 
         logger.info("Face detection found %d face(s)", len(faces))
 
