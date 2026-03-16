@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { HardDrive } from "lucide-react";
 import { useProjectApi, StorageUsage } from "@/lib/api";
@@ -11,11 +11,14 @@ export const StorageBadge = () => {
     const [storage, setStorage] = useState<StorageUsage | null>(null);
     const [loading, setLoading] = useState(true);
 
+    const getStorageUsageRef = useRef(getStorageUsage);
+    getStorageUsageRef.current = getStorageUsage;
+
     useEffect(() => {
         if (status === "authenticated") {
             const fetchStorage = async () => {
                 try {
-                    const data = await getStorageUsage();
+                    const data = await getStorageUsageRef.current();
                     setStorage(data);
                 } catch (error) {
                     console.error("Failed to fetch storage", error);
@@ -27,7 +30,7 @@ export const StorageBadge = () => {
         } else {
             setLoading(false);
         }
-    }, [status, getStorageUsage]);
+    }, [status]);
 
     if (loading) {
         return (

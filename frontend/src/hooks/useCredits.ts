@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useProjectApi } from '@/lib/api';
 
 export function useCredits() {
@@ -6,10 +6,13 @@ export function useCredits() {
   const [isLoading, setIsLoading] = useState(true);
   const { getUserProfile } = useProjectApi();
 
+  const getUserProfileRef = useRef(getUserProfile);
+  getUserProfileRef.current = getUserProfile;
+
   const fetchCredits = useCallback(async () => {
     try {
       setIsLoading(true);
-      const res = await getUserProfile();
+      const res = await getUserProfileRef.current();
       if (res && typeof res.credits_remaining === 'number') {
         setCreditsRemaining(res.credits_remaining);
       }
@@ -18,7 +21,7 @@ export function useCredits() {
     } finally {
       setIsLoading(false);
     }
-  }, [getUserProfile]);
+  }, []);
 
   useEffect(() => {
     fetchCredits();
