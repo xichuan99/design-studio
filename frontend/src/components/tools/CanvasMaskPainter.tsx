@@ -338,17 +338,19 @@ export function CanvasMaskPainter({ imageUrl, onMaskComplete, className = "" }: 
             onTouchEnd={() => { setIsHovering(false); setCursorPos(null); }}
           />
 
-          {/* Dynamic Brush Cursor */}
+          {/* Dynamic Brush Cursor - Enhanced Visibility */}
           {isHovering && cursorPos && (
             <div 
-              className="absolute pointer-events-none rounded-full border-2 border-white bg-white/30 shadow-[0_0_2px_rgba(0,0,0,0.5)] transform -translate-x-1/2 -translate-y-1/2 z-10 transition-transform duration-75"
+              className="absolute pointer-events-none rounded-full border-[3px] border-white/90 bg-black/10 shadow-[0_0_4px_rgba(0,0,0,0.6),inset_0_0_4px_rgba(0,0,0,0.4)] transform -translate-x-1/2 -translate-y-1/2 z-50 flex items-center justify-center mix-blend-difference"
               style={{
                 left: cursorPos.x,
                 top: cursorPos.y,
                 width: brushSize[0],
                 height: brushSize[0]
               }}
-            />
+            >
+              <div className="w-1 h-1 bg-white/80 rounded-full" />
+            </div>
           )}
         </div>
       </div>
