@@ -98,6 +98,54 @@ async def background_swap(
         raise InternalServerError(detail=f"Failed to process image: {str(e)}"
         )
 
+
+@router.post(
+    "/background-suggest",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="Background Suggestions",
+    description="Analyzes a product image with Florence-2 Vision and returns 3 creative background suggestions.",
+    responses=ERROR_RESPONSES,
+)
+async def background_suggest(
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(rate_limit_dependency),
+):
+    """
+    1. Uploads product image to temp storage → get public URL
+    2. Calls fal-ai/florence-2-large to caption/describe the product
+    3. Sends text description to Gemini Flash → generates 3 creative background prompts
+    4. Returns suggestions as JSON (no credit charge if call fails)
+    """
+    from app.core.credit_costs import COST_BG_SUGGEST
+    if current_user.credits_remaining < COST_BG_SUGGEST:
+        raise InsufficientCreditsError(detail="Insufficient credits")
+
+    content = await file.read()
+    if len(content) > 10 * 1024 * 1024:
+        raise ValidationError(detail="Image size exceeds 10MB limit")
+
+    from app.services.credit_service import log_credit_change
+
+    await log_credit_change(db, current_user, -COST_BG_SUGGEST, "AI Background Suggest")
+    await db.commit()
+
+    try:
+        from app.services.bg_suggest_service import suggest_backgrounds
+
+        mime_type = file.content_type or "image/jpeg"
+        result = await suggest_backgrounds(content, mime_type=mime_type)
+        return result
+    except Exception as e:
+        from app.services.credit_service import log_credit_change
+
+        await log_credit_change(db, current_user, COST_BG_SUGGEST, "Refund: gagal suggest background")
+        await db.commit()
+        logging.exception("Background suggest failed")
+        raise InternalServerError(detail=f"Failed to analyze image: {str(e)}"
+        )
+
 @router.post(
     "/magic-eraser",
     response_model=dict,

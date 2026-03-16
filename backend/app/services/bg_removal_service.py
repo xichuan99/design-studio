@@ -46,15 +46,24 @@ async def remove_background(image_bytes: bytes) -> bytes:
         )
 
         # 2. Call Fal.ai background removal model
-        # Using birefnet which is highly accurate for general object extraction
+        # Using BRIA RMBG v2 — significantly more accurate than birefnet for
+        # fine-detail objects (watch straps, product edges, transparent materials)
         result = await fal_client.run_async(
-            "fal-ai/birefnet",
+            "fal-ai/bria/rmbg/v2",
             arguments={"image_url": temp_url},
         )
 
         output_url = result.get("image", {}).get("url")
         if not output_url:
-            raise RuntimeError("Fal.ai returned no image URL")
+            # Fallback to birefnet if bria returns unexpected format
+            logger.warning("BRIA RMBG-v2 returned no URL, falling back to birefnet")
+            result = await fal_client.run_async(
+                "fal-ai/birefnet",
+                arguments={"image_url": temp_url},
+            )
+            output_url = result.get("image", {}).get("url")
+            if not output_url:
+                raise RuntimeError("Both BRIA and birefnet returned no image URL")
 
         # 3. Download the resulting transparent PNG
         async with httpx.AsyncClient() as http_client:
@@ -137,7 +146,7 @@ async def composite_product_on_background(
 async def composite_with_shadow(
     product_png_bytes: bytes,
     background_bytes: bytes,
-    scale_factor: float = 0.7,
+    scale_factor: float = 0.8,
     offset_x_ratio: float = 0.5,
     offset_y_ratio: float = 0.55,
     add_shadow: bool = True,

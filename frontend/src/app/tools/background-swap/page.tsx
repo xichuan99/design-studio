@@ -6,11 +6,13 @@ import { ImageDropzone } from "@/components/tools/ImageDropzone";
 import { BeforeAfterSlider } from "@/components/tools/BeforeAfterSlider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, ArrowLeft, Download, PenSquare } from "lucide-react";
+import { Loader2, ArrowLeft, Download, PenSquare, Sparkles, PencilLine } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { toast } from "sonner";
 import { useProjectApi } from "@/lib/api";
+
+type Suggestion = { title: string; emoji: string; prompt: string };
 
 export default function BackgroundSwapPage() {
   const router = useRouter();
@@ -22,12 +24,48 @@ export default function BackgroundSwapPage() {
   const [style, setStyle] = useState("bold");
   const [loading, setLoading] = useState(false);
   const [resultUrl, setResultUrl] = useState<string>("");
+
+  // Suggestion mode state
+  const [promptMode, setPromptMode] = useState<"suggest" | "custom">("suggest");
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [selectedSuggestion, setSelectedSuggestion] = useState<number | null>(null);
+  const [suggestLoading, setSuggestLoading] = useState(false);
+
   const api = useProjectApi();
 
   const handleFileSelect = (file: File) => {
     setOriginalFile(file);
     setPreviewOriginal(URL.createObjectURL(file));
+    setSuggestions([]);
+    setSelectedSuggestion(null);
+    setPrompt("");
     setStep(2);
+  };
+
+  const handleAnalyze = async () => {
+    if (!originalFile) return;
+    setSuggestLoading(true);
+    setSuggestions([]);
+    setSelectedSuggestion(null);
+    setPrompt("");
+
+    try {
+      const data = await api.suggestBackgrounds(originalFile);
+      setSuggestions(data.suggestions || []);
+      if (data.suggestions?.length === 0) {
+        toast.warning("Tidak ada saran yang dihasilkan. Coba mode Tulis Sendiri.");
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error(msg || "Gagal menganalisis gambar");
+    } finally {
+      setSuggestLoading(false);
+    }
+  };
+
+  const handleSelectSuggestion = (index: number) => {
+    setSelectedSuggestion(index);
+    setPrompt(suggestions[index].prompt);
   };
 
   const handleGenerate = async () => {
@@ -53,26 +91,31 @@ export default function BackgroundSwapPage() {
     <div className="min-h-screen bg-background flex flex-col">
       <AppHeader />
       <div className="flex-1 max-w-4xl mx-auto p-6 md:p-8 w-full">
-        <Button variant="ghost" className="mb-6 -ml-4 gap-2 text-foreground/70 hover:text-foreground hover:bg-muted/50 transition-colors" onClick={() => step > 1 && step < 3 ? setStep(1) : router.push("/tools")}>
+        <Button
+          variant="ghost"
+          className="mb-6 -ml-4 gap-2 text-foreground/70 hover:text-foreground hover:bg-muted/50 transition-colors"
+          onClick={() => step > 1 && step < 3 ? setStep(1) : router.push("/tools")}
+        >
           <ArrowLeft className="w-4 h-4" /> Kembali
         </Button>
 
         {/* Step Indicator */}
         <div className="flex items-center justify-center gap-1 sm:gap-2 mb-8 select-none">
-          <div className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold flex items-center gap-1.5 sm:gap-2 transition-colors ${step === 1 ? 'bg-primary text-primary-foreground shadow-md' : step > 1 ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>
-            <span className="flex items-center justify-center w-5 h-5 rounded-full text-[10px] bg-background/20 font-bold">1</span>
-            <span className="hidden sm:inline">Upload Foto</span>
-          </div>
-          <div className={`w-4 sm:w-8 h-[2px] ${step > 1 ? 'bg-primary/40' : 'bg-border'}`}></div>
-          <div className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold flex items-center gap-1.5 sm:gap-2 transition-colors ${step === 2 ? 'bg-primary text-primary-foreground shadow-md' : step > 2 ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>
-            <span className="flex items-center justify-center w-5 h-5 rounded-full text-[10px] bg-background/20 font-bold">2</span>
-            <span className="hidden sm:inline">Atur Suasana</span>
-          </div>
-          <div className={`w-4 sm:w-8 h-[2px] ${step > 2 ? 'bg-primary/40' : 'bg-border'}`}></div>
-          <div className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold flex items-center gap-1.5 sm:gap-2 transition-colors ${step === 3 ? 'bg-primary text-primary-foreground shadow-md' : 'bg-muted text-muted-foreground'}`}>
-            <span className="flex items-center justify-center w-5 h-5 rounded-full text-[10px] bg-background/20 font-bold">3</span>
-            <span className="hidden sm:inline">Hasil</span>
-          </div>
+          {[
+            { label: "Upload Foto", n: 1 },
+            { label: "Atur Suasana", n: 2 },
+            { label: "Hasil", n: 3 },
+          ].map(({ label, n }, i, arr) => (
+            <div key={n} className="flex items-center gap-1 sm:gap-2">
+              <div className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold flex items-center gap-1.5 sm:gap-2 transition-colors ${step === n ? "bg-primary text-primary-foreground shadow-md" : step > n ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
+                <span className="flex items-center justify-center w-5 h-5 rounded-full text-[10px] bg-background/20 font-bold">{n}</span>
+                <span className="hidden sm:inline">{label}</span>
+              </div>
+              {i < arr.length - 1 && (
+                <div className={`w-4 sm:w-8 h-[2px] ${step > n ? "bg-primary/40" : "bg-border"}`} />
+              )}
+            </div>
+          ))}
         </div>
 
         <div className="mb-8">
@@ -86,39 +129,128 @@ export default function BackgroundSwapPage() {
 
         {step === 2 && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Left: Preview */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold border-b pb-2">1. Gambar Original (Preview)</h3>
               <div className="flex items-center justify-center p-4 bg-muted/20 border rounded-xl min-h-[300px]">
-                <div 
-                  className={`bg-muted/50 rounded-xl overflow-hidden border border-border shadow-inner relative transition-all duration-500 ease-in-out w-full max-h-[500px] ${
-                    aspectRatio === '1:1' ? 'aspect-square max-w-[400px]' :
-                    aspectRatio === '9:16' ? 'aspect-[9/16] max-w-[280px]' :
-                    'aspect-video max-w-[500px]'
-                  }`}
-                >
+                <div className={`bg-muted/50 rounded-xl overflow-hidden border border-border shadow-inner relative transition-all duration-500 ease-in-out w-full max-h-[500px] ${aspectRatio === "1:1" ? "aspect-square max-w-[400px]" : aspectRatio === "9:16" ? "aspect-[9/16] max-w-[280px]" : "aspect-video max-w-[500px]"}`}>
                   <Image src={previewOriginal} alt="Original" fill className="object-contain p-2 transition-all duration-500" unoptimized />
                 </div>
               </div>
             </div>
-            
+
+            {/* Right: Settings */}
             <div className="space-y-6">
               <h3 className="text-lg font-semibold border-b pb-2">2. Tentukan Suasana Baru</h3>
-              <div className="space-y-3">
-                <label className="text-sm font-medium">Deskripsikan latar belakang (Prompt)</label>
-                <Input 
-                  placeholder="Contoh: di atas meja kayu dengan pencahayaan studio..." 
-                  value={prompt} 
-                  onChange={(e) => setPrompt(e.target.value)} 
-                  className="bg-card shadow-sm"
-                />
+
+              {/* Mode Tabs */}
+              <div className="bg-muted/50 p-1.5 rounded-lg flex gap-1 border">
+                <button
+                  onClick={() => setPromptMode("suggest")}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-semibold transition-all ${promptMode === "suggest" ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Saran AI
+                </button>
+                <button
+                  onClick={() => setPromptMode("custom")}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-semibold transition-all ${promptMode === "custom" ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  <PencilLine className="w-4 h-4" />
+                  Tulis Sendiri
+                </button>
               </div>
 
+              {/* ── Mode: Saran AI ── */}
+              {promptMode === "suggest" && (
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Klik tombol di bawah — AI akan memindai gambar dan memberikan 3 rekomendasi background yang cantik untuk produkmu.
+                  </p>
+
+                  <Button
+                    variant="outline"
+                    className="w-full gap-2 border-primary/40 text-primary hover:bg-primary/10 font-semibold"
+                    onClick={handleAnalyze}
+                    disabled={suggestLoading}
+                  >
+                    {suggestLoading
+                      ? <><Loader2 className="w-4 h-4 animate-spin" /> Menganalisis gambar...</>
+                      : <><Sparkles className="w-4 h-4" /> ✨ Analisis Gambar (5 kredit)</>
+                    }
+                  </Button>
+
+                  {/* Skeleton Cards */}
+                  {suggestLoading && (
+                    <div className="grid grid-cols-1 gap-3">
+                      {[1, 2, 3].map(i => (
+                        <div key={i} className="h-20 rounded-xl border bg-muted/30 animate-pulse" />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Suggestion Cards */}
+                  {!suggestLoading && suggestions.length > 0 && (
+                    <div className="grid grid-cols-1 gap-3">
+                      {suggestions.map((s, i) => (
+                        <button
+                          key={i}
+                          onClick={() => handleSelectSuggestion(i)}
+                          className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-200 hover:border-primary/60 hover:bg-primary/5 ${selectedSuggestion === i ? "border-primary bg-primary/10 shadow-md" : "border-border bg-card"}`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <span className="text-2xl leading-none mt-0.5">{s.emoji}</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-foreground text-sm">{s.title}</p>
+                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{s.prompt}</p>
+                            </div>
+                            {selectedSuggestion === i && (
+                              <span className="text-primary text-xs font-bold shrink-0 mt-0.5">✓ Dipilih</span>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Hint to switch mode */}
+                  {!suggestLoading && suggestions.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center pt-2">
+                      Punya ide sendiri?{" "}
+                      <button className="text-primary underline" onClick={() => setPromptMode("custom")}>
+                        Tulis sendiri
+                      </button>
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* ── Mode: Custom ── */}
+              {promptMode === "custom" && (
+                <div className="space-y-3">
+                  <label className="text-sm font-medium">Deskripsikan latar belakang (Prompt)</label>
+                  <Input
+                    placeholder="Contoh: di atas meja kayu dengan pencahayaan studio hangat, kabut tipis, bokeh..."
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    className="bg-card shadow-sm"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Ingin inspirasi?{" "}
+                    <button className="text-primary underline" onClick={() => setPromptMode("suggest")}>
+                      Pakai Saran AI
+                    </button>
+                  </p>
+                </div>
+              )}
+
+              {/* Aspect Ratio */}
               <div className="space-y-3">
                 <label className="text-sm font-medium">Aspek Rasio</label>
                 <div className="bg-muted/50 p-1.5 rounded-lg flex gap-1 border">
                   {["1:1", "9:16", "16:9"].map(ratio => (
-                    <Button 
-                      key={ratio} 
+                    <Button
+                      key={ratio}
                       variant={aspectRatio === ratio ? "default" : "ghost"}
                       className={`flex-1 ${aspectRatio !== ratio ? "text-muted-foreground" : ""}`}
                       onClick={() => setAspectRatio(ratio)}
@@ -129,9 +261,10 @@ export default function BackgroundSwapPage() {
                 </div>
               </div>
 
+              {/* Style */}
               <div className="space-y-3">
                 <label className="text-sm font-medium">Style & Lighting</label>
-                <select 
+                <select
                   className="flex h-10 w-full rounded-md border border-input shadow-sm bg-card px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   value={style}
                   onChange={(e) => setStyle(e.target.value)}
@@ -143,13 +276,16 @@ export default function BackgroundSwapPage() {
                 </select>
               </div>
 
-              <Button 
-                onClick={handleGenerate} 
-                className="w-full font-bold shadow-md hover:shadow-lg transition-transform active:scale-95" 
-                size="lg" 
+              <Button
+                onClick={handleGenerate}
+                className="w-full font-bold shadow-md hover:shadow-lg transition-transform active:scale-95"
+                size="lg"
                 disabled={!prompt || loading}
               >
-                {loading ? <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Sedang Memproses GPU (30s)...</> : "Generate AI Background"}
+                {loading
+                  ? <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Sedang Memproses GPU (30s)...</>
+                  : "Generate AI Background"
+                }
               </Button>
             </div>
           </div>

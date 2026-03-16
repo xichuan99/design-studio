@@ -10,6 +10,7 @@ DEFAULT_CREDITS = 100
 
 # Tier 1 (5 Credits) - Very low cost / High Margin
 COST_RETOUCH = 5
+COST_BG_SUGGEST = 5  # Florence-2 vision + Gemini text suggestion
 
 # Tier 2 (10 Credits) - Low cost / Good Margin
 COST_BG_SWAP = 10

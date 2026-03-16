@@ -72,6 +72,36 @@ def test_background_swap_endpoint_success():
         mock_rm.assert_called_once()
 
 
+def test_background_suggest_endpoint_success():
+    """Test the background-suggest endpoint returns 3 suggestions."""
+    mock_file_content = b"fake_image_bytes"
+    files = {"file": ("test.png", mock_file_content, "image/png")}
+
+    mock_suggestions = {
+        "suggestions": [
+            {"title": "Studio Minimalis", "emoji": "🎨", "prompt": "clean white studio background, soft box lighting"},
+            {"title": "Alam Terbuka", "emoji": "🌿", "prompt": "lush green nature background, golden hour light"},
+            {"title": "Meja Kayu Rustic", "emoji": "🪵", "prompt": "rustic wooden table surface, warm ambient light"},
+        ]
+    }
+
+    with patch(
+        "app.services.bg_suggest_service.suggest_backgrounds", new_callable=AsyncMock
+    ) as mock_suggest:
+        mock_suggest.return_value = mock_suggestions
+
+        res = client.post("/api/tools/background-suggest", files=files)
+
+        assert res.status_code == 200
+        body = res.json()
+        assert "suggestions" in body
+        assert len(body["suggestions"]) == 3
+        assert body["suggestions"][0]["title"] == "Studio Minimalis"
+        assert body["suggestions"][0]["emoji"] == "🎨"
+        assert "prompt" in body["suggestions"][0]
+        mock_suggest.assert_called_once()
+
+
 def test_upscale_endpoint_success():
     """Test upscaling an image."""
     mock_file_content = b"fake_image_bytes"

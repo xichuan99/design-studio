@@ -373,6 +373,26 @@ export function useAiToolsEndpoints() {
             return response.json();
         };
 
+    const suggestBackgrounds = async (
+            file: File
+        ): Promise<{ suggestions: Array<{ title: string; emoji: string; prompt: string }> }> => {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const response = await fetchWithTimeout(`${API_BASE_URL}/tools/background-suggest`, {
+                method: 'POST',
+                headers: getHeaders(true),
+                body: formData,
+                timeout: 60000, // Florence-2 + Gemini: allow up to 60s
+            });
+
+            if (!response.ok) {
+                const errBase = await response.json().catch(() => ({}));
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Gagal menganalisis gambar');
+            }
+            return response.json();
+        };
+
     const productScene = async (
             file: File,
             theme: string,
@@ -458,5 +478,5 @@ export function useAiToolsEndpoints() {
             return res.json();
         };
 
-    return { generateDesign, clarifyCopywriting, clarifyUnified, generateCopywriting, parseDesignText, uploadImage, getJobStatus, getMyGenerations, generateMagicTextLayout, removeBackground, upscaleImage, generateTextBanner, retouchImage, generateIdPhoto, magicEraser, generativeExpand, backgroundSwap, productScene, batchProcess, applyWatermark, generateProjectTitle };
+    return { generateDesign, clarifyCopywriting, clarifyUnified, generateCopywriting, parseDesignText, uploadImage, getJobStatus, getMyGenerations, generateMagicTextLayout, removeBackground, upscaleImage, generateTextBanner, retouchImage, generateIdPhoto, magicEraser, generativeExpand, backgroundSwap, suggestBackgrounds, productScene, batchProcess, applyWatermark, generateProjectTitle };
 }
