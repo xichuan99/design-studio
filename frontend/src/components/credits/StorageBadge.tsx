@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
-import { HardDrive } from "lucide-react";
+import { HardDrive, AlertCircle } from "lucide-react";
 import { useProjectApi, StorageUsage } from "@/lib/api";
 
 export const StorageBadge = () => {
@@ -10,6 +10,7 @@ export const StorageBadge = () => {
     const { getStorageUsage } = useProjectApi();
     const [storage, setStorage] = useState<StorageUsage | null>(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     const getStorageUsageRef = useRef(getStorageUsage);
     getStorageUsageRef.current = getStorageUsage;
@@ -18,10 +19,12 @@ export const StorageBadge = () => {
         if (status === "authenticated") {
             const fetchStorage = async () => {
                 try {
+                    setError(null);
                     const data = await getStorageUsageRef.current();
                     setStorage(data);
                 } catch (error) {
                     console.error("Failed to fetch storage", error);
+                    setError("Failed to fetch storage limit");
                 } finally {
                     setLoading(false);
                 }
@@ -37,6 +40,21 @@ export const StorageBadge = () => {
             <div className="flex items-center gap-2 bg-muted px-3 py-1.5 rounded-full text-sm animate-pulse">
                 <div className="w-4 h-4 rounded-full bg-muted-foreground/20" />
                 <div className="w-16 h-3 rounded bg-muted-foreground/20" />
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors bg-destructive/10 text-destructive border-destructive/30"
+                title={error}
+            >
+                <HardDrive className="h-3.5 w-3.5 text-destructive" />
+                <div className="flex items-center gap-2">
+                    <AlertCircle className="h-3.5 w-3.5" />
+                    <span className="text-xs">Error</span>
+                </div>
             </div>
         );
     }
