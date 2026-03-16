@@ -24,25 +24,13 @@ def id_photo_bytes():
 
 @pytest.mark.asyncio
 @patch("app.services.id_photo_service.bg_removal_service.remove_background")
-@patch("app.services.id_photo_service.mp")
-async def test_generate_id_photo_with_face(mock_mp, mock_remove_bg, person_image_bytes):
+@patch("app.services.id_photo_service.cv2.CascadeClassifier")
+async def test_generate_id_photo_with_face(mock_cascade_cls, mock_remove_bg, person_image_bytes):
     mock_remove_bg.return_value = person_image_bytes
 
-    mock_face_detection_cls = MagicMock()
-    mock_mp.solutions.face_detection.FaceDetection = mock_face_detection_cls
-
-    mock_detection = MagicMock()
-    mock_detection.location_data.relative_bounding_box.xmin = 0.4
-    mock_detection.location_data.relative_bounding_box.ymin = 0.2
-    mock_detection.location_data.relative_bounding_box.width = 0.2
-    mock_detection.location_data.relative_bounding_box.height = 0.2
-
-    mock_results = MagicMock()
-    mock_results.detections = [mock_detection]
-
-    mock_face_detection = MagicMock()
-    mock_face_detection.process.return_value = mock_results
-    mock_face_detection_cls.return_value.__enter__.return_value = mock_face_detection
+    mock_cascade = MagicMock()
+    mock_cascade.detectMultiScale.return_value = [[240, 160, 120, 160]]
+    mock_cascade_cls.return_value = mock_cascade
 
     result = await generate_id_photo(
         b"raw_bytes", bg_color_name="blue", size_name="3x4", output_format="jpeg"
@@ -57,21 +45,15 @@ async def test_generate_id_photo_with_face(mock_mp, mock_remove_bg, person_image
 
 @pytest.mark.asyncio
 @patch("app.services.id_photo_service.bg_removal_service.remove_background")
-@patch("app.services.id_photo_service.mp")
+@patch("app.services.id_photo_service.cv2.CascadeClassifier")
 async def test_generate_id_photo_fallback_no_face(
-    mock_mp, mock_remove_bg, person_image_bytes
+    mock_cascade_cls, mock_remove_bg, person_image_bytes
 ):
     mock_remove_bg.return_value = person_image_bytes
 
-    mock_face_detection_cls = MagicMock()
-    mock_mp.solutions.face_detection.FaceDetection = mock_face_detection_cls
-
-    mock_results = MagicMock()
-    mock_results.detections = None  # No faces found
-
-    mock_face_detection = MagicMock()
-    mock_face_detection.process.return_value = mock_results
-    mock_face_detection_cls.return_value.__enter__.return_value = mock_face_detection
+    mock_cascade = MagicMock()
+    mock_cascade.detectMultiScale.return_value = []  # No faces found
+    mock_cascade_cls.return_value = mock_cascade
 
     result = await generate_id_photo(
         b"raw_bytes", bg_color_name="red", size_name="2x3", output_format="png"
@@ -89,21 +71,15 @@ async def test_generate_id_photo_fallback_no_face(
 
 @pytest.mark.asyncio
 @patch("app.services.id_photo_service.bg_removal_service.remove_background")
-@patch("app.services.id_photo_service.mp")
+@patch("app.services.id_photo_service.cv2.CascadeClassifier")
 async def test_generate_id_photo_custom_size(
-    mock_mp, mock_remove_bg, person_image_bytes
+    mock_cascade_cls, mock_remove_bg, person_image_bytes
 ):
     mock_remove_bg.return_value = person_image_bytes
 
-    mock_face_detection_cls = MagicMock()
-    mock_mp.solutions.face_detection.FaceDetection = mock_face_detection_cls
-
-    mock_results = MagicMock()
-    mock_results.detections = None
-
-    mock_face_detection = MagicMock()
-    mock_face_detection.process.return_value = mock_results
-    mock_face_detection_cls.return_value.__enter__.return_value = mock_face_detection
+    mock_cascade = MagicMock()
+    mock_cascade.detectMultiScale.return_value = []
+    mock_cascade_cls.return_value = mock_cascade
 
     result = await generate_id_photo(
         b"raw_bytes",
