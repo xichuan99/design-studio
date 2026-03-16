@@ -90,6 +90,114 @@ def _feather_edges(img: Image.Image, radius: float = 1.0) -> Image.Image:
     return img
 
 
+def _extract_inpaint_mask(transparent_png_bytes: bytes) -> bytes:
+    """
+    Creates an inpainting mask from a transparent PNG.
+
+    The RMBG alpha channel is:  255 = subject (keep), 0 = background (generate)
+    For flux-pro/v1/fill mask:  255 (white) = area to generate, 0 (black) = area to keep
+
+    So we simply invert the alpha channel and save as a grayscale PNG.
+    """
+    img = Image.open(io.BytesIO(transparent_png_bytes)).convert("RGBA")
+    alpha = img.split()[-1]  # L mode, 0–255
+
+    # Invert: subject pixels (bright) → black (keep), bg pixels (dark) → white (generate)
+    inverted = alpha.point(lambda x: 255 - x)
+
+    # Slight dilation + blur on edges so the inpaint blends cleanly at seams
+    inverted = inverted.filter(ImageFilter.MaxFilter(3))
+    inverted = inverted.filter(ImageFilter.GaussianBlur(radius=2))
+
+    output = io.BytesIO()
+    inverted.save(output, format="PNG")
+    return output.getvalue()
+
+
+async def inpaint_background(
+    original_bytes: bytes,
+    transparent_png_bytes: bytes,
+    prompt: str,
+) -> bytes:
+    """
+    Generates a new background by inpainting directly onto the original image.
+
+    Instead of compositing a separately-generated background (which causes
+    mismatched lighting/shadows), we let the Flux Fill model see the subject
+    in context and fill the background region — resulting in natural lighting
+    and seamless edges automatically.
+
+    Steps:
+        1. Derive inpaint mask from the RMBG transparent PNG (inverted alpha)
+        2. Upload original image + mask
+        3. Call fal-ai/flux-pro/v1/fill with the background prompt
+        4. Download and return the composited result bytes
+
+    Args:
+        original_bytes: Raw bytes of the *original* (non-removed) image.
+        transparent_png_bytes: Transparent PNG returned by remove_background().
+        prompt: User-supplied description of the desired new background.
+
+    Returns:
+        bytes: Final JPEG image with the new background baked in.
+    """
+    import uuid
+
+    base_id = str(uuid.uuid4())[:8]
+
+    # 1. Build mask
+    mask_bytes = _extract_inpaint_mask(transparent_png_bytes)
+
+    # 2. Upload original image and mask to get public URLs
+    original_url = await upload_image(
+        original_bytes,
+        content_type="image/jpeg",
+        prefix=f"bgswap_orig_{base_id}",
+    )
+    mask_url = await upload_image(
+        mask_bytes,
+        content_type="image/png",
+        prefix=f"bgswap_mask_{base_id}",
+    )
+
+    # 3. Enhance prompt for professional product photography
+    enhanced_prompt = (
+        f"Professional product photography, {prompt}, "
+        "photorealistic, high quality, studio-grade lighting, "
+        "sharp focus on subject, cinematic depth of field"
+    )
+
+    # 4. Inpaint via flux-pro/v1/fill
+    #    white mask = generate new background, black mask = preserve subject
+    result = await fal_client.run_async(
+        "fal-ai/flux-pro/v1/fill",
+        arguments={
+            "image_url": original_url,
+            "mask_url": mask_url,
+            "prompt": enhanced_prompt,
+            "sync_mode": True,
+            "output_format": "jpeg",
+        },
+    )
+
+    # Parse result (flux-pro/v1/fill returns 'images' list or 'image' dict)
+    if "images" in result and len(result["images"]) > 0:
+        output_url = result["images"][0].get("url")
+    elif "image" in result:
+        output_url = result["image"].get("url")
+    else:
+        output_url = result.get("image_url") or result.get("url")
+
+    if not output_url:
+        raise RuntimeError("flux-pro/v1/fill returned no image URL")
+
+    # 5. Download and return result
+    async with httpx.AsyncClient() as http_client:
+        resp = await http_client.get(output_url, timeout=90.0)
+        resp.raise_for_status()
+        return resp.content
+
+
 async def composite_product_on_background(
     product_png_bytes: bytes, background_bytes: bytes
 ) -> bytes:

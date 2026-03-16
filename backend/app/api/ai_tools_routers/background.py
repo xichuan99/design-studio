@@ -5,7 +5,6 @@ import time
 import uuid
 from typing import Optional
 from fastapi import APIRouter, Depends, UploadFile, File, Form, status
-import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.services import bg_removal_service, inpaint_service, outpaint_service
 from app.api.deps import get_db
@@ -21,22 +20,21 @@ logger = logging.getLogger(__name__)
     response_model=dict,
     status_code=status.HTTP_200_OK,
     summary="Background Swap",
-    description="Removes the background of a product image, generates a new one, and composites them.",
+    description="Uses AI inpainting to replace the image background seamlessly — lighting and shadows are matched automatically by the model.",
     responses=ERROR_RESPONSES,
 )
 async def background_swap(
     file: UploadFile = File(...),
     prompt: str = Form(...),
-    aspect_ratio: str = Form("1:1"),
-    style: str = Form("bold"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(rate_limit_dependency),
 ):
     """
-    1. Removes background
-    2. Generates new background using Fal.ai
-    3. Composites the object with shadow
-    4. Uploads result to storage
+    Inpainting-based background swap (Opsi A):
+    1. Remove background → get transparent PNG + derive inpaint mask
+    2. Inpaint background directly onto original image via flux-pro/v1/fill
+       (model sees the subject in context → natural lighting & shadows)
+    3. Upload and return result
     """
     from app.core.credit_costs import COST_BG_SWAP
     if current_user.credits_remaining < COST_BG_SWAP:
@@ -48,40 +46,22 @@ async def background_swap(
 
     from app.services.credit_service import log_credit_change
 
-    await log_credit_change(db, current_user, -COST_BG_SWAP, "Hapus background")
+    await log_credit_change(db, current_user, -COST_BG_SWAP, "AI Background Swap")
     await db.commit()
 
     try:
-        from app.services.image_service import generate_background
-
-        # 1. Remove BG
+        # 1. Remove background → transparent PNG (used to derive inpaint mask)
         no_bg_bytes = await bg_removal_service.remove_background(content)
 
-        # 2. Generate Background
-        enhanced_prompt = f"A professional product photograph showing: {prompt}"
-        bg_result = await generate_background(
-            visual_prompt=enhanced_prompt,
-            style=style,
-            aspect_ratio=aspect_ratio,
-            integrated_text=False,
+        # 2. Inpaint: let Flux Fill generate the new background *in context*
+        #    of the original image — lighting & edges match automatically
+        final_bytes = await bg_removal_service.inpaint_background(
+            original_bytes=content,
+            transparent_png_bytes=no_bg_bytes,
+            prompt=prompt,
         )
 
-        async with httpx.AsyncClient() as http_client:
-            bg_resp = await http_client.get(bg_result["image_url"], timeout=30.0)
-            bg_resp.raise_for_status()
-            bg_bytes = bg_resp.content
-
-        # 3. Composite
-        final_bytes = await bg_removal_service.composite_with_shadow(
-            product_png_bytes=no_bg_bytes,
-            background_bytes=bg_bytes,
-            scale_factor=0.7,
-            offset_x_ratio=0.5,
-            offset_y_ratio=0.55,
-            add_shadow=True,
-        )
-
-        # 4. Upload
+        # 3. Upload result
         result_url = await upload_image(
             final_bytes,
             content_type="image/jpeg",
@@ -92,7 +72,7 @@ async def background_swap(
     except Exception as e:
         from app.services.credit_service import log_credit_change
 
-        await log_credit_change(db, current_user, COST_BG_SWAP, "Refund: gagal hapus background")
+        await log_credit_change(db, current_user, COST_BG_SWAP, "Refund: gagal background swap")
         await db.commit()
         logging.exception("Background swap failed")
         raise InternalServerError(detail=f"Failed to process image: {str(e)}"

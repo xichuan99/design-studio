@@ -351,14 +351,10 @@ export function useAiToolsEndpoints() {
     const backgroundSwap = async (
             file: File,
             prompt?: string,
-            aspectRatio?: string,
-            style?: string
         ): Promise<{ url: string }> => {
             const formData = new FormData();
             formData.append('file', file);
             if (prompt) formData.append('prompt', prompt);
-            if (aspectRatio) formData.append('aspect_ratio', aspectRatio);
-            if (style) formData.append('style', style);
     
             const response = await fetch(`${API_BASE_URL}/tools/background-swap`, {
                 method: 'POST',

@@ -20,8 +20,6 @@ export default function BackgroundSwapPage() {
   const [originalFile, setOriginalFile] = useState<File | null>(null);
   const [previewOriginal, setPreviewOriginal] = useState<string>("");
   const [prompt, setPrompt] = useState("");
-  const [aspectRatio, setAspectRatio] = useState("1:1");
-  const [style, setStyle] = useState("bold");
   const [loading, setLoading] = useState(false);
   const [resultUrl, setResultUrl] = useState<string>("");
 
@@ -73,7 +71,7 @@ export default function BackgroundSwapPage() {
     setLoading(true);
 
     try {
-      const data = await api.backgroundSwap(originalFile, prompt, aspectRatio, style);
+      const data = await api.backgroundSwap(originalFile, prompt);
       setResultUrl(data.url);
       setStep(3);
     } catch (err: unknown) {
@@ -133,8 +131,8 @@ export default function BackgroundSwapPage() {
             <div className="space-y-4">
               <h3 className="text-lg font-semibold border-b pb-2">1. Gambar Original (Preview)</h3>
               <div className="flex items-center justify-center p-4 bg-muted/20 border rounded-xl min-h-[300px]">
-                <div className={`bg-muted/50 rounded-xl overflow-hidden border border-border shadow-inner relative transition-all duration-500 ease-in-out w-full max-h-[500px] ${aspectRatio === "1:1" ? "aspect-square max-w-[400px]" : aspectRatio === "9:16" ? "aspect-[9/16] max-w-[280px]" : "aspect-video max-w-[500px]"}`}>
-                  <Image src={previewOriginal} alt="Original" fill className="object-contain p-2 transition-all duration-500" unoptimized />
+                <div className="bg-muted/50 rounded-xl overflow-hidden border border-border shadow-inner relative w-full aspect-square max-w-[400px]">
+                  <Image src={previewOriginal} alt="Original" fill className="object-contain p-2" unoptimized />
                 </div>
               </div>
             </div>
@@ -244,38 +242,6 @@ export default function BackgroundSwapPage() {
                 </div>
               )}
 
-              {/* Aspect Ratio */}
-              <div className="space-y-3">
-                <label className="text-sm font-medium">Aspek Rasio</label>
-                <div className="bg-muted/50 p-1.5 rounded-lg flex gap-1 border">
-                  {["1:1", "9:16", "16:9"].map(ratio => (
-                    <Button
-                      key={ratio}
-                      variant={aspectRatio === ratio ? "default" : "ghost"}
-                      className={`flex-1 ${aspectRatio !== ratio ? "text-muted-foreground" : ""}`}
-                      onClick={() => setAspectRatio(ratio)}
-                    >
-                      {ratio}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Style */}
-              <div className="space-y-3">
-                <label className="text-sm font-medium">Style & Lighting</label>
-                <select
-                  className="flex h-10 w-full rounded-md border border-input shadow-sm bg-card px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  value={style}
-                  onChange={(e) => setStyle(e.target.value)}
-                >
-                  <option value="bold">Bold & Vibrant</option>
-                  <option value="minimalist">Minimalist Studio</option>
-                  <option value="elegant">Elegant Premium</option>
-                  <option value="playful">Playful / Pop</option>
-                </select>
-              </div>
-
               <Button
                 onClick={handleGenerate}
                 className="w-full font-bold shadow-md hover:shadow-lg transition-transform active:scale-95"
@@ -283,8 +249,8 @@ export default function BackgroundSwapPage() {
                 disabled={!prompt || loading}
               >
                 {loading
-                  ? <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Sedang Memproses GPU (30s)...</>
-                  : "Generate AI Background"
+                  ? <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Sedang Memproses AI (60s)...</>
+                  : "✨ Generate AI Background"
                 }
               </Button>
             </div>
