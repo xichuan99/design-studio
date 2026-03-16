@@ -27,35 +27,22 @@ client = TestClient(app)
 
 
 def test_background_swap_endpoint_success():
-    """Test generating background swap."""
+    """Test generating background swap via inpainting pipeline."""
     mock_file_content = b"fake_image_bytes"
     files = {"file": ("test.png", mock_file_content, "image/png")}
-    data = {"prompt": "fake scene", "aspect_ratio": "1:1", "style": "bold"}
+    data = {"prompt": "fake scene"}
 
     with (
         patch(
             "app.services.bg_removal_service.remove_background", new_callable=AsyncMock
         ) as mock_rm,
         patch(
-            "app.services.image_service.generate_background", new_callable=AsyncMock
-        ) as mock_gen,
-        patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_http_get,
-        patch(
-            "app.services.bg_removal_service.composite_with_shadow",
-            new_callable=AsyncMock,
-        ) as mock_comp,
+            "app.services.bg_removal_service.inpaint_background", new_callable=AsyncMock
+        ) as mock_inpaint,
         patch("app.api.ai_tools_routers.background.upload_image", new_callable=AsyncMock) as mock_upload,
     ):
-        mock_rm.return_value = b"nobg"
-        mock_gen.return_value = {"image_url": "http://fake-url.com/fg.jpg"}
-
-        # Mock httpx response
-        mock_response = MagicMock()
-        mock_response.content = b"bg_bytes"
-        mock_response.raise_for_status = lambda: None
-        mock_http_get.return_value = mock_response
-
-        mock_comp.return_value = b"composite"
+        mock_rm.return_value = b"nobg_transparent_png"
+        mock_inpaint.return_value = b"inpainted_result_bytes"
         mock_upload.return_value = "http://storage.com/result.jpg"
 
         res = client.post(
@@ -66,10 +53,13 @@ def test_background_swap_endpoint_success():
 
         assert res.status_code == 200
         assert res.json() == {"url": "http://storage.com/result.jpg"}
-        mock_upload.assert_called_once()
-        mock_comp.assert_called_once()
-        mock_gen.assert_called_once()
         mock_rm.assert_called_once()
+        mock_inpaint.assert_called_once_with(
+            original_bytes=mock_file_content,
+            transparent_png_bytes=b"nobg_transparent_png",
+            prompt="fake scene",
+        )
+        mock_upload.assert_called_once()
 
 
 def test_background_suggest_endpoint_success():
