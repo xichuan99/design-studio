@@ -4,18 +4,21 @@ import { useState, useEffect, useCallback } from "react";
 import { useProjectApi, StorageUsage } from "@/lib/api";
 import { SettingsSection } from "./SettingsSection";
 import { Card, CardContent } from "@/components/ui/card";
-import { HardDrive, Loader2 } from "lucide-react";
+import { HardDrive, Loader2, AlertCircle } from "lucide-react";
 
 export function StorageSection() {
     const api = useProjectApi();
     const [storageInfo, setStorageInfo] = useState<StorageUsage | null>(null);
+    const [storageError, setStorageError] = useState<string | null>(null);
 
     const fetchStorageInfo = useCallback(async () => {
+        setStorageError(null);
         try {
             const data = await api.getStorageUsage();
             setStorageInfo(data);
         } catch (err) {
             console.error("Failed to load storage info", err);
+            setStorageError("Gagal memuat informasi penyimpanan.");
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -32,7 +35,20 @@ export function StorageSection() {
         >
             <Card className="shadow-sm border-teal-200/50 dark:border-teal-900/50 bg-gradient-to-br from-teal-500/5 to-cyan-500/5">
                 <CardContent className="p-6 sm:p-8">
-                    {storageInfo ? (
+                    {storageError ? (
+                        <div className="flex flex-col justify-center items-center py-8 space-y-4">
+                            <div className="flex items-center gap-2 text-destructive font-medium text-sm">
+                                <AlertCircle className="h-5 w-5" />
+                                <span>{storageError}</span>
+                            </div>
+                            <button
+                                onClick={fetchStorageInfo}
+                                className="px-4 py-2 bg-teal-50 text-teal-700 dark:bg-teal-950/50 dark:text-teal-400 rounded-md hover:bg-teal-100 dark:hover:bg-teal-900 border border-teal-200 dark:border-teal-800 transition-colors text-sm font-medium"
+                            >
+                                Coba Lagi
+                            </button>
+                        </div>
+                    ) : storageInfo ? (
                         <div className="space-y-6">
                             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
                                 <div className="space-y-2">
