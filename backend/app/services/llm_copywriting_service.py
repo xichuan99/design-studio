@@ -3,6 +3,7 @@
 from typing import Optional
 from google import genai
 from google.genai import types
+import asyncio
 from app.core.config import settings
 
 from app.services.llm_prompts import (
@@ -69,7 +70,8 @@ async def generate_copywriting_questions(raw_text: str) -> dict:
 
     client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
-    response = client.models.generate_content(
+    response = await asyncio.to_thread(
+        client.models.generate_content,
         model="gemini-2.5-flash",
         contents=[
             f"Buatkan pertanyaan klarifikasi copywriting untuk deskripsi ini:\n{raw_text}"
@@ -173,7 +175,8 @@ async def generate_ai_copywriting(
 
     client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
-    response = client.models.generate_content(
+    response = await asyncio.to_thread(
+        client.models.generate_content,
         model="gemini-2.5-flash",
         contents=[prompt_payload],
         config=types.GenerateContentConfig(

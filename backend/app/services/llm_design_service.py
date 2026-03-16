@@ -4,6 +4,7 @@ import json
 from typing import Optional
 from google import genai
 from google.genai import types
+import asyncio
 from app.core.config import settings
 from app.schemas.design import ParsedTextElements
 
@@ -71,7 +72,8 @@ async def generate_design_brief_questions(raw_text: str) -> dict:
 
     client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
-    response = client.models.generate_content(
+    response = await asyncio.to_thread(
+        client.models.generate_content,
         model="gemini-2.5-flash",
         contents=[
             f"Buatkan pertanyaan klarifikasi desain untuk deskripsi ini:\n{raw_text}"
@@ -149,7 +151,8 @@ async def generate_unified_brief_questions(raw_text: str) -> dict:
 
     client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
-    response = client.models.generate_content(
+    response = await asyncio.to_thread(
+        client.models.generate_content,
         model="gemini-2.5-flash",
         contents=[
             f"Buatkan pertanyaan klarifikasi desain & copywriting untuk deskripsi ini:\n{raw_text}"
@@ -329,7 +332,8 @@ async def parse_design_text(
     client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
     # We use Flash for lowest latency, passing schema to force JSON structure natively
-    response = client.models.generate_content(
+    response = await asyncio.to_thread(
+        client.models.generate_content,
         model="gemini-2.5-flash",
         contents=[raw_text],
         config=types.GenerateContentConfig(
@@ -392,7 +396,8 @@ async def modify_visual_prompt(
 
     input_text = f"ORIGINAL FULL PROMPT:\n{original_visual_prompt}\n\nORIGINAL PROMPT PARTS:\n{json.dumps(parts_dicts, indent=2)}\n\nUSER INSTRUCTION (ID):\n{instruction}"
 
-    response = client.models.generate_content(
+    response = await asyncio.to_thread(
+        client.models.generate_content,
         model="gemini-2.5-flash",
         contents=[input_text],
         config=types.GenerateContentConfig(
@@ -445,7 +450,8 @@ async def generate_project_title(prompt: str) -> str:
     )
 
     try:
-        response = client.models.generate_content(
+        response = await asyncio.to_thread(
+            client.models.generate_content,
             model="gemini-2.5-flash",
             contents=[f"Create a short title for this design prompt: {prompt}"],
             config=types.GenerateContentConfig(

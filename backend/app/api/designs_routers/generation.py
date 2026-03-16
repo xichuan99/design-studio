@@ -285,6 +285,7 @@ async def generate_design(
     try:
         from datetime import datetime, timezone
         from app.services.llm_service import parse_design_text
+        import asyncio
 
         # Parse text first (reuse existing logic)
         parsed = await parse_design_text(
@@ -368,7 +369,8 @@ async def generate_design(
             # Nano Banana 2 uses generate_content for image generation
             # Explicitly append aspect ratio to the prompt
             nb2_prompt = f"{enhanced_prompt}, aspect ratio {request.aspect_ratio}"
-            response = client.models.generate_content(
+            response = await asyncio.to_thread(
+                client.models.generate_content,
                 model=model_name,
                 contents=nb2_prompt,
             )
@@ -383,7 +385,8 @@ async def generate_design(
                         break
         else:
             # Traditional Imagen models use generate_images
-            response = client.models.generate_images(
+            response = await asyncio.to_thread(
+                client.models.generate_images,
                 model=model_name,
                 prompt=enhanced_prompt,
                 config=types.GenerateImagesConfig(
