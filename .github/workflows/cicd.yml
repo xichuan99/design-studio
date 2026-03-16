@@ -6,7 +6,6 @@ on:
   pull_request:
     branches: ["main"]
 
-# Hanya satu deployment berjalan sekaligus untuk branch main
 concurrency:
   group: cicd-main
   cancel-in-progress: false
@@ -16,15 +15,14 @@ env:
   BACKEND_IMAGE: ghcr.io/clarinovist/design-studio-backend
   FRONTEND_IMAGE: ghcr.io/clarinovist/design-studio-frontend
   QUANTUM_IMAGE: ghcr.io/clarinovist/design-studio-quantum
-  # Silence the Node 20 deprecation warnings by forcing Node 24
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
+# ─────────────────────────────────────────────
+# Job 1a: Backend Tests + Lint (Python)
+# ─────────────────────────────────────────────
 jobs:
-  # ─────────────────────────────────────────────
-  # 1. Automated Tests (Backend & Frontend)
-  # ─────────────────────────────────────────────
-  test:
-    name: Run Tests & Lint
+  test-backend:
+    name: "🐍 Backend Tests & Lint"
     runs-on: ubuntu-latest
 
     services:
@@ -75,12 +73,9 @@ jobs:
           cache-dependency-path: "backend/requirements.txt"
 
       - name: Install backend dependencies
-        run: |
-          cd backend
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+        run: pip install -r backend/requirements.txt
 
-      - name: Lint backend with ruff
+      - name: Lint with Ruff
         run: |
           pip install ruff
           ruff check backend/app --select W291,W293,F841 --ignore E501
@@ -91,72 +86,66 @@ jobs:
           alembic upgrade head
           python -m scripts.seed_templates
 
-      - name: Run Pytest (Backend)
-        run: |
-          cd backend
-          pytest tests/ -v --tb=short
+      - name: Pytest — Backend
+        run: cd backend && pytest tests/ -v --tb=short
 
-      - name: Run Pytest (Quantum Engine)
+      - name: Pytest — Quantum Engine
         run: |
           cd quantum-engine
           python -m pip install -r requirements.txt
           pytest tests/ -v --tb=short
 
-      - name: Setup Node.js
+# ─────────────────────────────────────────────
+# Job 1b: Frontend Lint + Build (Node) — runs in PARALLEL with 1a
+# ─────────────────────────────────────────────
+  test-frontend:
+    name: "⚛️ Frontend Lint & Build"
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js 24
         uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: "npm"
           cache-dependency-path: "frontend/package-lock.json"
 
-      - name: Install frontend dependencies
-        run: |
-          cd frontend
-          npm ci --legacy-peer-deps
+      - name: Install dependencies
+        run: cd frontend && npm ci --legacy-peer-deps
 
-      - name: Lint frontend
-        run: |
-          cd frontend
-          npm run lint
+      - name: ESLint
+        run: cd frontend && npm run lint
 
-      - name: Type Check & Build frontend
-        run: |
-          cd frontend
-          npm run build
+      - name: Type Check & Build
+        run: cd frontend && npm run build
         env:
           NEXT_PUBLIC_API_URL: http://localhost:8000/api
           NEXTAUTH_SECRET: test-secret-for-ci
           NEXTAUTH_URL: http://localhost:3000
 
-  # ─────────────────────────────────────────────
-  # 2. Build & Push Docker Images ke GHCR
-  # Hanya jalan jika push ke branch 'main' dan test sukses
-  # ─────────────────────────────────────────────
-  build-and-push:
-    name: Build & Push Images
+# ─────────────────────────────────────────────
+# Job 2: Build & Push Docker Images (parallel per service)
+# Hanya jalan jika push ke main dan kedua test lulus
+# ─────────────────────────────────────────────
+  build-backend:
+    name: "🐳 Build Backend"
     runs-on: ubuntu-latest
-    needs: test
+    needs: [test-backend, test-frontend]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Login ke GitHub Container Registry
-        uses: docker/login-action@v3
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build & Push Backend Image
-        uses: docker/build-push-action@v6
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
         with:
           context: ./backend
           file: ./backend/Dockerfile
@@ -167,8 +156,23 @@ jobs:
           cache-from: type=gha,scope=backend
           cache-to: type=gha,mode=max,scope=backend
 
-      - name: Build & Push Quantum Engine Image
-        uses: docker/build-push-action@v6
+  build-quantum:
+    name: "⚛️ Build Quantum Engine"
+    runs-on: ubuntu-latest
+    needs: [test-backend, test-frontend]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
         with:
           context: ./quantum-engine
           file: ./quantum-engine/Dockerfile
@@ -179,8 +183,23 @@ jobs:
           cache-from: type=gha,scope=quantum
           cache-to: type=gha,mode=max,scope=quantum
 
-      - name: Build & Push Frontend Image
-        uses: docker/build-push-action@v6
+  build-frontend:
+    name: "🎨 Build Frontend"
+    runs-on: ubuntu-latest
+    needs: [test-backend, test-frontend]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
         with:
           context: ./frontend
           file: ./frontend/Dockerfile
@@ -193,18 +212,17 @@ jobs:
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
 
-  # ─────────────────────────────────────────────
-  # 3. Deploy ke VPS via SSH
-  # ─────────────────────────────────────────────
+# ─────────────────────────────────────────────
+# Job 3: Deploy ke VPS (setelah semua image siap)
+# ─────────────────────────────────────────────
   deploy:
-    name: Deploy ke VPS
+    name: "🚀 Deploy ke VPS"
     runs-on: ubuntu-latest
-    needs: build-and-push
+    needs: [build-backend, build-quantum, build-frontend]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
-      - name: Checkout code (untuk docker-compose.yml terbaru)
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Copy docker-compose.yml ke server
         uses: appleboy/scp-action@v0.1.7
@@ -225,31 +243,27 @@ jobs:
             set -e
             cd ~/design-studio
 
-            # Login ke GHCR agar bisa pull image private
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin 2>/dev/null
 
-            # Pull image terbaru dari GHCR
             BACKEND_IMAGE=${{ env.BACKEND_IMAGE }}:${{ github.sha }} \
             FRONTEND_IMAGE=${{ env.FRONTEND_IMAGE }}:${{ github.sha }} \
             QUANTUM_IMAGE=${{ env.QUANTUM_IMAGE }}:${{ github.sha }} \
               docker compose pull backend frontend celery quantum-engine
 
-            # Restart containers dengan image baru
             BACKEND_IMAGE=${{ env.BACKEND_IMAGE }}:${{ github.sha }} \
             FRONTEND_IMAGE=${{ env.FRONTEND_IMAGE }}:${{ github.sha }} \
             QUANTUM_IMAGE=${{ env.QUANTUM_IMAGE }}:${{ github.sha }} \
               docker compose up -d --remove-orphans
 
-            # Jalankan database migrations
             docker compose exec -T backend alembic upgrade head
 
             echo "✅ Deploy selesai! Commit: ${{ github.sha }}"
 
-  # ─────────────────────────────────────────────
-  # 4. Auto Tag Release (Semantic Versioning)
-  # ─────────────────────────────────────────────
+# ─────────────────────────────────────────────
+# Job 4: Auto Tag Release
+# ─────────────────────────────────────────────
   auto-tag:
-    name: Auto Tag Release
+    name: "🏷️ Auto Tag Release"
     runs-on: ubuntu-latest
     needs: deploy
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -259,7 +273,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: '0'
-
       - name: Bump version and push tag
         uses: mathieudutour/github-tag-action@v6.2
         with:
