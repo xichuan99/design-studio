@@ -1,12 +1,18 @@
 import React from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { BrandKit } from "@/lib/api";
-import { Palette } from "lucide-react";
+import { Palette, Wand2, ImagePlus } from "lucide-react";
 import { DimensionPresets } from "./inputs/DimensionPresets";
 import { GenerationOptions } from "./inputs/GenerationOptions";
 import { ProductSettings } from "./inputs/ProductSettings";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Slider } from "@/components/ui/slider";
 
 interface SidebarInputFormProps {
+    createMode: 'generate' | 'redesign';
+    setCreateMode: (val: 'generate' | 'redesign') => void;
+    redesignStrength: number;
+    setRedesignStrength: (val: number) => void;
     rawText: string;
     setRawText: (val: string) => void;
     isInputLocked: boolean;
@@ -34,6 +40,7 @@ interface SidebarInputFormProps {
 }
 
 export function SidebarInputForm({
+    createMode, setCreateMode, redesignStrength, setRedesignStrength,
     rawText, setRawText, isInputLocked, isParsing,
     aspectRatio, setAspectRatio, stylePreference, setStylePreference,
     integratedText, setIntegratedText,
@@ -46,13 +53,26 @@ export function SidebarInputForm({
 
     return (
         <div className="space-y-6 pt-4">
-            <div className="space-y-2 tour-step-1">
+            <Tabs value={createMode} onValueChange={(v) => setCreateMode(v as 'generate' | 'redesign')} className="w-full mb-6">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="generate" disabled={isInputLocked} className="font-medium">
+                        <Wand2 className="w-4 h-4 mr-2" />
+                        Generate Teks
+                    </TabsTrigger>
+                    <TabsTrigger value="redesign" disabled={isInputLocked} className="font-medium">
+                        <ImagePlus className="w-4 h-4 mr-2" />
+                        Redesign
+                    </TabsTrigger>
+                </TabsList>
+            </Tabs>
+
+            <div className={`space-y-2 ${createMode === 'generate' ? 'tour-step-1' : ''}`}>
                 <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
                     <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">1</span>
-                    Deskripsi Desain & Teks
+                    {createMode === 'generate' ? "Deskripsi Desain & Teks" : "Deskripsi Opsional"}
                 </label>
                 <Textarea
-                    placeholder="Contoh: Banner jualan es kopi susu dengan nuansa senja, ada tulisan 'Diskon 50% Akhir Pekan'"
+                    placeholder={createMode === 'generate' ? "Contoh: Banner jualan es kopi susu dengan nuansa senja, ada tulisan 'Diskon 50% Akhir Pekan'" : "Contoh: Ubah suasananya jadi nuansa malam hari (Opsional)"}
                     className={`resize-none h-32 focus-visible:ring-primary ${isInputLocked ? 'opacity-60 cursor-not-allowed bg-muted/50' : ''}`}
                     value={rawText}
                     onChange={(e) => setRawText(e.target.value)}
@@ -86,7 +106,7 @@ export function SidebarInputForm({
                     referencePreview={referencePreview}
                     isDragOver={isDragOver}
                     fileInputRef={fileInputRef}
-                    showManualRef={showManualRef}
+                    showManualRef={createMode === 'redesign' ? true : showManualRef}
                     setShowManualRef={setShowManualRef}
                     removeProductBg={removeProductBg}
                     setRemoveProductBg={setRemoveProductBg}
@@ -97,6 +117,24 @@ export function SidebarInputForm({
                     handleDrop={handleDrop}
                 />
             </div>
+
+            {createMode === 'redesign' && (
+                <div className={`space-y-4 pt-2 border-t ${isInputLocked ? 'opacity-60 pointer-events-none' : ''}`}>
+                    <label className="flex items-center justify-between text-sm font-semibold text-foreground">
+                        Kekuatan Redesign
+                        <span className="text-muted-foreground font-normal">{Math.round(redesignStrength * 100)}%</span>
+                    </label>
+                    <Slider
+                        value={[redesignStrength]}
+                        min={0.1}
+                        max={1.0}
+                        step={0.05}
+                        onValueChange={([val]) => setRedesignStrength(val)}
+                        disabled={isInputLocked}
+                    />
+                    <p className="text-xs text-muted-foreground leading-relaxed">Nilai lebih tinggi akan membuat AI lebih bebas berkreasi dari gambar asli. Default: 65%.</p>
+                </div>
+            )}
 
             <div className={`space-y-4 tour-step-2 pt-2 ${isInputLocked ? 'opacity-60 pointer-events-none' : ''}`}>
                 <label className="flex items-center gap-2 text-sm font-semibold text-foreground">

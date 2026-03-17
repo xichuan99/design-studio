@@ -61,6 +61,45 @@ class DesignGenerationRequest(BaseModel):
     )
 
 
+class ReferenceAnalysis(BaseModel):
+    style_description: str = Field(..., description="Deskripsi gaya, tone, dan mood dari gambar referensi.")
+    dominant_colors: List[str] = Field(..., description="Daftar kode heksadesimal warna dominan dari gambar referensi.")
+    mood: str = Field(..., description="Suasana atau emosi utama yang ditangkap.")
+    suggested_prompt_suffix: str = Field(..., description="Sufiks prompt instruksi gaya untuk model i2i.")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "style_description": "Clean, modern, and minimalist.",
+                "dominant_colors": ["#FFFFFF", "#000000", "#FF0000"],
+                "mood": "Professional and energetic.",
+                "suggested_prompt_suffix": "clean, modern, minimalist style, professional, energetic mood"
+            }
+        }
+    )
+
+
+class RedesignRequest(BaseModel):
+    reference_image_url: str = Field(..., description="URL gambar referensi untuk didesain ulang.")
+    raw_text: str = Field("", description="Teks atau brief tambahan opsional dari pengguna.")
+    strength: float = Field(0.65, ge=0.3, le=0.85, description="Intensitas transformasi (0.3 konservatif - 0.85 kreatif).")
+    aspect_ratio: AspectRatio = Field(AspectRatio.SQUARE, description="Rasio aspek desain baru.")
+    style_preference: StylePreference = Field(StylePreference.BOLD, description="Gaya visual pilihan.")
+    brand_kit_id: Optional[str] = Field(None, description="ID Brand Kit aktif (jika ada).")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "reference_image_url": "https://example.com/image.jpg",
+                "raw_text": "Make it futuristic",
+                "strength": 0.65,
+                "aspect_ratio": "1:1",
+                "style_preference": "bold"
+            }
+        }
+    )
+
+
 # --- Sprint 3: AI Copywriting Models ---
 class CopywritingClarifyRequest(BaseModel):
     product_description: str = Field(

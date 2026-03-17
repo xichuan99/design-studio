@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
-import { Loader2, PanelLeftOpen, PanelLeftClose, ImagePlus } from "lucide-react";
+import { Loader2, PanelLeftOpen, PanelLeftClose, ImagePlus, Wand2 } from "lucide-react";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { GenerationProgress } from "@/components/create/GenerationProgress";
@@ -23,6 +23,8 @@ export default function CreatePage() {
         rawText, setRawText,
         aspectRatio, setAspectRatio,
         stylePreference, setStylePreference,
+        createMode, setCreateMode,
+        redesignStrength, setRedesignStrength,
         currentStep, setCurrentStep,
         isParsing,
         isGeneratingImage,
@@ -100,6 +102,10 @@ export default function CreatePage() {
                 <aside className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 absolute md:relative w-full max-w-[420px] md:w-[420px] border-r flex flex-col bg-card overflow-y-auto shrink-0 z-20 shadow-xl h-full transition-transform duration-200`}>
                     <div className="p-4 space-y-6 flex-1 relative">
                         <SidebarInputForm
+                            createMode={createMode}
+                            setCreateMode={setCreateMode}
+                            redesignStrength={redesignStrength}
+                            setRedesignStrength={setRedesignStrength}
                             rawText={rawText}
                             setRawText={setRawText}
                             isInputLocked={isInputLocked}
@@ -134,6 +140,9 @@ export default function CreatePage() {
                         isInputLocked={isInputLocked}
                         onAnalyze={handleAnalyze}
                         onBackToInput={() => setCurrentStep('input')}
+                        createMode={createMode}
+                        referenceFile={referenceFile}
+                        onGenerateDirectly={handleGenerateImage}
                     />
                 </aside>
 
@@ -211,14 +220,42 @@ export default function CreatePage() {
                             </div>
                         </div>
                     ) : (
-                        <div className="max-w-xl w-full mx-auto h-full flex flex-col items-center justify-center opacity-60 hover:opacity-100 transition-opacity">
-                            <div className="w-24 h-24 mb-6 rounded-3xl bg-primary/5 flex items-center justify-center">
-                                <ImagePlus className="w-10 h-10 text-primary/50" />
+                        <div className="max-w-4xl w-full mx-auto h-full flex flex-col items-center justify-center animation-fade-in px-4">
+                            <h2 className="text-3xl font-bold mb-8 text-center text-foreground">Bagaimana Anda ingin memulai?</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl">
+                                <button
+                                    onClick={() => {
+                                        setCreateMode('generate');
+                                        setSidebarOpen(true);
+                                    }}
+                                    className="group flex flex-col items-center text-center p-8 bg-card border shadow-sm hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 rounded-3xl transition-all"
+                                >
+                                    <div className="w-20 h-20 mb-6 rounded-2xl bg-primary/10 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
+                                        <Wand2 className="w-10 h-10 text-primary" />
+                                    </div>
+                                    <h3 className="text-xl font-bold mb-3 text-foreground">Generate dari Teks</h3>
+                                    <p className="text-muted-foreground leading-relaxed text-sm">
+                                        Deskripsikan ide visual Anda, dan AI akan meracik komposisi serta merender gambar kustom untuk produk.
+                                    </p>
+                                </button>
+                                
+                                <button
+                                    onClick={() => {
+                                        setCreateMode('redesign');
+                                        setSidebarOpen(true);
+                                        setShowManualRef(true);
+                                    }}
+                                    className="group flex flex-col items-center text-center p-8 bg-card border shadow-sm hover:border-indigo-500/50 hover:shadow-xl hover:shadow-indigo-500/5 rounded-3xl transition-all"
+                                >
+                                    <div className="w-20 h-20 mb-6 rounded-2xl bg-indigo-500/10 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
+                                        <ImagePlus className="w-10 h-10 text-indigo-500" />
+                                    </div>
+                                    <h3 className="text-xl font-bold mb-3 text-foreground">Redesign Gambar</h3>
+                                    <p className="text-muted-foreground leading-relaxed text-sm">
+                                        Unggah referensi foto layout, dan biarkan AI meniru gayanya untuk desain baru dengan kontrol penuh atas tingkat perubahan.
+                                    </p>
+                                </button>
                             </div>
-                            <h2 className="text-2xl font-bold mb-2">Area Preview Desain</h2>
-                            <p className="text-center text-muted-foreground max-w-md">
-                                Hasil keajaiban AI akan muncul di sini. Silakan jelaskan desain yang Anda inginkan di samping kiri untuk memulai.
-                            </p>
                         </div>
                     )}
                     </div>

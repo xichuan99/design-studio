@@ -6,6 +6,7 @@ from app.schemas.design import (
     DesignGenerationRequest,
     GenerateTitleRequest,
     GenerateTitleResponse,
+    RedesignRequest,
 )
 from app.models.job import Job
 from app.api.rate_limit import rate_limit_dependency
@@ -481,4 +482,126 @@ async def generate_design(
         await db.commit()
         raise InternalServerError(detail=f"Image generation failed: {str(e)}"
         )
+
+@router.post(
+    "/redesign",
+    response_model=dict,
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Redesign from Image",
+    description="Redesigns a reference image using Gemini Vision for style analysis and FLUX.2 for image generation.",
+    responses=ERROR_RESPONSES,
+)
+async def redesign_image(
+    request: RedesignRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(rate_limit_dependency),
+):
+    """Redesigns an image using Gemini Vision and FLUX.2 Dev."""
+    from app.core.credit_costs import COST_REDESIGN
+    from app.core.exceptions import InsufficientCreditsError, InternalServerError
+    from app.services.credit_service import log_credit_change
+    from app.services.redesign_service import analyze_reference_image, run_flux_redesign
+    from app.services.storage_service import upload_image_tracked
+    from datetime import datetime, timezone
+
+    if current_user.credits_remaining < COST_REDESIGN:
+        raise InsufficientCreditsError(
+            detail="Insufficient credits. Please upgrade or wait for a refill."
+        )
+
+    # Deduct credit
+    await log_credit_change(db, current_user, -COST_REDESIGN, "Redesign gambar")
+
+    # Create a job record in the database
+    job = Job(
+        raw_text=request.raw_text,
+        aspect_ratio=request.aspect_ratio,
+        style_preference=request.style_preference,
+        reference_image_url=request.reference_image_url,
+        user_id=current_user.id,
+        status="processing", # we do it synchronously but still record processing
+    )
+    db.add(job)
+    await db.commit()
+    await db.refresh(job)
+
+    try:
+        # Step 1: Analyze reference image
+        analysis = await analyze_reference_image(request.reference_image_url)
+        
+        # Build enriched prompt
+        style_suffix = f" {request.style_preference.value} style" if request.style_preference else ""
+        
+        # Load brand kit colors if specified
+        brand_suffix = ""
+        if request.brand_kit_id:
+            from app.models.brand_kit import BrandKit
+            from sqlalchemy.future import select
+            import uuid
+            
+            try:
+                kit_id_uuid = uuid.UUID(request.brand_kit_id)
+                kit_result = await db.execute(
+                    select(BrandKit).where(
+                        BrandKit.id == kit_id_uuid, BrandKit.user_id == current_user.id
+                    )
+                )
+                kit = kit_result.scalar_one_or_none()
+                if kit and kit.colors:
+                    colors = [c.get("hex") for c in kit.colors if c.get("hex")]
+                    if colors:
+                        brand_suffix = f", incorporate brand colors: {', '.join(colors)}"
+            except Exception as e:
+                import logging
+                logging.warning(f"Could not load brand kit for redesign: {e}")
+
+        enriched_prompt = f"{request.raw_text} {analysis.suggested_prompt_suffix}{style_suffix}{brand_suffix}".strip()
+
+        # Step 2: Run FLUX.2 Dev image-to-image
+        image_bytes = await run_flux_redesign(
+            image_url=request.reference_image_url,
+            enriched_prompt=enriched_prompt,
+            strength=request.strength,
+            aspect_ratio=request.aspect_ratio.value
+        )
+        
+        if not image_bytes:
+            raise ValueError("No image bytes returned from redesign service")
+
+        # Step 3: Upload the result to storage
+        result_url = await upload_image_tracked(
+            image_bytes,
+            user_id=current_user.id,
+            db=db,
+            content_type="image/jpeg",
+            prefix="redesign",
+        )
+        
+        # Update job success
+        job.result_url = result_url
+        job.status = "completed"
+        job.completed_at = datetime.now(timezone.utc)
+        await db.commit()
+        await db.refresh(job)
+
+        return {
+            "job_id": str(job.id),
+            "status": job.status,
+            "result_url": job.result_url,
+            "message": "Redesign completed successfully.",
+        }
+
+    except Exception as e:
+        import logging
+        logging.exception(f"Redesign image failed: {e}")
+        
+        job.status = "failed"
+        job.error_message = str(e)
+        job.completed_at = datetime.now(timezone.utc)
+        
+        # Refund credit
+        await log_credit_change(db, current_user, COST_REDESIGN, "Refund: sistem error pada redesign")
+        await db.commit()
+        
+        raise InternalServerError(detail=f"Redesign failed: {str(e)}")
 

@@ -496,5 +496,36 @@ export function useAiToolsEndpoints() {
             return res.json();
         };
 
-    return { generateDesign, clarifyCopywriting, clarifyUnified, generateCopywriting, parseDesignText, uploadImage, getJobStatus, getMyGenerations, generateMagicTextLayout, removeBackground, upscaleImage, generateTextBanner, retouchImage, generateIdPhoto, magicEraser, generativeExpand, backgroundSwap, suggestBackgrounds, productScene, batchProcess, applyWatermark, getMyToolResults, deleteToolResult, generateProjectTitle };
+    const redesignFromReference = async (payload: {
+            reference_image_url: string;
+            raw_text?: string;
+            strength?: number;
+            aspect_ratio: string;
+            brand_kit_id?: string;
+        }) => {
+            try {
+                const res = await fetchWithTimeout(`${API_BASE_URL}/designs/redesign`, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify(payload),
+                    timeout: 125000 // 125 seconds, same as generateDesign
+                });
+                if (!res.ok) {
+                    const errBase = await res.json().catch(() => ({}));
+                    throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to redesign image');
+                }
+                return res.json();
+            } catch (error: unknown) {
+                const err = error as Error;
+                if (err.name === 'AbortError') {
+                    throw new Error('Waktu koneksi habis saat merender gambar redesign. Server mungkin sedang sibuk, silakan coba lagi.');
+                }
+                if (err.message === 'Failed to fetch') {
+                    throw new Error('Koneksi terputus dari server (Timeout). Proses redesign butuh waktu lama, silakan coba lagi.');
+                }
+                throw error;
+            }
+        };
+
+    return { generateDesign, redesignFromReference, clarifyCopywriting, clarifyUnified, generateCopywriting, parseDesignText, uploadImage, getJobStatus, getMyGenerations, generateMagicTextLayout, removeBackground, upscaleImage, generateTextBanner, retouchImage, generateIdPhoto, magicEraser, generativeExpand, backgroundSwap, suggestBackgrounds, productScene, batchProcess, applyWatermark, getMyToolResults, deleteToolResult, generateProjectTitle };
 }

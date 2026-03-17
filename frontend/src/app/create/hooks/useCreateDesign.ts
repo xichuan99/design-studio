@@ -6,12 +6,15 @@ import { toast } from "sonner";
 import { ParsedDesignData, VisualPromptPart, BriefQuestion, MAX_FILE_SIZE } from "@/app/create/types";
 
 export type CreateStep = 'input' | 'brief' | 'results' | 'generating' | 'preview';
+export type CreateMode = 'generate' | 'redesign';
 
 export interface SavedCreateState {
     rawText: string;
     aspectRatio: string;
     stylePreference: string;
     currentStep: CreateStep;
+    createMode: CreateMode;
+    redesignStrength: number;
     parsedData: ParsedDesignData | null;
     imageHistory: { url: string; prompt: string }[];
     activeImageIndex: number;
@@ -24,11 +27,13 @@ export interface SavedCreateState {
 
 export function useCreateDesign() {
     const router = useRouter();
-    const { generateDesign, getJobStatus, saveProject, uploadImage, getActiveBrandKit, clarifyUnified, generateCopywriting, parseDesignText, generateProjectTitle, getStorageUsage } = useProjectApi();
+    const { generateDesign, redesignFromReference, getJobStatus, saveProject, uploadImage, getActiveBrandKit, clarifyUnified, generateCopywriting, parseDesignText, generateProjectTitle, getStorageUsage } = useProjectApi();
 
     const [rawText, setRawText] = useState("");
     const [aspectRatio, setAspectRatio] = useState("1:1");
     const [stylePreference, setStylePreference] = useState("bold");
+    const [createMode, setCreateMode] = useState<CreateMode>('generate');
+    const [redesignStrength, setRedesignStrength] = useState<number>(0.65);
     const [currentStep, setCurrentStep] = useState<CreateStep>('input');
     const [isParsing, setIsParsing] = useState(false);
     const [isGeneratingImage, setIsGeneratingImage] = useState(false);
@@ -105,6 +110,8 @@ export function useCreateDesign() {
                 setRawText(parsed.rawText || "");
                 setAspectRatio(parsed.aspectRatio || "1:1");
                 setStylePreference(parsed.stylePreference || "bold");
+                setCreateMode(parsed.createMode || 'generate');
+                setRedesignStrength(parsed.redesignStrength ?? 0.65);
                 const restoredStep = parsed.currentStep === 'generating' 
                     ? (parsed.imageHistory?.length ? 'preview' : 'input') 
                     : (parsed.currentStep || 'input');
@@ -133,6 +140,8 @@ export function useCreateDesign() {
             aspectRatio,
             stylePreference,
             currentStep,
+            createMode,
+            redesignStrength,
             parsedData,
             imageHistory,
             activeImageIndex,
@@ -144,7 +153,7 @@ export function useCreateDesign() {
         };
         localStorage.setItem('smartdesign_create_state', JSON.stringify(stateToSave));
     }, [
-        isInitialized, rawText, aspectRatio, stylePreference, currentStep,
+        isInitialized, rawText, aspectRatio, stylePreference, currentStep, createMode, redesignStrength,
         parsedData, imageHistory, activeImageIndex, integratedText, removeProductBg,
         briefQuestions, briefAnswers, copyVariations
     ]);
@@ -338,17 +347,31 @@ export function useCreateDesign() {
             }
 
             const finalPrompt = assembledPrompt;
+            let jobData;
 
-            const jobData = await generateDesign({
-                raw_text: finalPrompt,
-                aspect_ratio: aspectRatio,
-                style_preference: stylePreference,
-                reference_image_url: uploadedReferenceUrl,
-                integrated_text: integratedText,
-                remove_product_bg: removeProductBg && !!uploadedReferenceUrl,
-                product_image_url: removeProductBg ? uploadedReferenceUrl : undefined,
-                brand_kit_id: activeBrandKit?.id,
-            });
+            if (createMode === 'redesign') {
+                if (!uploadedReferenceUrl) {
+                    throw new Error("Gambar referensi wajib diunggah untuk fitur Redesign.");
+                }
+                jobData = await redesignFromReference({
+                    reference_image_url: uploadedReferenceUrl,
+                    raw_text: finalPrompt,
+                    strength: redesignStrength,
+                    aspect_ratio: aspectRatio,
+                    brand_kit_id: activeBrandKit?.id
+                });
+            } else {
+                jobData = await generateDesign({
+                    raw_text: finalPrompt,
+                    aspect_ratio: aspectRatio,
+                    style_preference: stylePreference,
+                    reference_image_url: uploadedReferenceUrl,
+                    integrated_text: integratedText,
+                    remove_product_bg: removeProductBg && !!uploadedReferenceUrl,
+                    product_image_url: removeProductBg ? uploadedReferenceUrl : undefined,
+                    brand_kit_id: activeBrandKit?.id,
+                });
+            }
             const jobId = jobData.job_id;
 
             if (jobData.status === "completed") {
@@ -466,7 +489,7 @@ export function useCreateDesign() {
         } finally {
             setIsGeneratingImage(false);
         }
-    }, [parsedData, rawText, referenceFile, aspectRatio, stylePreference, integratedText, removeProductBg, activeBrandKit?.id, getStorageUsage, uploadImage, generateDesign, getJobStatus, router]);
+    }, [parsedData, rawText, referenceFile, aspectRatio, stylePreference, integratedText, removeProductBg, activeBrandKit?.id, createMode, redesignStrength, getStorageUsage, uploadImage, generateDesign, redesignFromReference, getJobStatus, router]);
 
     const handleProceedToEditor = useCallback(async () => {
         if (!parsedData) return;
@@ -561,6 +584,8 @@ export function useCreateDesign() {
         rawText, setRawText,
         aspectRatio, setAspectRatio,
         stylePreference, setStylePreference,
+        createMode, setCreateMode,
+        redesignStrength, setRedesignStrength,
         currentStep, setCurrentStep,
         isParsing, setIsParsing,
         isGeneratingImage, setIsGeneratingImage,
