@@ -1,15 +1,15 @@
 """Copywriting-related LLM services."""
 
 from typing import Optional
-from google import genai
-from google.genai import types
 import asyncio
 from app.core.config import settings
+from google.genai import types
 
 from app.services.llm_prompts import (
     COPYWRITING_BRIEF_SYSTEM,
     COPYWRITING_SYSTEM_PROMPT,
 )
+from app.services.llm_client import get_genai_client, call_gemini_with_fallback
 
 
 async def generate_copywriting_questions(raw_text: str) -> dict:
@@ -69,11 +69,13 @@ async def generate_copywriting_questions(raw_text: str) -> dict:
             ]
         }
 
-    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    client = get_genai_client()
 
     response = await asyncio.to_thread(
-        client.models.generate_content,
-        model="gemini-2.5-flash",
+        call_gemini_with_fallback,
+        client=client,
+        primary_model="gemini-2.5-pro",
+        fallback_model="gemini-3.0-flash",
         contents=[
             f"Buatkan pertanyaan klarifikasi copywriting untuk deskripsi ini:\n{raw_text}"
         ],
@@ -175,11 +177,13 @@ async def generate_ai_copywriting(
             ]
         }
 
-    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    client = get_genai_client()
 
     response = await asyncio.to_thread(
-        client.models.generate_content,
-        model="gemini-2.5-flash",
+        call_gemini_with_fallback,
+        client=client,
+        primary_model="gemini-2.5-pro",
+        fallback_model="gemini-3.0-flash",
         contents=[prompt_payload],
         config=types.GenerateContentConfig(
             system_instruction=system_prompt_formatted,
@@ -197,3 +201,4 @@ async def generate_ai_copywriting(
 
         logging.exception("Error extracting copywriting via LLM")
         raise e
+

@@ -237,3 +237,4 @@ def generate_print_sheet(photo_bytes: bytes, output_format: str = "jpeg") -> byt
     except Exception as e:
         logger.exception(f"Failed to generate print sheet: {str(e)}")
         raise
+

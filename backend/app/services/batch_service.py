@@ -143,3 +143,4 @@ async def process_batch(
         f"Batch completed. {len(files) - len(errors)} successes, {len(errors)} failures."
     )
     return zip_buffer.getvalue(), errors
+

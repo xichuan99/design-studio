@@ -15,11 +15,11 @@ import logging
 import uuid
 
 import fal_client
-from google import genai
 from google.genai import types as genai_types
 
 from app.core.config import settings
 from app.services.storage_service import upload_image
+from app.services.llm_client import get_genai_client
 
 logger = logging.getLogger(__name__)
 
@@ -104,14 +104,14 @@ async def suggest_backgrounds(
     # ─────────────────────────────────────────
     # Step 3: Gemini Flash (text only) → 3 background suggestions
     # ─────────────────────────────────────────
-    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    client = get_genai_client()
     user_message = (
         f"Product/object detected: {product_description}\n\n"
         "Generate 3 background suggestions for this product photo."
     )
 
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model="gemini-2.5-pro",
         contents=[user_message],
         config=genai_types.GenerateContentConfig(
             system_instruction=SUGGESTION_SYSTEM_PROMPT,
@@ -133,3 +133,4 @@ async def suggest_backgrounds(
 
     # Guarantee at most 3 items
     return {"suggestions": suggestions[:3]}
+

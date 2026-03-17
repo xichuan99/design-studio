@@ -69,3 +69,4 @@ async def inpaint_image(
         raise AppException(
             status_code=500, detail=f"Inpainting service error: {str(e)}"
         )
+

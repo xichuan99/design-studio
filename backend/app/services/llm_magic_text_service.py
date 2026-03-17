@@ -2,11 +2,11 @@
 
 import json
 from typing import Optional
-from google import genai
 from google.genai import types
 from app.core.config import settings
 
 from app.services.llm_prompts import MAGIC_TEXT_SYSTEM
+from app.services.llm_client import get_genai_client
 
 
 async def generate_magic_text_layout(
@@ -62,7 +62,7 @@ async def generate_magic_text_layout(
             ]
         ).model_dump()
 
-    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    client = get_genai_client()
 
     # Pre-process base64 if it has data URI prefix
     if "," in image_base64:
@@ -89,7 +89,7 @@ async def generate_magic_text_layout(
     context_string = aspect_context + style_context + brand_colors_instruction
 
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model="gemini-2.5-pro",
         contents=[
             types.Part.from_bytes(data=image_bytes, mime_type="image/png"),
             f"Here is the text I want to place on this image: {text}{context_string}",
@@ -102,3 +102,4 @@ async def generate_magic_text_layout(
     )
 
     return json.loads(response.text)
+

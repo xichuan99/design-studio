@@ -3,11 +3,11 @@ import logging
 import asyncio
 import httpx
 from typing import Dict, Any
-from google import genai
 from google.genai import types
 from app.core.config import settings
 from app.core.exceptions import AppException
 from fastapi import status
+from app.services.llm_client import get_genai_client
 
 BRAND_KIT_SYSTEM_PROMPT = """
 You are an expert Brand Identity Designer.
@@ -40,9 +40,9 @@ async def generate_brand_identity_json(prompt: str) -> Dict[str, Any]:
         raise ValueError("GEMINI_API_KEY is not set")
 
     def call_gemini():
-        client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        client = get_genai_client()
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-2.5-pro",
             contents=[BRAND_KIT_SYSTEM_PROMPT, f"Business Description: {prompt}"],
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
@@ -98,3 +98,4 @@ async def generate_logo_from_prompt(prompt: str) -> bytes:
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Gagal generate logo: {str(e)}",
         )
+

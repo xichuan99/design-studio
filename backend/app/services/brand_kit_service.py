@@ -5,8 +5,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 from google import genai
-from app.core.config import settings
 from typing import List, Dict, Any
+from app.services.llm_client import get_genai_client
 
 BRAND_COLORS_SYSTEM_PROMPT = """
 You are a professional graphic designer and brand identity expert.
@@ -49,11 +49,11 @@ async def extract_colors_from_image(
     Raises:
         Exception: If the Gemini API call fails (handled internally by returning a fallback palette).
     """
-    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    client = get_genai_client()
 
     try:
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-2.5-pro",
             contents=[
                 "Extract the 5 dominant brand colors from this logo/image. Respond with pure JSON only.",
                 {"mime_type": mime_type, "data": image_bytes},
@@ -84,3 +84,4 @@ async def extract_colors_from_image(
             {"hex": "#3B82F6", "name": "Biru", "role": "primary"},
             {"hex": "#10B981", "name": "Hijau", "role": "accent"},
         ]
+

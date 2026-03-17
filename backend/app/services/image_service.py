@@ -128,3 +128,4 @@ async def generate_background(
         "seed": result.get("seed"),
         "content_type": image_data.get("content_type", "image/jpeg"),
     }
+

@@ -62,3 +62,4 @@ async def upscale_image(image_url: str, scale: int = 2) -> Dict[str, Any]:
         "height": image_data.get("height"),
         "content_type": image_data.get("content_type", "image/png"),
     }
+

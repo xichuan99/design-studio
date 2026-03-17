@@ -81,3 +81,4 @@ async def scrape_brand_info(url: str) -> Dict[str, Any]:
     except Exception as e:
         logging.error(f"Scraping failed for {url}: {e}")
         raise ValueError(f"Failed to scrape website: {str(e)}")
+

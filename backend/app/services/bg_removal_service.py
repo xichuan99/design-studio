@@ -345,3 +345,4 @@ async def composite_with_shadow(
     except Exception as e:
         logger.exception(f"Failed to composite product with shadow: {str(e)}")
         raise
+

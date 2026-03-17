@@ -273,7 +273,10 @@ export function useCreateDesign() {
 
         } catch (error) {
             console.error(error);
-            toast.error(error instanceof Error ? error.message : "Gagal menghasilkan prompt.");
+            const errorMessage = error instanceof Error ? error.message : "Gagal menghasilkan prompt.";
+            // If the error message is the default one from aiToolsApi timeout, show it directly.
+            // Otherwise, keep it as is.
+            toast.error(errorMessage);
         } finally {
             setIsParsing(false);
         }
@@ -299,7 +302,8 @@ export function useCreateDesign() {
 
         } catch (error) {
             console.error(error);
-            toast.error(error instanceof Error ? error.message : "Gagal menganalisis teks.");
+            const errorMessage = error instanceof Error ? error.message : "Gagal menganalisis teks.";
+            toast.error(errorMessage);
             setIsParsing(false); // Make sure to stop loading on error!
         }
     }, [rawText, createMode, clarifyUnified, handleGeneratePrompt]);

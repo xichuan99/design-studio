@@ -122,3 +122,4 @@ async def prepare_reference(image_bytes: bytes, aspect_ratio: str = "1:1") -> di
         "resized_bytes": resized,
         "dominant_colors": colors,
     }
+

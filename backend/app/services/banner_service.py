@@ -5,12 +5,12 @@ import logging
 import httpx
 import uuid
 import fal_client
-from google import genai
 from google.genai import types
 
 from app.core.config import settings
 from app.services.bg_removal_service import remove_background
 from app.services.storage_service import upload_image
+from app.services.llm_client import get_genai_client
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +76,7 @@ async def generate_text_banner(
                     "GEMINI_API_KEY is not configured for premium generation"
                 )
 
-            client = genai.Client(api_key=settings.GEMINI_API_KEY)
+            client = get_genai_client()
 
             # Use the synchronous call in a thread pool for async compatibility
             import asyncio
@@ -162,3 +162,4 @@ async def generate_text_banner(
     except Exception as e:
         logger.exception(f"Failed to generate text banner: {str(e)}")
         raise
+

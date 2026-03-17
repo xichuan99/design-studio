@@ -196,3 +196,4 @@ CRITICAL HEURISTICS:
 Coordinates must be proportional floats between 0.0 and 1.0 (x: 0.0 is left, y: 0.0 is top).
 Return the result STRICTLY as a JSON object matching the requested schema.
 """
+

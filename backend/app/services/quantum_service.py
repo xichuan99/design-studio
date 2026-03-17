@@ -107,3 +107,4 @@ async def optimize_quantum_logo_placement(
         "width": target_w,
         "height": target_h,
     }
+

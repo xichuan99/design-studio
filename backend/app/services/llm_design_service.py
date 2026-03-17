@@ -2,11 +2,11 @@
 
 import json
 from typing import Optional
-from google import genai
 from google.genai import types
 import asyncio
 from app.core.config import settings
 from app.schemas.design import ParsedTextElements
+from app.services.llm_client import get_genai_client, call_gemini_with_fallback
 
 from app.services.llm_prompts import (
     SYSTEM_PROMPT,
@@ -72,11 +72,13 @@ async def generate_design_brief_questions(raw_text: str) -> dict:
             ]
         }
 
-    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    client = get_genai_client()
 
     response = await asyncio.to_thread(
-        client.models.generate_content,
-        model="gemini-2.5-flash",
+        call_gemini_with_fallback,
+        client=client,
+        primary_model="gemini-2.5-pro",
+        fallback_model="gemini-3.0-flash",
         contents=[
             f"Buatkan pertanyaan klarifikasi desain untuk deskripsi ini:\n{raw_text}"
         ],
@@ -192,15 +194,17 @@ async def generate_unified_brief_questions(
             ]
         }
 
-    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    client = get_genai_client()
 
     system_instruction = (
         REDESIGN_BRIEF_SYSTEM if mode.lower() == "redesign" else UNIFIED_BRIEF_SYSTEM
     )
 
     response = await asyncio.to_thread(
-        client.models.generate_content,
-        model="gemini-2.5-flash",
+        call_gemini_with_fallback,
+        client=client,
+        primary_model="gemini-2.5-pro",
+        fallback_model="gemini-3.0-flash",
         contents=[
             f"Buatkan pertanyaan klarifikasi desain & copywriting untuk deskripsi ini:\n{raw_text}"
         ],
@@ -377,12 +381,14 @@ async def parse_design_text(
         )
 
     # Initialize client lazily to prevent global collection crashes during testing
-    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    client = get_genai_client()
 
     # We use Flash for lowest latency, passing schema to force JSON structure natively
     response = await asyncio.to_thread(
-        client.models.generate_content,
-        model="gemini-2.5-flash",
+        call_gemini_with_fallback,
+        client=client,
+        primary_model="gemini-2.5-pro",
+        fallback_model="gemini-3.0-flash",
         contents=[raw_text],
         config=types.GenerateContentConfig(
             system_instruction=final_prompt,
@@ -435,7 +441,7 @@ async def modify_visual_prompt(
             indonesian_translation=f"Terjemahan mock untuk: {combined}",
         ).model_dump()
 
-    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    client = get_genai_client()
 
     # Send the original parts as a JSON dumped string for Gemini to read easily
     # Ensure parts are dicts
@@ -446,8 +452,10 @@ async def modify_visual_prompt(
     input_text = f"ORIGINAL FULL PROMPT:\n{original_visual_prompt}\n\nORIGINAL PROMPT PARTS:\n{json.dumps(parts_dicts, indent=2)}\n\nUSER INSTRUCTION (ID):\n{instruction}"
 
     response = await asyncio.to_thread(
-        client.models.generate_content,
-        model="gemini-2.5-flash",
+        call_gemini_with_fallback,
+        client=client,
+        primary_model="gemini-2.5-pro",
+        fallback_model="gemini-3.0-flash",
         contents=[input_text],
         config=types.GenerateContentConfig(
             system_instruction=MODIFY_PROMPT_SYSTEM,
@@ -491,7 +499,7 @@ async def generate_project_title(prompt: str) -> str:
         words = prompt.split()
         return " ".join(words[:4]).title() if words else "Desain AI Baru"
 
-    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    client = get_genai_client()
 
     system_instruction = (
         "You are an assistant that creates short, descriptive, and catchy project titles "
@@ -501,8 +509,10 @@ async def generate_project_title(prompt: str) -> str:
 
     try:
         response = await asyncio.to_thread(
-            client.models.generate_content,
-            model="gemini-2.5-flash",
+            call_gemini_with_fallback,
+            client=client,
+            primary_model="gemini-2.5-pro",
+            fallback_model="gemini-3.0-flash",
             contents=[f"Create a short title for this design prompt: {prompt}"],
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,
@@ -528,3 +538,4 @@ async def generate_project_title(prompt: str) -> str:
             if words
             else "Desain AI Baru"
         )
+

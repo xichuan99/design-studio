@@ -194,3 +194,4 @@ async def auto_retouch(
 
     logger.warning("FAL_KEY not set. Using OpenCV fallback for retouch.")
     return await retouch_opencv_fallback(image_bytes, fidelity, output_format)
+

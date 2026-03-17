@@ -92,3 +92,4 @@ async def outpaint_image(
         raise AppException(
             status_code=500, detail=f"Outpainting service error: {str(e)}"
         )
+

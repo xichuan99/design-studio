@@ -165,3 +165,4 @@ async def generate_product_scene(
 
     logger.info("Product scene generation complete")
     return final_bytes
+

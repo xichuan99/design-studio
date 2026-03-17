@@ -176,3 +176,4 @@ async def apply_logo_overlay(
 
         logging.error(f"Failed to apply logo overlay: {str(e)}")
         raise e
+

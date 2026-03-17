@@ -4,13 +4,13 @@ import httpx
 import json
 import logging
 import asyncio
-from google import genai
 from google.genai import types
 
 from app.core.config import settings
 from app.schemas.design import ReferenceAnalysis, AspectRatio
 from app.core.exceptions import AppException
 from fastapi import status
+from app.services.llm_client import get_genai_client
 
 # System Prompt for Gemini Vision
 VISION_ANALYSIS_PROMPT = """
@@ -68,9 +68,9 @@ async def analyze_reference_image(image_url: str) -> ReferenceAnalysis:
     try:
         # Call Gemini Vision synchronously in a thread
         def call_gemini():
-            genai_client = genai.Client(api_key=settings.GEMINI_API_KEY)
+            genai_client = get_genai_client()
             response = genai_client.models.generate_content(
-                model="gemini-2.5-flash",
+                model="gemini-2.5-pro",
                 contents=[
                     types.Part.from_bytes(
                         data=image_bytes, mime_type="image/jpeg"
@@ -148,3 +148,4 @@ async def run_flux_redesign(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Gagal melakukan redesign dari fal.ai: {str(e)}",
         )
+

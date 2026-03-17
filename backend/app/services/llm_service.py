@@ -29,6 +29,8 @@ from app.services.llm_magic_text_service import (
     generate_magic_text_layout,
 )
 
+from app.services.llm_client import get_genai_client, call_gemini_with_fallback
+
 __all__ = [
     "SYSTEM_PROMPT",
     "BRIEF_QUESTIONS_SYSTEM",
@@ -45,4 +47,6 @@ __all__ = [
     "generate_copywriting_questions",
     "generate_ai_copywriting",
     "generate_magic_text_layout",
+    "get_genai_client",
+    "call_gemini_with_fallback",
 ]

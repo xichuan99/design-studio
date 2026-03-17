@@ -270,3 +270,4 @@ async def upload_image_tracked(
     await increment_usage(user_id, file_size, db)
 
     return url
+

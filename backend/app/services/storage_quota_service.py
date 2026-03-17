@@ -103,3 +103,4 @@ async def decrement_usage(user_id, file_size: int, db: AsyncSession) -> None:
         update(User).where(User.id == user_id).values(storage_used=new_value)
     )
     await db.commit()
+

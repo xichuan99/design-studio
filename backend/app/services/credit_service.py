@@ -46,3 +46,4 @@ async def log_credit_change(
         # We raise here because failing to log a credit transaction (especially a deduction)
         # might leave the system in an inconsistent state.
         raise e
+
