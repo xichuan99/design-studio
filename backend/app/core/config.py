@@ -13,6 +13,7 @@ class Settings(BaseSettings):
 
     # LLM
     GEMINI_API_KEY: str = ""
+    OPENROUTER_API_KEY: str = ""
 
     # Image Generation (Fal.ai)
     FAL_KEY: str = ""
