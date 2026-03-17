@@ -38,6 +38,32 @@ export function useBrandKitEndpoints() {
             return res.json();
         };
 
+    const generateBrandKit = async (prompt: string): Promise<Partial<Types.BrandKitProfile>> => {
+        const res = await fetch(`${API_BASE_URL}/brand-kits/generate`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ prompt }),
+        });
+        if (!res.ok) {
+            const errBase = await res.json().catch(() => ({}));
+            throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to generate Brand Kit');
+        }
+        return res.json();
+    };
+
+    const extractBrandFromUrl = async (url: string): Promise<Partial<Types.BrandKitProfile>> => {
+        const res = await fetch(`${API_BASE_URL}/brand-kits/extract-from-url`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ url }),
+        });
+        if (!res.ok) {
+            const errBase = await res.json().catch(() => ({}));
+            throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to extract Brand Kit from URL');
+        }
+        return res.json();
+    };
+
     const getBrandKits = async (): Promise<Types.BrandKit[]> => {
             const res = await fetch(`${API_BASE_URL}/brand-kits`, { headers: getHeaders() });
             if (!res.ok) throw new Error('Failed to fetch brand kits');
@@ -69,5 +95,5 @@ export function useBrandKitEndpoints() {
             if (!res.ok) throw new Error('Failed to delete Brand Kit');
         };
 
-    return { extractBrandColors, saveBrandKit, getBrandKits, getActiveBrandKit, updateBrandKit, deleteBrandKit };
+    return { extractBrandColors, saveBrandKit, getBrandKits, getActiveBrandKit, updateBrandKit, deleteBrandKit, generateBrandKit, extractBrandFromUrl };
 }

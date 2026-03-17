@@ -16,12 +16,130 @@ from app.schemas.brand_kit import (
     BrandKitUpdate,
     BrandKitResponse,
     ColorExtractionResponse,
+    BrandKitGenerateRequest,
+    BrandKitExtractUrlRequest,
 )
 from app.services.brand_kit_service import extract_colors_from_image
 
 router = APIRouter(tags=["Brand Kits"])
 
 MAX_BRAND_KITS_FREE = 3
+
+
+@router.post(
+    "/generate",
+    response_model=BrandKitCreate,
+    status_code=status.HTTP_200_OK,
+    summary="Generate Brand Kit with AI",
+    description="Generates a Brand Kit (Colors, Typography, and Logo) from a descriptive text prompt.",
+    responses=ERROR_RESPONSES,
+)
+async def generate_brand_kit(
+    request: BrandKitGenerateRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.services.brand_kit_generator import generate_brand_identity_json, generate_logo_from_prompt
+    from app.services.storage_service import upload_image_tracked
+    from app.services.bg_removal_service import remove_background
+    from app.core.exceptions import InternalServerError
+    import logging
+
+    try:
+        identity_json = await generate_brand_identity_json(request.prompt)
+        logo_prompt = identity_json.get("logo_prompt", f"Minimalist flat vector logo for {request.prompt}")
+        
+        image_bytes = await generate_logo_from_prompt(logo_prompt)
+        nobg_bytes = await remove_background(image_bytes)
+        
+        result_url = await upload_image_tracked(
+            nobg_bytes,
+            user_id=current_user.id,
+            db=db,
+            content_type="image/png",
+            prefix="brand-logo-ai",
+        )
+        
+        colors_data = identity_json.get("colors", [])
+        typography_data = identity_json.get("typography", {})
+        
+        return BrandKitCreate(
+            name=identity_json.get("name", "AI Gen Brand Kit"),
+            logo_url=result_url,
+            logos=[result_url],
+            colors=colors_data,
+            typography=typography_data
+        )
+    except Exception as e:
+        logging.exception(f"Exception generating brand kit: {e}")
+        raise InternalServerError(detail=str(e))
+
+
+
+@router.post(
+    "/extract-from-url",
+    response_model=BrandKitCreate,
+    status_code=status.HTTP_200_OK,
+    summary="Extract Brand Kit from URL",
+    description="Extracts logo, name, and dominant colors from a provided website URL.",
+    responses=ERROR_RESPONSES,
+)
+async def extract_brand_from_url(
+    request: BrandKitExtractUrlRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.services.scraper_service import scrape_brand_info
+    from app.services.brand_kit_service import extract_colors_from_image
+    from app.services.storage_service import upload_image_tracked
+    from app.core.exceptions import InternalServerError
+    import httpx
+    import logging
+
+    try:
+        scraped = await scrape_brand_info(request.url)
+        brand_name = scraped.get("name", "Extracted Brand")
+        logo_url = scraped.get("logo_url")
+        
+        colors = []
+        result_url = None
+        
+        if logo_url:
+            try:
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    resp = await client.get(logo_url)
+                    if resp.status_code == 200:
+                        image_bytes = resp.content
+                        colors = await extract_colors_from_image(image_bytes)
+                        
+                        result_url = await upload_image_tracked(
+                            image_bytes,
+                            user_id=current_user.id,
+                            db=db,
+                            content_type="image/png",
+                            prefix="brand-logo-extracted",
+                        )
+            except Exception as e:
+                logging.warning(f"Could not download or process extracted logo {logo_url}: {e}")
+                result_url = logo_url
+                
+        if not colors:
+            colors = [
+                {"hex": "#000000", "name": "Hitam Dasar", "role": "text"},
+                {"hex": "#FFFFFF", "name": "Putih Dasar", "role": "background"}
+            ]
+
+        return BrandKitCreate(
+            name=brand_name[:50],  # Ensure name isn't too long
+            logo_url=result_url,
+            logos=[result_url] if result_url else [],
+            colors=colors,
+            typography={"primaryFont": "Inter", "secondaryFont": "Roboto"}
+        )
+
+    except Exception as e:
+        logging.exception(f"Exception extracting brand kit from URL: {e}")
+        raise InternalServerError(detail=str(e))
 
 
 @router.post(

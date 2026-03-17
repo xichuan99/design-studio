@@ -153,3 +153,25 @@ class ColorExtractionResponse(BaseModel):
             }
         }
     )
+
+class BrandKitGenerateRequest(BaseModel):
+    prompt: str = Field(..., description="Description of the business to generate brand kit for", json_schema_extra={"example": "Kedai kopi modern minimalis bernama 'Kopi Senja'"})
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "prompt": "Kedai kopi modern minimalis bernama 'Kopi Senja'"
+            }
+        }
+    )
+
+class BrandKitExtractUrlRequest(BaseModel):
+    url: str = Field(..., description="URL of the website to extract brand kit from", json_schema_extra={"example": "https://stripe.com"})
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "url": "https://stripe.com"
+            }
+        }
+    )

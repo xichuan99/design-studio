@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Trash2, CheckCircle2, Palette, Loader2, Save } from 'lucide-react';
+import { Plus, Trash2, CheckCircle2, Palette, Loader2, Save, Sparkles, Globe } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import {
     AlertDialog,
@@ -33,6 +34,14 @@ export default function BrandSettings() {
 
     // Form state for editing/creating
     const [editingBrand, setEditingBrand] = useState<Partial<BrandKitProfile> | null>(null);
+
+    // AI & URL Generation State
+    const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+    const [isUrlModalOpen, setIsUrlModalOpen] = useState(false);
+    const [aiPrompt, setAiPrompt] = useState('');
+    const [websiteUrl, setWebsiteUrl] = useState('');
+    const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+    const [isExtractingUrl, setIsExtractingUrl] = useState(false);
 
     const handleCreateNew = () => {
         setEditingBrand({
@@ -127,6 +136,41 @@ export default function BrandSettings() {
             setIsSaving(false);
         }
     };
+
+    const handleAiGenerate = async () => {
+        if (!aiPrompt.trim()) return;
+        setIsGeneratingAI(true);
+        try {
+            const result = await api.generateBrandKit(aiPrompt);
+            setEditingBrand(result);
+            setIsAiModalOpen(false);
+            setAiPrompt('');
+        } catch (error) {
+            console.error("Error generating brand kit", error);
+            const errorMessage = error instanceof Error ? error.message : "Gagal generate AI Brand Kit";
+            toast.error(errorMessage);
+        } finally {
+            setIsGeneratingAI(false);
+        }
+    };
+
+    const handleUrlExtract = async () => {
+        if (!websiteUrl.trim()) return;
+        setIsExtractingUrl(true);
+        try {
+            const result = await api.extractBrandFromUrl(websiteUrl);
+            setEditingBrand(result);
+            setIsUrlModalOpen(false);
+            setWebsiteUrl('');
+        } catch (error) {
+            console.error("Error extracting brand kit from URL", error);
+            const errorMessage = error instanceof Error ? error.message : "Gagal ekstrak Brand Kit dari URL";
+            toast.error(errorMessage);
+        } finally {
+            setIsExtractingUrl(false);
+        }
+    };
+
 
 
     const confirmDelete = async () => {
@@ -321,10 +365,20 @@ export default function BrandSettings() {
                 <CardTitle className="text-base font-semibold">
                     Daftar Smart Brand Kit
                 </CardTitle>
-                <Button size="sm" className="gap-1.5 h-8 font-medium" onClick={handleCreateNew}>
-                    <Plus className="h-4 w-4" />
-                    Buat Baru
-                </Button>
+                <div className="flex gap-2">
+                    <Button size="sm" variant="outline" className="gap-1.5 h-8 font-medium hidden sm:flex" onClick={() => setIsUrlModalOpen(true)}>
+                        <Globe className="h-4 w-4" />
+                        Dari URL
+                    </Button>
+                    <Button size="sm" variant="outline" className="gap-1.5 h-8 font-medium border-primary/20 text-primary hover:bg-primary/5" onClick={() => setIsAiModalOpen(true)}>
+                        <Sparkles className="h-4 w-4" />
+                        Generate AI
+                    </Button>
+                    <Button size="sm" className="gap-1.5 h-8 font-medium" onClick={handleCreateNew}>
+                        <Plus className="h-4 w-4" />
+                        Buat Baru
+                    </Button>
+                </div>
             </CardHeader>
             <CardContent className="p-6 sm:p-8">
                 {brandKits.length === 0 ? (
@@ -387,6 +441,59 @@ export default function BrandSettings() {
                         <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                             Ya, Hapus
                         </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={isAiModalOpen} onOpenChange={(open) => !open && !isGeneratingAI && setIsAiModalOpen(false)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Generate Brand Kit dengan AI</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Ceritakan tentang bisnis atau brand Anda, dan biarkan AI merancang palet warna, pasangan tipografi, dan logo minimalis yang paling cocok. Waktu proses: 10-15 detik.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <div className="mt-4">
+                        <Textarea 
+                            placeholder="Misal: Kedai kopi modern minimalis bernama 'Kopi Senja' dengan nuansa warna senja yang menenangkan..." 
+                            value={aiPrompt}
+                            onChange={(e) => setAiPrompt(e.target.value)}
+                            disabled={isGeneratingAI}
+                            className="min-h-[100px]"
+                        />
+                    </div>
+                    <AlertDialogFooter className="mt-4">
+                        <AlertDialogCancel disabled={isGeneratingAI}>Batal</AlertDialogCancel>
+                        <Button onClick={handleAiGenerate} disabled={isGeneratingAI || !aiPrompt.trim()}>
+                            {isGeneratingAI ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
+                            {isGeneratingAI ? "Sedang Generate..." : "Generate AI"}
+                        </Button>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={isUrlModalOpen} onOpenChange={(open) => !open && !isExtractingUrl && setIsUrlModalOpen(false)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Extract Brand Kit dari Website URL</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Masukkan alamat website bisnis Anda (misal: https://stripe.com). Sistem akan otomatis menarik logo resmi dan mengekstrak warna utamanya.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <div className="mt-4">
+                        <Input 
+                            placeholder="https://contoh-website.com" 
+                            value={websiteUrl}
+                            onChange={(e) => setWebsiteUrl(e.target.value)}
+                            disabled={isExtractingUrl}
+                        />
+                    </div>
+                    <AlertDialogFooter className="mt-4">
+                        <AlertDialogCancel disabled={isExtractingUrl}>Batal</AlertDialogCancel>
+                        <Button onClick={handleUrlExtract} disabled={isExtractingUrl || !websiteUrl.trim()}>
+                            {isExtractingUrl ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Globe className="w-4 h-4 mr-2" />}
+                            {isExtractingUrl ? "Sedang Ekstrak..." : "Ekstrak"}
+                        </Button>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
