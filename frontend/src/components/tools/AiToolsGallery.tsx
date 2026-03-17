@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAiToolsEndpoints } from "@/lib/api/aiToolsApi";
 import { AiToolResult } from "@/lib/api/types";
 import { Card } from "@/components/ui/card";
@@ -14,11 +14,15 @@ export function AiToolsGallery() {
   const [isLoading, setIsLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  // Stabilize ref to prevent infinite loop (same pattern as StorageBadge/CreditBadge)
+  const getMyToolResultsRef = useRef(getMyToolResults);
+  getMyToolResultsRef.current = getMyToolResults;
+
   useEffect(() => {
     const loadResults = async () => {
       try {
         setIsLoading(true);
-        const data = await getMyToolResults();
+        const data = await getMyToolResultsRef.current();
         setResults(data);
       } catch (error) {
         console.error("Failed to load AI tool results:", error);
@@ -28,7 +32,7 @@ export function AiToolsGallery() {
     };
 
     loadResults();
-  }, [getMyToolResults]);
+  }, []); // empty deps — runs once on mount
 
   const handleDelete = async (id: string) => {
     if (!window.confirm("Apakah Anda yakin ingin menghapus hasil ini? Storage kuota akan dikembalikan.")) {
@@ -86,6 +90,7 @@ export function AiToolsGallery() {
         {results.map((result) => (
           <Card key={result.id} className="group relative overflow-hidden border-border/50">
             <div className="aspect-square bg-muted relative">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={result.result_url}
                 alt={result.input_summary || result.tool_name}

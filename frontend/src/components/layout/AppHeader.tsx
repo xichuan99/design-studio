@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Brush, LayoutDashboard, PlusCircle, Menu, X, Wand2, Palette } from "lucide-react";
+import { Brush, LayoutDashboard, PlusCircle, Menu, X, Wand2, Palette, Images } from "lucide-react";
 import { UserMenu } from "@/components/auth/user-menu";
 import { CreditBadge } from "@/components/credits/CreditBadge";
 import { StorageBadge } from "@/components/credits/StorageBadge";
@@ -45,6 +45,10 @@ export const AppHeader = ({ renderActions }: AppHeaderProps = {}) => {
                     <Link href="/tools" className={`flex items-center gap-1.5 transition-colors ${isActive('/tools')}`}>
                         <Wand2 className="w-4 h-4" />
                         <span>AI Tools</span>
+                    </Link>
+                    <Link href="/my-assets" className={`flex items-center gap-1.5 transition-colors ${isActive('/my-assets')}`}>
+                        <Images className="w-4 h-4" />
+                        <span>Aset Saya</span>
                     </Link>
                 </nav>
             </div>
@@ -99,6 +103,14 @@ export const AppHeader = ({ renderActions }: AppHeaderProps = {}) => {
                         >
                             <Wand2 className="w-4 h-4" />
                             AI Tools
+                        </Link>
+                        <Link
+                            href="/my-assets"
+                            className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm transition-colors ${isActive('/my-assets')} hover:bg-muted`}
+                            onClick={() => setMobileMenuOpen(false)}
+                        >
+                            <Images className="w-4 h-4" />
+                            Aset Saya
                         </Link>
                     </nav>
                 </div>

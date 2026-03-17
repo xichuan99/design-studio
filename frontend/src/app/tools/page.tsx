@@ -1,8 +1,7 @@
 import { AppHeader } from "@/components/layout/AppHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Wand2, ImagePlus, Eraser, MoveDiagonal, Sparkles, Camera, ShieldCheck, Layers } from "lucide-react";
+import { Wand2, ImagePlus, Eraser, MoveDiagonal, Sparkles, Camera, ShieldCheck, Layers, Images } from "lucide-react";
 import Link from "next/link";
-import { AiToolsGallery } from "@/components/tools/AiToolsGallery";
 
 export default function ToolsHubPage() {
   const tools = [
@@ -114,9 +113,20 @@ export default function ToolsHubPage() {
           ))}
         </div>
 
-        <AiToolsGallery />
+        {/* CTA to My Assets */}
+          <div className="mt-10 mb-2 flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              Semua hasil AI Tools Anda tersimpan otomatis.
+            </p>
+            <Link
+              href="/my-assets"
+              className="flex items-center gap-1.5 text-sm text-primary font-medium hover:underline"
+            >
+              <Images className="w-4 h-4" />
+              Lihat Aset Saya →
+            </Link>
+          </div>
       </div>
     </div>
   );
 }
-
