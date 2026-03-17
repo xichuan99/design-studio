@@ -75,7 +75,7 @@ async def generate_copywriting_questions(raw_text: str) -> dict:
         call_gemini_with_fallback,
         client=client,
         primary_model="gemini-2.5-pro",
-        fallback_model="gemini-2.0-flash-exp",
+        fallback_model="gemini-3-flash-preview",
         contents=[
             f"Buatkan pertanyaan klarifikasi copywriting untuk deskripsi ini:\n{raw_text}"
         ],
@@ -183,7 +183,7 @@ async def generate_ai_copywriting(
         call_gemini_with_fallback,
         client=client,
         primary_model="gemini-2.5-pro",
-        fallback_model="gemini-2.0-flash-exp",
+        fallback_model="gemini-3-flash-preview",
         contents=[prompt_payload],
         config=types.GenerateContentConfig(
             system_instruction=system_prompt_formatted,
