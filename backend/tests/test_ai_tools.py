@@ -172,21 +172,17 @@ def test_text_banner_endpoint_success():
 
 
 def test_retouch_endpoint_success():
-    """Test auto-retouch endpoint."""
+    """Test auto-retouch endpoint with CodeFormer/OpenCV pipeline."""
     mock_file_content = b"fake_image_bytes"
     files = {"file": ("test.png", mock_file_content, "image/png")}
 
     with (
         patch(
-            "app.services.retouch_service.auto_enhance", new_callable=AsyncMock
-        ) as mock_enhance,
-        patch(
-            "app.services.retouch_service.remove_blemishes", new_callable=AsyncMock
-        ) as mock_blemish,
+            "app.services.retouch_service.auto_retouch", new_callable=AsyncMock
+        ) as mock_retouch,
         patch("app.api.ai_tools_routers.enhancement.upload_image", new_callable=AsyncMock) as mock_upload,
     ):
-        mock_enhance.return_value = b"enhanced"
-        mock_blemish.return_value = b"blemish_free"
+        mock_retouch.return_value = b"retouched_bytes"
         mock_upload.side_effect = [
             "http://storage.com/before.jpg",
             "http://storage.com/after.jpg",
@@ -202,8 +198,7 @@ def test_retouch_endpoint_success():
         assert data["url"] == "http://storage.com/after.jpg"
         assert data["before_url"] == "http://storage.com/before.jpg"
         assert "result_id" in data
-        mock_enhance.assert_called_once()
-        mock_blemish.assert_called_once()
+        mock_retouch.assert_called_once()
         assert mock_upload.call_count == 2
 
 
