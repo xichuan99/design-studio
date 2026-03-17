@@ -248,10 +248,11 @@ export function useAiToolsEndpoints() {
             return response.json();
         };
 
-    const retouchImage = async (file: File, outputFormat: 'jpeg' | 'png' = 'jpeg'): Promise<{ url: string, before_url: string }> => {
+    const retouchImage = async (file: File, outputFormat: 'jpeg' | 'png' = 'jpeg', fidelity: number = 0.7): Promise<{ url: string, before_url: string }> => {
             const formData = new FormData();
             formData.append('file', file);
             formData.append('output_format', outputFormat);
+            formData.append('fidelity', fidelity.toString());
     
             const response = await fetch(`${API_BASE_URL}/tools/retouch`, {
                 method: 'POST',

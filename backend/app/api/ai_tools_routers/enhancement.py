@@ -6,7 +6,7 @@ import uuid
 import httpx
 from fastapi import APIRouter, Depends, UploadFile, File, Form, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.services import upscale_service, retouch_service, id_photo_service, watermark_service
+from app.services import upscale_service, retouch_service, id_photo_service, watermark_service  # noqa: F401
 from app.api.deps import get_db
 from app.api.rate_limit import rate_limit_dependency
 from app.models.user import User
@@ -107,18 +107,20 @@ async def upscale_image(
     response_model=dict,
     status_code=status.HTTP_200_OK,
     summary="Auto Retouch Photo",
-    description="Enhances exposure/color using CLAHE and removes blemishes using Bilateral Filtering.",
+    description="Uses AI (CodeFormer) to restore and enhance face photos with adjustable fidelity.",
     responses=ERROR_RESPONSES,
 )
 async def retouch(
     file: UploadFile = File(...),
     output_format: str = Form("jpeg"),
+    fidelity: float = Form(0.7),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(rate_limit_dependency),
 ):
     """
-    1. Enhances exposure/color using CLAHE
-    2. Removes blemishes using Bilateral Filtering
+    Restores and enhances a face photo using CodeFormer (fal-ai/codeformer).
+    fidelity: 0.0=max enhancement, 1.0=max identity preservation (default 0.7 = natural).
+    Falls back to OpenCV if FAL_KEY is not set.
     """
     from app.core.credit_costs import COST_RETOUCH
     if current_user.credits_remaining < COST_RETOUCH:
@@ -143,12 +145,9 @@ async def retouch(
             content, content_type=mime_type, prefix=f"retouch_before_{temp_id}"
         )
 
-        # 2. Process
-        enhanced_bytes = await retouch_service.auto_enhance(
-            content, output_format=output_format
-        )
-        final_bytes = await retouch_service.remove_blemishes(
-            enhanced_bytes, output_format=output_format
+        # 2. Process via CodeFormer (or OpenCV fallback)
+        final_bytes = await retouch_service.auto_retouch(
+            content, fidelity=fidelity, output_format=output_format
         )
 
         # 3. Upload result
