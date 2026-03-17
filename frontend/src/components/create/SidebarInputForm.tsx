@@ -35,6 +35,8 @@ interface SidebarInputFormProps {
     handleDragLeave: (e: React.DragEvent) => void;
     handleDrop: (e: React.DragEvent) => void;
     activeBrandKit: BrandKit | null;
+    brandKitEnabled: boolean;
+    setBrandKitEnabled: (val: boolean) => void;
 }
 
 export function SidebarInputForm({
@@ -45,7 +47,7 @@ export function SidebarInputForm({
     removeProductBg, setRemoveProductBg,
     showManualRef, setShowManualRef, referenceFile, referencePreview, isDragOver,
     fileInputRef, handleFileInputChange, handleRemoveFile, handleDragOver, handleDragLeave, handleDrop,
-    activeBrandKit
+    activeBrandKit, brandKitEnabled, setBrandKitEnabled
 }: SidebarInputFormProps) {
     const formatStepNumber = showManualRef ? 3 : 2;
 
@@ -77,23 +79,48 @@ export function SidebarInputForm({
                     disabled={isInputLocked || isParsing}
                 />
 
-                {/* Brand Kit Passive Badge */}
+                {/* Brand Kit Toggle Action */}
                 {activeBrandKit && (
-                    <div className="flex items-center justify-between bg-indigo-50/50 border border-indigo-100 rounded-md p-2 mt-2">
-                        <div className="flex items-center gap-1.5">
-                            <Palette className="w-3.5 h-3.5 text-indigo-500" />
-                            <span className="text-[11px] font-medium text-indigo-900">Brand Kit: {activeBrandKit.name}</span>
-                        </div>
-                        <div className="flex items-center gap-0.5">
-                            {activeBrandKit.colors.slice(0, 5).map((c, i) => (
-                                <div 
-                                    key={i} 
-                                    className="w-3.5 h-3.5 rounded-full border border-indigo-200/50 shadow-sm"
-                                    style={{ backgroundColor: c.hex }}
-                                    title={c.name}
-                                />
-                            ))}
-                        </div>
+                    <div className="mt-2">
+                        {!brandKitEnabled ? (
+                            <button
+                                type="button"
+                                onClick={() => setBrandKitEnabled(true)}
+                                className="flex items-center gap-1.5 px-2 py-1.5 w-full rounded-md border border-dashed border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors group cursor-pointer"
+                            >
+                                <Palette className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
+                                <span className="text-[11px] font-medium text-muted-foreground group-hover:text-primary transition-colors">
+                                    + Aktifkan Brand Kit: {activeBrandKit.name}
+                                </span>
+                            </button>
+                        ) : (
+                            <div className="flex items-center justify-between bg-white/5 border border-white/10 rounded-md p-2">
+                                <div className="flex flex-col gap-1.5">
+                                    <div className="flex items-center gap-1.5">
+                                        <Palette className="w-3.5 h-3.5 text-primary" />
+                                        <span className="text-[11px] font-medium text-primary">Brand Kit Aktif: {activeBrandKit.name}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1 ml-5">
+                                        {activeBrandKit.colors.slice(0, 5).map((c, i) => (
+                                            <div 
+                                                key={i} 
+                                                className="w-4 h-4 rounded-full border border-white/40 ring-1 ring-black/20 shadow-md"
+                                                style={{ backgroundColor: c.hex }}
+                                                title={c.name}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                                <button 
+                                    type="button"
+                                    onClick={() => setBrandKitEnabled(false)}
+                                    className="p-1 hover:bg-white/10 rounded-full text-muted-foreground hover:text-foreground transition-colors"
+                                    title="Nonaktifkan Brand Kit"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

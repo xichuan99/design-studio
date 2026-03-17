@@ -1,5 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useProjectApi, BrandKit, CopywritingVariation } from "@/lib/api";
+import {
+    useProjectApi,
+    BrandKit,
+    CopywritingVariation,
+    AiGeneration,
+} from "@/lib/api";
 import { generateCanvasElementsFromTemplate } from "@/lib/templateEngine";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -45,6 +50,9 @@ export function useCreateDesign() {
     const [briefQuestions, setBriefQuestions] = useState<BriefQuestion[]>([]);
     const [briefAnswers, setBriefAnswers] = useState<Record<string, string>>({});
     const [removeProductBg, setRemoveProductBg] = useState(false);
+    
+    // Brand Kit Opt-in State
+    const [brandKitEnabled, setBrandKitEnabled] = useState(false);
     const [copyVariations, setCopyVariations] = useState<CopywritingVariation[]>([]);
     
     // Error Handling State
@@ -347,23 +355,31 @@ export function useCreateDesign() {
                 if (!uploadedReferenceUrl) {
                     throw new Error("Gambar referensi wajib diunggah untuk fitur Redesign.");
                 }
-                jobData = await redesignFromReference({
+                const redesignPayload = {
                     reference_image_url: uploadedReferenceUrl,
                     raw_text: finalPrompt,
                     strength: redesignStrength,
                     aspect_ratio: aspectRatio,
-                    brand_kit_id: activeBrandKit?.id
-                });
+                    brand_kit_id: undefined as string | undefined
+                };
+                if (activeBrandKit && brandKitEnabled) {
+                    redesignPayload.brand_kit_id = activeBrandKit.id;
+                }
+                jobData = await redesignFromReference(redesignPayload);
             } else {
-                jobData = await generateDesign({
+                const generateDesignPayload = {
                     raw_text: finalPrompt,
                     aspect_ratio: aspectRatio,
                     reference_image_url: uploadedReferenceUrl,
                     integrated_text: integratedText,
                     remove_product_bg: removeProductBg && !!uploadedReferenceUrl,
                     product_image_url: removeProductBg ? uploadedReferenceUrl : undefined,
-                    brand_kit_id: activeBrandKit?.id,
-                });
+                    brand_kit_id: undefined as string | undefined
+                };
+                if (activeBrandKit && brandKitEnabled) {
+                    generateDesignPayload.brand_kit_id = activeBrandKit.id;
+                }
+                jobData = await generateDesign(generateDesignPayload);
             }
             const jobId = jobData.job_id;
 
@@ -482,7 +498,7 @@ export function useCreateDesign() {
         } finally {
             setIsGeneratingImage(false);
         }
-    }, [parsedData, rawText, referenceFile, aspectRatio, integratedText, removeProductBg, activeBrandKit?.id, createMode, redesignStrength, getStorageUsage, uploadImage, generateDesign, redesignFromReference, getJobStatus, router]);
+    }, [parsedData, rawText, referenceFile, aspectRatio, integratedText, removeProductBg, activeBrandKit, brandKitEnabled, createMode, redesignStrength, getStorageUsage, uploadImage, generateDesign, redesignFromReference, getJobStatus, router]);
 
     const handleProceedToEditor = useCallback(async () => {
         if (!parsedData) return;
@@ -611,6 +627,8 @@ export function useCreateDesign() {
         handleAnalyze,
         handleGeneratePrompt,
         handleGenerateImage,
-        handleProceedToEditor
+        handleProceedToEditor,
+        brandKitEnabled,
+        setBrandKitEnabled
     };
 }

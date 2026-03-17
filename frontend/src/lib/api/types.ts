@@ -107,3 +107,22 @@ export interface AiGeneration {
     raw_text: string | null;
     created_at: string;
 }
+
+// --- Design Generation Request Types ---
+export interface GenerateDesignRequest {
+    raw_text: string;
+    aspect_ratio?: string;
+    reference_image_url?: string;
+    remove_product_bg?: boolean;
+    product_image_url?: string;
+    brand_kit_id?: string;
+    template_id?: string;
+}
+
+export interface RedesignFromReferenceRequest {
+    reference_image_url: string;
+    raw_text: string;
+    strength?: number;
+    aspect_ratio?: string;
+    brand_kit_id?: string;
+}

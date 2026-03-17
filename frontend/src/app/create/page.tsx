@@ -55,7 +55,8 @@ export default function CreatePage() {
         handleAnalyze,
         handleGeneratePrompt,
         handleGenerateImage,
-        handleProceedToEditor
+        handleProceedToEditor,
+        brandKitEnabled, setBrandKitEnabled
     } = useCreateDesign();
 
     if (status === "loading") {
@@ -127,6 +128,8 @@ export default function CreatePage() {
                             handleDragLeave={handleDragLeave}
                             handleDrop={handleDrop}
                             activeBrandKit={activeBrandKit}
+                            brandKitEnabled={brandKitEnabled}
+                            setBrandKitEnabled={setBrandKitEnabled}
                         />
                     </div>
 
