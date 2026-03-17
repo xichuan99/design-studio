@@ -18,7 +18,7 @@ def get_genai_client() -> genai.Client:
     if not settings.GEMINI_API_KEY:
         # Client will fail on generation, but initializing might not if mocked elsewhere
         pass
-        
+
     retry_config = types.HttpOptions(
         retry_options=types.HttpRetryOptions(
             attempts=2,  # Only try twice (initial + 1 retry) max
@@ -27,7 +27,7 @@ def get_genai_client() -> genai.Client:
         ),
         timeout=55000, # 55 seconds timeout for httpx
     )
-    
+
     return genai.Client(
         api_key=settings.GEMINI_API_KEY,
         http_options=retry_config
@@ -41,7 +41,7 @@ def call_gemini_with_fallback(
     config: types.GenerateContentConfig,
 ):
     """
-    Calls the Gemini API with a primary model. 
+    Calls the Gemini API with a primary model.
     If a 503 Service Unavailable error occurs, it automatically retries with a fallback model.
     """
     try:
