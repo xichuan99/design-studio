@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { Coins } from "lucide-react";
 import { useProjectApi } from "@/lib/api";
@@ -11,11 +11,14 @@ export const CreditBadge = () => {
     const [credits, setCredits] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
 
+    const getUserProfileRef = useRef(getUserProfile);
+    getUserProfileRef.current = getUserProfile;
+
     useEffect(() => {
         if (status === "authenticated") {
             const fetchCredits = async () => {
                 try {
-                    const profile = await getUserProfile();
+                    const profile = await getUserProfileRef.current();
                     setCredits(profile.credits_remaining);
                 } catch (error) {
                     console.error("Failed to fetch credits", error);
@@ -27,7 +30,7 @@ export const CreditBadge = () => {
         } else {
             setLoading(false);
         }
-    }, [status, getUserProfile]);
+    }, [status]);
 
     if (loading) {
         return (
