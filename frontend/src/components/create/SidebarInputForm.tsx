@@ -55,7 +55,7 @@ export function SidebarInputForm({
                 <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="generate" disabled={isInputLocked} className="font-medium">
                         <Wand2 className="w-4 h-4 mr-2" />
-                        Generate Teks
+                        Mulai dari Teks
                     </TabsTrigger>
                     <TabsTrigger value="redesign" disabled={isInputLocked} className="font-medium">
                         <ImagePlus className="w-4 h-4 mr-2" />
@@ -137,7 +137,7 @@ export function SidebarInputForm({
             <div className={`space-y-4 tour-step-2 pt-2 ${isInputLocked ? 'opacity-60 pointer-events-none' : ''}`}>
                 <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
                     <span className="flex items-center justify-center w-6 h-6 rounded-full bg-amber-500 text-white text-xs font-bold">{formatStepNumber}</span>
-                    Format
+                    Format & Output
                 </label>
                 
                 <DimensionPresets 

@@ -7,8 +7,6 @@ interface ReferenceImageUploadProps {
     isDragOver: boolean;
     fileInputRef: RefObject<HTMLInputElement | null>;
     showManualRef: boolean;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    selectedTemplate: any;
     onFileInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onRemoveFile: () => void;
     onDragOver: (e: React.DragEvent) => void;
@@ -24,7 +22,6 @@ export function ReferenceImageUpload({
     isDragOver,
     fileInputRef,
     showManualRef,
-    selectedTemplate,
     onFileInputChange,
     onRemoveFile,
     onDragOver,
@@ -35,14 +32,14 @@ export function ReferenceImageUpload({
 }: ReferenceImageUploadProps) {
     return (
         <div className="space-y-2">
-            {(!selectedTemplate || showManualRef) ? (
+            {(showManualRef || !!referencePreview) ? (
                 <>
                     <div className="flex items-center justify-between">
                         <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
                             <span className="flex items-center justify-center w-6 h-6 rounded-full bg-violet-500 text-white text-xs font-bold">3</span>
-                            Gambar Referensi {selectedTemplate ? "(Override)" : "(Opsional)"}
+                            Gambar Referensi (Opsional)
                         </label>
-                        {selectedTemplate && showManualRef && (
+                        {showManualRef && !referencePreview && (
                             <button
                                 onClick={() => {
                                     onHideManualRef();
@@ -105,7 +102,7 @@ export function ReferenceImageUpload({
                     onClick={onShowManualRef}
                     className="w-full text-left text-xs font-medium text-muted-foreground hover:text-primary transition-colors py-2 px-1 flex items-center gap-1.5"
                 >
-                    <Plus className="w-3.5 h-3.5" /> Tambah gambar referensi manual (opsional)
+                    <Plus className="w-3.5 h-3.5" /> Tambah foto produk / referensi
                 </button>
             )}
         </div>

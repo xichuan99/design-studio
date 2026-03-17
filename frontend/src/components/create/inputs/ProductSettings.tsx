@@ -40,7 +40,6 @@ export function ProductSettings({
                 isDragOver={isDragOver}
                 fileInputRef={fileInputRef}
                 showManualRef={showManualRef}
-                selectedTemplate={null}
                 onFileInputChange={handleFileInputChange}
                 onRemoveFile={handleRemoveFile}
                 onDragOver={handleDragOver}
