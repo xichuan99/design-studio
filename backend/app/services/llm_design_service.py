@@ -78,7 +78,7 @@ async def generate_design_brief_questions(raw_text: str) -> dict:
         call_gemini_with_fallback,
         client=client,
         primary_model="gemini-2.5-pro",
-        fallback_model="gemini-3.0-flash",
+        fallback_model="gemini-2.0-flash-exp",
         contents=[
             f"Buatkan pertanyaan klarifikasi desain untuk deskripsi ini:\n{raw_text}"
         ],
@@ -204,7 +204,7 @@ async def generate_unified_brief_questions(
         call_gemini_with_fallback,
         client=client,
         primary_model="gemini-2.5-pro",
-        fallback_model="gemini-3.0-flash",
+        fallback_model="gemini-2.0-flash-exp",
         contents=[
             f"Buatkan pertanyaan klarifikasi desain & copywriting untuk deskripsi ini:\n{raw_text}"
         ],
@@ -388,7 +388,7 @@ async def parse_design_text(
         call_gemini_with_fallback,
         client=client,
         primary_model="gemini-2.5-pro",
-        fallback_model="gemini-3.0-flash",
+        fallback_model="gemini-2.0-flash-exp",
         contents=[raw_text],
         config=types.GenerateContentConfig(
             system_instruction=final_prompt,
@@ -455,7 +455,7 @@ async def modify_visual_prompt(
         call_gemini_with_fallback,
         client=client,
         primary_model="gemini-2.5-pro",
-        fallback_model="gemini-3.0-flash",
+        fallback_model="gemini-2.0-flash-exp",
         contents=[input_text],
         config=types.GenerateContentConfig(
             system_instruction=MODIFY_PROMPT_SYSTEM,
@@ -512,7 +512,7 @@ async def generate_project_title(prompt: str) -> str:
             call_gemini_with_fallback,
             client=client,
             primary_model="gemini-2.5-pro",
-            fallback_model="gemini-3.0-flash",
+            fallback_model="gemini-2.0-flash-exp",
             contents=[f"Create a short title for this design prompt: {prompt}"],
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,
