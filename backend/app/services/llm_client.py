@@ -4,7 +4,6 @@ Extracted to prevent circular imports.
 
 from google import genai
 from google.genai import types
-from google.genai.errors import APIError
 from app.core.config import settings
 import logging
 import httpx
@@ -107,42 +106,33 @@ def call_gemini_with_fallback(
 ):
     """
     Calls the Gemini API with a primary model.
-    If 503 occur, tries fallback Gemini.
-    If that also fails or 503, tries OpenRouter (Claude 3.5 Haiku) as 3rd layer.
+    If 503 occur (overload), it automatically retries with the fallback model via OpenRouter.
+    Simplified to 2 layers: Native Gemini -> OpenRouter.
     """
     try:
-        # Layer 1: Gemini Primary
+        # Layer 1: Gemini Primary (Native)
         return client.models.generate_content(
             model=primary_model,
             contents=contents,
             config=config,
         )
-    except APIError as e:
-        if e.code == 503:
-            logger.warning(
-                f"Model {primary_model} overloaded (503). "
-                f"Falling back to Gemini {fallback_model}."
-            )
-            try:
-                # Layer 2: Gemini Fallback
-                return client.models.generate_content(
-                    model=fallback_model,
-                    contents=contents,
-                    config=config,
-                )
-            except Exception as e2:
-                logger.error(f"Gemini fallback also failed: {str(e2)}. Moving to Layer 3 (OpenRouter).")
-                # Fallthrough to OpenRouter
-        else:
-            # For non-503, we might still want to try OpenRouter if it's a transient error
-            # but let's stick to 503/timeout logic for now.
-            logger.error(f"Gemini primary failed with code {e.code}: {str(e)}. Moving to OpenRouter.")
+    except Exception as e:
+        # Check for 503 Service Unavailable or other transient errors
+        is_503 = hasattr(e, "code") and e.code == 503
 
-    # Layer 3: OpenRouter (Claude-3.5-Haiku as last resort)
-    logger.warning("Attempting final fallback via OpenRouter (anthropic/claude-3-5-haiku)")
+        if is_503:
+            logger.warning(
+                f"Gemini {primary_model} overloaded (503). "
+                f"Falling back to OpenRouter ({fallback_model})."
+            )
+        else:
+            logger.error(f"Gemini primary failed: {str(e)}. Moving to OpenRouter ({fallback_model}).")
+
+    # Layer 2: OpenRouter (e.g. Qwen 3.5 9B) as last resort
+    logger.warning(f"Attempting final fallback via OpenRouter ({fallback_model})")
     try:
         return call_openrouter(
-            model_id="anthropic/claude-3-5-haiku",
+            model_id=fallback_model,
             contents=contents,
             config=config
         )
