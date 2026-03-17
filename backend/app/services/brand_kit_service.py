@@ -53,7 +53,7 @@ async def extract_colors_from_image(
 
     try:
         response = client.models.generate_content(
-            model="gemini-2.5-pro",
+            model="gemini-2.5-flash",
             contents=[
                 "Extract the 5 dominant brand colors from this logo/image. Respond with pure JSON only.",
                 {"mime_type": mime_type, "data": image_bytes},

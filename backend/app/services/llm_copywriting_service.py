@@ -74,7 +74,7 @@ async def generate_copywriting_questions(raw_text: str) -> dict:
     response = await asyncio.to_thread(
         call_gemini_with_fallback,
         client=client,
-        primary_model="gemini-2.5-pro",
+        primary_model="gemini-2.5-flash",
         fallback_model="gemini-3-flash-preview",
         contents=[
             f"Buatkan pertanyaan klarifikasi copywriting untuk deskripsi ini:\n{raw_text}"
@@ -182,7 +182,7 @@ async def generate_ai_copywriting(
     response = await asyncio.to_thread(
         call_gemini_with_fallback,
         client=client,
-        primary_model="gemini-2.5-pro",
+        primary_model="gemini-2.5-flash",
         fallback_model="gemini-3-flash-preview",
         contents=[prompt_payload],
         config=types.GenerateContentConfig(

@@ -77,7 +77,7 @@ async def generate_design_brief_questions(raw_text: str) -> dict:
     response = await asyncio.to_thread(
         call_gemini_with_fallback,
         client=client,
-        primary_model="gemini-2.5-pro",
+        primary_model="gemini-2.5-flash",
         fallback_model="gemini-3-flash-preview",
         contents=[
             f"Buatkan pertanyaan klarifikasi desain untuk deskripsi ini:\n{raw_text}"
@@ -203,7 +203,7 @@ async def generate_unified_brief_questions(
     response = await asyncio.to_thread(
         call_gemini_with_fallback,
         client=client,
-        primary_model="gemini-2.5-pro",
+        primary_model="gemini-2.5-flash",
         fallback_model="gemini-3-flash-preview",
         contents=[
             f"Buatkan pertanyaan klarifikasi desain & copywriting untuk deskripsi ini:\n{raw_text}"
@@ -387,7 +387,7 @@ async def parse_design_text(
     response = await asyncio.to_thread(
         call_gemini_with_fallback,
         client=client,
-        primary_model="gemini-2.5-pro",
+        primary_model="gemini-2.5-flash",
         fallback_model="gemini-3-flash-preview",
         contents=[raw_text],
         config=types.GenerateContentConfig(
@@ -454,7 +454,7 @@ async def modify_visual_prompt(
     response = await asyncio.to_thread(
         call_gemini_with_fallback,
         client=client,
-        primary_model="gemini-2.5-pro",
+        primary_model="gemini-2.5-flash",
         fallback_model="gemini-3-flash-preview",
         contents=[input_text],
         config=types.GenerateContentConfig(
@@ -511,7 +511,7 @@ async def generate_project_title(prompt: str) -> str:
         response = await asyncio.to_thread(
             call_gemini_with_fallback,
             client=client,
-            primary_model="gemini-2.5-pro",
+            primary_model="gemini-2.5-flash",
             fallback_model="gemini-3-flash-preview",
             contents=[f"Create a short title for this design prompt: {prompt}"],
             config=types.GenerateContentConfig(

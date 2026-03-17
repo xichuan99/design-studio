@@ -70,7 +70,7 @@ async def analyze_reference_image(image_url: str) -> ReferenceAnalysis:
         def call_gemini():
             genai_client = get_genai_client()
             response = genai_client.models.generate_content(
-                model="gemini-2.5-pro",
+                model="gemini-2.5-flash",
                 contents=[
                     types.Part.from_bytes(
                         data=image_bytes, mime_type="image/jpeg"

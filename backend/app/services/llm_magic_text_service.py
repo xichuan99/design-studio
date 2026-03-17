@@ -89,7 +89,7 @@ async def generate_magic_text_layout(
     context_string = aspect_context + style_context + brand_colors_instruction
 
     response = client.models.generate_content(
-        model="gemini-2.5-pro",
+        model="gemini-2.5-flash",
         contents=[
             types.Part.from_bytes(data=image_bytes, mime_type="image/png"),
             f"Here is the text I want to place on this image: {text}{context_string}",

@@ -42,7 +42,7 @@ async def generate_brand_identity_json(prompt: str) -> Dict[str, Any]:
     def call_gemini():
         client = get_genai_client()
         response = client.models.generate_content(
-            model="gemini-2.5-pro",
+            model="gemini-2.5-flash",
             contents=[BRAND_KIT_SYSTEM_PROMPT, f"Business Description: {prompt}"],
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
