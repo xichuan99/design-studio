@@ -48,10 +48,10 @@ async def generate_brand_kit(
     try:
         identity_json = await generate_brand_identity_json(request.prompt)
         logo_prompt = identity_json.get("logo_prompt", f"Minimalist flat vector logo for {request.prompt}")
-        
+
         image_bytes = await generate_logo_from_prompt(logo_prompt)
         nobg_bytes = await remove_background(image_bytes)
-        
+
         result_url = await upload_image_tracked(
             nobg_bytes,
             user_id=current_user.id,
@@ -59,10 +59,10 @@ async def generate_brand_kit(
             content_type="image/png",
             prefix="brand-logo-ai",
         )
-        
+
         colors_data = identity_json.get("colors", [])
         typography_data = identity_json.get("typography", {})
-        
+
         return BrandKitCreate(
             name=identity_json.get("name", "AI Gen Brand Kit"),
             logo_url=result_url,
@@ -100,10 +100,10 @@ async def extract_brand_from_url(
         scraped = await scrape_brand_info(request.url)
         brand_name = scraped.get("name", "Extracted Brand")
         logo_url = scraped.get("logo_url")
-        
+
         colors = []
         result_url = None
-        
+
         if logo_url:
             try:
                 async with httpx.AsyncClient(timeout=10.0) as client:
@@ -111,7 +111,7 @@ async def extract_brand_from_url(
                     if resp.status_code == 200:
                         image_bytes = resp.content
                         colors = await extract_colors_from_image(image_bytes)
-                        
+
                         result_url = await upload_image_tracked(
                             image_bytes,
                             user_id=current_user.id,
@@ -122,7 +122,7 @@ async def extract_brand_from_url(
             except Exception as e:
                 logging.warning(f"Could not download or process extracted logo {logo_url}: {e}")
                 result_url = logo_url
-                
+
         if not colors:
             colors = [
                 {"hex": "#000000", "name": "Hitam Dasar", "role": "text"},

@@ -10,7 +10,7 @@ from app.core.exceptions import AppException
 from fastapi import status
 
 BRAND_KIT_SYSTEM_PROMPT = """
-You are an expert Brand Identity Designer. 
+You are an expert Brand Identity Designer.
 Your task is to generate a comprehensive Brand Kit based on the provided business description.
 
 Requirements:
@@ -37,7 +37,7 @@ Return your response strictly as a JSON object matching this schema exactly:
 async def generate_brand_identity_json(prompt: str) -> Dict[str, Any]:
     if not settings.GEMINI_API_KEY:
         raise ValueError("GEMINI_API_KEY is not set")
-        
+
     def call_gemini():
         client = genai.Client(api_key=settings.GEMINI_API_KEY)
         response = client.models.generate_content(
@@ -49,7 +49,7 @@ async def generate_brand_identity_json(prompt: str) -> Dict[str, Any]:
             ),
         )
         return json.loads(response.text)
-        
+
     try:
         return await asyncio.to_thread(call_gemini)
     except Exception as e:
