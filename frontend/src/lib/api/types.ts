@@ -101,6 +101,7 @@ export interface AiToolResult {
 // --- AI Design Generations (from /designs/my-generations) ---
 export interface AiGeneration {
     id: string;
+    project_id?: string | null;
     result_url: string;
     visual_prompt: string | null;
     raw_text: string | null;

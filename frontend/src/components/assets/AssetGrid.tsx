@@ -50,7 +50,7 @@ function LoadingState() {
 }
 
 export function AssetGrid() {
-    const { getMyToolResults, deleteToolResult, getMyGenerations } = useAiToolsEndpoints();
+    const { getMyToolResults, deleteToolResult, getMyGenerations, deleteGeneration } = useAiToolsEndpoints();
     const [activeTab, setActiveTab] = useState<TabId>("tools");
     const [toolResults, setToolResults] = useState<AiToolResult[]>([]);
     const [generations, setGenerations] = useState<AiGeneration[]>([]);
@@ -62,9 +62,11 @@ export function AssetGrid() {
     const getMyToolResultsRef = useRef(getMyToolResults);
     const deleteToolResultRef = useRef(deleteToolResult);
     const getMyGenerationsRef = useRef(getMyGenerations);
+    const deleteGenerationRef = useRef(deleteGeneration);
     getMyToolResultsRef.current = getMyToolResults;
     deleteToolResultRef.current = deleteToolResult;
     getMyGenerationsRef.current = getMyGenerations;
+    deleteGenerationRef.current = deleteGeneration;
 
     const loadToolResults = useCallback(async (toolName: string) => {
         setLoadingTools(true);
@@ -101,6 +103,11 @@ export function AssetGrid() {
     const handleDeleteTool = async (id: string) => {
         await deleteToolResultRef.current(id);
         setToolResults((prev) => prev.filter((r) => r.id !== id));
+    };
+
+    const handleDeleteGeneration = async (id: string) => {
+        await deleteGenerationRef.current(id);
+        setGenerations((prev) => prev.filter((g) => g.id !== id));
     };
 
     return (
@@ -182,7 +189,7 @@ export function AssetGrid() {
                     ) : (
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                             {generations.map((g) => (
-                                <GenerationCard key={g.id} generation={g} />
+                                <GenerationCard key={g.id} generation={g} onDelete={handleDeleteGeneration} />
                             ))}
                         </div>
                     )}

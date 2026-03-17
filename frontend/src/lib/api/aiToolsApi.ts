@@ -171,6 +171,23 @@ export function useAiToolsEndpoints() {
             return res.json();
         };
 
+    /**
+     * Delete a generation job and reclaim storage quota.
+     * @param jobId The UUID of the job to delete
+     */
+    const deleteGeneration = async (jobId: string) => {
+        const res = await fetch(`${API_BASE_URL}/designs/jobs/${jobId}`, {
+            method: 'DELETE',
+            headers: getHeaders(),
+        });
+        if (!res.ok) {
+            const errBase = await res.json().catch(() => ({}));
+            throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to delete generation');
+        }
+        // Returns 204 No Content, so no JSON parsing needed
+        return true;
+    };
+
     const generateMagicTextLayout = async (payload: { image_base64: string; text: string; canvas_width?: number; canvas_height?: number; style_hint?: string }) => {
             const res = await fetch(`${API_BASE_URL}/designs/magic-text`, {
                 method: 'POST',
@@ -527,5 +544,5 @@ export function useAiToolsEndpoints() {
             }
         };
 
-    return { generateDesign, redesignFromReference, clarifyCopywriting, clarifyUnified, generateCopywriting, parseDesignText, uploadImage, getJobStatus, getMyGenerations, generateMagicTextLayout, removeBackground, upscaleImage, generateTextBanner, retouchImage, generateIdPhoto, magicEraser, generativeExpand, backgroundSwap, suggestBackgrounds, productScene, batchProcess, applyWatermark, getMyToolResults, deleteToolResult, generateProjectTitle };
+    return { generateDesign, redesignFromReference, clarifyCopywriting, clarifyUnified, generateCopywriting, parseDesignText, uploadImage, getJobStatus, getMyGenerations, deleteGeneration, generateMagicTextLayout, removeBackground, upscaleImage, generateTextBanner, retouchImage, generateIdPhoto, magicEraser, generativeExpand, backgroundSwap, suggestBackgrounds, productScene, batchProcess, applyWatermark, getMyToolResults, deleteToolResult, generateProjectTitle };
 }

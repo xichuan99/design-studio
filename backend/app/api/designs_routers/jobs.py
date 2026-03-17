@@ -42,6 +42,7 @@ async def get_my_generations(
     return [
         {
             "id": str(job.id),
+            "project_id": str(job.project_id) if job.project_id else None,
             "result_url": job.result_url,
             "visual_prompt": job.visual_prompt,
             "raw_text": job.raw_text,
