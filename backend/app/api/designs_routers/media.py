@@ -9,6 +9,7 @@ from app.core.exceptions import InternalServerError, ValidationError
 
 router = APIRouter(tags=["Designs - Media"])
 
+
 @router.post(
     "/upload",
     response_model=dict,
@@ -46,6 +47,7 @@ async def upload_user_image(
 
         logging.exception("Upload endpoint failed")
         raise InternalServerError(detail=f"Failed to upload image: {str(e)}")
+
 
 @router.post(
     "/remove-background",
@@ -93,5 +95,4 @@ async def api_remove_background(
         import logging
 
         logging.exception("Failed to remove background")
-        raise InternalServerError(detail=f"Background removal failed: {str(e)}"
-        )
+        raise InternalServerError(detail=f"Background removal failed: {str(e)}")

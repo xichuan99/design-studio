@@ -40,7 +40,9 @@ def test_image_png_alpha() -> bytes:
 
 @pytest.mark.asyncio
 async def test_opencv_fallback_jpeg_output(test_image_jpeg: bytes) -> None:
-    result = await retouch_opencv_fallback(test_image_jpeg, fidelity=0.7, output_format="jpeg")
+    result = await retouch_opencv_fallback(
+        test_image_jpeg, fidelity=0.7, output_format="jpeg"
+    )
 
     assert isinstance(result, bytes)
     img = Image.open(io.BytesIO(result))
@@ -51,7 +53,9 @@ async def test_opencv_fallback_jpeg_output(test_image_jpeg: bytes) -> None:
 
 @pytest.mark.asyncio
 async def test_opencv_fallback_png_preserves_alpha(test_image_png_alpha: bytes) -> None:
-    result = await retouch_opencv_fallback(test_image_png_alpha, fidelity=0.5, output_format="png")
+    result = await retouch_opencv_fallback(
+        test_image_png_alpha, fidelity=0.5, output_format="png"
+    )
 
     assert isinstance(result, bytes)
     img = Image.open(io.BytesIO(result))
@@ -63,7 +67,9 @@ async def test_opencv_fallback_png_preserves_alpha(test_image_png_alpha: bytes) 
 @pytest.mark.asyncio
 async def test_opencv_fallback_high_fidelity(test_image_jpeg: bytes) -> None:
     """High fidelity (1.0) = minimal enhancement, should still return valid JPEG."""
-    result = await retouch_opencv_fallback(test_image_jpeg, fidelity=1.0, output_format="jpeg")
+    result = await retouch_opencv_fallback(
+        test_image_jpeg, fidelity=1.0, output_format="jpeg"
+    )
 
     assert isinstance(result, bytes)
     img = Image.open(io.BytesIO(result))
@@ -73,7 +79,9 @@ async def test_opencv_fallback_high_fidelity(test_image_jpeg: bytes) -> None:
 @pytest.mark.asyncio
 async def test_opencv_fallback_low_fidelity(test_image_jpeg: bytes) -> None:
     """Low fidelity (0.0) = maximum enhancement, should still return valid JPEG."""
-    result = await retouch_opencv_fallback(test_image_jpeg, fidelity=0.0, output_format="jpeg")
+    result = await retouch_opencv_fallback(
+        test_image_jpeg, fidelity=0.0, output_format="jpeg"
+    )
 
     assert isinstance(result, bytes)
     img = Image.open(io.BytesIO(result))
@@ -92,7 +100,9 @@ async def test_opencv_fallback_invalid_input() -> None:
 
 
 @pytest.mark.asyncio
-async def test_auto_retouch_uses_opencv_fallback_when_no_fal_key(test_image_jpeg: bytes) -> None:
+async def test_auto_retouch_uses_opencv_fallback_when_no_fal_key(
+    test_image_jpeg: bytes,
+) -> None:
     """auto_retouch must use the OpenCV fallback when FAL_KEY is not set."""
     with patch("app.core.config.settings") as mock_settings:
         mock_settings.FAL_KEY = None

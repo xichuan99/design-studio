@@ -31,7 +31,8 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
     existing_user = result.scalar_one_or_none()
 
     if existing_user:
-        raise ValidationError(detail="Email is already registered",
+        raise ValidationError(
+            detail="Email is already registered",
         )
 
     # Create new user
@@ -76,15 +77,14 @@ async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
     user = result.scalar_one_or_none()
 
     if not user:
-        raise UnauthorizedError(detail="Invalid email or password"
-        )
+        raise UnauthorizedError(detail="Invalid email or password")
 
     if not user.password_hash:
-        raise UnauthorizedError(detail="This account uses Google Login. Please sign in with Google.",
+        raise UnauthorizedError(
+            detail="This account uses Google Login. Please sign in with Google.",
         )
 
     if not verify_password(data.password, user.password_hash):
-        raise UnauthorizedError(detail="Invalid email or password"
-        )
+        raise UnauthorizedError(detail="Invalid email or password")
 
     return user

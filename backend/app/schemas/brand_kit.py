@@ -5,46 +5,67 @@ from datetime import datetime
 
 
 class ColorSwatch(BaseModel):
-    hex: str = Field(..., description="Hex color code, e.g., #FF5733", json_schema_extra={"example": "#FF5733"})
-    name: str = Field(..., description="Color name in Indonesian", json_schema_extra={"example": "Oranye Terang"})
+    hex: str = Field(
+        ...,
+        description="Hex color code, e.g., #FF5733",
+        json_schema_extra={"example": "#FF5733"},
+    )
+    name: str = Field(
+        ...,
+        description="Color name in Indonesian",
+        json_schema_extra={"example": "Oranye Terang"},
+    )
     role: Literal["primary", "secondary", "accent", "background", "text"] = Field(
-        ..., description="Logical role: primary, secondary, accent, background, text", json_schema_extra={"example": "primary"}
+        ...,
+        description="Logical role: primary, secondary, accent, background, text",
+        json_schema_extra={"example": "primary"},
     )
 
     model_config = ConfigDict(
         json_schema_extra={
-            "example": {
-                "hex": "#FF5733",
-                "name": "Oranye Terang",
-                "role": "primary"
-            }
+            "example": {"hex": "#FF5733", "name": "Oranye Terang", "role": "primary"}
         }
     )
 
 
 class Typography(BaseModel):
-    primaryFont: Optional[str] = Field(None, description="Primary font family name", json_schema_extra={"example": "Inter"})
-    secondaryFont: Optional[str] = Field(None, description="Secondary font family name", json_schema_extra={"example": "Roboto"})
+    primaryFont: Optional[str] = Field(
+        None,
+        description="Primary font family name",
+        json_schema_extra={"example": "Inter"},
+    )
+    secondaryFont: Optional[str] = Field(
+        None,
+        description="Secondary font family name",
+        json_schema_extra={"example": "Roboto"},
+    )
 
     model_config = ConfigDict(
         json_schema_extra={
-            "example": {
-                "primaryFont": "Inter",
-                "secondaryFont": "Roboto"
-            }
+            "example": {"primaryFont": "Inter", "secondaryFont": "Roboto"}
         }
     )
 
 
 class BrandKitBase(BaseModel):
-    name: str = Field(..., description="Name of the brand kit", json_schema_extra={"example": "Brand Kit Utama"})
+    name: str = Field(
+        ...,
+        description="Name of the brand kit",
+        json_schema_extra={"example": "Brand Kit Utama"},
+    )
     logo_url: Optional[str] = Field(
-        None, description="URL of the uploaded logo (legacy/single logo)", json_schema_extra={"example": "https://example.com/logo.png"}
+        None,
+        description="URL of the uploaded logo (legacy/single logo)",
+        json_schema_extra={"example": "https://example.com/logo.png"},
     )
     logos: Optional[List[str]] = Field(
-        default_factory=list, description="List of logo URLs", json_schema_extra={"example": ["https://example.com/logo.png"]}
+        default_factory=list,
+        description="List of logo URLs",
+        json_schema_extra={"example": ["https://example.com/logo.png"]},
     )
-    colors: List[ColorSwatch] = Field(..., min_length=1, max_length=10, description="List of brand colors")
+    colors: List[ColorSwatch] = Field(
+        ..., min_length=1, max_length=10, description="List of brand colors"
+    )
     typography: Optional[Typography] = Field(None, description="Typography settings")
 
     model_config = ConfigDict(
@@ -54,16 +75,9 @@ class BrandKitBase(BaseModel):
                 "logo_url": "https://example.com/logo.png",
                 "logos": ["https://example.com/logo.png"],
                 "colors": [
-                    {
-                        "hex": "#FF5733",
-                        "name": "Oranye Terang",
-                        "role": "primary"
-                    }
+                    {"hex": "#FF5733", "name": "Oranye Terang", "role": "primary"}
                 ],
-                "typography": {
-                    "primaryFont": "Inter",
-                    "secondaryFont": "Roboto"
-                }
+                "typography": {"primaryFont": "Inter", "secondaryFont": "Roboto"},
             }
         }
     )
@@ -77,44 +91,66 @@ class BrandKitCreate(BrandKitBase):
                 "logo_url": "https://example.com/logo.png",
                 "logos": ["https://example.com/logo.png"],
                 "colors": [
-                    {
-                        "hex": "#FF5733",
-                        "name": "Oranye Terang",
-                        "role": "primary"
-                    }
+                    {"hex": "#FF5733", "name": "Oranye Terang", "role": "primary"}
                 ],
-                "typography": {
-                    "primaryFont": "Inter",
-                    "secondaryFont": "Roboto"
-                }
+                "typography": {"primaryFont": "Inter", "secondaryFont": "Roboto"},
             }
         }
     )
 
 
 class BrandKitUpdate(BaseModel):
-    name: Optional[str] = Field(None, description="Name of the brand kit", json_schema_extra={"example": "Brand Kit Baru"})
-    logo_url: Optional[str] = Field(None, description="URL of the uploaded logo (legacy/single logo)", json_schema_extra={"example": "https://example.com/logo2.png"})
-    logos: Optional[List[str]] = Field(None, description="List of logo URLs", json_schema_extra={"example": ["https://example.com/logo2.png"]})
-    colors: Optional[List[ColorSwatch]] = Field(None, description="List of brand colors")
+    name: Optional[str] = Field(
+        None,
+        description="Name of the brand kit",
+        json_schema_extra={"example": "Brand Kit Baru"},
+    )
+    logo_url: Optional[str] = Field(
+        None,
+        description="URL of the uploaded logo (legacy/single logo)",
+        json_schema_extra={"example": "https://example.com/logo2.png"},
+    )
+    logos: Optional[List[str]] = Field(
+        None,
+        description="List of logo URLs",
+        json_schema_extra={"example": ["https://example.com/logo2.png"]},
+    )
+    colors: Optional[List[ColorSwatch]] = Field(
+        None, description="List of brand colors"
+    )
     typography: Optional[Typography] = Field(None, description="Typography settings")
-    is_active: Optional[bool] = Field(None, description="Whether this brand kit is active", json_schema_extra={"example": True})
+    is_active: Optional[bool] = Field(
+        None,
+        description="Whether this brand kit is active",
+        json_schema_extra={"example": True},
+    )
 
     model_config = ConfigDict(
-        json_schema_extra={
-            "example": {
-                "name": "Brand Kit Baru",
-                "is_active": True
-            }
-        }
+        json_schema_extra={"example": {"name": "Brand Kit Baru", "is_active": True}}
     )
 
 
 class BrandKitResponse(BrandKitBase):
-    id: UUID = Field(..., description="Unique brand kit ID", json_schema_extra={"example": "123e4567-e89b-12d3-a456-426614174000"})
-    user_id: UUID = Field(..., description="User ID associated with the brand kit", json_schema_extra={"example": "123e4567-e89b-12d3-a456-426614174001"})
-    is_active: bool = Field(..., description="Whether this brand kit is active", json_schema_extra={"example": True})
-    created_at: datetime = Field(..., description="Brand kit creation timestamp", json_schema_extra={"example": "2024-03-15T12:00:00Z"})
+    id: UUID = Field(
+        ...,
+        description="Unique brand kit ID",
+        json_schema_extra={"example": "123e4567-e89b-12d3-a456-426614174000"},
+    )
+    user_id: UUID = Field(
+        ...,
+        description="User ID associated with the brand kit",
+        json_schema_extra={"example": "123e4567-e89b-12d3-a456-426614174001"},
+    )
+    is_active: bool = Field(
+        ...,
+        description="Whether this brand kit is active",
+        json_schema_extra={"example": True},
+    )
+    created_at: datetime = Field(
+        ...,
+        description="Brand kit creation timestamp",
+        json_schema_extra={"example": "2024-03-15T12:00:00Z"},
+    )
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -126,14 +162,10 @@ class BrandKitResponse(BrandKitBase):
                 "is_active": True,
                 "created_at": "2024-03-15T12:00:00Z",
                 "colors": [
-                    {
-                        "hex": "#FF5733",
-                        "name": "Oranye Terang",
-                        "role": "primary"
-                    }
-                ]
+                    {"hex": "#FF5733", "name": "Oranye Terang", "role": "primary"}
+                ],
             }
-        }
+        },
     )
 
 
@@ -144,34 +176,36 @@ class ColorExtractionResponse(BaseModel):
         json_schema_extra={
             "example": {
                 "colors": [
-                    {
-                        "hex": "#FF5733",
-                        "name": "Oranye Terang",
-                        "role": "primary"
-                    }
+                    {"hex": "#FF5733", "name": "Oranye Terang", "role": "primary"}
                 ]
             }
         }
     )
 
+
 class BrandKitGenerateRequest(BaseModel):
-    prompt: str = Field(..., description="Description of the business to generate brand kit for", json_schema_extra={"example": "Kedai kopi modern minimalis bernama 'Kopi Senja'"})
+    prompt: str = Field(
+        ...,
+        description="Description of the business to generate brand kit for",
+        json_schema_extra={
+            "example": "Kedai kopi modern minimalis bernama 'Kopi Senja'"
+        },
+    )
 
     model_config = ConfigDict(
         json_schema_extra={
-            "example": {
-                "prompt": "Kedai kopi modern minimalis bernama 'Kopi Senja'"
-            }
+            "example": {"prompt": "Kedai kopi modern minimalis bernama 'Kopi Senja'"}
         }
     )
 
+
 class BrandKitExtractUrlRequest(BaseModel):
-    url: str = Field(..., description="URL of the website to extract brand kit from", json_schema_extra={"example": "https://stripe.com"})
+    url: str = Field(
+        ...,
+        description="URL of the website to extract brand kit from",
+        json_schema_extra={"example": "https://stripe.com"},
+    )
 
     model_config = ConfigDict(
-        json_schema_extra={
-            "example": {
-                "url": "https://stripe.com"
-            }
-        }
+        json_schema_extra={"example": {"url": "https://stripe.com"}}
     )

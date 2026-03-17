@@ -34,6 +34,7 @@ Return your response strictly as a JSON object matching this schema exactly:
 }
 """
 
+
 async def generate_brand_identity_json(prompt: str) -> Dict[str, Any]:
     if not settings.GEMINI_API_KEY:
         raise ValueError("GEMINI_API_KEY is not set")
@@ -58,6 +59,7 @@ async def generate_brand_identity_json(prompt: str) -> Dict[str, Any]:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Gagal men-*generate* identitas merek: {str(e)}",
         )
+
 
 async def generate_logo_from_prompt(prompt: str) -> bytes:
     import fal_client

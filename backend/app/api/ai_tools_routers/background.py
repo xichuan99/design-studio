@@ -1,4 +1,8 @@
-from app.core.exceptions import ValidationError, InsufficientCreditsError, InternalServerError
+from app.core.exceptions import (
+    ValidationError,
+    InsufficientCreditsError,
+    InternalServerError,
+)
 from app.schemas.error import ERROR_RESPONSES
 import logging
 import time
@@ -14,6 +18,7 @@ from app.services.storage_service import upload_image
 
 router = APIRouter(tags=["AI Tools"])
 logger = logging.getLogger(__name__)
+
 
 @router.post(
     "/background-swap",
@@ -37,6 +42,7 @@ async def background_swap(
     3. Upload and return result
     """
     from app.core.credit_costs import COST_BG_SWAP
+
     if current_user.credits_remaining < COST_BG_SWAP:
         raise InsufficientCreditsError(detail="Insufficient credits")
 
@@ -72,8 +78,12 @@ async def background_swap(
         from app.api.ai_tools_routers.results import save_tool_result
 
         result_id = await save_tool_result(
-            db, current_user.id, "background_swap", result_url,
-            len(final_bytes), prompt[:200] if prompt else None,
+            db,
+            current_user.id,
+            "background_swap",
+            result_url,
+            len(final_bytes),
+            prompt[:200] if prompt else None,
         )
         await db.commit()
 
@@ -81,11 +91,12 @@ async def background_swap(
     except Exception as e:
         from app.services.credit_service import log_credit_change
 
-        await log_credit_change(db, current_user, COST_BG_SWAP, "Refund: gagal background swap")
+        await log_credit_change(
+            db, current_user, COST_BG_SWAP, "Refund: gagal background swap"
+        )
         await db.commit()
         logging.exception("Background swap failed")
-        raise InternalServerError(detail=f"Failed to process image: {str(e)}"
-        )
+        raise InternalServerError(detail=f"Failed to process image: {str(e)}")
 
 
 @router.post(
@@ -108,6 +119,7 @@ async def background_suggest(
     4. Returns suggestions as JSON (no credit charge if call fails)
     """
     from app.core.credit_costs import COST_BG_SUGGEST
+
     if current_user.credits_remaining < COST_BG_SUGGEST:
         raise InsufficientCreditsError(detail="Insufficient credits")
 
@@ -129,11 +141,13 @@ async def background_suggest(
     except Exception as e:
         from app.services.credit_service import log_credit_change
 
-        await log_credit_change(db, current_user, COST_BG_SUGGEST, "Refund: gagal suggest background")
+        await log_credit_change(
+            db, current_user, COST_BG_SUGGEST, "Refund: gagal suggest background"
+        )
         await db.commit()
         logging.exception("Background suggest failed")
-        raise InternalServerError(detail=f"Failed to analyze image: {str(e)}"
-        )
+        raise InternalServerError(detail=f"Failed to analyze image: {str(e)}")
+
 
 @router.post(
     "/magic-eraser",
@@ -156,14 +170,14 @@ async def magic_eraser(
     3. Uploads resulting image
     """
     from app.core.credit_costs import COST_MAGIC_ERASER
+
     if current_user.credits_remaining < COST_MAGIC_ERASER:
         raise InsufficientCreditsError(detail="Insufficient credits")
 
     content = await file.read()
     mask_content = await mask.read()
     if len(content) > 10 * 1024 * 1024 or len(mask_content) > 10 * 1024 * 1024:
-        raise ValidationError(detail="Image or mask size exceeds 10MB limit"
-        )
+        raise ValidationError(detail="Image or mask size exceeds 10MB limit")
 
     from app.services.credit_service import log_credit_change
 
@@ -200,8 +214,12 @@ async def magic_eraser(
 
         eraser_url = result_data.get("url", "")
         result_id = await save_tool_result(
-            db, current_user.id, "magic_eraser", eraser_url,
-            0, (prompt or "Object removal")[:200],
+            db,
+            current_user.id,
+            "magic_eraser",
+            eraser_url,
+            0,
+            (prompt or "Object removal")[:200],
         )
         await db.commit()
 
@@ -214,14 +232,16 @@ async def magic_eraser(
         try:
             from app.services.credit_service import log_credit_change
 
-            await log_credit_change(db, current_user, COST_MAGIC_ERASER, "Refund: gagal magic eraser")
+            await log_credit_change(
+                db, current_user, COST_MAGIC_ERASER, "Refund: gagal magic eraser"
+            )
             await db.commit()
         except Exception as refund_err:
             logger.error(
                 f"CRITICAL: Failed to refund user {current_user.id}: {str(refund_err)}"
             )
-        raise InternalServerError(detail=f"Failed to process image: {str(e)}"
-        )
+        raise InternalServerError(detail=f"Failed to process image: {str(e)}")
+
 
 @router.post(
     "/generative-expand",
@@ -247,6 +267,7 @@ async def generative_expand(
     3. Returns resulting image
     """
     from app.core.credit_costs import COST_GENERATIVE_EXPAND
+
     if current_user.credits_remaining < COST_GENERATIVE_EXPAND:
         raise InsufficientCreditsError(detail="Insufficient credits")
 
@@ -256,7 +277,9 @@ async def generative_expand(
 
     from app.services.credit_service import log_credit_change
 
-    await log_credit_change(db, current_user, -COST_GENERATIVE_EXPAND, "Generative Expand")
+    await log_credit_change(
+        db, current_user, -COST_GENERATIVE_EXPAND, "Generative Expand"
+    )
     await db.commit()
 
     try:
@@ -283,8 +306,12 @@ async def generative_expand(
 
         expand_url = result_data.get("url", "")
         result_id = await save_tool_result(
-            db, current_user.id, "generative_expand", expand_url,
-            0, (prompt or f"Expand {direction or 'all'}")[:200],
+            db,
+            current_user.id,
+            "generative_expand",
+            expand_url,
+            0,
+            (prompt or f"Expand {direction or 'all'}")[:200],
         )
         await db.commit()
 
@@ -298,12 +325,14 @@ async def generative_expand(
             from app.services.credit_service import log_credit_change
 
             await log_credit_change(
-                db, current_user, COST_GENERATIVE_EXPAND, "Refund: gagal generative expand"
+                db,
+                current_user,
+                COST_GENERATIVE_EXPAND,
+                "Refund: gagal generative expand",
             )
             await db.commit()
         except Exception as refund_err:
             logger.error(
                 f"CRITICAL: Failed to refund user {current_user.id}: {str(refund_err)}"
             )
-        raise InternalServerError(detail=f"Failed to process image: {str(e)}"
-        )
+        raise InternalServerError(detail=f"Failed to process image: {str(e)}")

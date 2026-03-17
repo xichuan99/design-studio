@@ -11,6 +11,7 @@ from app.schemas.error import ERROR_RESPONSES
 
 router = APIRouter(tags=["Designs - Copywriting"])
 
+
 @router.post(
     "/clarify-copywriting",
     response_model=dict,
@@ -34,6 +35,7 @@ async def clarify_copywriting(
 
         logging.exception("Failed to clarify copywriting")
         raise InternalServerError(detail="Failed to clarify copywriting")
+
 
 @router.post(
     "/generate-copywriting",

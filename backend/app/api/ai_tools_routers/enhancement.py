@@ -1,4 +1,9 @@
-from app.core.exceptions import AppException, ValidationError, InsufficientCreditsError, InternalServerError
+from app.core.exceptions import (
+    AppException,
+    ValidationError,
+    InsufficientCreditsError,
+    InternalServerError,
+)
 from app.schemas.error import ERROR_RESPONSES
 import logging
 import time
@@ -6,7 +11,12 @@ import uuid
 import httpx
 from fastapi import APIRouter, Depends, UploadFile, File, Form, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.services import upscale_service, retouch_service, id_photo_service, watermark_service  # noqa: F401
+from app.services import (
+    upscale_service,
+    retouch_service,
+    id_photo_service,
+    watermark_service,
+)  # noqa: F401
 from app.api.deps import get_db
 from app.api.rate_limit import rate_limit_dependency
 from app.models.user import User
@@ -14,6 +24,7 @@ from app.services.storage_service import upload_image
 
 router = APIRouter(tags=["AI Tools"])
 logger = logging.getLogger(__name__)
+
 
 @router.post(
     "/upscale",
@@ -31,6 +42,7 @@ async def upscale_image(
 ):
     try:
         from app.core.credit_costs import COST_UPSCALE
+
         if current_user.credits_remaining < COST_UPSCALE:
             raise InsufficientCreditsError(detail="Insufficient credits")
 
@@ -87,8 +99,12 @@ async def upscale_image(
         from app.api.ai_tools_routers.results import save_tool_result
 
         result_id = await save_tool_result(
-            db, current_user.id, "upscale", stored_url,
-            len(final_bytes), f"{scale}x upscale",
+            db,
+            current_user.id,
+            "upscale",
+            stored_url,
+            len(final_bytes),
+            f"{scale}x upscale",
         )
         await db.commit()
 
@@ -123,6 +139,7 @@ async def retouch(
     Falls back to OpenCV if FAL_KEY is not set.
     """
     from app.core.credit_costs import COST_RETOUCH
+
     if current_user.credits_remaining < COST_RETOUCH:
         raise InsufficientCreditsError(detail="Insufficient credits")
 
@@ -159,8 +176,12 @@ async def retouch(
         from app.api.ai_tools_routers.results import save_tool_result
 
         result_id = await save_tool_result(
-            db, current_user.id, "retouch", result_url,
-            len(final_bytes), "Auto retouch",
+            db,
+            current_user.id,
+            "retouch",
+            result_url,
+            len(final_bytes),
+            "Auto retouch",
         )
         await db.commit()
 
@@ -171,14 +192,15 @@ async def retouch(
         try:
             from app.services.credit_service import log_credit_change
 
-            await log_credit_change(db, current_user, COST_RETOUCH, "Refund: gagal retouch foto")
+            await log_credit_change(
+                db, current_user, COST_RETOUCH, "Refund: gagal retouch foto"
+            )
             await db.commit()
         except Exception as refund_err:
             logger.error(
                 f"CRITICAL: Failed to refund user {current_user.id}: {str(refund_err)}"
             )
-        raise InternalServerError(detail=f"Failed to process image: {str(e)}"
-        )
+        raise InternalServerError(detail=f"Failed to process image: {str(e)}")
 
 
 @router.post(
@@ -207,19 +229,23 @@ async def create_id_photo(
     4. Resizes to standard print sizes at 300 DPI
     """
     from app.core.credit_costs import COST_ID_PHOTO
+
     if current_user.credits_remaining < COST_ID_PHOTO:
         raise InsufficientCreditsError(detail="Insufficient credits")
 
     valid_bg_colors = ["red", "blue"]
     valid_sizes = ["2x3", "3x4", "4x6", "custom"]
     if bg_color not in valid_bg_colors:
-        raise ValidationError(detail=f"Invalid bg_color '{bg_color}'. Must be one of: {valid_bg_colors}",
+        raise ValidationError(
+            detail=f"Invalid bg_color '{bg_color}'. Must be one of: {valid_bg_colors}",
         )
     if size not in valid_sizes:
-        raise ValidationError(detail=f"Invalid size '{size}'. Must be one of: {valid_sizes}",
+        raise ValidationError(
+            detail=f"Invalid size '{size}'. Must be one of: {valid_sizes}",
         )
     if size == "custom" and (not custom_width_cm or not custom_height_cm):
-        raise ValidationError(detail="custom_width_cm and custom_height_cm are required when size is 'custom'",
+        raise ValidationError(
+            detail="custom_width_cm and custom_height_cm are required when size is 'custom'",
         )
 
     content = await file.read()
@@ -265,8 +291,12 @@ async def create_id_photo(
         from app.api.ai_tools_routers.results import save_tool_result
 
         result_id = await save_tool_result(
-            db, current_user.id, "id_photo", result_url,
-            len(final_bytes), f"Pasfoto {size} bg {bg_color}",
+            db,
+            current_user.id,
+            "id_photo",
+            result_url,
+            len(final_bytes),
+            f"Pasfoto {size} bg {bg_color}",
         )
         await db.commit()
 
@@ -284,14 +314,15 @@ async def create_id_photo(
         try:
             from app.services.credit_service import log_credit_change
 
-            await log_credit_change(db, current_user, COST_ID_PHOTO, "Refund: gagal buat pasfoto")
+            await log_credit_change(
+                db, current_user, COST_ID_PHOTO, "Refund: gagal buat pasfoto"
+            )
             await db.commit()
         except Exception as refund_err:
             logger.error(
                 f"CRITICAL: Failed to refund user {current_user.id}: {str(refund_err)}"
             )
-        raise InternalServerError(detail=f"Failed to process image: {str(e)}"
-        )
+        raise InternalServerError(detail=f"Failed to process image: {str(e)}")
 
 
 @router.post(
@@ -319,7 +350,8 @@ async def apply_watermark(
     logo_content = await logo.read()
 
     if len(content) > 10 * 1024 * 1024 or len(logo_content) > 5 * 1024 * 1024:
-        raise ValidationError(detail="File sizes exceed limits (10MB for image, 5MB for logo)",
+        raise ValidationError(
+            detail="File sizes exceed limits (10MB for image, 5MB for logo)",
         )
 
     try:
@@ -344,8 +376,12 @@ async def apply_watermark(
         from app.api.ai_tools_routers.results import save_tool_result
 
         result_id = await save_tool_result(
-            db, current_user.id, "watermark", result_url,
-            len(final_bytes), f"Watermark {position}",
+            db,
+            current_user.id,
+            "watermark",
+            result_url,
+            len(final_bytes),
+            f"Watermark {position}",
         )
         await db.commit()
 
@@ -354,5 +390,4 @@ async def apply_watermark(
 
     except Exception as e:
         logger.exception("Watermark application failed")
-        raise InternalServerError(detail=f"Failed to process image: {str(e)}"
-        )
+        raise InternalServerError(detail=f"Failed to process image: {str(e)}")

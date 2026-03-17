@@ -3,16 +3,25 @@ import json
 import logging
 from typing import Optional
 
-async def optimize_quantum_layout(parsed_headline: Optional[str], parsed_sub_headline: Optional[str], parsed_cta: Optional[str]) -> Optional[str]:
+
+async def optimize_quantum_layout(
+    parsed_headline: Optional[str],
+    parsed_sub_headline: Optional[str],
+    parsed_cta: Optional[str],
+) -> Optional[str]:
     """
     Calls the Quantum Engine to determine optimal layout for text elements.
     Returns JSON string of the layout if successful, else None.
     """
     elements = []
     if parsed_headline:
-        elements.append({"role": "headline", "width": 800, "height": 120, "pinned": False})
+        elements.append(
+            {"role": "headline", "width": 800, "height": 120, "pinned": False}
+        )
     if parsed_sub_headline:
-        elements.append({"role": "sub_headline", "width": 600, "height": 80, "pinned": False})
+        elements.append(
+            {"role": "sub_headline", "width": 600, "height": 80, "pinned": False}
+        )
     if parsed_cta:
         elements.append({"role": "cta", "width": 400, "height": 60, "pinned": False})
 
@@ -25,7 +34,7 @@ async def optimize_quantum_layout(parsed_headline: Optional[str], parsed_sub_hea
         "canvas_height": 1080,
         "elements": elements,
         "strategy": "balanced",
-        "num_variations": 1
+        "num_variations": 1,
     }
 
     # In a real deployed environment, consider moving the URL to .env config
@@ -42,8 +51,11 @@ async def optimize_quantum_layout(parsed_headline: Optional[str], parsed_sub_hea
                 logging.warning(f"Quantum engine warning: status {resp.status_code}")
                 return None
     except Exception as e:
-        logging.warning(f"Quantum optimization failed, proceeding with fallback. Error: {e}")
+        logging.warning(
+            f"Quantum optimization failed, proceeding with fallback. Error: {e}"
+        )
         return None
+
 
 async def optimize_quantum_logo_placement(
     canvas_w: int, canvas_h: int, logo_w: int, logo_h: int
@@ -69,7 +81,7 @@ async def optimize_quantum_logo_placement(
         "canvas_width": canvas_w,
         "canvas_height": canvas_h,
         "logo_width": logo_w,
-        "logo_height": logo_h
+        "logo_height": logo_h,
     }
 
     try:
@@ -81,15 +93,17 @@ async def optimize_quantum_logo_placement(
                     "x": data.get("x", canvas_w - target_w - pad_x),
                     "y": data.get("y", pad_y),
                     "width": data.get("width", target_w),
-                    "height": data.get("height", target_h)
+                    "height": data.get("height", target_h),
                 }
     except Exception as e:
-        logging.warning(f"Quantum logo placement API unreachable/failed, using smart fallback. Error: {e}")
+        logging.warning(
+            f"Quantum logo placement API unreachable/failed, using smart fallback. Error: {e}"
+        )
 
     # Smart Fallback to Top-Right
     return {
         "x": canvas_w - target_w - pad_x,
         "y": pad_y,
         "width": target_w,
-        "height": target_h
+        "height": target_h,
     }

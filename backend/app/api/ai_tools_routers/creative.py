@@ -1,4 +1,9 @@
-from app.core.exceptions import AppException, ValidationError, InsufficientCreditsError, InternalServerError
+from app.core.exceptions import (
+    AppException,
+    ValidationError,
+    InsufficientCreditsError,
+    InternalServerError,
+)
 from app.schemas.error import ERROR_RESPONSES
 import logging
 import time
@@ -15,6 +20,7 @@ from app.services.storage_service import upload_image
 
 router = APIRouter(tags=["AI Tools"])
 logger = logging.getLogger(__name__)
+
 
 @router.post(
     "/text-banner",
@@ -43,7 +49,10 @@ async def text_banner(
             raise ValidationError(detail="Invalid quality requested")
 
         from app.core.credit_costs import COST_TEXT_BANNER_PREMIUM, COST_TEXT_BANNER_STD
-        cost = COST_TEXT_BANNER_PREMIUM if quality == "premium" else COST_TEXT_BANNER_STD
+
+        cost = (
+            COST_TEXT_BANNER_PREMIUM if quality == "premium" else COST_TEXT_BANNER_STD
+        )
 
         if current_user.credits_remaining < cost:
             raise InsufficientCreditsError(detail="Insufficient credits")
@@ -68,8 +77,12 @@ async def text_banner(
 
         banner_url = result.get("url", "")
         result_id = await save_tool_result(
-            db, current_user.id, "text_banner", banner_url,
-            0, f"{text[:100]} ({style})",
+            db,
+            current_user.id,
+            "text_banner",
+            banner_url,
+            0,
+            f"{text[:100]} ({style})",
         )
         await db.commit()
 
@@ -84,6 +97,7 @@ async def text_banner(
     except Exception as e:
         logger.exception(f"Failed to generate text banner: {str(e)}")
         raise InternalServerError(detail="Failed to generate text banner")
+
 
 @router.post(
     "/product-scene",
@@ -105,6 +119,7 @@ async def create_product_scene(
     Cost: 1 credit per generation.
     """
     from app.core.credit_costs import COST_PRODUCT_SCENE
+
     if current_user.credits_remaining < COST_PRODUCT_SCENE:
         raise InsufficientCreditsError(detail="Insufficient credits")
 
@@ -114,7 +129,9 @@ async def create_product_scene(
 
     from app.services.credit_service import log_credit_change
 
-    await log_credit_change(db, current_user, -COST_PRODUCT_SCENE, "AI Product Scene Generator")
+    await log_credit_change(
+        db, current_user, -COST_PRODUCT_SCENE, "AI Product Scene Generator"
+    )
     await db.commit()
 
     try:
@@ -135,8 +152,12 @@ async def create_product_scene(
         from app.api.ai_tools_routers.results import save_tool_result
 
         result_id = await save_tool_result(
-            db, current_user.id, "product_scene", result_url,
-            len(final_bytes), f"Product scene: {theme}",
+            db,
+            current_user.id,
+            "product_scene",
+            result_url,
+            len(final_bytes),
+            f"Product scene: {theme}",
         )
         await db.commit()
 
@@ -156,8 +177,8 @@ async def create_product_scene(
             logger.error(
                 f"CRITICAL: Failed to refund user {current_user.id}: {str(refund_err)}"
             )
-        raise InternalServerError(detail=f"Failed to generate product scene: {str(e)}"
-        )
+        raise InternalServerError(detail=f"Failed to generate product scene: {str(e)}")
+
 
 @router.post(
     "/batch",
@@ -185,6 +206,7 @@ async def process_batch_images(
 
     # Calculate total cost
     from app.core.credit_costs import COST_BG_SWAP, COST_PRODUCT_SCENE
+
     per_file_cost = 0
     if operation == "remove_bg":
         per_file_cost = COST_BG_SWAP
@@ -194,7 +216,8 @@ async def process_batch_images(
     total_cost = per_file_cost * len(files)
 
     if current_user.credits_remaining < total_cost:
-        raise InsufficientCreditsError(detail=f"Kredit tidak cukup. Butuh {total_cost} kredit."
+        raise InsufficientCreditsError(
+            detail=f"Kredit tidak cukup. Butuh {total_cost} kredit."
         )
 
     # Parse params
@@ -215,8 +238,7 @@ async def process_batch_images(
     for f in files:
         content = await f.read()
         if len(content) > 5 * 1024 * 1024:
-            raise ValidationError(detail=f"File {f.filename} terlalu besar (Max 5MB)"
-            )
+            raise ValidationError(detail=f"File {f.filename} terlalu besar (Max 5MB)")
         file_data.append((f.filename, content))
 
     from app.services.credit_service import log_credit_change
@@ -252,8 +274,12 @@ async def process_batch_images(
         from app.api.ai_tools_routers.results import save_tool_result
 
         result_id = await save_tool_result(
-            db, current_user.id, "batch", result_url,
-            len(zip_bytes), f"Batch {operation} ({len(files)} files)",
+            db,
+            current_user.id,
+            "batch",
+            result_url,
+            len(zip_bytes),
+            f"Batch {operation} ({len(files)} files)",
         )
         await db.commit()
 
@@ -278,5 +304,4 @@ async def process_batch_images(
                 logger.error(
                     f"CRITICAL: Failed to refund user {current_user.id}: {str(refund_err)}"
                 )
-        raise InternalServerError(detail=f"Failed to process batch: {str(e)}"
-        )
+        raise InternalServerError(detail=f"Failed to process batch: {str(e)}")

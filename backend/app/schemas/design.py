@@ -21,23 +21,39 @@ class StylePreference(str, Enum):
 class DesignGenerationRequest(BaseModel):
     raw_text: str = Field(
         ...,
-        description="Raw promotional text from the user", json_schema_extra={"example": "Promo Seblak Pedas, Diskon 50% khusus Jumat"},
+        description="Raw promotional text from the user",
+        json_schema_extra={"example": "Promo Seblak Pedas, Diskon 50% khusus Jumat"},
     )
-    mode: Optional[str] = Field("generate", description="Mode of generation (generate or redesign)")
-    reference_image_url: Optional[str] = Field(None, description="URL to a reference image")
+    mode: Optional[str] = Field(
+        "generate", description="Mode of generation (generate or redesign)"
+    )
+    reference_image_url: Optional[str] = Field(
+        None, description="URL to a reference image"
+    )
     template_id: Optional[str] = Field(None, description="ID of the starting template")
-    aspect_ratio: AspectRatio = Field(AspectRatio.SQUARE, description="Desired aspect ratio")
-    style_preference: StylePreference = Field(StylePreference.BOLD, description="[Deprecated] Gaya visual. Sekarang dideskripsikan langsung di raw_text.")
-    color_palette_override: Optional[List[str]] = Field(
-        None, description="Override colors with specific hex codes", json_schema_extra={"example": ["#FF5733", "#1A1A2E"]}
+    aspect_ratio: AspectRatio = Field(
+        AspectRatio.SQUARE, description="Desired aspect ratio"
     )
-    num_variations: int = Field(2, ge=1, le=4, description="Number of variations to generate")
+    style_preference: StylePreference = Field(
+        StylePreference.BOLD,
+        description="[Deprecated] Gaya visual. Sekarang dideskripsikan langsung di raw_text.",
+    )
+    color_palette_override: Optional[List[str]] = Field(
+        None,
+        description="Override colors with specific hex codes",
+        json_schema_extra={"example": ["#FF5733", "#1A1A2E"]},
+    )
+    num_variations: int = Field(
+        2, ge=1, le=4, description="Number of variations to generate"
+    )
     integrated_text: bool = Field(
         False,
         description="Whether to instruct the image AI to render text directly into the pixels",
     )
     clarification_answers: Optional[dict] = Field(
-        None, description="User's answers to the clarification questions", json_schema_extra={"example": {"Target Audience": "Remaja"}}
+        None,
+        description="User's answers to the clarification questions",
+        json_schema_extra={"example": {"Target Audience": "Remaja"}},
     )
     brand_kit_id: Optional[str] = Field(
         None, description="Active Brand Kit ID to apply color palette"
@@ -55,17 +71,23 @@ class DesignGenerationRequest(BaseModel):
             "example": {
                 "raw_text": "Promo Seblak Pedas, Diskon 50% khusus Jumat",
                 "aspect_ratio": "1:1",
-                "num_variations": 2
+                "num_variations": 2,
             }
         }
     )
 
 
 class ReferenceAnalysis(BaseModel):
-    style_description: str = Field(..., description="Deskripsi gaya, tone, dan mood dari gambar referensi.")
-    dominant_colors: List[str] = Field(..., description="Daftar kode heksadesimal warna dominan dari gambar referensi.")
+    style_description: str = Field(
+        ..., description="Deskripsi gaya, tone, dan mood dari gambar referensi."
+    )
+    dominant_colors: List[str] = Field(
+        ..., description="Daftar kode heksadesimal warna dominan dari gambar referensi."
+    )
     mood: str = Field(..., description="Suasana atau emosi utama yang ditangkap.")
-    suggested_prompt_suffix: str = Field(..., description="Sufiks prompt instruksi gaya untuk model i2i.")
+    suggested_prompt_suffix: str = Field(
+        ..., description="Sufiks prompt instruksi gaya untuk model i2i."
+    )
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -73,19 +95,34 @@ class ReferenceAnalysis(BaseModel):
                 "style_description": "Clean, modern, and minimalist.",
                 "dominant_colors": ["#FFFFFF", "#000000", "#FF0000"],
                 "mood": "Professional and energetic.",
-                "suggested_prompt_suffix": "clean, modern, minimalist style, professional, energetic mood"
+                "suggested_prompt_suffix": "clean, modern, minimalist style, professional, energetic mood",
             }
         }
     )
 
 
 class RedesignRequest(BaseModel):
-    reference_image_url: str = Field(..., description="URL gambar referensi untuk didesain ulang.")
-    raw_text: str = Field("", description="Teks atau brief tambahan opsional dari pengguna.")
-    strength: float = Field(0.65, ge=0.3, le=0.85, description="Intensitas transformasi (0.3 konservatif - 0.85 kreatif).")
-    aspect_ratio: AspectRatio = Field(AspectRatio.SQUARE, description="Rasio aspek desain baru.")
-    style_preference: StylePreference = Field(StylePreference.BOLD, description="[Deprecated] Gaya visual pilihan.")
-    brand_kit_id: Optional[str] = Field(None, description="ID Brand Kit aktif (jika ada).")
+    reference_image_url: str = Field(
+        ..., description="URL gambar referensi untuk didesain ulang."
+    )
+    raw_text: str = Field(
+        "", description="Teks atau brief tambahan opsional dari pengguna."
+    )
+    strength: float = Field(
+        0.65,
+        ge=0.3,
+        le=0.85,
+        description="Intensitas transformasi (0.3 konservatif - 0.85 kreatif).",
+    )
+    aspect_ratio: AspectRatio = Field(
+        AspectRatio.SQUARE, description="Rasio aspek desain baru."
+    )
+    style_preference: StylePreference = Field(
+        StylePreference.BOLD, description="[Deprecated] Gaya visual pilihan."
+    )
+    brand_kit_id: Optional[str] = Field(
+        None, description="ID Brand Kit aktif (jika ada)."
+    )
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -93,7 +130,7 @@ class RedesignRequest(BaseModel):
                 "reference_image_url": "https://example.com/image.jpg",
                 "raw_text": "Make it futuristic",
                 "strength": 0.65,
-                "aspect_ratio": "1:1"
+                "aspect_ratio": "1:1",
             }
         }
     )
@@ -105,27 +142,34 @@ class CopywritingClarifyRequest(BaseModel):
         ...,
         min_length=5,
         max_length=500,
-        description="Singkat produk/jasa yang ditawarkan", json_schema_extra={"example": "Jual keripik pisang rasa coklat"}
+        description="Singkat produk/jasa yang ditawarkan",
+        json_schema_extra={"example": "Jual keripik pisang rasa coklat"},
     )
 
     model_config = ConfigDict(
         json_schema_extra={
-            "example": {
-                "product_description": "Jual keripik pisang rasa coklat"
-            }
+            "example": {"product_description": "Jual keripik pisang rasa coklat"}
         }
     )
 
 
 class CopywritingRequest(BaseModel):
     product_description: str = Field(
-        ..., min_length=5, max_length=500, description="Deskripsi produk/jasa", json_schema_extra={"example": "Jual keripik pisang"}
+        ...,
+        min_length=5,
+        max_length=500,
+        description="Deskripsi produk/jasa",
+        json_schema_extra={"example": "Jual keripik pisang"},
     )
     tone: str = Field(
-        "persuasive", description="casual, professional, persuasive, funny", json_schema_extra={"example": "persuasive"}
+        "persuasive",
+        description="casual, professional, persuasive, funny",
+        json_schema_extra={"example": "persuasive"},
     )
     brand_name: Optional[str] = Field(
-        None, description="Nama brand (berasal dari Brand Kit jika aktif)", json_schema_extra={"example": "Keripik Mantap"}
+        None,
+        description="Nama brand (berasal dari Brand Kit jika aktif)",
+        json_schema_extra={"example": "Keripik Mantap"},
     )
     clarification_answers: Optional[dict] = Field(
         None, description="Jawaban dari mini-interview klarifikasi"
@@ -135,18 +179,40 @@ class CopywritingRequest(BaseModel):
         json_schema_extra={
             "example": {
                 "product_description": "Jual keripik pisang",
-                "tone": "persuasive"
+                "tone": "persuasive",
             }
         }
     )
 
 
 class CopywritingVariation(BaseModel):
-    style: str = Field(..., description="FOMO, Benefit, atau Social Proof", json_schema_extra={"example": "FOMO"})
-    headline: str = Field(..., description="Headline utama (max 6 kata)", json_schema_extra={"example": "Diskon Gila-gilaan!"})
-    subline: str = Field(..., description="Subline pendukung (max 15 kata)", json_schema_extra={"example": "Keripik pisang coklat lumer di mulut"})
-    cta: str = Field(..., description="Call to action (max 4 kata)", json_schema_extra={"example": "Beli Sekarang"})
-    full_text: str = Field(..., description="Format gabungan siap pakai untuk rawText", json_schema_extra={"example": "Diskon Gila-gilaan! Keripik pisang coklat lumer di mulut. Beli Sekarang"})
+    style: str = Field(
+        ...,
+        description="FOMO, Benefit, atau Social Proof",
+        json_schema_extra={"example": "FOMO"},
+    )
+    headline: str = Field(
+        ...,
+        description="Headline utama (max 6 kata)",
+        json_schema_extra={"example": "Diskon Gila-gilaan!"},
+    )
+    subline: str = Field(
+        ...,
+        description="Subline pendukung (max 15 kata)",
+        json_schema_extra={"example": "Keripik pisang coklat lumer di mulut"},
+    )
+    cta: str = Field(
+        ...,
+        description="Call to action (max 4 kata)",
+        json_schema_extra={"example": "Beli Sekarang"},
+    )
+    full_text: str = Field(
+        ...,
+        description="Format gabungan siap pakai untuk rawText",
+        json_schema_extra={
+            "example": "Diskon Gila-gilaan! Keripik pisang coklat lumer di mulut. Beli Sekarang"
+        },
+    )
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -155,14 +221,16 @@ class CopywritingVariation(BaseModel):
                 "headline": "Diskon Gila-gilaan!",
                 "subline": "Keripik pisang coklat lumer di mulut",
                 "cta": "Beli Sekarang",
-                "full_text": "Diskon Gila-gilaan! Keripik pisang coklat lumer di mulut. Beli Sekarang"
+                "full_text": "Diskon Gila-gilaan! Keripik pisang coklat lumer di mulut. Beli Sekarang",
             }
         }
     )
 
 
 class CopywritingResponse(BaseModel):
-    variations: List[CopywritingVariation] = Field(..., description="List of generated copywriting variations")
+    variations: List[CopywritingVariation] = Field(
+        ..., description="List of generated copywriting variations"
+    )
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -173,7 +241,7 @@ class CopywritingResponse(BaseModel):
                         "headline": "Diskon Gila-gilaan!",
                         "subline": "Keripik pisang coklat lumer di mulut",
                         "cta": "Beli Sekarang",
-                        "full_text": "Diskon Gila-gilaan! Keripik pisang coklat lumer di mulut. Beli Sekarang"
+                        "full_text": "Diskon Gila-gilaan! Keripik pisang coklat lumer di mulut. Beli Sekarang",
                     }
                 ]
             }
@@ -183,15 +251,31 @@ class CopywritingResponse(BaseModel):
 
 # --- Clarification Interview Models ---
 class BriefQuestion(BaseModel):
-    id: str = Field(..., description="Unique identifier for the question", json_schema_extra={"example": "q1"})
-    question: str = Field(..., description="The question text in Indonesian", json_schema_extra={"example": "Siapa target audiens Anda?"})
+    id: str = Field(
+        ...,
+        description="Unique identifier for the question",
+        json_schema_extra={"example": "q1"},
+    )
+    question: str = Field(
+        ...,
+        description="The question text in Indonesian",
+        json_schema_extra={"example": "Siapa target audiens Anda?"},
+    )
     type: str = Field(
-        ..., description="Question type: 'choice', 'text', or 'color_picker'", json_schema_extra={"example": "choice"}
+        ...,
+        description="Question type: 'choice', 'text', or 'color_picker'",
+        json_schema_extra={"example": "choice"},
     )
     options: Optional[List[str]] = Field(
-        None, description="List of options if type is 'choice'", json_schema_extra={"example": ["Remaja", "Dewasa"]}
+        None,
+        description="List of options if type is 'choice'",
+        json_schema_extra={"example": ["Remaja", "Dewasa"]},
     )
-    default: Optional[str] = Field(None, description="Suggested default answer", json_schema_extra={"example": "Remaja"})
+    default: Optional[str] = Field(
+        None,
+        description="Suggested default answer",
+        json_schema_extra={"example": "Remaja"},
+    )
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -200,7 +284,7 @@ class BriefQuestion(BaseModel):
                 "question": "Siapa target audiens Anda?",
                 "type": "choice",
                 "options": ["Remaja", "Dewasa"],
-                "default": "Remaja"
+                "default": "Remaja",
             }
         }
     )
@@ -220,7 +304,7 @@ class BriefQuestionsResponse(BaseModel):
                         "question": "Siapa target audiens Anda?",
                         "type": "choice",
                         "options": ["Remaja", "Dewasa"],
-                        "default": "Remaja"
+                        "default": "Remaja",
                     }
                 ]
             }
@@ -230,18 +314,39 @@ class BriefQuestionsResponse(BaseModel):
 
 # --- LLM Response Structure ---
 class AITextLayout(BaseModel):
-    x: float = Field(..., description="Horizontal center position (0=left, 1=right)", json_schema_extra={"example": 0.5})
-    y: float = Field(..., description="Vertical center position (0=top, 1=bottom)", json_schema_extra={"example": 0.2})
+    x: float = Field(
+        ...,
+        description="Horizontal center position (0=left, 1=right)",
+        json_schema_extra={"example": 0.5},
+    )
+    y: float = Field(
+        ...,
+        description="Vertical center position (0=top, 1=bottom)",
+        json_schema_extra={"example": 0.2},
+    )
     font_family: str = Field(
         "Inter",
-        description="One of: Inter, Poppins, Roboto, Playfair Display, Montserrat, Oswald", json_schema_extra={"example": "Inter"}
+        description="One of: Inter, Poppins, Roboto, Playfair Display, Montserrat, Oswald",
+        json_schema_extra={"example": "Inter"},
     )
-    font_size: int = Field(72, description="Font size in pixels for 1024px canvas", json_schema_extra={"example": 72})
+    font_size: int = Field(
+        72,
+        description="Font size in pixels for 1024px canvas",
+        json_schema_extra={"example": 72},
+    )
     font_weight: int = Field(
-        700, description="Font weight (400=normal, 700=bold, 900=black)", json_schema_extra={"example": 700}
+        700,
+        description="Font weight (400=normal, 700=bold, 900=black)",
+        json_schema_extra={"example": 700},
     )
-    color: str = Field("#FFFFFF", description="Hex color", json_schema_extra={"example": "#FFFFFF"})
-    align: str = Field("center", description="Text alignment: left, center, right", json_schema_extra={"example": "center"})
+    color: str = Field(
+        "#FFFFFF", description="Hex color", json_schema_extra={"example": "#FFFFFF"}
+    )
+    align: str = Field(
+        "center",
+        description="Text alignment: left, center, right",
+        json_schema_extra={"example": "center"},
+    )
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -252,7 +357,7 @@ class AITextLayout(BaseModel):
                 "font_size": 72,
                 "font_weight": 700,
                 "color": "#FFFFFF",
-                "align": "center"
+                "align": "center",
             }
         }
     )
@@ -260,11 +365,25 @@ class AITextLayout(BaseModel):
 
 class VisualPromptPart(BaseModel):
     category: str = Field(
-        ..., description="one of: subject, setting, lighting, style, colors", json_schema_extra={"example": "subject"}
+        ...,
+        description="one of: subject, setting, lighting, style, colors",
+        json_schema_extra={"example": "subject"},
     )
-    label: str = Field(..., description="Indonesian label for this part", json_schema_extra={"example": "Subjek Utama"})
-    value: str = Field(..., description="The English prompt fragment", json_schema_extra={"example": "A bowl of spicy seblak"})
-    enabled: bool = Field(True, description="Whether this part is active", json_schema_extra={"example": True})
+    label: str = Field(
+        ...,
+        description="Indonesian label for this part",
+        json_schema_extra={"example": "Subjek Utama"},
+    )
+    value: str = Field(
+        ...,
+        description="The English prompt fragment",
+        json_schema_extra={"example": "A bowl of spicy seblak"},
+    )
+    enabled: bool = Field(
+        True,
+        description="Whether this part is active",
+        json_schema_extra={"example": True},
+    )
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -272,29 +391,47 @@ class VisualPromptPart(BaseModel):
                 "category": "subject",
                 "label": "Subjek Utama",
                 "value": "A bowl of spicy seblak",
-                "enabled": True
+                "enabled": True,
             }
         }
     )
 
 
 class ParsedTextElements(BaseModel):
-    headline: str = Field(..., description="Main headline", json_schema_extra={"example": "Promo Seblak"})
-    sub_headline: Optional[str] = Field(None, description="Sub headline", json_schema_extra={"example": "Pedas Gila!"})
-    cta: Optional[str] = Field(None, description="Call to Action", json_schema_extra={"example": "Beli Sekarang"})
+    headline: str = Field(
+        ..., description="Main headline", json_schema_extra={"example": "Promo Seblak"}
+    )
+    sub_headline: Optional[str] = Field(
+        None, description="Sub headline", json_schema_extra={"example": "Pedas Gila!"}
+    )
+    cta: Optional[str] = Field(
+        None,
+        description="Call to Action",
+        json_schema_extra={"example": "Beli Sekarang"},
+    )
     visual_prompt: str = Field(
         ...,
-        description="The full combined AI image prompt inferred from the text context", json_schema_extra={"example": "A bowl of spicy seblak on a wooden table, vibrant colors, professional photography"}
+        description="The full combined AI image prompt inferred from the text context",
+        json_schema_extra={
+            "example": "A bowl of spicy seblak on a wooden table, vibrant colors, professional photography"
+        },
     )
     indonesian_translation: str = Field(
         ...,
-        description="A simple, friendly Indonesian explanation/translation of the visual_prompt", json_schema_extra={"example": "Semangkuk seblak pedas di atas meja kayu dengan warna cerah dan fotografi profesional."}
+        description="A simple, friendly Indonesian explanation/translation of the visual_prompt",
+        json_schema_extra={
+            "example": "Semangkuk seblak pedas di atas meja kayu dengan warna cerah dan fotografi profesional."
+        },
     )
     visual_prompt_parts: List[VisualPromptPart] = Field(
         default_factory=list,
         description="Categorized parts of the visual prompt for granular editing",
     )
-    suggested_colors: List[str] = Field(default_factory=list, description="Suggested hex colors", json_schema_extra={"example": ["#FF0000", "#000000"]})
+    suggested_colors: List[str] = Field(
+        default_factory=list,
+        description="Suggested hex colors",
+        json_schema_extra={"example": ["#FF0000", "#000000"]},
+    )
 
     headline_layout: Optional[AITextLayout] = None
     sub_headline_layout: Optional[AITextLayout] = None
@@ -305,19 +442,25 @@ class ParsedTextElements(BaseModel):
             "example": {
                 "headline": "Promo Seblak",
                 "visual_prompt": "A bowl of spicy seblak...",
-                "indonesian_translation": "Semangkuk seblak pedas..."
+                "indonesian_translation": "Semangkuk seblak pedas...",
             }
         }
     )
 
 
 class ModifyPromptRequest(BaseModel):
-    original_prompt_parts: List[VisualPromptPart] = Field(..., description="List of original prompt parts")
+    original_prompt_parts: List[VisualPromptPart] = Field(
+        ..., description="List of original prompt parts"
+    )
     original_visual_prompt: str = Field(
-        ..., description="The original full visual prompt for context", json_schema_extra={"example": "A bowl of spicy seblak on a wooden table..."}
+        ...,
+        description="The original full visual prompt for context",
+        json_schema_extra={"example": "A bowl of spicy seblak on a wooden table..."},
     )
     user_instruction: str = Field(
-        ..., description="User's instruction in Indonesian to modify the prompt", json_schema_extra={"example": "Tolong tambahkan telur ceplok"}
+        ...,
+        description="User's instruction in Indonesian to modify the prompt",
+        json_schema_extra={"example": "Tolong tambahkan telur ceplok"},
     )
 
     model_config = ConfigDict(
@@ -325,20 +468,27 @@ class ModifyPromptRequest(BaseModel):
             "example": {
                 "original_visual_prompt": "A bowl of spicy seblak on a wooden table...",
                 "user_instruction": "Tolong tambahkan telur ceplok",
-                "original_prompt_parts": []
+                "original_prompt_parts": [],
             }
         }
     )
 
 
 class ModifyPromptResponse(BaseModel):
-    modified_prompt_parts: List[VisualPromptPart] = Field(..., description="List of updated prompt parts")
+    modified_prompt_parts: List[VisualPromptPart] = Field(
+        ..., description="List of updated prompt parts"
+    )
     modified_visual_prompt: str = Field(
-        ..., description="The combined updated visual prompt", json_schema_extra={"example": "A bowl of spicy seblak with a fried egg on a wooden table..."}
+        ...,
+        description="The combined updated visual prompt",
+        json_schema_extra={
+            "example": "A bowl of spicy seblak with a fried egg on a wooden table..."
+        },
     )
     indonesian_translation: str = Field(
         ...,
-        description="A simple, friendly Indonesian explanation/translation of the modified_visual_prompt", json_schema_extra={"example": "Semangkuk seblak pedas dengan telur ceplok..."}
+        description="A simple, friendly Indonesian explanation/translation of the modified_visual_prompt",
+        json_schema_extra={"example": "Semangkuk seblak pedas dengan telur ceplok..."},
     )
 
     model_config = ConfigDict(
@@ -346,7 +496,7 @@ class ModifyPromptResponse(BaseModel):
             "example": {
                 "modified_visual_prompt": "A bowl of spicy seblak with a fried egg on a wooden table...",
                 "indonesian_translation": "Semangkuk seblak pedas dengan telur ceplok...",
-                "modified_prompt_parts": []
+                "modified_prompt_parts": [],
             }
         }
     )
@@ -354,20 +504,54 @@ class ModifyPromptResponse(BaseModel):
 
 # --- Future Week 2/3 Response Models ---
 class TextLayer(BaseModel):
-    id: str = Field(..., description="Layer ID", json_schema_extra={"example": "layer_1"})
-    role: str = Field(..., description="Layer role (headline, cta, etc)", json_schema_extra={"example": "headline"})
-    text: str = Field(..., description="Text content", json_schema_extra={"example": "Promo!"})
-    font_family: str = Field("Poppins", description="Font family", json_schema_extra={"example": "Poppins"})
-    font_weight: int = Field(700, description="Font weight", json_schema_extra={"example": 700})
-    font_size: int = Field(48, description="Font size", json_schema_extra={"example": 48})
-    color: str = Field("#FFFFFF", description="Hex color", json_schema_extra={"example": "#FFFFFF"})
-    text_align: str = Field("center", description="Text alignment", json_schema_extra={"example": "center"})
-    x: float = Field(..., description="X coordinate", json_schema_extra={"example": 100.0})
-    y: float = Field(..., description="Y coordinate", json_schema_extra={"example": 100.0})
-    rotation: float = Field(0.0, description="Rotation in degrees", json_schema_extra={"example": 0.0})
-    opacity: float = Field(1.0, description="Opacity (0.0 - 1.0)", json_schema_extra={"example": 1.0})
-    shadow: Optional[str] = Field("2px 2px 4px rgba(0,0,0,0.5)", description="CSS text shadow", json_schema_extra={"example": "2px 2px 4px rgba(0,0,0,0.5)"})
-    background_box: Optional[str] = Field(None, description="CSS background color for text box", json_schema_extra={"example": "rgba(0,0,0,0.5)"})
+    id: str = Field(
+        ..., description="Layer ID", json_schema_extra={"example": "layer_1"}
+    )
+    role: str = Field(
+        ...,
+        description="Layer role (headline, cta, etc)",
+        json_schema_extra={"example": "headline"},
+    )
+    text: str = Field(
+        ..., description="Text content", json_schema_extra={"example": "Promo!"}
+    )
+    font_family: str = Field(
+        "Poppins", description="Font family", json_schema_extra={"example": "Poppins"}
+    )
+    font_weight: int = Field(
+        700, description="Font weight", json_schema_extra={"example": 700}
+    )
+    font_size: int = Field(
+        48, description="Font size", json_schema_extra={"example": 48}
+    )
+    color: str = Field(
+        "#FFFFFF", description="Hex color", json_schema_extra={"example": "#FFFFFF"}
+    )
+    text_align: str = Field(
+        "center", description="Text alignment", json_schema_extra={"example": "center"}
+    )
+    x: float = Field(
+        ..., description="X coordinate", json_schema_extra={"example": 100.0}
+    )
+    y: float = Field(
+        ..., description="Y coordinate", json_schema_extra={"example": 100.0}
+    )
+    rotation: float = Field(
+        0.0, description="Rotation in degrees", json_schema_extra={"example": 0.0}
+    )
+    opacity: float = Field(
+        1.0, description="Opacity (0.0 - 1.0)", json_schema_extra={"example": 1.0}
+    )
+    shadow: Optional[str] = Field(
+        "2px 2px 4px rgba(0,0,0,0.5)",
+        description="CSS text shadow",
+        json_schema_extra={"example": "2px 2px 4px rgba(0,0,0,0.5)"},
+    )
+    background_box: Optional[str] = Field(
+        None,
+        description="CSS background color for text box",
+        json_schema_extra={"example": "rgba(0,0,0,0.5)"},
+    )
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -376,34 +560,64 @@ class TextLayer(BaseModel):
                 "role": "headline",
                 "text": "Promo!",
                 "x": 100.0,
-                "y": 100.0
+                "y": 100.0,
             }
         }
     )
 
 
 class DesignVariation(BaseModel):
-    background_image_url: str = Field(..., description="URL of the generated background image", json_schema_extra={"example": "https://example.com/bg.png"})
-    text_layers: List[TextLayer] = Field(..., description="List of text layers placed over the background")
+    background_image_url: str = Field(
+        ...,
+        description="URL of the generated background image",
+        json_schema_extra={"example": "https://example.com/bg.png"},
+    )
+    text_layers: List[TextLayer] = Field(
+        ..., description="List of text layers placed over the background"
+    )
 
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
                 "background_image_url": "https://example.com/bg.png",
-                "text_layers": []
+                "text_layers": [],
             }
         }
     )
 
 
 class DesignGenerationResponse(BaseModel):
-    job_id: str = Field(..., description="Job ID for tracking", json_schema_extra={"example": "job_123"})
-    project_id: str = Field(..., description="Project ID associated with this generation", json_schema_extra={"example": "proj_123"})
-    status: str = Field(..., description="Status of generation", json_schema_extra={"example": "completed"})
-    variations: List[DesignVariation] = Field(default_factory=list, description="List of generated design variations")
-    credits_used: int = Field(0, description="Credits used for this generation", json_schema_extra={"example": 2})
-    credits_remaining: int = Field(0, description="Credits remaining after generation", json_schema_extra={"example": 8})
-    generation_time_ms: Optional[int] = Field(None, description="Time taken to generate in milliseconds", json_schema_extra={"example": 5000})
+    job_id: str = Field(
+        ..., description="Job ID for tracking", json_schema_extra={"example": "job_123"}
+    )
+    project_id: str = Field(
+        ...,
+        description="Project ID associated with this generation",
+        json_schema_extra={"example": "proj_123"},
+    )
+    status: str = Field(
+        ...,
+        description="Status of generation",
+        json_schema_extra={"example": "completed"},
+    )
+    variations: List[DesignVariation] = Field(
+        default_factory=list, description="List of generated design variations"
+    )
+    credits_used: int = Field(
+        0,
+        description="Credits used for this generation",
+        json_schema_extra={"example": 2},
+    )
+    credits_remaining: int = Field(
+        0,
+        description="Credits remaining after generation",
+        json_schema_extra={"example": 8},
+    )
+    generation_time_ms: Optional[int] = Field(
+        None,
+        description="Time taken to generate in milliseconds",
+        json_schema_extra={"example": 5000},
+    )
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -412,7 +626,7 @@ class DesignGenerationResponse(BaseModel):
                 "project_id": "proj_123",
                 "status": "completed",
                 "credits_used": 2,
-                "credits_remaining": 8
+                "credits_remaining": 8,
             }
         }
     )
@@ -420,14 +634,25 @@ class DesignGenerationResponse(BaseModel):
 
 class MagicTextRequest(BaseModel):
     image_base64: str = Field(
-        ..., description="Base64 encoded string of the current canvas image", json_schema_extra={"example": "data:image/png;base64,iVBORw0KGgo..."}
+        ...,
+        description="Base64 encoded string of the current canvas image",
+        json_schema_extra={"example": "data:image/png;base64,iVBORw0KGgo..."},
     )
-    text: str = Field(..., description="The raw promotional text to lay out", json_schema_extra={"example": "Diskon 50%"})
-    canvas_width: int = Field(1024, description="Width of the canvas", json_schema_extra={"example": 1024})
-    canvas_height: int = Field(1024, description="Height of the canvas", json_schema_extra={"example": 1024})
+    text: str = Field(
+        ...,
+        description="The raw promotional text to lay out",
+        json_schema_extra={"example": "Diskon 50%"},
+    )
+    canvas_width: int = Field(
+        1024, description="Width of the canvas", json_schema_extra={"example": 1024}
+    )
+    canvas_height: int = Field(
+        1024, description="Height of the canvas", json_schema_extra={"example": 1024}
+    )
     style_hint: Optional[str] = Field(
         None,
-        description="Optional style preset direction", json_schema_extra={"example": "Bold & Impactful"}
+        description="Optional style preset direction",
+        json_schema_extra={"example": "Bold & Impactful"},
     )
 
     model_config = ConfigDict(
@@ -436,53 +661,77 @@ class MagicTextRequest(BaseModel):
                 "image_base64": "data:image/png;base64,iVBORw0KGgo...",
                 "text": "Diskon 50%",
                 "canvas_width": 1024,
-                "canvas_height": 1024
+                "canvas_height": 1024,
             }
         }
     )
 
 
 class MagicTextElement(BaseModel):
-    text: str = Field(..., description="Text content", json_schema_extra={"example": "Diskon 50%"})
-    font_family: str = Field("Inter", description="Font family", json_schema_extra={"example": "Inter"})
-    font_size: int = Field(48, description="Font size", json_schema_extra={"example": 48})
-    font_weight: int = Field(700, description="Font weight", json_schema_extra={"example": 700})
-    color: str = Field("#FFFFFF", description="Hex color", json_schema_extra={"example": "#FFFFFF"})
-    align: str = Field("center", description="Text alignment", json_schema_extra={"example": "center"})
-    x: float = Field(..., description="Proportional x-coordinate (0.0-1.0)", json_schema_extra={"example": 0.5})
-    y: float = Field(..., description="Proportional y-coordinate (0.0-1.0)", json_schema_extra={"example": 0.5})
+    text: str = Field(
+        ..., description="Text content", json_schema_extra={"example": "Diskon 50%"}
+    )
+    font_family: str = Field(
+        "Inter", description="Font family", json_schema_extra={"example": "Inter"}
+    )
+    font_size: int = Field(
+        48, description="Font size", json_schema_extra={"example": 48}
+    )
+    font_weight: int = Field(
+        700, description="Font weight", json_schema_extra={"example": 700}
+    )
+    color: str = Field(
+        "#FFFFFF", description="Hex color", json_schema_extra={"example": "#FFFFFF"}
+    )
+    align: str = Field(
+        "center", description="Text alignment", json_schema_extra={"example": "center"}
+    )
+    x: float = Field(
+        ...,
+        description="Proportional x-coordinate (0.0-1.0)",
+        json_schema_extra={"example": 0.5},
+    )
+    y: float = Field(
+        ...,
+        description="Proportional y-coordinate (0.0-1.0)",
+        json_schema_extra={"example": 0.5},
+    )
     letter_spacing: float = Field(
-        0.0,
-        description="Letter spacing in em", json_schema_extra={"example": 0.0}
+        0.0, description="Letter spacing in em", json_schema_extra={"example": 0.0}
     )
     line_height: float = Field(
-        1.2,
-        description="Line height multiplier", json_schema_extra={"example": 1.2}
+        1.2, description="Line height multiplier", json_schema_extra={"example": 1.2}
     )
     text_transform: str = Field(
-        "none", description="Text transform: 'none', 'uppercase', or 'capitalize'", json_schema_extra={"example": "uppercase"}
+        "none",
+        description="Text transform: 'none', 'uppercase', or 'capitalize'",
+        json_schema_extra={"example": "uppercase"},
     )
     text_shadow: Optional[str] = Field(
         None,
-        description="CSS-like text shadow", json_schema_extra={"example": "2px 2px 8px rgba(0,0,0,0.6)"}
+        description="CSS-like text shadow",
+        json_schema_extra={"example": "2px 2px 8px rgba(0,0,0,0.6)"},
     )
     opacity: float = Field(
         1.0, description="Opacity from 0.0 to 1.0", json_schema_extra={"example": 1.0}
     )
     rotation: float = Field(
-        0.0,
-        description="Rotation in degrees", json_schema_extra={"example": 0.0}
+        0.0, description="Rotation in degrees", json_schema_extra={"example": 0.0}
     )
     background_color: Optional[str] = Field(
         None,
-        description="Background color behind text", json_schema_extra={"example": "rgba(0,0,0,0.6)"}
+        description="Background color behind text",
+        json_schema_extra={"example": "rgba(0,0,0,0.6)"},
     )
     background_padding: float = Field(
         0,
-        description="Padding around text in px when background_color is set", json_schema_extra={"example": 16}
+        description="Padding around text in px when background_color is set",
+        json_schema_extra={"example": 16},
     )
     background_radius: float = Field(
-        0, description="Border radius of the background box in px", json_schema_extra={"example": 8}
+        0,
+        description="Border radius of the background box in px",
+        json_schema_extra={"example": 8},
     )
 
     model_config = ConfigDict(
@@ -492,43 +741,37 @@ class MagicTextElement(BaseModel):
                 "x": 0.5,
                 "y": 0.5,
                 "font_family": "Inter",
-                "font_size": 48
+                "font_size": 48,
             }
         }
     )
 
 
 class MagicTextResponse(BaseModel):
-    elements: List[MagicTextElement] = Field(default_factory=list, description="List of generated magic text elements")
-
-    model_config = ConfigDict(
-        json_schema_extra={
-            "example": {
-                "elements": []
-            }
-        }
+    elements: List[MagicTextElement] = Field(
+        default_factory=list, description="List of generated magic text elements"
     )
+
+    model_config = ConfigDict(json_schema_extra={"example": {"elements": []}})
 
 
 class GenerateTitleRequest(BaseModel):
-    prompt: str = Field(..., description="The user's description or prompt", json_schema_extra={"example": "Banner promo seblak"})
+    prompt: str = Field(
+        ...,
+        description="The user's description or prompt",
+        json_schema_extra={"example": "Banner promo seblak"},
+    )
 
     model_config = ConfigDict(
-        json_schema_extra={
-            "example": {
-                "prompt": "Banner promo seblak"
-            }
-        }
+        json_schema_extra={"example": {"prompt": "Banner promo seblak"}}
     )
 
 
 class GenerateTitleResponse(BaseModel):
-    title: str = Field(..., description="The AI-generated short title", json_schema_extra={"example": "Promo Seblak"})
-
-    model_config = ConfigDict(
-        json_schema_extra={
-            "example": {
-                "title": "Promo Seblak"
-            }
-        }
+    title: str = Field(
+        ...,
+        description="The AI-generated short title",
+        json_schema_extra={"example": "Promo Seblak"},
     )
+
+    model_config = ConfigDict(json_schema_extra={"example": {"title": "Promo Seblak"}})

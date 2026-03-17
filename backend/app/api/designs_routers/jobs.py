@@ -11,6 +11,7 @@ from app.models.user import User
 
 router = APIRouter(tags=["Designs - Jobs"])
 
+
 @router.get(
     "/my-generations",
     response_model=list,
@@ -50,6 +51,7 @@ async def get_my_generations(
         }
         for job in jobs
     ]
+
 
 @router.get(
     "/jobs/{job_id}",
@@ -94,6 +96,7 @@ async def get_job_status(
         response["error_message"] = job.error_message
 
     return response
+
 
 @router.delete(
     "/jobs/{job_id}",

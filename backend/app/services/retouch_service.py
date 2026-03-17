@@ -49,7 +49,9 @@ async def retouch_with_codeformer(
 
     # Upload original image to get a public URL for the fal.ai API
     mime_type = "image/png" if output_format.lower() == "png" else "image/jpeg"
-    temp_url = await upload_image(image_bytes, content_type=mime_type, prefix="retouch_input")
+    temp_url = await upload_image(
+        image_bytes, content_type=mime_type, prefix="retouch_input"
+    )
 
     # Call CodeFormer on fal.ai
     result = await fal_client.run_async(
@@ -73,7 +75,9 @@ async def retouch_with_codeformer(
         result_url = output_image
 
     if not result_url:
-        raise RuntimeError(f"Could not extract output URL from CodeFormer result: {result}")
+        raise RuntimeError(
+            f"Could not extract output URL from CodeFormer result: {result}"
+        )
 
     # Download the result
     async with httpx.AsyncClient() as client:
@@ -122,8 +126,7 @@ async def retouch_opencv_fallback(
 
     alpha = None
     if output_format.lower() == "png" and (
-        img.mode in ("RGBA", "LA")
-        or (img.mode == "P" and "transparency" in img.info)
+        img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info)
     ):
         img = img.convert("RGBA")
         alpha = img.split()[3]

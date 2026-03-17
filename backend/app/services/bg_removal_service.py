@@ -69,6 +69,7 @@ async def remove_background(image_bytes: bytes) -> bytes:
         # 3. Download the resulting transparent PNG
         if output_url.startswith("data:"):
             import base64
+
             base64_data = output_url.split(",", 1)[1]
             final_bytes = base64.b64decode(base64_data)
         else:
@@ -199,6 +200,7 @@ async def inpaint_background(
     # 5. Download and return result
     if output_url.startswith("data:"):
         import base64
+
         base64_data = output_url.split(",", 1)[1]
         return base64.b64decode(base64_data)
     else:

@@ -11,6 +11,7 @@ from app.services.llm_prompts import (
     COPYWRITING_SYSTEM_PROMPT,
 )
 
+
 async def generate_copywriting_questions(raw_text: str) -> dict:
     """
     Generates clarifying questions specifically for copywriting using Gemini.
@@ -92,6 +93,7 @@ async def generate_copywriting_questions(raw_text: str) -> dict:
 
         logging.exception("Error extracting copywriting questions via LLM")
         raise e
+
 
 async def generate_ai_copywriting(
     product_description: str,

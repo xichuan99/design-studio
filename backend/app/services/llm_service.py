@@ -2,7 +2,6 @@
 This acts as a re-export facade for backward compatibility.
 """
 
-
 from app.services.llm_prompts import (
     SYSTEM_PROMPT,
     BRIEF_QUESTIONS_SYSTEM,

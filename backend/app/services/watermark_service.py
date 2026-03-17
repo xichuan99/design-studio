@@ -133,6 +133,7 @@ async def apply_watermark(
         logging.error(f"Failed to apply watermark: {str(e)}")
         raise e
 
+
 async def apply_logo_overlay(
     base_image_bytes: bytes,
     logo_bytes: bytes,
@@ -172,5 +173,6 @@ async def apply_logo_overlay(
         return img_byte_arr.getvalue()
     except Exception as e:
         import logging
+
         logging.error(f"Failed to apply logo overlay: {str(e)}")
         raise e

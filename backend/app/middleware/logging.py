@@ -18,7 +18,9 @@ if not logger.handlers:
 
 
 class StructuredLoggingMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: RequestResponseEndpoint
+    ) -> Response:
         start_time = time.time()
 
         request_id = getattr(request.state, "request_id", None)

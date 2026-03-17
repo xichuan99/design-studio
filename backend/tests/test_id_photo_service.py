@@ -25,7 +25,9 @@ def id_photo_bytes():
 @pytest.mark.asyncio
 @patch("app.services.id_photo_service.bg_removal_service.remove_background")
 @patch("app.services.id_photo_service.cv2.CascadeClassifier")
-async def test_generate_id_photo_with_face(mock_cascade_cls, mock_remove_bg, person_image_bytes):
+async def test_generate_id_photo_with_face(
+    mock_cascade_cls, mock_remove_bg, person_image_bytes
+):
     mock_remove_bg.return_value = person_image_bytes
 
     mock_cascade = MagicMock()

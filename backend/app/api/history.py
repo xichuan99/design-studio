@@ -1,4 +1,5 @@
 from app.schemas.error import ERROR_RESPONSES
+
 """Design History API: list and create history snapshots for a project."""
 
 from typing import Optional, List
@@ -19,14 +20,16 @@ class DesignHistoryCreate(BaseModel):
     project_id: str = Field(..., description="Project ID")
     background_url: str = Field(..., description="URL of the background image")
     text_layers: list = Field(..., description="List of text layers")
-    generation_params: Optional[dict] = Field(None, description="Parameters used to generate the design")
+    generation_params: Optional[dict] = Field(
+        None, description="Parameters used to generate the design"
+    )
 
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
                 "project_id": "123e4567-e89b-12d3-a456-426614174000",
                 "background_url": "https://example.com/bg.png",
-                "text_layers": []
+                "text_layers": [],
             }
         }
     )
@@ -37,7 +40,9 @@ class DesignHistoryResponse(BaseModel):
     project_id: str = Field(..., description="Project ID")
     background_url: str = Field(..., description="URL of the background image")
     text_layers: list = Field(..., description="List of text layers")
-    generation_params: Optional[dict] = Field(None, description="Parameters used to generate the design")
+    generation_params: Optional[dict] = Field(
+        None, description="Parameters used to generate the design"
+    )
     created_at: Optional[str] = Field(None, description="Creation timestamp")
 
     model_config = ConfigDict(
@@ -47,7 +52,7 @@ class DesignHistoryResponse(BaseModel):
                 "project_id": "123e4567-e89b-12d3-a456-426614174000",
                 "background_url": "https://example.com/bg.png",
                 "text_layers": [],
-                "created_at": "2024-03-15T12:00:00Z"
+                "created_at": "2024-03-15T12:00:00Z",
             }
         }
     )

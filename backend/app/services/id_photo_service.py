@@ -66,18 +66,17 @@ async def generate_id_photo(
         gray = cv2.cvtColor(np_img, cv2.COLOR_RGB2GRAY)
 
         # Load the pre-trained Haar Cascade classifier for face detection
-        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        face_cascade = cv2.CascadeClassifier(
+            cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+        )
 
         # Detect faces
         faces_rects = face_cascade.detectMultiScale(
-            gray,
-            scaleFactor=1.1,
-            minNeighbors=5,
-            minSize=(30, 30)
+            gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30)
         )
 
         faces = []
-        for (x, y, w, h) in faces_rects:
+        for x, y, w, h in faces_rects:
             faces.append((x, y, w, h))
 
         logger.info("Face detection found %d face(s)", len(faces))

@@ -55,32 +55,50 @@ export function useAiToolsEndpoints() {
     const clarifyCopywriting = async (payload: {
             product_description: string;
         }) => {
-            const res = await fetch(`${API_BASE_URL}/designs/clarify-copywriting`, {
-                method: 'POST',
-                headers: getHeaders(),
-                body: JSON.stringify(payload),
-            });
-            if (!res.ok) {
-                const errBase = await res.json().catch(() => ({}));
-                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to clarify copywriting');
+            try {
+                const res = await fetchWithTimeout(`${API_BASE_URL}/designs/clarify-copywriting`, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify(payload),
+                    timeout: 60000
+                });
+                if (!res.ok) {
+                    const errBase = await res.json().catch(() => ({}));
+                    throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to clarify copywriting');
+                }
+                return res.json();
+            } catch (error: unknown) {
+                const err = error as Error;
+                if (err.name === 'AbortError' || err.message === 'Failed to fetch') {
+                    throw new Error('Koneksi terputus (Timeout). Proses AI butuh waktu lebih lama, silakan coba lagi.');
+                }
+                throw error;
             }
-            return res.json();
         };
 
     const clarifyUnified = async (payload: {
             raw_text: string;
             mode?: string;
         }) => {
-            const res = await fetch(`${API_BASE_URL}/designs/clarify-unified`, {
-                method: 'POST',
-                headers: getHeaders(),
-                body: JSON.stringify(payload),
-            });
-            if (!res.ok) {
-                const errBase = await res.json().catch(() => ({}));
-                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to generate unified clarification questions');
+            try {
+                const res = await fetchWithTimeout(`${API_BASE_URL}/designs/clarify-unified`, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify(payload),
+                    timeout: 60000
+                });
+                if (!res.ok) {
+                    const errBase = await res.json().catch(() => ({}));
+                    throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to generate unified clarification questions');
+                }
+                return res.json();
+            } catch (error: unknown) {
+                const err = error as Error;
+                if (err.name === 'AbortError' || err.message === 'Failed to fetch') {
+                    throw new Error('Koneksi terputus (Timeout). Proses AI butuh waktu lebih lama, silakan coba lagi.');
+                }
+                throw error;
             }
-            return res.json();
         };
 
     const generateCopywriting = async (payload: {
@@ -121,16 +139,25 @@ export function useAiToolsEndpoints() {
             integrated_text?: boolean;
             clarification_answers?: Record<string, string>;
         }) => {
-            const res = await fetch(`${API_BASE_URL}/designs/parse`, {
-                method: 'POST',
-                headers: getHeaders(),
-                body: JSON.stringify(payload),
-            });
-            if (!res.ok) {
-                const errBase = await res.json().catch(() => ({}));
-                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to parse design text');
+            try {
+                const res = await fetchWithTimeout(`${API_BASE_URL}/designs/parse`, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify(payload),
+                    timeout: 60000
+                });
+                if (!res.ok) {
+                    const errBase = await res.json().catch(() => ({}));
+                    throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to parse design text');
+                }
+                return res.json();
+            } catch (error: unknown) {
+                const err = error as Error;
+                if (err.name === 'AbortError' || err.message === 'Failed to fetch') {
+                    throw new Error('Koneksi terputus (Timeout). Proses AI butuh waktu lebih lama, silakan coba lagi.');
+                }
+                throw error;
             }
-            return res.json();
         };
 
     const uploadImage = async (file: File) => {

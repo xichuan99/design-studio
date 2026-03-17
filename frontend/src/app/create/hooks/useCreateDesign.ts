@@ -3,7 +3,6 @@ import {
     useProjectApi,
     BrandKit,
     CopywritingVariation,
-    AiGeneration,
 } from "@/lib/api";
 import { generateCanvasElementsFromTemplate } from "@/lib/templateEngine";
 import { useRouter } from "next/navigation";

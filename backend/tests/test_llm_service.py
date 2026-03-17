@@ -52,7 +52,9 @@ _BASE = {
 @pytest.mark.asyncio
 async def test_parse_food_promo():
     payload = {**_BASE, "headline": "Seblak Pedas 50% OFF"}
-    with patch("asyncio.to_thread", new=AsyncMock(return_value=_fake_response(payload))):
+    with patch(
+        "asyncio.to_thread", new=AsyncMock(return_value=_fake_response(payload))
+    ):
         result = await parse_design_text("Promo Seblak Pedas, Diskon 50% khusus Jumat")
 
     assert isinstance(result, ParsedTextElements)
@@ -65,7 +67,9 @@ async def test_parse_food_promo():
 @pytest.mark.asyncio
 async def test_parse_minimal():
     payload = {**_BASE, "headline": "Flash Sale", "sub_headline": None, "cta": None}
-    with patch("asyncio.to_thread", new=AsyncMock(return_value=_fake_response(payload))):
+    with patch(
+        "asyncio.to_thread", new=AsyncMock(return_value=_fake_response(payload))
+    ):
         result = await parse_design_text("Flash Sale")
 
     assert isinstance(result, ParsedTextElements)
@@ -81,7 +85,9 @@ async def test_parse_long_text():
         "sub_headline": "Diskon 70% semua item",
         "cta": "Kunjungi Sekarang",
     }
-    with patch("asyncio.to_thread", new=AsyncMock(return_value=_fake_response(payload))):
+    with patch(
+        "asyncio.to_thread", new=AsyncMock(return_value=_fake_response(payload))
+    ):
         result = await parse_design_text(
             "Grand Opening Toko Baju Anak Matahari, Diskon up to 70% semua item, "
             "gratis goodie bag untuk 100 pembeli pertama, tanggal 15 Maret 2026."
@@ -96,7 +102,9 @@ async def test_parse_long_text():
 @pytest.mark.asyncio
 async def test_output_matches_schema():
     payload = {**_BASE, "headline": "Bakso Mercon Beli 2 Gratis 1"}
-    with patch("asyncio.to_thread", new=AsyncMock(return_value=_fake_response(payload))):
+    with patch(
+        "asyncio.to_thread", new=AsyncMock(return_value=_fake_response(payload))
+    ):
         result = await parse_design_text("Bakso Mercon Promo Beli 2 Gratis 1")
 
     assert isinstance(result, ParsedTextElements)
@@ -108,7 +116,9 @@ async def test_output_matches_schema():
 @pytest.mark.asyncio
 async def test_parse_english_text():
     payload = {**_BASE, "headline": "Summer Collection 30% OFF"}
-    with patch("asyncio.to_thread", new=AsyncMock(return_value=_fake_response(payload))):
+    with patch(
+        "asyncio.to_thread", new=AsyncMock(return_value=_fake_response(payload))
+    ):
         result = await parse_design_text("Summer Collection 2026 - 30% OFF everything")
 
     assert isinstance(result, ParsedTextElements)
@@ -122,8 +132,18 @@ async def test_parse_english_text():
 
 _MODIFY_PAYLOAD = {
     "modified_prompt_parts": [
-        {"category": "subject", "label": "Objek Utama", "value": "A dark coffee cup", "enabled": True},
-        {"category": "style",  "label": "Gaya",       "value": "dramatic, moody",    "enabled": True},
+        {
+            "category": "subject",
+            "label": "Objek Utama",
+            "value": "A dark coffee cup",
+            "enabled": True,
+        },
+        {
+            "category": "style",
+            "label": "Gaya",
+            "value": "dramatic, moody",
+            "enabled": True,
+        },
     ],
     "modified_visual_prompt": "A dark coffee cup, dramatic, moody",
     "indonesian_translation": "Cangkir kopi gelap, dramatis dan misterius",
@@ -133,10 +153,17 @@ _MODIFY_PAYLOAD = {
 @pytest.mark.asyncio
 async def test_modify_visual_prompt():
     original_parts = [
-        {"category": "subject", "label": "Objek Utama", "value": "A cup of coffee", "enabled": True},
-        {"category": "style",   "label": "Gaya",        "value": "minimalist",       "enabled": True},
+        {
+            "category": "subject",
+            "label": "Objek Utama",
+            "value": "A cup of coffee",
+            "enabled": True,
+        },
+        {"category": "style", "label": "Gaya", "value": "minimalist", "enabled": True},
     ]
-    with patch("asyncio.to_thread", new=AsyncMock(return_value=_fake_response(_MODIFY_PAYLOAD))):
+    with patch(
+        "asyncio.to_thread", new=AsyncMock(return_value=_fake_response(_MODIFY_PAYLOAD))
+    ):
         result = await modify_visual_prompt(
             original_parts,
             "A cup of coffee, minimalist",

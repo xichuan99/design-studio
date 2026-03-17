@@ -8,6 +8,7 @@ from app.core.config import settings
 
 from app.services.llm_prompts import MAGIC_TEXT_SYSTEM
 
+
 async def generate_magic_text_layout(
     text: str,
     image_base64: str,

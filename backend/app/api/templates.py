@@ -1,5 +1,6 @@
 from app.core.exceptions import NotFoundError
 from app.schemas.error import ERROR_RESPONSES
+
 """Templates API: list and retrieve design templates."""
 
 from typing import Optional, List, Dict, Any

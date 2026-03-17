@@ -4,6 +4,7 @@ import logging
 from urllib.parse import urljoin
 from typing import Dict, Any
 
+
 async def scrape_brand_info(url: str) -> Dict[str, Any]:
     """
     Scrapes a website URL to find its logo and brand name.
@@ -16,7 +17,9 @@ async def scrape_brand_info(url: str) -> Dict[str, Any]:
     }
 
     try:
-        async with httpx.AsyncClient(headers=headers, follow_redirects=True, timeout=15.0) as client:
+        async with httpx.AsyncClient(
+            headers=headers, follow_redirects=True, timeout=15.0
+        ) as client:
             resp = await client.get(url)
             resp.raise_for_status()
             html = resp.text
@@ -25,7 +28,9 @@ async def scrape_brand_info(url: str) -> Dict[str, Any]:
 
         # 1. Try to find Brand Name
         title = soup.title.string if soup.title else ""
-        brand_name = title.split("|")[0].split("-")[0].strip() if title else "Extracted Brand"
+        brand_name = (
+            title.split("|")[0].split("-")[0].strip() if title else "Extracted Brand"
+        )
 
         # 2. Try to find Logo URL
         logo_url = None
@@ -43,7 +48,12 @@ async def scrape_brand_info(url: str) -> Dict[str, Any]:
                 classes = " ".join(img.get("class", [])).lower()
                 img_id = img.get("id", "").lower()
 
-                if "logo" in alt or "logo" in src or "logo" in classes or "logo" in img_id:
+                if (
+                    "logo" in alt
+                    or "logo" in src
+                    or "logo" in classes
+                    or "logo" in img_id
+                ):
                     logo_url = img.get("src")
                     break
 
@@ -59,13 +69,14 @@ async def scrape_brand_info(url: str) -> Dict[str, Any]:
                     logo_url = icon["href"]
 
         # Make absolute URL
-        if logo_url and not logo_url.startswith("http") and not logo_url.startswith("data:"):
+        if (
+            logo_url
+            and not logo_url.startswith("http")
+            and not logo_url.startswith("data:")
+        ):
             logo_url = urljoin(url, logo_url)
 
-        return {
-            "name": brand_name,
-            "logo_url": logo_url
-        }
+        return {"name": brand_name, "logo_url": logo_url}
 
     except Exception as e:
         logging.error(f"Scraping failed for {url}: {e}")

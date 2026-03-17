@@ -39,7 +39,10 @@ async def generate_brand_kit(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    from app.services.brand_kit_generator import generate_brand_identity_json, generate_logo_from_prompt
+    from app.services.brand_kit_generator import (
+        generate_brand_identity_json,
+        generate_logo_from_prompt,
+    )
     from app.services.storage_service import upload_image_tracked
     from app.services.bg_removal_service import remove_background
     from app.core.exceptions import InternalServerError
@@ -47,7 +50,9 @@ async def generate_brand_kit(
 
     try:
         identity_json = await generate_brand_identity_json(request.prompt)
-        logo_prompt = identity_json.get("logo_prompt", f"Minimalist flat vector logo for {request.prompt}")
+        logo_prompt = identity_json.get(
+            "logo_prompt", f"Minimalist flat vector logo for {request.prompt}"
+        )
 
         image_bytes = await generate_logo_from_prompt(logo_prompt)
         nobg_bytes = await remove_background(image_bytes)
@@ -68,12 +73,11 @@ async def generate_brand_kit(
             logo_url=result_url,
             logos=[result_url],
             colors=colors_data,
-            typography=typography_data
+            typography=typography_data,
         )
     except Exception as e:
         logging.exception(f"Exception generating brand kit: {e}")
         raise InternalServerError(detail=str(e))
-
 
 
 @router.post(
@@ -120,13 +124,15 @@ async def extract_brand_from_url(
                             prefix="brand-logo-extracted",
                         )
             except Exception as e:
-                logging.warning(f"Could not download or process extracted logo {logo_url}: {e}")
+                logging.warning(
+                    f"Could not download or process extracted logo {logo_url}: {e}"
+                )
                 result_url = logo_url
 
         if not colors:
             colors = [
                 {"hex": "#000000", "name": "Hitam Dasar", "role": "text"},
-                {"hex": "#FFFFFF", "name": "Putih Dasar", "role": "background"}
+                {"hex": "#FFFFFF", "name": "Putih Dasar", "role": "background"},
             ]
 
         return BrandKitCreate(
@@ -134,7 +140,7 @@ async def extract_brand_from_url(
             logo_url=result_url,
             logos=[result_url] if result_url else [],
             colors=colors,
-            typography={"primaryFont": "Inter", "secondaryFont": "Roboto"}
+            typography={"primaryFont": "Inter", "secondaryFont": "Roboto"},
         )
 
     except Exception as e:
@@ -159,8 +165,7 @@ async def extract_brand_colors(
     Uses Gemini Vision. Does not save to the database.
     """
     if file.size and file.size > 5 * 1024 * 1024:
-        raise ValidationError(detail="File too large. Maximum size is 5MB."
-        )
+        raise ValidationError(detail="File too large. Maximum size is 5MB.")
 
     if not file.content_type or not file.content_type.startswith("image/"):
         raise ValidationError(detail="File must be an image.")
@@ -197,7 +202,8 @@ async def create_brand_kit(
         existing_kits = result.scalars().all()
 
         if len(existing_kits) >= MAX_BRAND_KITS_FREE:
-            raise ValidationError(detail=f"You can only save up to {MAX_BRAND_KITS_FREE} "
+            raise ValidationError(
+                detail=f"You can only save up to {MAX_BRAND_KITS_FREE} "
                 "Brand Kits on the free tier.",
             )
         if existing_kits:

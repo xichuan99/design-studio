@@ -23,7 +23,8 @@ async def get_current_user(
             email = dev_email
             name = "Dev User"
         else:
-            raise UnauthorizedError(detail="Not authenticated",
+            raise UnauthorizedError(
+                detail="Not authenticated",
                 headers={"WWW-Authenticate": "Bearer"},
             )
     else:
@@ -37,7 +38,8 @@ async def get_current_user(
                 raise UnauthorizedError(detail="Invalid token payload")
 
         except Exception:
-            raise UnauthorizedError(detail="Could not validate credentials",
+            raise UnauthorizedError(
+                detail="Could not validate credentials",
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
@@ -47,6 +49,7 @@ async def get_current_user(
 
     if not user:
         from app.core.credit_costs import DEFAULT_CREDITS
+
         user = User(
             email=email,
             name=name or "Unknown User",

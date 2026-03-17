@@ -43,7 +43,9 @@ REQUIREMENTS:
 """
 
 
-async def suggest_backgrounds(image_bytes: bytes, mime_type: str = "image/jpeg") -> dict:
+async def suggest_backgrounds(
+    image_bytes: bytes, mime_type: str = "image/jpeg"
+) -> dict:
     """
     Analyzes a product image and returns 3 AI-generated background suggestions.
 
@@ -65,6 +67,7 @@ async def suggest_backgrounds(image_bytes: bytes, mime_type: str = "image/jpeg")
         raise ValueError("GEMINI_API_KEY is missing from environment")
 
     import os
+
     os.environ["FAL_KEY"] = settings.FAL_KEY
 
     # ─────────────────────────────────────────
@@ -87,12 +90,16 @@ async def suggest_backgrounds(image_bytes: bytes, mime_type: str = "image/jpeg")
             arguments={"image_url": temp_url},
         )
         # Florence-2 returns {"results": "A watch placed on..."}
-        raw_caption = florence_result.get("results") or florence_result.get("caption") or ""
+        raw_caption = (
+            florence_result.get("results") or florence_result.get("caption") or ""
+        )
         if raw_caption and len(raw_caption) > 5:
             product_description = raw_caption.strip()
         logger.info(f"Florence-2 caption: {product_description[:100]}")
     except Exception:
-        logger.warning("Florence-2 caption failed, using fallback description", exc_info=True)
+        logger.warning(
+            "Florence-2 caption failed, using fallback description", exc_info=True
+        )
 
     # ─────────────────────────────────────────
     # Step 3: Gemini Flash (text only) → 3 background suggestions

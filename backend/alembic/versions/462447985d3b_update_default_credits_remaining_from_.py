@@ -5,13 +5,13 @@ Revises: 715437099b9a
 Create Date: 2026-03-16 13:16:36.427555
 
 """
+
 from typing import Sequence, Union
 
 
-
 # revision identifiers, used by Alembic.
-revision: str = '462447985d3b'
-down_revision: Union[str, None] = '715437099b9a'
+revision: str = "462447985d3b"
+down_revision: Union[str, None] = "715437099b9a"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

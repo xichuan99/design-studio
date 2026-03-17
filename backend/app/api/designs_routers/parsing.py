@@ -12,6 +12,7 @@ from app.core.exceptions import InternalServerError
 
 router = APIRouter(tags=["Designs - Parsing"])
 
+
 @router.post(
     "/parse",
     response_model=ParsedTextElements,
@@ -33,6 +34,7 @@ async def parse_text(request: DesignGenerationRequest) -> ParsedTextElements:
         return parsed
     except Exception as e:
         raise InternalServerError(detail=f"Failed to parse text: {str(e)}")
+
 
 @router.post(
     "/modify-prompt",
@@ -58,5 +60,4 @@ async def modify_prompt(request: ModifyPromptRequest) -> ModifyPromptResponse:
         import logging
 
         logging.exception("Failed to modify prompt")
-        raise InternalServerError(detail=f"Failed to modify prompt: {str(e)}"
-        )
+        raise InternalServerError(detail=f"Failed to modify prompt: {str(e)}")

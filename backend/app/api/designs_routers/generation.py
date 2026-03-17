@@ -127,7 +127,9 @@ async def clarify_unified_brief(request: DesignGenerationRequest) -> dict:
     from app.services.llm_service import generate_unified_brief_questions
 
     try:
-        result = await generate_unified_brief_questions(request.raw_text, mode=request.mode)
+        result = await generate_unified_brief_questions(
+            request.raw_text, mode=request.mode
+        )
         return result
     except Exception as e:
         import logging

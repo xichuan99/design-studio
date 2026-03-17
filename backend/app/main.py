@@ -30,7 +30,9 @@ if SENTRY_DSN:
     )
 
 # Read version
-version_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "VERSION")
+version_path = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "VERSION"
+)
 try:
     with open(version_path, "r") as f:
         __version__ = f.read().strip()
@@ -38,13 +40,22 @@ except Exception:
     __version__ = "1.0.0"
 
 tags_metadata = [
-    {"name": "Authentication", "description": "Operations with users and authentications."},
-    {"name": "Designs", "description": "Operations with canvas designs and related tools."},
+    {
+        "name": "Authentication",
+        "description": "Operations with users and authentications.",
+    },
+    {
+        "name": "Designs",
+        "description": "Operations with canvas designs and related tools.",
+    },
     {"name": "Templates", "description": "Access to pre-made templates."},
     {"name": "Projects", "description": "Manage user projects and canvases."},
     {"name": "Users", "description": "Manage user accounts and info."},
     {"name": "History", "description": "User activity and generation history."},
-    {"name": "Brand Kits", "description": "Manage user brand assets (colors, typography, logos)."},
+    {
+        "name": "Brand Kits",
+        "description": "Manage user brand assets (colors, typography, logos).",
+    },
     {"name": "AI Tools", "description": "General AI tooling operations."},
     {"name": "Health", "description": "Health checks."},
 ]
@@ -83,13 +94,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.exception_handler(AppException)
 async def app_exception_handler(request: Request, exc: AppException):
     request_id = getattr(request.state, "request_id", None)
 
     error_response = ErrorResponse(
         error=ErrorDetail(error_code=exc.error_code, detail=exc.detail),
-        request_id=request_id
+        request_id=request_id,
     )
 
     return JSONResponse(
@@ -97,6 +109,7 @@ async def app_exception_handler(request: Request, exc: AppException):
         content=error_response.model_dump(),
         headers=exc.headers,
     )
+
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -108,8 +121,10 @@ async def global_exception_handler(request: Request, exc: Exception):
     internal_exc = InternalServerError(detail="An unexpected error occurred.")
 
     error_response = ErrorResponse(
-        error=ErrorDetail(error_code=internal_exc.error_code, detail=internal_exc.detail),
-        request_id=request_id
+        error=ErrorDetail(
+            error_code=internal_exc.error_code, detail=internal_exc.detail
+        ),
+        request_id=request_id,
     )
 
     return JSONResponse(
@@ -117,6 +132,7 @@ async def global_exception_handler(request: Request, exc: Exception):
         content=error_response.model_dump(),
         headers=internal_exc.headers,
     )
+
 
 app.include_router(auth_router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(designs_router, prefix="/api/designs", tags=["Designs"])
@@ -128,7 +144,14 @@ app.include_router(brand_kits_router, prefix="/api/brand-kits", tags=["Brand Kit
 app.include_router(ai_tools_router, prefix="/api/tools", tags=["AI Tools"])
 
 
-@app.get("/health", tags=["Health"], summary="Health Check", description="Check if the API is running.", response_model=dict, status_code=200)
+@app.get(
+    "/health",
+    tags=["Health"],
+    summary="Health Check",
+    description="Check if the API is running.",
+    response_model=dict,
+    status_code=200,
+)
 async def health_check():
     """
     Returns the health status of the API.
