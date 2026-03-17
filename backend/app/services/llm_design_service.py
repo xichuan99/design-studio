@@ -16,6 +16,7 @@ from app.services.llm_prompts import (
     MODIFY_PROMPT_SYSTEM,
 )
 
+
 async def generate_design_brief_questions(raw_text: str) -> dict:
     """
     Generates clarifying questions based on the user's initial raw text.
@@ -88,7 +89,10 @@ async def generate_design_brief_questions(raw_text: str) -> dict:
     )
     return json.loads(response.text)
 
-async def generate_unified_brief_questions(raw_text: str, mode: str = "generate") -> dict:
+
+async def generate_unified_brief_questions(
+    raw_text: str, mode: str = "generate"
+) -> dict:
     """
     Generates combined clarifying questions for both design and copywriting.
 
@@ -108,7 +112,7 @@ async def generate_unified_brief_questions(raw_text: str, mode: str = "generate"
         import logging
 
         logging.warning("GEMINI_API_KEY is missing – returning mock unified questions")
-        
+
         if mode == "redesign":
             return {
                 "questions": [
@@ -190,7 +194,9 @@ async def generate_unified_brief_questions(raw_text: str, mode: str = "generate"
 
     client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
-    system_instruction = REDESIGN_BRIEF_SYSTEM if mode.lower() == "redesign" else UNIFIED_BRIEF_SYSTEM
+    system_instruction = (
+        REDESIGN_BRIEF_SYSTEM if mode.lower() == "redesign" else UNIFIED_BRIEF_SYSTEM
+    )
 
     response = await asyncio.to_thread(
         client.models.generate_content,
@@ -214,6 +220,7 @@ async def generate_unified_brief_questions(raw_text: str, mode: str = "generate"
 
         logging.exception("Error extracting unified questions via LLM")
         raise e
+
 
 async def parse_design_text(
     raw_text: str,
@@ -388,6 +395,7 @@ async def parse_design_text(
     data = json.loads(response.text)
     return ParsedTextElements(**data)
 
+
 async def modify_visual_prompt(
     original_parts: list, original_visual_prompt: str, instruction: str
 ) -> dict:
@@ -460,6 +468,7 @@ async def modify_visual_prompt(
         data["modified_visual_prompt"] = assembled_prompt
 
     return data
+
 
 async def generate_project_title(prompt: str) -> str:
     """

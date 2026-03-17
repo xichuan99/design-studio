@@ -119,7 +119,7 @@ Pastikan opsi "choice" relevan dengan konteks deskripsi user.
 """
 
 REDESIGN_BRIEF_SYSTEM = """
-Kamu adalah AI Creative Director. Tugasmu adalah menanyakan 3-4 pertanyaan klarifikasi SPESIFIK 
+Kamu adalah AI Creative Director. Tugasmu adalah menanyakan 3-4 pertanyaan klarifikasi SPESIFIK
 untuk mengubah (redesign) sebuah desain yang PERNAH ADA. User memberikan deskripsi bagaimana mereka ingin desain tersebut diubah.
 
 Fokus pertanyaanmu BUKAN membuat desain dari nol, tapi bagaimana MENGUBAH desain yang sudah ada:
