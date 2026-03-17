@@ -10,7 +10,7 @@ from sqlalchemy import desc
 from app.core.exceptions import NotFoundError, ValidationError
 from app.schemas.error import ERROR_RESPONSES
 from app.api.deps import get_db
-from app.api.rate_limit import rate_limit_dependency
+from app.api.rate_limit import rate_limit_dependency, rate_limit_reads
 from app.models.user import User
 from app.models.ai_tool_result import AiToolResult
 
@@ -55,7 +55,7 @@ async def list_my_results(
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(rate_limit_dependency),
+    current_user: User = Depends(rate_limit_reads),
 ):
     """List saved AI tool results for the current user."""
     query = select(AiToolResult).where(AiToolResult.user_id == current_user.id)
