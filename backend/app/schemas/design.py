@@ -23,6 +23,7 @@ class DesignGenerationRequest(BaseModel):
         ...,
         description="Raw promotional text from the user", json_schema_extra={"example": "Promo Seblak Pedas, Diskon 50% khusus Jumat"},
     )
+    mode: Optional[str] = Field("generate", description="Mode of generation (generate or redesign)")
     reference_image_url: Optional[str] = Field(None, description="URL to a reference image")
     template_id: Optional[str] = Field(None, description="ID of the starting template")
     aspect_ratio: AspectRatio = Field(AspectRatio.SQUARE, description="Desired aspect ratio")

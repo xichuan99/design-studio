@@ -69,6 +69,7 @@ export function useAiToolsEndpoints() {
 
     const clarifyUnified = async (payload: {
             raw_text: string;
+            mode?: string;
         }) => {
             const res = await fetch(`${API_BASE_URL}/designs/clarify-unified`, {
                 method: 'POST',

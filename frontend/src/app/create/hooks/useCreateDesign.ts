@@ -280,7 +280,7 @@ export function useCreateDesign() {
         setBriefAnswers({});
 
         try {
-            const clarifyData = await clarifyUnified({ raw_text: rawText });
+            const clarifyData = await clarifyUnified({ raw_text: rawText, mode: createMode });
             
             if (clarifyData.questions && clarifyData.questions.length > 0) {
                 setBriefQuestions(clarifyData.questions);
@@ -295,7 +295,7 @@ export function useCreateDesign() {
             toast.error(error instanceof Error ? error.message : "Gagal menganalisis teks.");
             setIsParsing(false); // Make sure to stop loading on error!
         }
-    }, [rawText, clarifyUnified, handleGeneratePrompt]);
+    }, [rawText, createMode, clarifyUnified, handleGeneratePrompt]);
 
     const handleGenerateImage = useCallback(async () => {
         if (!parsedData) return;

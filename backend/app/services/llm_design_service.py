@@ -12,6 +12,7 @@ from app.services.llm_prompts import (
     SYSTEM_PROMPT,
     BRIEF_QUESTIONS_SYSTEM,
     UNIFIED_BRIEF_SYSTEM,
+    REDESIGN_BRIEF_SYSTEM,
     MODIFY_PROMPT_SYSTEM,
 )
 
@@ -87,12 +88,13 @@ async def generate_design_brief_questions(raw_text: str) -> dict:
     )
     return json.loads(response.text)
 
-async def generate_unified_brief_questions(raw_text: str) -> dict:
+async def generate_unified_brief_questions(raw_text: str, mode: str = "generate") -> dict:
     """
     Generates combined clarifying questions for both design and copywriting.
 
     Args:
         raw_text (str): The initial brief provided by the user.
+        mode (str): The mode of generation ("generate" or "redesign").
 
     Returns:
         dict: A dictionary containing a list of questions structured according to `BriefQuestionsResponse`.
@@ -106,6 +108,43 @@ async def generate_unified_brief_questions(raw_text: str) -> dict:
         import logging
 
         logging.warning("GEMINI_API_KEY is missing – returning mock unified questions")
+        
+        if mode == "redesign":
+            return {
+                "questions": [
+                    {
+                        "id": "keep_elements",
+                        "question": "Elemen apa yang paling INGIN DIPERTAHANKAN dari gambar asli?",
+                        "type": "choice",
+                        "options": [
+                            "Warna dan Vibe",
+                            "Layout / Posisi",
+                            "Objek Utama Saja",
+                            "Ganti Semua (Total Redesign)",
+                        ],
+                        "default": "Warna dan Vibe",
+                    },
+                    {
+                        "id": "redesign_focus",
+                        "question": "Perubahan apa yang paling difokuskan?",
+                        "type": "text",
+                        "options": [],
+                        "default": "Bikin lebih modern",
+                    },
+                    {
+                        "id": "text_copy",
+                        "question": "Apakah teks/copywriting di desain lama tetap dipakai?",
+                        "type": "choice",
+                        "options": [
+                            "Ya, tetap persis",
+                            "Diganti dengan yang baru",
+                            "Tidak perlu teks",
+                        ],
+                        "default": "Ya, tetap persis",
+                    },
+                ]
+            }
+
         return {
             "questions": [
                 {
@@ -151,6 +190,8 @@ async def generate_unified_brief_questions(raw_text: str) -> dict:
 
     client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
+    system_instruction = REDESIGN_BRIEF_SYSTEM if mode.lower() == "redesign" else UNIFIED_BRIEF_SYSTEM
+
     response = await asyncio.to_thread(
         client.models.generate_content,
         model="gemini-2.5-flash",
@@ -158,7 +199,7 @@ async def generate_unified_brief_questions(raw_text: str) -> dict:
             f"Buatkan pertanyaan klarifikasi desain & copywriting untuk deskripsi ini:\n{raw_text}"
         ],
         config=types.GenerateContentConfig(
-            system_instruction=UNIFIED_BRIEF_SYSTEM,
+            system_instruction=system_instruction,
             response_mime_type="application/json",
             response_schema=BriefQuestionsResponse.model_json_schema(),
             temperature=0.7,
