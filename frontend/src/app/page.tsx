@@ -227,9 +227,9 @@ export default function LandingPage() {
                   <div className="w-14 h-14 bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-xl flex items-center justify-center mb-6">
                     <Sparkles className="w-7 h-7" />
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-3">Kualitas Seperti Studio</h3>
+                  <h3 className="text-xl font-bold text-white mb-3">AI Redesign & Magic Text</h3>
                   <p className="text-slate-400 text-sm leading-relaxed">
-                    AI kami dilatih dengan jutaan foto produk premium. Hasilnya? Pencahayaan sempurna, bayangan realistis, dan resolusi tinggi yang siap cetak atau masuk Instagram.
+                    Hasilkan variasi desain katalog yang segar dalam hitungan detik. Jangan biarkan katalog produk Anda terlihat membosankan! Magic Text akan membantu membuat tipografi yang menarik secara otomatis, menghemat biaya jasa desainer profesional.
                   </p>
                 </div>
 
@@ -237,9 +237,9 @@ export default function LandingPage() {
                   <div className="w-14 h-14 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-xl flex items-center justify-center mb-6">
                     <ImageOff className="w-7 h-7" />
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-3">Background Bersih Otomatis</h3>
+                  <h3 className="text-xl font-bold text-white mb-3">Retouch API & Enhancement</h3>
                   <p className="text-slate-400 text-sm leading-relaxed">
-                    Tidak perlu sewa desainer Photoshop. Berapapun ribetnya background asli, klik sekali langsung tembus pandang atau berubah jadi pemandangan estetis.
+                    Tingkatkan penjualan dengan foto produk resolusi tinggi, cerah, dan tajam. Tersedia juga fitur ID Photo untuk pas foto bisnis dan Watermark otomatis untuk melindungi hak cipta produk Anda.
                   </p>
                 </div>
 
@@ -247,9 +247,9 @@ export default function LandingPage() {
                   <div className="w-14 h-14 bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 rounded-xl flex items-center justify-center mb-6">
                     <Copy className="w-7 h-7" />
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-3">Proses 50 Foto Sekaligus</h3>
+                  <h3 className="text-xl font-bold text-white mb-3">AI Copywriting & Clarify</h3>
                   <p className="text-slate-400 text-sm leading-relaxed">
-                    Mengerjakan upload produk baru yang banyak? Upload puluhan foto sekaligus, AI kami akan proses berbarengan dalam hitungan menit, bukan jam. Pangkas waktu admin.
+                    Bebas dari writer&apos;s block! Bingung menulis caption promosi? AI Copywriting siap membuatkan teks promosi yang menarik, relevan, dan persuasif untuk menarik pembeli.
                   </p>
                 </div>
 
@@ -257,9 +257,9 @@ export default function LandingPage() {
                   <div className="w-14 h-14 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl flex items-center justify-center mb-6">
                     <Banknote className="w-7 h-7" />
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-3">Hemat Biaya Operasional</h3>
+                  <h3 className="text-xl font-bold text-white mb-3">Batch Processing 50 Foto</h3>
                   <p className="text-slate-400 text-sm leading-relaxed">
-                    Simpan margin keuntungan Anda. Tidak perlu lagi bayar jasa edit foto mingguan atau berlangganan software desain mahal, karena Anda bisa kerjakan sendiri.
+                    Punya ratusan produk baru? Jangan edit satu-satu! Gunakan fitur Batch Processing untuk mengaplikasikan efek, mengganti background, atau menambahkan watermark sekaligus dalam hitungan menit.
                   </p>
                 </div>
               </div>
