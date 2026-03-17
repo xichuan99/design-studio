@@ -21,11 +21,11 @@ def get_genai_client() -> genai.Client:
 
     retry_config = types.HttpOptions(
         retry_options=types.HttpRetryOptions(
-            attempts=2,  # Only try twice (initial + 1 retry) max
+            attempts=1,  # Fail fast! Only try once, do not retry
             initial_delay=1.0,
             max_delay=5.0,
         ),
-        timeout=55000, # 55 seconds timeout for httpx
+        timeout=20000, # 20 seconds timeout for httpx (fail fast on high demand)
     )
 
     return genai.Client(

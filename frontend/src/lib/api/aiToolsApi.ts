@@ -112,7 +112,7 @@ export function useAiToolsEndpoints() {
                     method: 'POST',
                     headers: getHeaders(),
                     body: JSON.stringify(payload),
-                    timeout: 60000 // 60 seconds is enough for text generation
+                    timeout: 25000 // Reduced from 60s to 25s to stop infinite loading
                 });
                 if (!res.ok) {
                     const errBase = await res.json().catch(() => ({}));
@@ -122,7 +122,7 @@ export function useAiToolsEndpoints() {
             } catch (error: unknown) {
                 const err = error as Error;
                 if (err.name === 'AbortError') {
-                    throw new Error('Waktu koneksi habis saat meracik copywriting. Server mungkin sedang sibuk, silakan coba lagi.');
+                    throw new Error('Koneksi AI butuh waktu terlalu lama, mungkin server sedang sibuk. Silakan ketuk tombol Buat kembali.');
                 }
                 if (err.message === 'Failed to fetch') {
                     throw new Error('Koneksi terputus (Timeout). Proses AI butuh waktu lebih lama, silakan coba lagi.');
@@ -144,7 +144,7 @@ export function useAiToolsEndpoints() {
                     method: 'POST',
                     headers: getHeaders(),
                     body: JSON.stringify(payload),
-                    timeout: 60000
+                    timeout: 25000 // Reduced from 60s to 25s for fail fast
                 });
                 if (!res.ok) {
                     const errBase = await res.json().catch(() => ({}));
@@ -153,7 +153,10 @@ export function useAiToolsEndpoints() {
                 return res.json();
             } catch (error: unknown) {
                 const err = error as Error;
-                if (err.name === 'AbortError' || err.message === 'Failed to fetch') {
+                if (err.name === 'AbortError') {
+                    throw new Error('Koneksi AI butuh waktu terlalu lama, mungkin server sedang sibuk. Silakan ketuk tombol Buat kembali.');
+                }
+                if (err.message === 'Failed to fetch') {
                     throw new Error('Koneksi terputus (Timeout). Proses AI butuh waktu lebih lama, silakan coba lagi.');
                 }
                 throw error;
