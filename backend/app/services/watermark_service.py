@@ -155,7 +155,7 @@ async def apply_logo_overlay(
             watermark_img = watermark_img.convert("RGBA")
 
         watermark_img = watermark_img.resize((width, height), Image.Resampling.LANCZOS)
-        
+
         if opacity < 1.0:
             alpha = watermark_img.split()[3]
             alpha = ImageEnhance.Brightness(alpha).enhance(opacity)

@@ -14,7 +14,7 @@ from fastapi import status
 
 # System Prompt for Gemini Vision
 VISION_ANALYSIS_PROMPT = """
-You are an expert graphic designer and art director. 
+You are an expert graphic designer and art director.
 Analyze the provided reference image and extract its core visual components so they can be accurately replicated or inspired from by another Image AI.
 
 Pay close attention to:
