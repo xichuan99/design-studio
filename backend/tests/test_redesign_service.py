@@ -1,5 +1,4 @@
 import pytest
-import json
 from unittest.mock import AsyncMock, patch, MagicMock
 
 from app.services.redesign_service import analyze_reference_image, run_flux_redesign

@@ -132,3 +132,45 @@ async def apply_watermark(
 
         logging.error(f"Failed to apply watermark: {str(e)}")
         raise e
+
+async def apply_logo_overlay(
+    base_image_bytes: bytes,
+    logo_bytes: bytes,
+    x: int,
+    y: int,
+    width: int,
+    height: int,
+    opacity: float = 1.0,
+) -> bytes:
+    """
+    Applies a logo watermark at specific exact coordinates and scale.
+    """
+    try:
+        base_img = Image.open(io.BytesIO(base_image_bytes))
+        watermark_img = Image.open(io.BytesIO(logo_bytes))
+
+        if base_img.mode != "RGBA":
+            base_img = base_img.convert("RGBA")
+        if watermark_img.mode != "RGBA":
+            watermark_img = watermark_img.convert("RGBA")
+
+        watermark_img = watermark_img.resize((width, height), Image.Resampling.LANCZOS)
+        
+        if opacity < 1.0:
+            alpha = watermark_img.split()[3]
+            alpha = ImageEnhance.Brightness(alpha).enhance(opacity)
+            watermark_img.putalpha(alpha)
+
+        transparent_layer = Image.new("RGBA", base_img.size, (0, 0, 0, 0))
+        transparent_layer.paste(watermark_img, (x, y), mask=watermark_img)
+
+        final_img = Image.alpha_composite(base_img, transparent_layer)
+        final_img = final_img.convert("RGB")
+
+        img_byte_arr = io.BytesIO()
+        final_img.save(img_byte_arr, format="JPEG", quality=95)
+        return img_byte_arr.getvalue()
+    except Exception as e:
+        import logging
+        logging.error(f"Failed to apply logo overlay: {str(e)}")
+        raise e

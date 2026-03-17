@@ -37,9 +37,10 @@ FAL_ASPECT_RATIO_MAP = {
     AspectRatio.POST.value: "portrait_4_3",  # Closest mapping for 4:5
 }
 
+
 async def analyze_reference_image(image_url: str) -> ReferenceAnalysis:
     """
-    Downloads an image from a URL, analyzes it using Gemini Vision, 
+    Downloads an image from a URL, analyzes it using Gemini Vision,
     and returns structured style parameters.
     """
     if not settings.GEMINI_API_KEY:
@@ -48,9 +49,9 @@ async def analyze_reference_image(image_url: str) -> ReferenceAnalysis:
             style_description="A placeholder style due to missing API key.",
             dominant_colors=["#FFFFFF", "#000000"],
             mood="Neutral",
-            suggested_prompt_suffix="in a standard, generic style"
+            suggested_prompt_suffix="in a standard, generic style",
         )
-    
+
     try:
         # Download image
         async with httpx.AsyncClient(timeout=30.0) as client:
@@ -61,9 +62,9 @@ async def analyze_reference_image(image_url: str) -> ReferenceAnalysis:
         logging.error(f"Failed to download reference image: {e}")
         raise AppException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Tidak dapat mengunduh gambar referensi: {str(e)}"
+            detail=f"Tidak dapat mengunduh gambar referensi: {str(e)}",
         )
-    
+
     try:
         # Call Gemini Vision synchronously in a thread
         def call_gemini():
@@ -71,13 +72,15 @@ async def analyze_reference_image(image_url: str) -> ReferenceAnalysis:
             response = genai_client.models.generate_content(
                 model="gemini-2.5-flash",
                 contents=[
-                    types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"), # Assuming jpeg/png is fine, Gemini auto-detects
+                    types.Part.from_bytes(
+                        data=image_bytes, mime_type="image/jpeg"
+                    ),  # Assuming jpeg/png is fine, Gemini auto-detects
                     VISION_ANALYSIS_PROMPT,
                 ],
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",
                     response_schema=ReferenceAnalysis,
-                    temperature=0.2, # Low temp for consistent analysis
+                    temperature=0.2,  # Low temp for consistent analysis
                 ),
             )
             return json.loads(response.text)
@@ -89,15 +92,12 @@ async def analyze_reference_image(image_url: str) -> ReferenceAnalysis:
         logging.error(f"Failed to analyze image with Gemini Vision: {e}")
         raise AppException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Gagal menganalisa gambar referensi: {str(e)}"
+            detail=f"Gagal menganalisa gambar referensi: {str(e)}",
         )
 
 
 async def run_flux_redesign(
-    image_url: str, 
-    enriched_prompt: str, 
-    strength: float, 
-    aspect_ratio: str
+    image_url: str, enriched_prompt: str, strength: float, aspect_ratio: str
 ) -> bytes:
     """
     Calls fal.ai FLUX.2 Dev image-to-image API using fal_client.
@@ -108,12 +108,14 @@ async def run_flux_redesign(
 
     if not settings.FAL_KEY:
         logging.warning("FAL_KEY is missing! Using a mock image return.")
-        raise AppException(status_code=500, detail="FAL_KEY is missing. Cannot run redesign.")
+        raise AppException(
+            status_code=500, detail="FAL_KEY is missing. Cannot run redesign."
+        )
 
     os.environ["FAL_KEY"] = settings.FAL_KEY
 
     image_size = FAL_ASPECT_RATIO_MAP.get(aspect_ratio, "square_hd")
-    
+
     arguments = {
         "prompt": enriched_prompt,
         "image_url": image_url,
@@ -126,13 +128,12 @@ async def run_flux_redesign(
     try:
         # Run fal client
         result = await fal_client.run_async(
-            "fal-ai/flux-2/dev/image-to-image", 
-            arguments=arguments
+            "fal-ai/flux-2/dev/image-to-image", arguments=arguments
         )
-        
+
         if "images" in result and len(result["images"]) > 0:
             result_url = result["images"][0]["url"]
-            
+
             # Download the final image to return bytes
             async with httpx.AsyncClient(timeout=30.0) as client:
                 img_resp = await client.get(result_url)
@@ -140,10 +141,10 @@ async def run_flux_redesign(
                 return img_resp.content
         else:
             raise ValueError("No images returned from fal.ai")
-                
+
     except Exception as e:
         logging.error(f"Fal.ai generation failed: {e}")
         raise AppException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Gagal melakukan redesign dari fal.ai: {str(e)}"
+            detail=f"Gagal melakukan redesign dari fal.ai: {str(e)}",
         )

@@ -44,3 +44,52 @@ async def optimize_quantum_layout(parsed_headline: Optional[str], parsed_sub_hea
     except Exception as e:
         logging.warning(f"Quantum optimization failed, proceeding with fallback. Error: {e}")
         return None
+
+async def optimize_quantum_logo_placement(
+    canvas_w: int, canvas_h: int, logo_w: int, logo_h: int
+) -> Optional[dict]:
+    """
+    Calculates the best position and scaling for a logo using Quantum Engine principles.
+    Returns a dict with x, y, width, height or None if failed.
+    """
+    # Default smart scale: 15% of canvas width
+    scale_factor = 0.15
+    target_w = int(canvas_w * scale_factor)
+    
+    # Maintain aspect ratio
+    ratio = target_w / logo_w
+    target_h = int(logo_h * ratio)
+    
+    # Default padding
+    pad_x = int(canvas_w * 0.05)
+    pad_y = int(canvas_h * 0.05)
+    
+    quantum_url = "http://quantum-engine:8001/api/quantum/optimize-logo"
+    payload = {
+        "canvas_width": canvas_w,
+        "canvas_height": canvas_h,
+        "logo_width": logo_w,
+        "logo_height": logo_h
+    }
+    
+    try:
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            resp = await client.post(quantum_url, json=payload)
+            if resp.status_code == 200:
+                data = resp.json()
+                return {
+                    "x": data.get("x", canvas_w - target_w - pad_x),
+                    "y": data.get("y", pad_y),
+                    "width": data.get("width", target_w),
+                    "height": data.get("height", target_h)
+                }
+    except Exception as e:
+        logging.warning(f"Quantum logo placement API unreachable/failed, using smart fallback. Error: {e}")
+        
+    # Smart Fallback to Top-Right
+    return {
+        "x": canvas_w - target_w - pad_x,
+        "y": pad_y,
+        "width": target_w,
+        "height": target_h
+    }

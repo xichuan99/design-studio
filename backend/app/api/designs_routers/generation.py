@@ -12,7 +12,80 @@ from app.models.job import Job
 from app.api.rate_limit import rate_limit_dependency
 from app.models.user import User
 from app.schemas.error import ERROR_RESPONSES
-from app.core.exceptions import InternalServerError, ValidationError, InsufficientCreditsError, AppException
+from app.core.exceptions import (
+    InternalServerError,
+    ValidationError,
+    InsufficientCreditsError,
+    AppException,
+)
+from uuid import UUID
+
+
+async def _apply_brand_kit_logo_if_exists(
+    db: AsyncSession, user_id: UUID, brand_kit_id: str, image_bytes: bytes
+) -> bytes:
+    try:
+        from app.models.brand_kit import BrandKit
+        from sqlalchemy.future import select
+        import uuid
+        import httpx
+        import io
+        from PIL import Image
+
+        kit_id_uuid = uuid.UUID(brand_kit_id)
+        kit_result = await db.execute(
+            select(BrandKit).where(
+                BrandKit.id == kit_id_uuid, BrandKit.user_id == user_id
+            )
+        )
+        kit = kit_result.scalar_one_or_none()
+
+        logo_url = None
+        if kit:
+            if kit.logos and len(kit.logos) > 0:
+                logo_url = kit.logos[0]
+            elif hasattr(kit, "logo_url") and kit.logo_url:
+                logo_url = kit.logo_url
+
+        if logo_url:
+            async with httpx.AsyncClient(timeout=10.0) as http_client:
+                logo_resp = await http_client.get(logo_url)
+                if logo_resp.status_code == 200:
+                    logo_bytes = logo_resp.content
+
+                    base_img = Image.open(io.BytesIO(image_bytes))
+                    base_w, base_h = base_img.size
+
+                    logo_img = Image.open(io.BytesIO(logo_bytes))
+                    logo_w, logo_h = logo_img.size
+
+                    from app.services.quantum_service import (
+                        optimize_quantum_logo_placement,
+                    )
+
+                    placement = await optimize_quantum_logo_placement(
+                        base_w, base_h, logo_w, logo_h
+                    )
+
+                    if placement:
+                        from app.services.watermark_service import apply_logo_overlay
+
+                        new_image_bytes = await apply_logo_overlay(
+                            image_bytes,
+                            logo_bytes,
+                            x=placement["x"],
+                            y=placement["y"],
+                            width=placement["width"],
+                            height=placement["height"],
+                        )
+                        return new_image_bytes
+    except Exception as e:
+        import logging
+
+        logging.warning(f"Failed to auto-place brand kit logo: {str(e)}")
+
+    return image_bytes
+
 
 router = APIRouter(tags=["Designs - Generation"])
 
@@ -36,8 +109,10 @@ async def clarify_design_brief(request: DesignGenerationRequest) -> dict:
         import logging
 
         logging.exception("Failed to generate clarification questions")
-        raise InternalServerError(detail=f"Failed to generate clarification questions: {str(e)}",
+        raise InternalServerError(
+            detail=f"Failed to generate clarification questions: {str(e)}",
         )
+
 
 @router.post(
     "/clarify-unified",
@@ -58,8 +133,10 @@ async def clarify_unified_brief(request: DesignGenerationRequest) -> dict:
         import logging
 
         logging.exception("Failed to generate unified clarification questions")
-        raise InternalServerError(detail=f"Failed to generate unified clarification questions: {str(e)}",
+        raise InternalServerError(
+            detail=f"Failed to generate unified clarification questions: {str(e)}",
         )
+
 
 @router.post(
     "/magic-text",
@@ -103,8 +180,8 @@ async def magic_text_layout(
         import logging
 
         logging.exception("Failed to generate magic text layout")
-        raise InternalServerError(detail=f"Failed to generate layout: {str(e)}"
-        )
+        raise InternalServerError(detail=f"Failed to generate layout: {str(e)}")
+
 
 @router.post(
     "/generate-title",
@@ -130,6 +207,7 @@ async def api_generate_project_title(
         logging.exception("Failed to generate project title")
         raise InternalServerError(detail="Failed to generate project title")
 
+
 @router.post(
     "/generate",
     response_model=dict,
@@ -150,8 +228,10 @@ async def generate_design(
     from app.core.config import settings as app_settings
 
     from app.core.credit_costs import COST_GENERATE_DESIGN
+
     if current_user.credits_remaining < COST_GENERATE_DESIGN:
-        raise InsufficientCreditsError(detail="Insufficient credits. Please upgrade or wait for a refill.",
+        raise InsufficientCreditsError(
+            detail="Insufficient credits. Please upgrade or wait for a refill.",
         )
 
     # Deduct credit
@@ -275,7 +355,8 @@ async def generate_design(
                 db, current_user, COST_GENERATE_DESIGN, "Refund: gagal generate desain"
             )
             await db.commit()
-            raise InternalServerError(detail=f"Image generation failed to start: {str(e)}"
+            raise InternalServerError(
+                detail=f"Image generation failed to start: {str(e)}"
             )
 
     import logging
@@ -317,6 +398,7 @@ async def generate_design(
 
         # Step 2.5: Quantum Layout Optimization (Synchronous Fallback route)
         from app.services.quantum_service import optimize_quantum_layout
+
         quantum_layout = await optimize_quantum_layout(
             parsed.headline, parsed.sub_headline, parsed.cta
         )
@@ -443,6 +525,11 @@ async def generate_design(
 
             from app.services.storage_service import upload_image_tracked
 
+            if getattr(request, "brand_kit_id", None):
+                image_bytes = await _apply_brand_kit_logo_if_exists(
+                    db, current_user.id, request.brand_kit_id, image_bytes
+                )
+
             result_url = await upload_image_tracked(
                 image_bytes,
                 user_id=current_user.id,
@@ -462,7 +549,9 @@ async def generate_design(
             # Refund credit
             from app.services.credit_service import log_credit_change
 
-            await log_credit_change(db, current_user, COST_GENERATE_DESIGN, "Refund: prompt ditolak AI")
+            await log_credit_change(
+                db, current_user, COST_GENERATE_DESIGN, "Refund: prompt ditolak AI"
+            )
 
         await db.commit()
         await db.refresh(job)
@@ -478,10 +567,12 @@ async def generate_design(
         job.error_message = str(e)
         from app.services.credit_service import log_credit_change
 
-        await log_credit_change(db, current_user, COST_GENERATE_DESIGN, "Refund: sistem error")
-        await db.commit()
-        raise InternalServerError(detail=f"Image generation failed: {str(e)}"
+        await log_credit_change(
+            db, current_user, COST_GENERATE_DESIGN, "Refund: sistem error"
         )
+        await db.commit()
+        raise InternalServerError(detail=f"Image generation failed: {str(e)}")
+
 
 @router.post(
     "/redesign",
@@ -519,7 +610,7 @@ async def redesign_image(
         style_preference=request.style_preference,
         reference_image_url=request.reference_image_url,
         user_id=current_user.id,
-        status="processing", # we do it synchronously but still record processing
+        status="processing",  # we do it synchronously but still record processing
     )
     db.add(job)
     await db.commit()
@@ -528,17 +619,21 @@ async def redesign_image(
     try:
         # Step 1: Analyze reference image
         analysis = await analyze_reference_image(request.reference_image_url)
-        
+
         # Build enriched prompt
-        style_suffix = f" {request.style_preference.value} style" if request.style_preference else ""
-        
+        style_suffix = (
+            f" {request.style_preference.value} style"
+            if request.style_preference
+            else ""
+        )
+
         # Load brand kit colors if specified
         brand_suffix = ""
         if request.brand_kit_id:
             from app.models.brand_kit import BrandKit
             from sqlalchemy.future import select
             import uuid
-            
+
             try:
                 kit_id_uuid = uuid.UUID(request.brand_kit_id)
                 kit_result = await db.execute(
@@ -550,9 +645,12 @@ async def redesign_image(
                 if kit and kit.colors:
                     colors = [c.get("hex") for c in kit.colors if c.get("hex")]
                     if colors:
-                        brand_suffix = f", incorporate brand colors: {', '.join(colors)}"
+                        brand_suffix = (
+                            f", incorporate brand colors: {', '.join(colors)}"
+                        )
             except Exception as e:
                 import logging
+
                 logging.warning(f"Could not load brand kit for redesign: {e}")
 
         enriched_prompt = f"{request.raw_text} {analysis.suggested_prompt_suffix}{style_suffix}{brand_suffix}".strip()
@@ -562,11 +660,17 @@ async def redesign_image(
             image_url=request.reference_image_url,
             enriched_prompt=enriched_prompt,
             strength=request.strength,
-            aspect_ratio=request.aspect_ratio.value
+            aspect_ratio=request.aspect_ratio.value,
         )
-        
+
         if not image_bytes:
             raise ValueError("No image bytes returned from redesign service")
+
+        # 2.5: Apply Brand Kit Logo if applicable
+        if request.brand_kit_id:
+            image_bytes = await _apply_brand_kit_logo_if_exists(
+                db, current_user.id, request.brand_kit_id, image_bytes
+            )
 
         # Step 3: Upload the result to storage
         result_url = await upload_image_tracked(
@@ -576,7 +680,7 @@ async def redesign_image(
             content_type="image/jpeg",
             prefix="redesign",
         )
-        
+
         # Update job success
         job.result_url = result_url
         job.status = "completed"
@@ -593,15 +697,17 @@ async def redesign_image(
 
     except Exception as e:
         import logging
+
         logging.exception(f"Redesign image failed: {e}")
-        
+
         job.status = "failed"
         job.error_message = str(e)
         job.completed_at = datetime.now(timezone.utc)
-        
-        # Refund credit
-        await log_credit_change(db, current_user, COST_REDESIGN, "Refund: sistem error pada redesign")
-        await db.commit()
-        
-        raise InternalServerError(detail=f"Redesign failed: {str(e)}")
 
+        # Refund credit
+        await log_credit_change(
+            db, current_user, COST_REDESIGN, "Refund: sistem error pada redesign"
+        )
+        await db.commit()
+
+        raise InternalServerError(detail=f"Redesign failed: {str(e)}")
