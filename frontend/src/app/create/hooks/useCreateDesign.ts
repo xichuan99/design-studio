@@ -11,7 +11,6 @@ export type CreateMode = 'generate' | 'redesign';
 export interface SavedCreateState {
     rawText: string;
     aspectRatio: string;
-    stylePreference: string;
     currentStep: CreateStep;
     createMode: CreateMode;
     redesignStrength: number;
@@ -31,7 +30,6 @@ export function useCreateDesign() {
 
     const [rawText, setRawText] = useState("");
     const [aspectRatio, setAspectRatio] = useState("1:1");
-    const [stylePreference, setStylePreference] = useState("bold");
     const [createMode, setCreateMode] = useState<CreateMode>('generate');
     const [redesignStrength, setRedesignStrength] = useState<number>(0.65);
     const [currentStep, setCurrentStep] = useState<CreateStep>('input');
@@ -109,7 +107,6 @@ export function useCreateDesign() {
                 const parsed: SavedCreateState = JSON.parse(saved);
                 setRawText(parsed.rawText || "");
                 setAspectRatio(parsed.aspectRatio || "1:1");
-                setStylePreference(parsed.stylePreference || "bold");
                 setCreateMode(parsed.createMode || 'generate');
                 setRedesignStrength(parsed.redesignStrength ?? 0.65);
                 const restoredStep = parsed.currentStep === 'generating' 
@@ -138,7 +135,6 @@ export function useCreateDesign() {
         const stateToSave: SavedCreateState = {
             rawText,
             aspectRatio,
-            stylePreference,
             currentStep,
             createMode,
             redesignStrength,
@@ -153,7 +149,7 @@ export function useCreateDesign() {
         };
         localStorage.setItem('smartdesign_create_state', JSON.stringify(stateToSave));
     }, [
-        isInitialized, rawText, aspectRatio, stylePreference, currentStep, createMode, redesignStrength,
+        isInitialized, rawText, aspectRatio, currentStep, createMode, redesignStrength,
         parsedData, imageHistory, activeImageIndex, integratedText, removeProductBg,
         briefQuestions, briefAnswers, copyVariations
     ]);
@@ -174,7 +170,6 @@ export function useCreateDesign() {
             localStorage.removeItem('smartdesign_create_state');
             setRawText("");
             setAspectRatio("1:1");
-            setStylePreference("bold");
             setCurrentStep('input');
             setParsedData(null);
             setImageHistory([]);
@@ -242,7 +237,6 @@ export function useCreateDesign() {
                 parseDesignText({
                     raw_text: rawText,
                     aspect_ratio: aspectRatio,
-                    style_preference: stylePreference,
                     num_variations: 2,
                     integrated_text: integratedText,
                     clarification_answers: answers
@@ -276,7 +270,7 @@ export function useCreateDesign() {
         } finally {
             setIsParsing(false);
         }
-    }, [rawText, aspectRatio, stylePreference, integratedText, activeBrandKit?.name, parseDesignText, generateCopywriting]);
+    }, [rawText, aspectRatio, integratedText, activeBrandKit?.name, parseDesignText, generateCopywriting]);
 
     const handleAnalyze = useCallback(async () => {
         if (!rawText.trim()) return;
@@ -364,7 +358,6 @@ export function useCreateDesign() {
                 jobData = await generateDesign({
                     raw_text: finalPrompt,
                     aspect_ratio: aspectRatio,
-                    style_preference: stylePreference,
                     reference_image_url: uploadedReferenceUrl,
                     integrated_text: integratedText,
                     remove_product_bg: removeProductBg && !!uploadedReferenceUrl,
@@ -489,7 +482,7 @@ export function useCreateDesign() {
         } finally {
             setIsGeneratingImage(false);
         }
-    }, [parsedData, rawText, referenceFile, aspectRatio, stylePreference, integratedText, removeProductBg, activeBrandKit?.id, createMode, redesignStrength, getStorageUsage, uploadImage, generateDesign, redesignFromReference, getJobStatus, router]);
+    }, [parsedData, rawText, referenceFile, aspectRatio, integratedText, removeProductBg, activeBrandKit?.id, createMode, redesignStrength, getStorageUsage, uploadImage, generateDesign, redesignFromReference, getJobStatus, router]);
 
     const handleProceedToEditor = useCallback(async () => {
         if (!parsedData) return;
@@ -583,7 +576,6 @@ export function useCreateDesign() {
     return {
         rawText, setRawText,
         aspectRatio, setAspectRatio,
-        stylePreference, setStylePreference,
         createMode, setCreateMode,
         redesignStrength, setRedesignStrength,
         currentStep, setCurrentStep,

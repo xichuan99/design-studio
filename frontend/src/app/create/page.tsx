@@ -22,7 +22,6 @@ export default function CreatePage() {
     const {
         rawText, setRawText,
         aspectRatio, setAspectRatio,
-        stylePreference, setStylePreference,
         createMode, setCreateMode,
         redesignStrength, setRedesignStrength,
         currentStep, setCurrentStep,
@@ -112,8 +111,6 @@ export default function CreatePage() {
                             isParsing={isParsing}
                             aspectRatio={aspectRatio}
                             setAspectRatio={setAspectRatio}
-                            stylePreference={stylePreference}
-                            setStylePreference={setStylePreference}
                             integratedText={integratedText}
                             setIntegratedText={setIntegratedText}
                             removeProductBg={removeProductBg}

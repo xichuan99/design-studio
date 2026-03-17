@@ -19,8 +19,6 @@ interface SidebarInputFormProps {
     isParsing: boolean;
     aspectRatio: string;
     setAspectRatio: (val: string) => void;
-    stylePreference: string;
-    setStylePreference: (val: string) => void;
     integratedText: boolean;
     setIntegratedText: (val: boolean) => void;
     removeProductBg: boolean;
@@ -42,7 +40,7 @@ interface SidebarInputFormProps {
 export function SidebarInputForm({
     createMode, setCreateMode, redesignStrength, setRedesignStrength,
     rawText, setRawText, isInputLocked, isParsing,
-    aspectRatio, setAspectRatio, stylePreference, setStylePreference,
+    aspectRatio, setAspectRatio,
     integratedText, setIntegratedText,
     removeProductBg, setRemoveProductBg,
     showManualRef, setShowManualRef, referenceFile, referencePreview, isDragOver,
@@ -72,7 +70,7 @@ export function SidebarInputForm({
                     {createMode === 'generate' ? "Deskripsi Desain & Teks" : "Deskripsi Opsional"}
                 </label>
                 <Textarea
-                    placeholder={createMode === 'generate' ? "Contoh: Banner jualan es kopi susu dengan nuansa senja, ada tulisan 'Diskon 50% Akhir Pekan'" : "Contoh: Ubah suasananya jadi nuansa malam hari (Opsional)"}
+                    placeholder={createMode === 'generate' ? "Contoh: Banner promo teh manis panas dengan gaya ceria warna merah muda, ada tulisan 'Diskon 50%'" : "Contoh: Ubah suasananya jadi nuansa minimalis modern (Opsional)"}
                     className={`resize-none h-32 focus-visible:ring-primary ${isInputLocked ? 'opacity-60 cursor-not-allowed bg-muted/50' : ''}`}
                     value={rawText}
                     onChange={(e) => setRawText(e.target.value)}
@@ -139,14 +137,12 @@ export function SidebarInputForm({
             <div className={`space-y-4 tour-step-2 pt-2 ${isInputLocked ? 'opacity-60 pointer-events-none' : ''}`}>
                 <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
                     <span className="flex items-center justify-center w-6 h-6 rounded-full bg-amber-500 text-white text-xs font-bold">{formatStepNumber}</span>
-                    Format & Gaya
+                    Format
                 </label>
                 
                 <DimensionPresets 
                     aspectRatio={aspectRatio}
                     setAspectRatio={setAspectRatio}
-                    stylePreference={stylePreference}
-                    setStylePreference={setStylePreference}
                     isInputLocked={isInputLocked}
                 />
 

@@ -20,7 +20,7 @@ export function useAiToolsEndpoints() {
     const generateDesign = async (payload: {
             raw_text: string;
             aspect_ratio: string;
-            style_preference: string;
+            style_preference?: string;
             reference_image_url?: string;
             template_id?: string;
             integrated_text?: boolean;

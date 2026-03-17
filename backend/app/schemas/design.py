@@ -26,7 +26,7 @@ class DesignGenerationRequest(BaseModel):
     reference_image_url: Optional[str] = Field(None, description="URL to a reference image")
     template_id: Optional[str] = Field(None, description="ID of the starting template")
     aspect_ratio: AspectRatio = Field(AspectRatio.SQUARE, description="Desired aspect ratio")
-    style_preference: StylePreference = Field(StylePreference.BOLD, description="Desired visual style")
+    style_preference: StylePreference = Field(StylePreference.BOLD, description="[Deprecated] Gaya visual. Sekarang dideskripsikan langsung di raw_text.")
     color_palette_override: Optional[List[str]] = Field(
         None, description="Override colors with specific hex codes", json_schema_extra={"example": ["#FF5733", "#1A1A2E"]}
     )
@@ -54,7 +54,6 @@ class DesignGenerationRequest(BaseModel):
             "example": {
                 "raw_text": "Promo Seblak Pedas, Diskon 50% khusus Jumat",
                 "aspect_ratio": "1:1",
-                "style_preference": "bold",
                 "num_variations": 2
             }
         }
@@ -84,7 +83,7 @@ class RedesignRequest(BaseModel):
     raw_text: str = Field("", description="Teks atau brief tambahan opsional dari pengguna.")
     strength: float = Field(0.65, ge=0.3, le=0.85, description="Intensitas transformasi (0.3 konservatif - 0.85 kreatif).")
     aspect_ratio: AspectRatio = Field(AspectRatio.SQUARE, description="Rasio aspek desain baru.")
-    style_preference: StylePreference = Field(StylePreference.BOLD, description="Gaya visual pilihan.")
+    style_preference: StylePreference = Field(StylePreference.BOLD, description="[Deprecated] Gaya visual pilihan.")
     brand_kit_id: Optional[str] = Field(None, description="ID Brand Kit aktif (jika ada).")
 
     model_config = ConfigDict(
@@ -93,8 +92,7 @@ class RedesignRequest(BaseModel):
                 "reference_image_url": "https://example.com/image.jpg",
                 "raw_text": "Make it futuristic",
                 "strength": 0.65,
-                "aspect_ratio": "1:1",
-                "style_preference": "bold"
+                "aspect_ratio": "1:1"
             }
         }
     )
