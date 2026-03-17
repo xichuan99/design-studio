@@ -98,3 +98,11 @@ export interface AiToolResult {
     created_at: string;
 }
 
+// --- AI Design Generations (from /designs/my-generations) ---
+export interface AiGeneration {
+    id: string;
+    result_url: string;
+    visual_prompt: string | null;
+    raw_text: string | null;
+    created_at: string;
+}
