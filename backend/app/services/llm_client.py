@@ -89,6 +89,11 @@ def call_openrouter(model_id: str, contents: list, config: types.GenerateContent
             # Mocking a Gemini-like response object so we don't have to rewrite every caller
             from types import SimpleNamespace
             content_text = res_data["choices"][0]["message"]["content"]
+            
+            # Log token usage
+            usage = res_data.get("usage", {})
+            total_tokens = usage.get("total_tokens", "unknown")
+            logger.info(f"🪙 [DEV INFO] OpenRouter Tokens Used: {total_tokens}")
 
             # We wrap it in a structure that resembles Gemini's response
             # gemini_res.text works
@@ -116,11 +121,15 @@ def call_gemini_with_fallback(
     try:
         # Layer 1: Gemini Primary (Native)
         logger.info(f"🧠 [DEV INFO] Resolving prompt via PRIMARY LLM: {primary_model}")
-        return client.models.generate_content(
+        response = client.models.generate_content(
             model=primary_model,
             contents=contents,
             config=config,
         )
+        if hasattr(response, "usage_metadata") and response.usage_metadata:
+            tokens = getattr(response.usage_metadata, "total_token_count", "unknown")
+            logger.info(f"🪙 [DEV INFO] Gemini Tokens Used: {tokens}")
+        return response
     except Exception as e:
         # Check for 503 Service Unavailable or other transient errors
         is_503 = hasattr(e, "code") and e.code == 503
