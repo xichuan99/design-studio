@@ -44,9 +44,12 @@ def _convert_to_openai_messages(contents, system_instruction=None):
         messages.append({"role": "system", "content": sys_text})
 
     for content in contents:
-        role = "user" if content.role == "user" else "assistant"
-        text = " ".join([p.text for p in content.parts if hasattr(p, "text")])
-        messages.append({"role": role, "content": text})
+        if isinstance(content, str):
+            messages.append({"role": "user", "content": content})
+        elif hasattr(content, "role"):
+            role = "user" if content.role == "user" else "assistant"
+            text = " ".join([p.text for p in content.parts if hasattr(p, "text")])
+            messages.append({"role": role, "content": text})
     return messages
 
 def call_openrouter(model_id: str, contents: list, config: types.GenerateContentConfig = None):
