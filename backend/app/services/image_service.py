@@ -104,7 +104,7 @@ async def generate_background(
     else:
         # Text-to-image generation (no reference)
         result = await fal_client.run_async(
-            "fal-ai/flux/dev",
+            "fal-ai/flux-pro/v1.1",
             arguments={
                 "prompt": enhanced_prompt,
                 "image_size": resolution,
