@@ -72,6 +72,7 @@ def call_openrouter(model_id: str, contents: list, config: types.GenerateContent
         payload["response_format"] = {"type": "json_object"}
 
     try:
+        logger.info(f"🧠 [DEV INFO] Resolving prompt via FALLBACK LLM: {model_id} (OpenRouter)")
         with httpx.Client(timeout=60.0) as client:
             response = client.post(
                 "https://openrouter.ai/api/v1/chat/completions",
@@ -114,6 +115,7 @@ def call_gemini_with_fallback(
     """
     try:
         # Layer 1: Gemini Primary (Native)
+        logger.info(f"🧠 [DEV INFO] Resolving prompt via PRIMARY LLM: {primary_model}")
         return client.models.generate_content(
             model=primary_model,
             contents=contents,

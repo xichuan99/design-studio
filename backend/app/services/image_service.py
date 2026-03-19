@@ -6,7 +6,10 @@ Generates background images (no text) for the design tool.
 from __future__ import annotations
 import os
 import fal_client
+import logging
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 # Aspect ratio → pixel resolution mapping
 ASPECT_RATIO_MAP = {
@@ -87,9 +90,11 @@ async def generate_background(
 
     # Choose model based on whether we have a reference image (image-to-image vs text-to-image)
     if reference_image_url:
+        model_id = "fal-ai/flux/dev/image-to-image"
+        logger.info(f"🎨 [DEV INFO] Rendering image via fal.ai model: {model_id}")
         # Image-to-image with IP-Adapter for style transfer
         result = await fal_client.run_async(
-            "fal-ai/flux/dev/image-to-image",
+            model_id,
             arguments={
                 "prompt": enhanced_prompt,
                 "image_url": reference_image_url,
@@ -102,9 +107,11 @@ async def generate_background(
             },
         )
     else:
+        model_id = "fal-ai/flux-pro/v1.1"
+        logger.info(f"🎨 [DEV INFO] Rendering image via fal.ai model: {model_id}")
         # Text-to-image generation (no reference)
         result = await fal_client.run_async(
-            "fal-ai/flux-pro/v1.1",
+            model_id,
             arguments={
                 "prompt": enhanced_prompt,
                 "image_size": resolution,
