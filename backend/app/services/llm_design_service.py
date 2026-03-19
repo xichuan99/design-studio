@@ -517,7 +517,7 @@ async def generate_project_title(prompt: str) -> str:
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,
                 temperature=0.7,
-                max_output_tokens=20,
+                max_output_tokens=100,
             ),
         )
         if hasattr(response, "text") and response.text:
