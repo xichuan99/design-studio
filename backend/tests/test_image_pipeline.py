@@ -49,7 +49,7 @@ async def test_generate_background_text_to_image():
         assert result["seed"] == 42
         mock_fal.run_async.assert_called_once()
         call_args = mock_fal.run_async.call_args
-        assert call_args[0][0] == "fal-ai/flux/dev"  # text-to-image model
+        assert call_args[0][0] == "fal-ai/flux-pro/v1.1"  # text-to-image model
 
 
 @pytest.mark.asyncio
