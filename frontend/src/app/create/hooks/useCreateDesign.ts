@@ -296,6 +296,7 @@ export function useCreateDesign() {
                 setBriefQuestions(clarifyData.questions);
                 setCurrentStep('brief');
                 if (window.innerWidth < 768) setSidebarOpen(false);
+                setIsParsing(false);
             } else {
                 await handleGeneratePrompt({});
             }
