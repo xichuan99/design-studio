@@ -89,7 +89,7 @@ def call_openrouter(model_id: str, contents: list, config: types.GenerateContent
             # Mocking a Gemini-like response object so we don't have to rewrite every caller
             from types import SimpleNamespace
             content_text = res_data["choices"][0]["message"]["content"]
-            
+
             # Log token usage
             usage = res_data.get("usage", {})
             total_tokens = usage.get("total_tokens", "unknown")
