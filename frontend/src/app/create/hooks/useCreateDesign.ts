@@ -251,7 +251,7 @@ export function useCreateDesign() {
                 generateCopywriting({
                     product_description: rawText,
                     tone: "persuasive",
-                    brand_name: activeBrandKit?.name,
+                    brand_name: (activeBrandKit && brandKitEnabled) ? activeBrandKit.name : undefined,
                     clarification_answers: answers
                 })
             ]);
@@ -280,7 +280,7 @@ export function useCreateDesign() {
         } finally {
             setIsParsing(false);
         }
-    }, [rawText, aspectRatio, integratedText, activeBrandKit?.name, parseDesignText, generateCopywriting]);
+    }, [rawText, aspectRatio, integratedText, activeBrandKit, brandKitEnabled, parseDesignText, generateCopywriting]);
 
     const handleAnalyze = useCallback(async () => {
         if (!rawText.trim()) return;
