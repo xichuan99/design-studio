@@ -51,6 +51,7 @@ export default function ProjectsPage() {
     const [editingTitle, setEditingTitle] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
     const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'a-z' | 'z-a'>('newest');
+    const [showNewDesignDialog, setShowNewDesignDialog] = useState(false);
 
     if (status === "unauthenticated") {
         redirect("/");
@@ -72,6 +73,27 @@ export default function ProjectsPage() {
 
         fetchProjects();
     }, [status, getProjects]);
+
+    const handleNewDesignClick = () => {
+        const saved = localStorage.getItem('smartdesign_create_state');
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                // Check if it's "pristine" (empty state)
+                const isPristine = !parsed.rawText && parsed.currentStep === 'input' && (!parsed.imageHistory || parsed.imageHistory.length === 0);
+                if (!isPristine) {
+                    setShowNewDesignDialog(true);
+                    return;
+                }
+            } catch (e) {
+                // Ignore parse error and proceed
+                console.warn("Error parsing smartdesign_create_state", e);
+            }
+        }
+        
+        // If pristine or no saved state, just proceed
+        router.push('/create');
+    };
 
     const confirmDeleteProject = (e: React.MouseEvent, projectId: string) => {
         e.stopPropagation();
@@ -173,7 +195,7 @@ export default function ProjectsPage() {
                             <h1 className="text-2xl sm:text-3xl font-jakarta font-bold text-foreground">Desain Saya</h1>
                             <p className="text-muted-foreground mt-1 text-sm sm:text-base">Kelola semua proyek dan desain yang tersimpan.</p>
                         </div>
-                        <Button onClick={() => router.push('/create')} size="lg" className="gap-2 font-semibold shadow-md hover:shadow-lg transition-shadow w-full sm:w-auto">
+                        <Button onClick={handleNewDesignClick} size="lg" className="gap-2 font-semibold shadow-md hover:shadow-lg transition-shadow w-full sm:w-auto">
                             <Plus className="w-5 h-5" /> Desain Baru
                         </Button>
                     </div>
@@ -244,7 +266,7 @@ export default function ProjectsPage() {
                             </div>
                             <h3 className="text-xl font-bold mb-2 text-foreground">Belum ada desain</h3>
                             <p className="text-muted-foreground mb-6 max-w-sm mx-auto">Buat desain pertama Anda dengan bantuan AI untuk memulai.</p>
-                            <Button onClick={() => router.push('/create')} size="lg" className="gap-2 shadow-md">
+                            <Button onClick={handleNewDesignClick} size="lg" className="gap-2 shadow-md">
                                 <Plus className="w-5 h-5" /> Buat Desain Pertama
                             </Button>
                         </div>
@@ -392,6 +414,46 @@ export default function ProjectsPage() {
                             {deletingId ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                             Hapus
                         </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* New Design Draft Confirmation Dialog */}
+            <AlertDialog open={showNewDesignDialog} onOpenChange={setShowNewDesignDialog}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Lanjutkan Desain Sebelumnya?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Saat ini ada draf desain yang sedang berjalan. Apakah Anda ingin melanjutkan desain tersebut atau membuat yang baru dari awal? (Membuat baru akan menghapus draf sementara).
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="sm:justify-between">
+                        <Button 
+                            variant="ghost" 
+                            onClick={() => setShowNewDesignDialog(false)}
+                        >
+                            Batal
+                        </Button>
+                        <div className="flex items-center gap-2">
+                            <Button 
+                                variant="destructive" 
+                                onClick={() => {
+                                    localStorage.removeItem('smartdesign_create_state');
+                                    setShowNewDesignDialog(false);
+                                    router.push('/create');
+                                }}
+                            >
+                                Buat Baru
+                            </Button>
+                            <Button 
+                                onClick={() => {
+                                    setShowNewDesignDialog(false);
+                                    router.push('/create');
+                                }}
+                            >
+                                Lanjutkan
+                            </Button>
+                        </div>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
