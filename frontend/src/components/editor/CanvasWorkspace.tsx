@@ -292,7 +292,11 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ onBgStatusChan
             )}
 
             <div
-                className="shadow-[0_0_50px_rgba(0,0,0,0.5)] ring-1 ring-border/50 bg-card transition-shadow will-change-transform relative z-10"
+                className={`transition-shadow will-change-transform relative z-10 ${
+                    isEmpty
+                        ? 'bg-transparent shadow-none ring-0'
+                        : 'shadow-[0_0_50px_rgba(0,0,0,0.5)] ring-1 ring-border/50 bg-card'
+                }`}
                 ref={canvasBoxRef}
                 style={{
                     width: `${canvasWidth}px`,
