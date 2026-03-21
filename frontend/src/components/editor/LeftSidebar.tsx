@@ -14,8 +14,11 @@ import { Sparkles, Image as ImageIcon, Wrench, Type, Square, Circle, Minus, Bloc
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
+import { useIsMobile } from '@/hooks/useIsMobile';
+import { BottomSheet } from '@/components/ui/bottom-sheet';
 
 export const LeftSidebar: React.FC = () => {
+    const isMobile = useIsMobile();
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [activeTab, setActiveTab] = useState<'teks' | 'tools' | 'aistudio' | 'assets' | 'bgremoval' | 'brandkit'>('aistudio');
     const [autoOpenSmartAd, setAutoOpenSmartAd] = useState(false);
@@ -178,7 +181,131 @@ export const LeftSidebar: React.FC = () => {
         { id: 'tools', icon: Wrench, label: 'Tools' },
     ];
 
-    return (
+    
+    const renderActivePanel = () => (
+        <>
+            {activeTab === 'aistudio' && <AIStudioPanel autoOpenSmartAd={autoOpenSmartAd} />}
+            {activeTab === 'bgremoval' && (
+                <BackgroundRemovalPanel />
+            )}
+            {activeTab === 'brandkit' && (
+                <BrandKitPanel 
+                    onClose={closePanel} 
+                    onApplyColors={(hexes: string[]) => {
+                        if (hexes.length > 0) {
+                            setBackgroundColor(hexes[0]);
+                        }
+                    }}
+                />
+            )}
+            {activeTab === 'teks' && <EditorTeksPanel />}
+            {activeTab === 'assets' && <AIAssetsPanel />}
+            
+            {activeTab === 'tools' && (
+                <div className="p-4 h-full flex flex-col gap-4 overflow-y-auto w-full">
+                    <div className="flex items-center gap-2 border-b pb-4 shrink-0">
+                        <Wrench className="h-5 w-5 text-primary" />
+                        <h2 className="font-semibold text-sm">Design Tools</h2>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                        <ToolButton icon={Type} label="Add Text" onClick={handleAddText} />
+                        
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <div>
+                                    <ToolButton icon={Blocks} label="Shapes" />
+                                </div>
+                            </PopoverTrigger>
+                            <PopoverContent side="right" className="w-40 p-2 flex flex-col gap-1 ml-2 rounded-xl border-border/50 shadow-xl backdrop-blur-md bg-card/95">
+                                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Shapes</div>
+                                <Button variant="ghost" size="sm" className="justify-start rounded-lg hover:bg-muted" onClick={() => handleAddShape('rect')}>
+                                    <Square className="h-4 w-4 mr-3" /> Rectangle
+                                </Button>
+                                <Button variant="ghost" size="sm" className="justify-start rounded-lg hover:bg-muted" onClick={() => handleAddShape('circle')}>
+                                    <Circle className="h-4 w-4 mr-3" /> Circle
+                                </Button>
+                                <Button variant="ghost" size="sm" className="justify-start rounded-lg hover:bg-muted" onClick={() => handleAddShape('line')}>
+                                    <Minus className="h-4 w-4 mr-3" /> Line
+                                </Button>
+                            </PopoverContent>
+                        </Popover>
+
+                        <label className="w-full cursor-pointer">
+                            <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={handleImageUpload}
+                                disabled={saving}
+                            />
+                            <div className={cn(
+                                "flex flex-col items-center justify-center w-full h-20 rounded-xl transition-all duration-200 border border-transparent group",
+                                saving ? "opacity-50 cursor-not-allowed" : "hover:border-primary/30 hover:bg-primary/5 text-muted-foreground hover:text-primary"
+                            )}>
+                                <Upload className="h-7 w-7 mb-2 transition-transform group-hover:scale-110 drop-shadow-sm" />
+                                <span className="text-[11px] font-medium tracking-wide">Upload Image</span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div className="mt-8 space-y-4">
+                        <div className="px-1">
+                            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-3">Canvas Background</label>
+                            <div className="flex items-center gap-4">
+                                <div className="h-12 w-12 rounded-full border-2 border-muted overflow-hidden flex items-center justify-center cursor-pointer relative shadow-sm hover:border-primary transition-colors shrink-0" title="Canvas Background Color">
+                                    <input
+                                        type="color"
+                                        value={backgroundColor || '#ffffff'}
+                                        onChange={(e) => setBackgroundColor(e.target.value)}
+                                        className="absolute inset-0 w-16 h-16 -top-2 -left-2 cursor-pointer p-0 bg-transparent"
+                                    />
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-medium">Solid Color</span>
+                                    <span className="text-xs text-muted-foreground uppercase">{backgroundColor || '#ffffff'}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <Button 
+                            variant="outline" 
+                            className="w-full justify-start h-12 text-destructive border-destructive/20 hover:bg-destructive/10 hover:border-destructive/30 rounded-xl mt-4"
+                            onClick={() => setBackgroundUrl(null)}
+                        >
+                            <Trash2 className="h-4 w-4 mr-3" />
+                            Clear Image Background
+                        </Button>
+                    </div>
+                </div>
+            )}
+        </>
+    );
+
+    if (isMobile) {
+        return (
+            <>
+                {/* Mobile Bottom Navigation Component */}
+                <div className="fixed bottom-0 left-0 right-0 h-16 bg-background/95 backdrop-blur-xl border-t shadow-[0_-4px_20px_rgba(0,0,0,0.1)] z-50 flex items-center justify-around px-2 pb-safe tour-edit-ai">
+                    {navItems.map((item) => (
+                        <div key={item.id} className="w-14">
+                            <NavButton id={item.id} icon={item.icon} label={item.label} />
+                        </div>
+                    ))}
+                </div>
+                
+                {/* Mobile Slide-up Bottom Sheet */}
+                <BottomSheet
+                    isOpen={!isCollapsed}
+                    onClose={closePanel}
+                    title={navItems.find(n => n.id === activeTab)?.label}
+                >
+                    {renderActivePanel()}
+                </BottomSheet>
+            </>
+        );
+    }
+return (
         <div className="flex h-full border-r border-border/40 bg-background/80 backdrop-blur-xl shadow-xl z-40 relative transition-all duration-300 tour-edit-ai">
             {/* Narrow Navigation Bar */}
             <div className="w-[80px] h-full flex flex-col items-center py-4 border-r border-border/40 gap-3 shrink-0 bg-card/50 z-50">
@@ -208,102 +335,7 @@ export const LeftSidebar: React.FC = () => {
                     isCollapsed ? "w-0 opacity-0" : "w-[300px] opacity-100"
                 )}
             >
-                {activeTab === 'aistudio' && <AIStudioPanel autoOpenSmartAd={autoOpenSmartAd} />}
-                {activeTab === 'bgremoval' && (
-                    <BackgroundRemovalPanel />
-                )}
-                {activeTab === 'brandkit' && (
-                    <BrandKitPanel 
-                        onClose={closePanel} 
-                        onApplyColors={(hexes: string[]) => {
-                            if (hexes.length > 0) {
-                                // Apply the first extracted color as the canvas background
-                                setBackgroundColor(hexes[0]);
-                            }
-                        }}
-                    />
-                )}
-                {activeTab === 'teks' && <EditorTeksPanel />}
-                {activeTab === 'assets' && <AIAssetsPanel />}
-                
-                {activeTab === 'tools' && (
-                    <div className="p-4 h-full flex flex-col gap-4 overflow-y-auto w-full">
-                        <div className="flex items-center gap-2 border-b pb-4 shrink-0">
-                            <Wrench className="h-5 w-5 text-primary" />
-                            <h2 className="font-semibold text-sm">Design Tools</h2>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-3">
-                            <ToolButton icon={Type} label="Add Text" onClick={handleAddText} />
-                            
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <div>
-                                        <ToolButton icon={Blocks} label="Shapes" />
-                                    </div>
-                                </PopoverTrigger>
-                                <PopoverContent side="right" className="w-40 p-2 flex flex-col gap-1 ml-2 rounded-xl border-border/50 shadow-xl backdrop-blur-md bg-card/95">
-                                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Shapes</div>
-                                    <Button variant="ghost" size="sm" className="justify-start rounded-lg hover:bg-muted" onClick={() => handleAddShape('rect')}>
-                                        <Square className="h-4 w-4 mr-3" /> Rectangle
-                                    </Button>
-                                    <Button variant="ghost" size="sm" className="justify-start rounded-lg hover:bg-muted" onClick={() => handleAddShape('circle')}>
-                                        <Circle className="h-4 w-4 mr-3" /> Circle
-                                    </Button>
-                                    <Button variant="ghost" size="sm" className="justify-start rounded-lg hover:bg-muted" onClick={() => handleAddShape('line')}>
-                                        <Minus className="h-4 w-4 mr-3" /> Line
-                                    </Button>
-                                </PopoverContent>
-                            </Popover>
-
-                            <label className="w-full cursor-pointer">
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    className="hidden"
-                                    onChange={handleImageUpload}
-                                    disabled={saving}
-                                />
-                                <div className={cn(
-                                    "flex flex-col items-center justify-center w-full h-20 rounded-xl transition-all duration-200 border border-transparent group",
-                                    saving ? "opacity-50 cursor-not-allowed" : "hover:border-primary/30 hover:bg-primary/5 text-muted-foreground hover:text-primary"
-                                )}>
-                                    <Upload className="h-7 w-7 mb-2 transition-transform group-hover:scale-110 drop-shadow-sm" />
-                                    <span className="text-[11px] font-medium tracking-wide">Upload Image</span>
-                                </div>
-                            </label>
-                        </div>
-
-                        <div className="mt-8 space-y-4">
-                            <div className="px-1">
-                                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-3">Canvas Background</label>
-                                <div className="flex items-center gap-4">
-                                    <div className="h-12 w-12 rounded-full border-2 border-muted overflow-hidden flex items-center justify-center cursor-pointer relative shadow-sm hover:border-primary transition-colors shrink-0" title="Canvas Background Color">
-                                        <input
-                                            type="color"
-                                            value={backgroundColor || '#ffffff'}
-                                            onChange={(e) => setBackgroundColor(e.target.value)}
-                                            className="absolute inset-0 w-16 h-16 -top-2 -left-2 cursor-pointer p-0 bg-transparent"
-                                        />
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <span className="text-sm font-medium">Solid Color</span>
-                                        <span className="text-xs text-muted-foreground uppercase">{backgroundColor || '#ffffff'}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <Button 
-                                variant="outline" 
-                                className="w-full justify-start h-12 text-destructive border-destructive/20 hover:bg-destructive/10 hover:border-destructive/30 rounded-xl mt-4"
-                                onClick={() => setBackgroundUrl(null)}
-                            >
-                                <Trash2 className="h-4 w-4 mr-3" />
-                                Clear Image Background
-                            </Button>
-                        </div>
-                    </div>
-                )}
+                {renderActivePanel()}
             </div>
         </div>
     );

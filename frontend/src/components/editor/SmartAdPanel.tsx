@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useAdCreatorEndpoints, AdCreatorResponse } from '@/lib/api/adCreatorApi';
 import { useCanvasStore } from '@/store/useCanvasStore';
 import { useBrandKit } from '@/hooks/useBrandKit';
-import { Upload, Sparkles, AlertCircle, Loader2, Check, Zap } from 'lucide-react';
+import { Upload, AlertCircle, Loader2, Check, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const SmartAdPanel: React.FC = () => {
@@ -245,9 +245,9 @@ export const SmartAdPanel: React.FC = () => {
                         </button>
                     </div>
                     
-                    <div className="grid gap-4">
+                    <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 md:grid md:grid-cols-1 md:overflow-visible custom-scrollbar">
                         {result.concepts.map((concept, index) => (
-                            <div key={concept.id} className="relative group rounded-xl overflow-hidden border border-border bg-background">
+                            <div key={concept.id} className="relative group rounded-xl overflow-hidden border border-border bg-background min-w-[85%] md:min-w-0 snap-center shrink-0">
                                 <div className="relative aspect-video w-full bg-muted">
                                     {/* Mock composite preview */}
                                     {/* eslint-disable-next-line @next/next/no-img-element */}

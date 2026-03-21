@@ -6,7 +6,7 @@ import { useProjectApi, BrandKit, Template } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Sparkles, ImagePlus, Wallpaper, RefreshCw, X, Square, Smartphone, Monitor, FileImage, Zap, Sparkle, Crown, Smile, Upload, Trash2 } from 'lucide-react';
+import { Loader2, Sparkles, ImagePlus, Wallpaper, RefreshCw, X, Square, Smartphone, Monitor, FileImage, Upload, Trash2, Film, Palette, Layout } from 'lucide-react';
 import { InlineErrorBanner } from '@/components/feedback/InlineErrorBanner';
 import { ErrorModal, ErrorModalType } from '@/components/feedback/ErrorModal';
 import { cn } from '@/lib/utils';
@@ -21,10 +21,11 @@ const ASPECT_RATIOS = [
 ];
 
 const STYLE_PRESETS = [
-    { id: 'bold', label: 'Bold', icon: Zap },
-    { id: 'minimalist', label: 'Minimal', icon: Sparkle },
-    { id: 'elegant', label: 'Elegant', icon: Crown },
-    { id: 'playful', label: 'Playful', icon: Smile }
+    { id: 'auto', label: 'Auto (Default)', icon: Sparkles },
+    { id: 'macro', label: 'Ultra Macro', icon: ImagePlus },
+    { id: 'cinematic', label: 'Cinematic', icon: Film },
+    { id: 'comic', label: 'Comic/Pop-Art', icon: Palette },
+    { id: 'infographic', label: 'Infographic', icon: Layout }
 ];
 
 export const AIPromptPanel: React.FC = () => {
@@ -66,7 +67,7 @@ export const AIPromptPanel: React.FC = () => {
     const [generatedUrl, setGeneratedUrl] = useState<string | null>(null);
 
     const [aspectRatio, setAspectRatio] = useState('1:1');
-    const [style, setStyle] = useState('bold');
+    const [style, setStyle] = useState('auto');
 
     // Error state
     const [inlineError, setInlineError] = useState<{
@@ -93,7 +94,7 @@ export const AIPromptPanel: React.FC = () => {
             const jobData = await generateDesign({
                 raw_text: text || "Product photo",
                 aspect_ratio: aspectRatio as '1:1' | '9:16' | '16:9' | '4:5',
-                style_preference: style as 'bold' | 'minimalist' | 'elegant' | 'playful',
+                style_preference: style,
                 integrated_text: false,
                 brand_kit_id: selectedBrandKit !== 'none' ? selectedBrandKit : undefined,
                 template_id: selectedTemplate !== 'none' ? selectedTemplate : undefined,
@@ -287,6 +288,13 @@ export const AIPromptPanel: React.FC = () => {
                         value={prompt}
                         onChange={(e) => setPrompt(e.target.value)}
                         disabled={isGenerating}
+                        onFocus={(e) => {
+                            if (window.innerWidth <= 768) {
+                                setTimeout(() => {
+                                    e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                }, 300);
+                            }
+                        }}
                     />
                 </div>
 

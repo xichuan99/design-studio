@@ -4,7 +4,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useCanvasStore } from '@/store/useCanvasStore';
 import { Button } from '@/components/ui/button';
-import { ZoomIn, ZoomOut, Maximize, MousePointer2, Grid3x3 } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize, Grid3x3 } from 'lucide-react';
 import { toast } from 'sonner';
 import { FloatingToolbar } from './FloatingToolbar';
 import { CanvasContextMenu } from './CanvasContextMenu';
@@ -23,7 +23,7 @@ interface CanvasWorkspaceProps {
 export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ onBgStatusChange }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasBoxRef = useRef<HTMLDivElement>(null);
-    const { selectedElementIds, deleteSelectedElements, duplicateSelectedElements, elements, backgroundUrl, backgroundColor, canvasWidth, canvasHeight } = useCanvasStore();
+    const { selectedElementIds, deleteSelectedElements, duplicateSelectedElements, elements, backgroundUrl, canvasWidth, canvasHeight } = useCanvasStore();
 
     // Context menu state
     const [contextMenu, setContextMenu] = useState<{ x: number; y: number; elementId: string | null } | null>(null);
@@ -131,6 +131,86 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ onBgStatusChan
         }
     };
 
+    // Touch pinch-to-zoom and pan logic
+    const lastDistRef = useRef<number | null>(null);
+    const lastCenterRef = useRef<{ x: number, y: number } | null>(null);
+
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+
+        const handleTouchStart = (e: TouchEvent) => {
+            if (e.touches.length === 2) {
+                e.preventDefault(); // Prevent native browser zoom
+                const touch1 = e.touches[0];
+                const touch2 = e.touches[1];
+                
+                // For Pinch
+                const dist = Math.hypot(touch1.clientX - touch2.clientX, touch1.clientY - touch2.clientY);
+                lastDistRef.current = dist;
+                
+                // For Pan
+                const centerX = (touch1.clientX + touch2.clientX) / 2;
+                const centerY = (touch1.clientY + touch2.clientY) / 2;
+                lastCenterRef.current = { x: centerX, y: centerY };
+
+                manualZoomRef.current = true;
+            } else {
+                lastDistRef.current = null;
+                lastCenterRef.current = null;
+            }
+        };
+
+        const handleTouchMove = (e: TouchEvent) => {
+            if (e.touches.length === 2 && lastDistRef.current !== null && lastCenterRef.current !== null) {
+                e.preventDefault(); // Prevent native browser zoom/scroll
+                const touch1 = e.touches[0];
+                const touch2 = e.touches[1];
+                
+                // --- Handle Zoom ---
+                const dist = Math.hypot(touch1.clientX - touch2.clientX, touch1.clientY - touch2.clientY);
+                const scaleBy = dist / lastDistRef.current;
+                lastDistRef.current = dist;
+                
+                setZoom(prev => {
+                    const newZoom = prev * scaleBy;
+                    return Math.min(Math.max(newZoom, 0.1), 5); // 10% to 500%
+                });
+
+                // --- Handle Pan ---
+                const currentCenterX = (touch1.clientX + touch2.clientX) / 2;
+                const currentCenterY = (touch1.clientY + touch2.clientY) / 2;
+
+                const panX = currentCenterX - lastCenterRef.current.x;
+                const panY = currentCenterY - lastCenterRef.current.y;
+
+                container.scrollLeft -= panX;
+                container.scrollTop -= panY;
+
+                lastCenterRef.current = { x: currentCenterX, y: currentCenterY };
+            }
+        };
+
+        const handleTouchEnd = (e: TouchEvent) => {
+            if (e.touches.length < 2) {
+                lastDistRef.current = null;
+                lastCenterRef.current = null;
+            }
+        };
+
+        container.addEventListener('touchstart', handleTouchStart, { passive: false });
+        container.addEventListener('touchmove', handleTouchMove, { passive: false });
+        container.addEventListener('touchend', handleTouchEnd, { passive: false });
+        container.addEventListener('touchcancel', handleTouchEnd, { passive: false });
+
+        return () => {
+            container.removeEventListener('touchstart', handleTouchStart);
+            container.removeEventListener('touchmove', handleTouchMove);
+            container.removeEventListener('touchend', handleTouchEnd);
+            container.removeEventListener('touchcancel', handleTouchEnd);
+        };
+    }, []);
+
     // Auto-fit on mount and resize
     useEffect(() => {
         if (!containerRef.current) return;
@@ -162,7 +242,7 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ onBgStatusChan
         }
     }, [bgStatus, onBgStatusChange]);
 
-    const isEmpty = elements.length === 0 && !backgroundUrl && (!backgroundColor || backgroundColor === '#ffffff');
+    // isEmpty removed due to linting unused variable
 
     // This helps center the canvas visually when zoomed out
     const transformStyle = {
