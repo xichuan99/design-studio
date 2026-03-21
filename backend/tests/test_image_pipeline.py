@@ -39,7 +39,7 @@ async def test_generate_background_text_to_image():
 
         result = await generate_background(
             visual_prompt="delicious food on dark background",
-            style="bold",
+            style="auto",
             aspect_ratio="1:1",
         )
 
@@ -71,7 +71,7 @@ async def test_generate_background_image_to_image():
         result = await generate_background(
             visual_prompt="food promo",
             reference_image_url="https://example.com/ref.jpg",
-            style="elegant",
+            style="cinematic",
             aspect_ratio="9:16",
         )
 
@@ -94,11 +94,12 @@ def test_aspect_ratio_map_complete():
     assert "1:1" in ASPECT_RATIO_MAP
     assert "9:16" in ASPECT_RATIO_MAP
     assert "16:9" in ASPECT_RATIO_MAP
+    assert "4:5" in ASPECT_RATIO_MAP
 
 
 def test_style_suffixes_complete():
     """All expected styles have prompt suffixes."""
-    for style in ["bold", "minimalist", "elegant", "playful"]:
+    for style in ["auto", "macro", "cinematic", "comic", "infographic"]:
         assert style in STYLE_SUFFIXES
 
 

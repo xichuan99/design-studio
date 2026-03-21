@@ -143,7 +143,7 @@ def generate_design_task(
     job_id: str,
     raw_text: str,
     aspect_ratio: str = "1:1",
-    style: str = "bold",
+    style: str = "auto",
     reference_url: str | None = None,
     integrated_text: bool = False,
     brand_colors: list | None = None,

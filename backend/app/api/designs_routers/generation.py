@@ -413,13 +413,13 @@ async def generate_design(
         from google import genai
         from google.genai import types
 
-        style_map = {
-            "bold": "bold vibrant colors, high contrast, eye-catching",
-            "minimalist": "clean minimal design, soft colors, whitespace",
-            "elegant": "luxury premium feel, gold accents, sophisticated",
-            "playful": "fun colorful, happy energetic vibe, bubbly shapes",
-        }
-        style_suffix = style_map.get(request.style_preference, style_map["bold"])
+        from app.services.image_service import STYLE_SUFFIXES
+
+        style_suffix = STYLE_SUFFIXES.get(request.style_preference)
+        if style_suffix is None:
+            import logging
+            logging.warning(f"Unrecognized style preference: '{request.style_preference}'. Falling back to 'auto'.")
+            style_suffix = STYLE_SUFFIXES["auto"]
 
         # Determine the best model and text instructions based on integration needs
         if request.integrated_text:

@@ -16,14 +16,16 @@ ASPECT_RATIO_MAP = {
     "1:1": {"width": 1024, "height": 1024},
     "9:16": {"width": 768, "height": 1344},
     "16:9": {"width": 1344, "height": 768},
+    "4:5": {"width": 896, "height": 1120},
 }
 
 # Style preference → prompt suffix mapping
 STYLE_SUFFIXES = {
-    "bold": "bold vibrant colors, high contrast, eye-catching, dynamic composition",
-    "minimalist": "clean minimal design, soft colors, lots of whitespace, simple elegant",
-    "elegant": "luxury premium feel, gold accents, dark moody lighting, sophisticated",
-    "playful": "fun colorful cartoon style, happy energetic vibe, bubbly shapes",
+    "auto": "high quality, professional product photography, well lit, sharp focus, 8k resolution, photorealistic",
+    "macro": "shot on Laowa 24mm f/14 2X Macro Probe, ultra-detailed texture, sharp focus, clean macro photography, professional studio lighting",
+    "cinematic": "cinematic shot, dramatic directed lighting, dynamic angle, high contrast, shallow depth of field, 8k resolution, photorealistic",
+    "comic": "vibrant comic book style art, clean bold ink lines, flat colors, dynamic action pose, cel-shaded illustration",
+    "infographic": "clean flat design, solid neutral background, vector art style, minimalist corporate, sharp edges, bright evenly lit, 8k resolution",
 }
 
 # Negative prompt to ensure no text is generated in the image
@@ -36,7 +38,7 @@ NEGATIVE_PROMPT = (
 async def generate_background(
     visual_prompt: str,
     reference_image_url: str | None = None,
-    style: str = "bold",
+    style: str = "auto",
     aspect_ratio: str = "1:1",
     integrated_text: bool = False,
 ) -> dict:
@@ -46,7 +48,7 @@ async def generate_background(
     Args:
         visual_prompt (str): The image generation prompt (from LLM output).
         reference_image_url (str | None): Optional reference image for style transfer. Defaults to None.
-        style (str): Style preference (bold, minimalist, elegant, playful). Defaults to "bold".
+        style (str): Style preference (auto, macro, cinematic, comic, infographic). Defaults to "auto".
         aspect_ratio (str): Target aspect ratio (1:1, 9:16, 16:9). Defaults to "1:1".
         integrated_text (bool): If True, do not block text generation in the negative prompt. Defaults to False.
 
@@ -70,7 +72,7 @@ async def generate_background(
     os.environ["FAL_KEY"] = settings.FAL_KEY
 
     # Enhance prompt with style suffix and copy-space instructions
-    style_suffix = STYLE_SUFFIXES.get(style, STYLE_SUFFIXES["bold"])
+    style_suffix = STYLE_SUFFIXES.get(style, STYLE_SUFFIXES["auto"])
 
     if integrated_text:
         # User wants text in the image. Remove the neg prompt text blockers.
