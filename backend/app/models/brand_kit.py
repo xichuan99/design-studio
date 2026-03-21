@@ -23,6 +23,7 @@ class BrandKit(Base):
     typography = Column(
         JSON, nullable=True
     )  # Stored as JSON dict: {"primaryFont": "...", "secondaryFont": "..."}
+    brand_strategy = Column(JSON, nullable=True)  # Strategy report
     is_active = Column(Boolean, nullable=False, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

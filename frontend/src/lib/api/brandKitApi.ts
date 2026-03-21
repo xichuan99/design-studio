@@ -38,11 +38,11 @@ export function useBrandKitEndpoints() {
             return res.json();
         };
 
-    const generateBrandKit = async (prompt: string): Promise<Partial<Types.BrandKitProfile>> => {
+    const generateBrandKit = async (req: Types.GenerateBrandKitRequest): Promise<Partial<Types.BrandKitProfile>> => {
         const res = await fetch(`${API_BASE_URL}/brand-kits/generate`, {
             method: 'POST',
             headers: getHeaders(),
-            body: JSON.stringify({ prompt }),
+            body: JSON.stringify(req),
         });
         if (!res.ok) {
             const errBase = await res.json().catch(() => ({}));

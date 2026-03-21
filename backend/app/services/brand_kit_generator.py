@@ -10,40 +10,73 @@ from fastapi import status
 from app.services.llm_client import get_genai_client
 
 BRAND_KIT_SYSTEM_PROMPT = """
-You are an expert Brand Identity Designer.
-Your task is to generate a comprehensive Brand Kit based on the provided business description.
+You are an expert Brand Identity Designer, Color Psychologist, and Master Typographer.
+Your task is to generate a comprehensive Brand Kit based on the provided business description and brand parameters.
 
 Requirements:
-1. Provide a brand name if one isn't explicitly given in the prompt, or use the one provided.
-2. Provide exactly 5 distinct colors with the following roles: "primary", "secondary", "accent", "background", "text". Make sure the hex codes are valid and well-coordinated (e.g., text color should contrast well with background color). Include a descriptive Indonesian name for each color.
-3. Provide a typography pairing using standard Google Fonts (e.g., "Inter", "Playfair Display", "Roboto", "Montserrat"). Provide a primaryFont (for headings) and secondaryFont (for body text).
-4. Provide a highly descriptive "logo_prompt" in English that can be used by an AI image generator (like FLUX) to create a beautiful, minimalist, vector-style logo on a solid white background. It MUST NOT include text/words inside the logo itself.
+1. Provide exactly 5 distinct colors with roles: "primary", "secondary", "accent", "background", "text". Include a descriptive Indonesian name, psychological reasoning, and UI/application instruction.
+2. Formulate a Typography pairing using standard Google Fonts (e.g., "Inter", "Playfair Display", "Outfit", "Space Grotesk"). Provide the logic behind the font choice, use case, and an exact CSS typography hierarchy.
+3. Formulate a 'brand_strategy' focusing on target audience appeal and design differentiator.
+4. Provide a highly descriptive "logo_prompt" in English that can be used by an AI image generator (like FLUX) to create a beautiful, minimalist, vector-style logo on a solid white background matching the brand's aesthetic. NO TEXT in the logo.
 
 Return your response strictly as a JSON object matching this schema exactly:
 {
   "name": "Brand Name",
   "colors": [
-    {"hex": "#...", "name": "...", "role": "primary"},
-    ...
+    {
+      "hex": "#...",
+      "name": "...",
+      "role": "primary",
+      "reasoning": "Psikologi warna ini...",
+      "application": "Cocok digunakan untuk..."
+    }
   ],
   "typography": {
-    "primaryFont": "...",
-    "secondaryFont": "..."
+    "primaryFont": "...", "primaryFontSource": "Google Fonts", "primaryFontReasoning": "...", "primaryFontUse": "...",
+    "secondaryFont": "...", "secondaryFontSource": "Google Fonts", "secondaryFontReasoning": "...", "secondaryFontUse": "...",
+    "hierarchy": {
+      "h1": {"size": "64px", "weight": "700", "letterSpacing": "-0.02em", "lineHeight": "1.1"},
+      "h2": {"size": "40px", "weight": "600", "letterSpacing": "-0.01em", "lineHeight": "1.2"},
+      "body": {"size": "16px", "weight": "400", "letterSpacing": "normal", "lineHeight": "1.6"},
+      "caption": {"size": "12px", "weight": "400", "letterSpacing": "0.02em", "lineHeight": "1.4"}
+    }
+  },
+  "brand_strategy": {
+    "personality": ["..."],
+    "targetAudience": "...",
+    "designStyle": "...",
+    "differentiator": "..."
   },
   "logo_prompt": "A minimalist flat vector logo of..."
 }
 """
 
 
-async def generate_brand_identity_json(prompt: str) -> Dict[str, Any]:
+async def generate_brand_identity_json(
+    prompt: str,
+    brand_personality: list[str] = None,
+    target_audience: str = "",
+    design_style: str = "",
+    emotional_tone: str = "",
+) -> Dict[str, Any]:
     if not settings.GEMINI_API_KEY:
         raise ValueError("GEMINI_API_KEY is not set")
+
+    traits = ", ".join(brand_personality) if brand_personality else "Modern, minimal"
+
+    context = f"""
+Business/Brand Description: {prompt}
+Personality Traits: {traits}
+Target Audience: {target_audience}
+Preferred Design Style: {design_style}
+Desired Emotional Tone: {emotional_tone}
+"""
 
     def call_gemini():
         client = get_genai_client()
         response = client.models.generate_content(
             model="gemini-2.5-flash",
-            contents=[BRAND_KIT_SYSTEM_PROMPT, f"Business Description: {prompt}"],
+            contents=[BRAND_KIT_SYSTEM_PROMPT, context],
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
                 temperature=0.7,

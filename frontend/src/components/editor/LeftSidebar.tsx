@@ -7,6 +7,7 @@ import { BackgroundRemovalPanel } from './BackgroundRemovalPanel';
 import BrandKitPanel from './BrandKitPanel';
 import { AIStudioPanel } from './AIStudioPanel';
 import { AIAssetsPanel } from './AIAssetsPanel';
+import { EditorTeksPanel } from './EditorTeksPanel';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Sparkles, Image as ImageIcon, Wrench, Type, Square, Circle, Minus, Blocks, Upload, Trash2, ChevronLeft, ChevronRight, Scissors, Palette, type LucideIcon } from 'lucide-react';
@@ -16,7 +17,7 @@ import { toast } from 'sonner';
 
 export const LeftSidebar: React.FC = () => {
     const [isCollapsed, setIsCollapsed] = useState(false);
-    const [activeTab, setActiveTab] = useState<'tools' | 'aistudio' | 'assets' | 'bgremoval' | 'brandkit'>('aistudio');
+    const [activeTab, setActiveTab] = useState<'teks' | 'tools' | 'aistudio' | 'assets' | 'bgremoval' | 'brandkit'>('aistudio');
 
     // Toolbar logic
     const { addElement, backgroundColor, setBackgroundColor, setBackgroundUrl } = useCanvasStore();
@@ -159,6 +160,7 @@ export const LeftSidebar: React.FC = () => {
     const navItems: { id: typeof activeTab; icon: LucideIcon; label: string }[] = [
         { id: 'aistudio', icon: Sparkles, label: 'AI Studio' },
         { id: 'bgremoval', icon: Scissors, label: 'Hapus BG' },
+        { id: 'teks', icon: Type, label: 'Teks' },
         { id: 'brandkit', icon: Palette, label: 'Brand Kit' },
         { id: 'assets', icon: ImageIcon, label: 'Assets' },
         { id: 'tools', icon: Wrench, label: 'Tools' },
@@ -209,6 +211,7 @@ export const LeftSidebar: React.FC = () => {
                         }}
                     />
                 )}
+                {activeTab === 'teks' && <EditorTeksPanel />}
                 {activeTab === 'assets' && <AIAssetsPanel />}
                 
                 {activeTab === 'tools' && (

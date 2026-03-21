@@ -1,6 +1,6 @@
 import { AppHeader } from "@/components/layout/AppHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Wand2, ImagePlus, Eraser, MoveDiagonal, Sparkles, Camera, ShieldCheck, Layers, Images } from "lucide-react";
+import { Wand2, ImagePlus, Eraser, MoveDiagonal, Sparkles, Camera, ShieldCheck, Layers, Images, Type } from "lucide-react";
 import Link from "next/link";
 
 export default function ToolsHubPage() {
@@ -59,6 +59,13 @@ export default function ToolsHubPage() {
       description: "Foto terlalu sempit untuk banner? Perluas sisi foto tanpa kehilangan objek utama.",
       icon: <MoveDiagonal className="w-8 h-8 text-indigo-500" />,
       href: "/tools/generative-expand",
+      isReady: true,
+    },
+    {
+      title: "AI Text Banner",
+      description: "Buat elemen teks dekoratif dengan background transparan untuk promosi desain Anda.",
+      icon: <Type className="w-8 h-8 text-purple-500" />,
+      href: "/tools/text-banner",
       isReady: true,
     },
     {

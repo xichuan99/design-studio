@@ -49,7 +49,13 @@ async def generate_brand_kit(
     import logging
 
     try:
-        identity_json = await generate_brand_identity_json(request.prompt)
+        identity_json = await generate_brand_identity_json(
+            prompt=request.prompt,
+            brand_personality=request.brand_personality,
+            target_audience=request.target_audience,
+            design_style=request.design_style,
+            emotional_tone=request.emotional_tone,
+        )
         logo_prompt = identity_json.get(
             "logo_prompt", f"Minimalist flat vector logo for {request.prompt}"
         )
@@ -67,6 +73,7 @@ async def generate_brand_kit(
 
         colors_data = identity_json.get("colors", [])
         typography_data = identity_json.get("typography", {})
+        brand_strategy_data = identity_json.get("brand_strategy", {})
 
         return BrandKitCreate(
             name=identity_json.get("name", "AI Gen Brand Kit"),
@@ -74,6 +81,7 @@ async def generate_brand_kit(
             logos=[result_url],
             colors=colors_data,
             typography=typography_data,
+            brand_strategy=brand_strategy_data,
         )
     except Exception as e:
         logging.exception(f"Exception generating brand kit: {e}")
@@ -216,6 +224,7 @@ async def create_brand_kit(
         typography_json = (
             brand_kit_in.typography.model_dump() if brand_kit_in.typography else None
         )
+        brand_strategy_json = brand_kit_in.brand_strategy if brand_kit_in.brand_strategy else None
 
         new_kit = BrandKit(
             user_id=current_user.id,
@@ -224,6 +233,7 @@ async def create_brand_kit(
             logos=brand_kit_in.logos,
             colors=colors_json,
             typography=typography_json,
+            brand_strategy=brand_strategy_json,
             is_active=True,
         )
 

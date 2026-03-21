@@ -20,10 +20,20 @@ class ColorSwatch(BaseModel):
         description="Logical role: primary, secondary, accent, background, text",
         json_schema_extra={"example": "primary"},
     )
+    reasoning: Optional[str] = Field(
+        None, description="Psychological reasoning for this color"
+    )
+    application: Optional[str] = Field(None, description="How to use this color")
 
     model_config = ConfigDict(
         json_schema_extra={
-            "example": {"hex": "#FF5733", "name": "Oranye Terang", "role": "primary"}
+            "example": {
+                "hex": "#FF5733",
+                "name": "Oranye Terang",
+                "role": "primary",
+                "reasoning": "Oranye menciptakan kesan energik...",
+                "application": "Tombol CTA & logo",
+            }
         }
     )
 
@@ -34,15 +44,28 @@ class Typography(BaseModel):
         description="Primary font family name",
         json_schema_extra={"example": "Inter"},
     )
+    primaryFontSource: Optional[str] = Field(None)
+    primaryFontReasoning: Optional[str] = Field(None)
+    primaryFontUse: Optional[str] = Field(None)
+
     secondaryFont: Optional[str] = Field(
         None,
         description="Secondary font family name",
         json_schema_extra={"example": "Roboto"},
     )
+    secondaryFontSource: Optional[str] = Field(None)
+    secondaryFontReasoning: Optional[str] = Field(None)
+    secondaryFontUse: Optional[str] = Field(None)
+
+    hierarchy: Optional[dict] = Field(None, description="Font sizes, weights, and spacing")
 
     model_config = ConfigDict(
         json_schema_extra={
-            "example": {"primaryFont": "Inter", "secondaryFont": "Roboto"}
+            "example": {
+                "primaryFont": "Inter",
+                "secondaryFont": "Roboto",
+                "hierarchy": {"h1": {"size": "64px"}},
+            }
         }
     )
 
@@ -67,6 +90,7 @@ class BrandKitBase(BaseModel):
         ..., min_length=1, max_length=10, description="List of brand colors"
     )
     typography: Optional[Typography] = Field(None, description="Typography settings")
+    brand_strategy: Optional[dict] = Field(None, description="Brand strategy details")
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -78,6 +102,7 @@ class BrandKitBase(BaseModel):
                     {"hex": "#FF5733", "name": "Oranye Terang", "role": "primary"}
                 ],
                 "typography": {"primaryFont": "Inter", "secondaryFont": "Roboto"},
+                "brand_strategy": {"personality": ["bold", "modern"]},
             }
         }
     )
@@ -119,6 +144,7 @@ class BrandKitUpdate(BaseModel):
         None, description="List of brand colors"
     )
     typography: Optional[Typography] = Field(None, description="Typography settings")
+    brand_strategy: Optional[dict] = Field(None, description="Brand strategy details")
     is_active: Optional[bool] = Field(
         None,
         description="Whether this brand kit is active",
@@ -191,10 +217,20 @@ class BrandKitGenerateRequest(BaseModel):
             "example": "Kedai kopi modern minimalis bernama 'Kopi Senja'"
         },
     )
+    brand_personality: List[str] = Field(default_factory=list, description="Array of brand traits")
+    target_audience: str = Field("", description="Target audience description")
+    design_style: str = Field("", description="Preferred visual design style")
+    emotional_tone: str = Field("", description="Primary emotion the brand should trigger")
 
     model_config = ConfigDict(
         json_schema_extra={
-            "example": {"prompt": "Kedai kopi modern minimalis bernama 'Kopi Senja'"}
+            "example": {
+                "prompt": "Kedai kopi modern minimalis bernama 'Kopi Senja'",
+                "brand_personality": ["modern", "minimalist", "calm"],
+                "target_audience": "Pekerja kantoran usia 25-35 tahun",
+                "design_style": "minimalis",
+                "emotional_tone": "tenang dan fokus",
+            }
         }
     )
 

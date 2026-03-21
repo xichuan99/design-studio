@@ -33,11 +33,36 @@ export interface ColorSwatch {
     hex: string;
     name: string;
     role: ColorRole;
+    reasoning?: string;
+    application?: string;
+}
+
+export interface TypographyHierarchy {
+    size: string;
+    weight: string;
+    letterSpacing: string;
+    fontFamily?: string;
+    lineHeight?: string;
+    color?: string;
 }
 
 export interface Typography {
     primaryFont?: string;
+    primaryFontSource?: string;
+    primaryFontReasoning?: string;
+    primaryFontUse?: string;
     secondaryFont?: string;
+    secondaryFontSource?: string;
+    secondaryFontReasoning?: string;
+    secondaryFontUse?: string;
+    hierarchy?: Record<string, TypographyHierarchy>;
+}
+
+export interface BrandStrategy {
+    personality?: string[];
+    targetAudience?: string;
+    designStyle?: string;
+    differentiator?: string;
 }
 
 export interface BrandKit {
@@ -48,8 +73,17 @@ export interface BrandKit {
     logos: string[];
     colors: ColorSwatch[];
     typography?: Typography;
+    brand_strategy?: BrandStrategy;
     is_active: boolean;
     created_at: string;
+}
+
+export interface GenerateBrandKitRequest {
+    prompt: string;
+    brand_personality?: string[];
+    target_audience?: string;
+    design_style?: string;
+    emotional_tone?: string;
 }
 
 // Alias for semantic clarity in hooks and UI

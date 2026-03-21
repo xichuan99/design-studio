@@ -585,13 +585,18 @@ export function useCreateDesign() {
                 }
             });
 
+            // Persist copyVariations before navigating
+            if (typeof window !== 'undefined') {
+                localStorage.setItem('designStudio_copyVariations', JSON.stringify(copyVariations));
+            }
+
             router.push(`/edit/${newProject.id}`);
         } catch (error) {
             console.error('Failed to create project', error);
             toast.error('Gagal melanjutkan ke editor. Silakan coba lagi.');
             setIsSaving(false);
         }
-    }, [parsedData, imageHistory, activeImageIndex, aspectRatio, integratedText, rawText, generateProjectTitle, saveProject, router]);
+    }, [parsedData, imageHistory, activeImageIndex, aspectRatio, integratedText, rawText, generateProjectTitle, saveProject, router, copyVariations]);
 
     return {
         rawText, setRawText,

@@ -36,7 +36,6 @@ export default function CreatePage() {
         integratedText, setIntegratedText,
         briefQuestions,
         removeProductBg, setRemoveProductBg,
-        copyVariations,
         errorModalState, setErrorModalState,
         inlineError, setInlineError,
         activeBrandKit,
@@ -169,9 +168,7 @@ export default function CreatePage() {
                         />
                     ) : currentStep === 'results' && parsedData ? (
                         <UnifiedResultsView
-                            copyVariations={copyVariations}
                             parsedData={parsedData}
-                            onSelectCopy={(fullText) => setRawText(fullText)}
                             onTogglePromptPart={handleTogglePromptPart}
                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             onModifyPromptParts={(newParts: any, newCombined: string, newTranslation?: string) => {

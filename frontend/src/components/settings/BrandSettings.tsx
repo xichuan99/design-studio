@@ -9,6 +9,7 @@ import { Plus, Trash2, CheckCircle2, Palette, Loader2, Save, Sparkles, Globe } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
+import BrandStrategyReport from './BrandStrategyReport';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -38,12 +39,20 @@ export default function BrandSettings() {
     // AI & URL Generation State
     const [isAiModalOpen, setIsAiModalOpen] = useState(false);
     const [isUrlModalOpen, setIsUrlModalOpen] = useState(false);
-    const [aiPrompt, setAiPrompt] = useState('');
+    const [aiForm, setAiForm] = useState({
+        prompt: '',
+        brand_personality: '',
+        target_audience: '',
+        design_style: '',
+        emotional_tone: ''
+    });
     const [websiteUrl, setWebsiteUrl] = useState('');
     const [isGeneratingAI, setIsGeneratingAI] = useState(false);
     const [isExtractingUrl, setIsExtractingUrl] = useState(false);
+    const [showStrategyReport, setShowStrategyReport] = useState(false);
 
     const handleCreateNew = () => {
+        setShowStrategyReport(false);
         setEditingBrand({
             name: 'New Brand Kit',
             logos: [],
@@ -53,6 +62,7 @@ export default function BrandSettings() {
     };
 
     const handleEdit = (kit: BrandKitProfile) => {
+        setShowStrategyReport(false);
         setEditingBrand({ ...kit });
     };
 
@@ -130,6 +140,7 @@ export default function BrandSettings() {
             }
             await refreshKits();
             setEditingBrand(null); // Return to list view
+            setShowStrategyReport(false);
         } catch (error) {
              console.error("Error saving brand kit", error);
         } finally {
@@ -138,13 +149,30 @@ export default function BrandSettings() {
     };
 
     const handleAiGenerate = async () => {
-        if (!aiPrompt.trim()) return;
+        if (!aiForm.prompt.trim()) return;
         setIsGeneratingAI(true);
         try {
-            const result = await api.generateBrandKit(aiPrompt);
+            const req = {
+                prompt: aiForm.prompt,
+                brand_personality: aiForm.brand_personality ? aiForm.brand_personality.split(',').map(s => s.trim()) : undefined,
+                target_audience: aiForm.target_audience,
+                design_style: aiForm.design_style,
+                emotional_tone: aiForm.emotional_tone
+            };
+            const result = await api.generateBrandKit(req);
             setEditingBrand(result);
             setIsAiModalOpen(false);
-            setAiPrompt('');
+            if (result.brand_strategy) {
+                setShowStrategyReport(true);
+            }
+            // Reset form
+            setAiForm({
+                prompt: '',
+                brand_personality: '',
+                target_audience: '',
+                design_style: '',
+                emotional_tone: ''
+            });
         } catch (error) {
             console.error("Error generating brand kit", error);
             const errorMessage = error instanceof Error ? error.message : "Gagal generate AI Brand Kit";
@@ -197,6 +225,21 @@ export default function BrandSettings() {
 
     if (isLoading) {
         return <div className="flex justify-center p-8"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>;
+    }
+
+    if (showStrategyReport && editingBrand) {
+        return (
+            <BrandStrategyReport
+                brandData={editingBrand}
+                onSave={handleSave}
+                onEdit={() => setShowStrategyReport(false)}
+                onCancel={() => {
+                    setShowStrategyReport(false);
+                    setEditingBrand(null);
+                }}
+                isSaving={isSaving}
+            />
+        );
     }
 
     // --- FORM VIEW ---
@@ -446,25 +489,73 @@ export default function BrandSettings() {
             </AlertDialog>
 
             <AlertDialog open={isAiModalOpen} onOpenChange={(open) => !open && !isGeneratingAI && setIsAiModalOpen(false)}>
-                <AlertDialogContent>
+                <AlertDialogContent className="sm:max-w-[600px]">
                     <AlertDialogHeader>
                         <AlertDialogTitle>Generate Brand Kit dengan AI</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Ceritakan tentang bisnis atau brand Anda, dan biarkan AI merancang palet warna, pasangan tipografi, dan logo minimalis yang paling cocok. Waktu proses: 10-15 detik.
+                            Isi beberapa detail spesifik tentang brand Anda. AI akan merancang strategi, palet warna, tipografi, dan logo minimalis.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
-                    <div className="mt-4">
-                        <Textarea 
-                            placeholder="Misal: Kedai kopi modern minimalis bernama 'Kopi Senja' dengan nuansa warna senja yang menenangkan..." 
-                            value={aiPrompt}
-                            onChange={(e) => setAiPrompt(e.target.value)}
-                            disabled={isGeneratingAI}
-                            className="min-h-[100px]"
-                        />
+                    <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
+                        <div className="grid gap-2">
+                            <Label htmlFor="ai-prompt">Deskripsi Bisnis (Wajib)</Label>
+                            <Textarea 
+                                id="ai-prompt"
+                                placeholder="Misal: Kedai kopi modern minimalis bernama 'Kopi Senja' dengan menu kopi susu aren..." 
+                                value={aiForm.prompt}
+                                onChange={(e) => setAiForm({...aiForm, prompt: e.target.value})}
+                                disabled={isGeneratingAI}
+                                className="min-h-[80px]"
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="ai-target">Target Audience</Label>
+                                <Input 
+                                    id="ai-target"
+                                    placeholder="Misal: Gen Z dan Millennial" 
+                                    value={aiForm.target_audience}
+                                    onChange={(e) => setAiForm({...aiForm, target_audience: e.target.value})}
+                                    disabled={isGeneratingAI}
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="ai-style">Design Style</Label>
+                                <Input 
+                                    id="ai-style"
+                                    placeholder="Misal: Minimalist, Bold, Playful" 
+                                    value={aiForm.design_style}
+                                    onChange={(e) => setAiForm({...aiForm, design_style: e.target.value})}
+                                    disabled={isGeneratingAI}
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="ai-tone">Emotional Tone</Label>
+                                <Input 
+                                    id="ai-tone"
+                                    placeholder="Misal: Trustworthy, Energetic" 
+                                    value={aiForm.emotional_tone}
+                                    onChange={(e) => setAiForm({...aiForm, emotional_tone: e.target.value})}
+                                    disabled={isGeneratingAI}
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="ai-personality">Traits (pisahkan koma)</Label>
+                                <Input 
+                                    id="ai-personality"
+                                    placeholder="Misal: Modern, Friendly, Edgy" 
+                                    value={aiForm.brand_personality}
+                                    onChange={(e) => setAiForm({...aiForm, brand_personality: e.target.value})}
+                                    disabled={isGeneratingAI}
+                                />
+                            </div>
+                        </div>
                     </div>
-                    <AlertDialogFooter className="mt-4">
+                    <AlertDialogFooter className="mt-2">
                         <AlertDialogCancel disabled={isGeneratingAI}>Batal</AlertDialogCancel>
-                        <Button onClick={handleAiGenerate} disabled={isGeneratingAI || !aiPrompt.trim()}>
+                        <Button onClick={handleAiGenerate} disabled={isGeneratingAI || !aiForm.prompt.trim()}>
                             {isGeneratingAI ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
                             {isGeneratingAI ? "Sedang Generate..." : "Generate AI"}
                         </Button>
