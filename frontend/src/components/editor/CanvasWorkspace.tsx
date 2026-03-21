@@ -257,9 +257,9 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ onBgStatusChan
                 </Button>
             </div>
 
-            {/* Empty State Overlay */}
+            {/* Empty State Overlay - rendered above canvas artboard */}
             {isEmpty && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-0">
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-20">
                     <div className="bg-background/80 backdrop-blur-sm p-8 rounded-2xl border shadow-sm flex flex-col items-center max-w-sm text-center">
                         <div className="h-12 w-12 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-4">
                             <MousePointer2 className="h-6 w-6" />
