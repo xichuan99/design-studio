@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useAdCreatorEndpoints, AdCreatorResponse } from '@/lib/api/adCreatorApi';
 import { useCanvasStore } from '@/store/useCanvasStore';
 import { useBrandKit } from '@/hooks/useBrandKit';
-import { Upload, Sparkles, AlertCircle, Loader2, Check } from 'lucide-react';
+import { Upload, Sparkles, AlertCircle, Loader2, Check, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const SmartAdPanel: React.FC = () => {
@@ -220,7 +220,7 @@ export const SmartAdPanel: React.FC = () => {
                             </>
                         ) : (
                             <>
-                                <Sparkles className="w-4 h-4" />
+                                <Zap className="w-4 h-4 fill-current" />
                                 Generate 3 Variasi (-5 Kredit)
                             </>
                         )}
