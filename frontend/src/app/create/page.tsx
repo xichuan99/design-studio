@@ -1,8 +1,11 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { redirect } from "next/navigation";
-import { Loader2, PanelLeftOpen, PanelLeftClose, ImagePlus, Wand2 } from "lucide-react";
+import { redirect, useRouter } from "next/navigation";
+import { Loader2, PanelLeftOpen, PanelLeftClose, ImagePlus, Wand2, Sparkles, Clock } from "lucide-react";
+import { toast } from "sonner";
+import { useProjectApi, ProjectPayload } from "@/lib/api";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { GenerationProgress } from "@/components/create/GenerationProgress";
@@ -18,6 +21,29 @@ import { useCreateDesign } from "./hooks/useCreateDesign";
 
 export default function CreatePage() {
     const { status } = useSession();
+    const router = useRouter();
+    const { getProjects, saveProject } = useProjectApi();
+    const [latestProject, setLatestProject] = useState<ProjectPayload | null>(null);
+    const [isLoadingProject, setIsLoadingProject] = useState(true);
+
+    useEffect(() => {
+        let isMounted = true;
+        const fetchLatest = async () => {
+            if (status !== 'authenticated') return;
+            try {
+                const projects = await getProjects();
+                if (isMounted && projects && projects.length > 0) {
+                    setLatestProject(projects[0]);
+                }
+            } catch (e) {
+                console.error("Failed to fetch latest project:", e);
+            } finally {
+                if (isMounted) setIsLoadingProject(false);
+            }
+        };
+        fetchLatest();
+        return () => { isMounted = false; };
+    }, [status, getProjects]);
 
     const {
         rawText, setRawText,
@@ -250,6 +276,67 @@ export default function CreatePage() {
                                     <h3 className="text-xl font-bold mb-3 text-foreground">Redesign Gambar</h3>
                                     <p className="text-muted-foreground leading-relaxed text-sm">
                                         Unggah referensi foto layout, dan biarkan AI meniru gayanya untuk desain baru dengan kontrol penuh atas tingkat perubahan.
+                                    </p>
+                                </button>
+                                
+                                {/* Smart Ad Card */}
+                                <button
+                                    onClick={async () => {
+                                        const toastId = toast.loading("Menyiapkan Smart Ad...");
+                                        try {
+                                            const newProject = await saveProject({
+                                                title: "Smart Ad",
+                                                status: "draft",
+                                                aspect_ratio: "1:1",
+                                                canvas_state: {
+                                                    elements: [],
+                                                    backgroundUrl: null,
+                                                    backgroundColor: "#ffffff"
+                                                }
+                                            });
+                                            toast.dismiss(toastId);
+                                            router.push(`/edit/${newProject.id}?panel=smart-ad`);
+                                        } catch {
+                                            toast.error("Gagal membuat canvas baru", { id: toastId });
+                                        }
+                                    }}
+                                    className="group flex flex-col items-center text-center p-8 bg-card border shadow-sm hover:border-purple-500/50 hover:shadow-xl hover:shadow-purple-500/5 rounded-3xl transition-all relative overflow-hidden"
+                                >
+                                    <div className="absolute top-4 right-4 bg-purple-500 text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">
+                                        New
+                                    </div>
+                                    <div className="w-20 h-20 mb-6 rounded-2xl bg-purple-500/10 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
+                                        <Sparkles className="w-10 h-10 text-purple-500" />
+                                    </div>
+                                    <h3 className="text-xl font-bold mb-3 text-foreground">Smart Ad Creator</h3>
+                                    <p className="text-muted-foreground leading-relaxed text-sm">
+                                        Ubah foto produk biasa menjadi iklan profesional yang siap pakai untuk berbagai platform media sosial dalam sekejap.
+                                    </p>
+                                </button>
+
+                                {/* Proyek Terakhir Card */}
+                                <button
+                                    onClick={() => {
+                                        if (latestProject) {
+                                            router.push(`/edit/${latestProject.id}`);
+                                        } else {
+                                            router.push('/projects');
+                                        }
+                                    }}
+                                    className={`group flex flex-col items-center justify-center text-center p-8 bg-card border shadow-sm hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-500/5 rounded-3xl transition-all ${!latestProject && !isLoadingProject ? 'opacity-70' : ''}`}
+                                >
+                                    <div className="w-20 h-20 mb-6 rounded-2xl bg-blue-500/10 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
+                                        {isLoadingProject ? (
+                                            <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                                        ) : (
+                                            <Clock className="w-10 h-10 text-blue-500" />
+                                        )}
+                                    </div>
+                                    <h3 className="text-xl font-bold mb-3 text-foreground">
+                                        {isLoadingProject ? "Memuat..." : latestProject ? "Proyek Terakhir" : "Proyek Kosong"}
+                                    </h3>
+                                    <p className="text-muted-foreground leading-relaxed text-sm">
+                                        {isLoadingProject ? "Sedang mengambil data proyek Anda..." : latestProject ? `Lanjutkan edit "${latestProject.title}" yang terakhir Anda kerjakan, tanpa perlu ke halaman Projects.` : "Anda belum memiliki proyek. Mulai dengan membuat desain baru."}
                                     </p>
                                 </button>
                             </div>

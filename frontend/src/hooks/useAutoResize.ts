@@ -24,7 +24,8 @@ export const useAutoResize = () => {
         originalWidth: number,
         originalHeight: number,
         targetSizes: ResizeOption[],
-        projectName: string
+        projectName: string,
+        aiBackgrounds?: Record<string, HTMLImageElement>
     ) => {
         const zip = new JSZip();
         
@@ -55,19 +56,31 @@ export const useAutoResize = () => {
             const layer = stageClone.getLayers()[0];
             if (layer) {
                 // Handle Background image
-                const bgImage = layer.findOne('#bgImage');
+                const bgImage = layer.findOne('#bgImage') as Konva.Image;
                 if (bgImage) {
-                    // Make background fill the new stage (object-fit cover equivalent)
-                    const bgScaleX = size.width / originalWidth;
-                    const bgScaleY = size.height / originalHeight;
-                    const bgScale = Math.max(bgScaleX, bgScaleY);
+                    // Cek apakah ada AI background khusus untuk size ini
+                    const customBgElement = aiBackgrounds?.[size.id];
                     
-                    bgImage.width(originalWidth * bgScale);
-                    bgImage.height(originalHeight * bgScale);
-                    
-                    // Center the background
-                    bgImage.x((size.width - originalWidth * bgScale) / 2);
-                    bgImage.y((size.height - originalHeight * bgScale) / 2);
+                    if (customBgElement) {
+                        // Gunakan AI Background yang sudah di-expand
+                        bgImage.image(customBgElement);
+                        bgImage.width(size.width);
+                        bgImage.height(size.height);
+                        bgImage.x(0);
+                        bgImage.y(0);
+                    } else {
+                        // Fallback: Scale background agar fill new stage (object-fit cover)
+                        const bgScaleX = size.width / originalWidth;
+                        const bgScaleY = size.height / originalHeight;
+                        const bgScale = Math.max(bgScaleX, bgScaleY);
+                        
+                        bgImage.width(originalWidth * bgScale);
+                        bgImage.height(originalHeight * bgScale);
+                        
+                        // Center the background
+                        bgImage.x((size.width - originalWidth * bgScale) / 2);
+                        bgImage.y((size.height - originalHeight * bgScale) / 2);
+                    }
                 }
 
                 // Scale and center all other elements

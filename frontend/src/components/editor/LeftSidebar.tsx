@@ -18,6 +18,18 @@ import { toast } from 'sonner';
 export const LeftSidebar: React.FC = () => {
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [activeTab, setActiveTab] = useState<'teks' | 'tools' | 'aistudio' | 'assets' | 'bgremoval' | 'brandkit'>('aistudio');
+    const [autoOpenSmartAd, setAutoOpenSmartAd] = useState(false);
+
+    React.useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('panel') === 'smart-ad') {
+                setActiveTab('aistudio');
+                setIsCollapsed(false);
+                setAutoOpenSmartAd(true);
+            }
+        }
+    }, []);
 
     // Toolbar logic
     const { addElement, backgroundColor, setBackgroundColor, setBackgroundUrl } = useCanvasStore();
@@ -196,7 +208,7 @@ export const LeftSidebar: React.FC = () => {
                     isCollapsed ? "w-0 opacity-0" : "w-[300px] opacity-100"
                 )}
             >
-                {activeTab === 'aistudio' && <AIStudioPanel />}
+                {activeTab === 'aistudio' && <AIStudioPanel autoOpenSmartAd={autoOpenSmartAd} />}
                 {activeTab === 'bgremoval' && (
                     <BackgroundRemovalPanel />
                 )}

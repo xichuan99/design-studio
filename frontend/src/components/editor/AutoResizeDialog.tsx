@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Download, Loader2 } from "lucide-react";
+import { Download, Loader2, Wand2 } from "lucide-react";
 import { useCanvasStore } from "@/store/useCanvasStore";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -11,7 +11,9 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useAutoResize, SOCIAL_SIZES } from "@/hooks/useAutoResize";
+import { useAdCreatorEndpoints } from "@/lib/api/adCreatorApi";
 
 interface AutoResizeDialogProps {
     open: boolean;
@@ -20,9 +22,12 @@ interface AutoResizeDialogProps {
 }
 
 export const AutoResizeDialog: React.FC<AutoResizeDialogProps> = ({ open, onOpenChange, title }) => {
-    const { stageRef, canvasWidth, canvasHeight } = useCanvasStore();
+    const { stageRef, canvasWidth, canvasHeight, backgroundUrl } = useCanvasStore();
     const { processResize } = useAutoResize();
+    const { batchResize } = useAdCreatorEndpoints();
+    
     const [isExporting, setIsExporting] = useState(false);
+    const [useAIExpansion, setUseAIExpansion] = useState(false);
     
     // By default, select all sizes
     const [selectedSizeIds, setSelectedSizeIds] = useState<string[]>(SOCIAL_SIZES.map(s => s.id));
@@ -49,19 +54,70 @@ export const AutoResizeDialog: React.FC<AutoResizeDialogProps> = ({ open, onOpen
             // De-select any selected element before exporting
             useCanvasStore.getState().selectElement(null);
 
+            let aiBackgroundsMap: Record<string, HTMLImageElement> | undefined = undefined;
+
+            if (useAIExpansion && backgroundUrl) {
+                // Map social size IDs to expected backend ratios
+                const sizeToRatio: Record<string, string> = {
+                    ig_post: "1:1",
+                    ig_story: "9:16",
+                    fb_cover: "16:9",
+                    x_post: "16:9",
+                    linkedin_banner: "16:9",
+                    youtube_thumb: "16:9",
+                    tiktok: "9:16"
+                };
+
+                // Get unique ratios to generate
+                const requiredRatios = Array.from(new Set(
+                    targetSizes.map(s => sizeToRatio[s.id]).filter(Boolean)
+                ));
+
+                if (requiredRatios.length > 0) {
+                    toast.info("Sedang melakukan ekspansi background dengan AI, mohon tunggu...");
+                    const res = await batchResize({
+                        image_url: backgroundUrl,
+                        target_sizes: requiredRatios
+                    });
+
+                    // Load returning URLs into HTMLImageElements
+                    aiBackgroundsMap = {};
+                    const loadPromises = targetSizes.map(async (s) => {
+                        const ratio = sizeToRatio[s.id];
+                        const url = res.results?.[ratio];
+                        if (url) {
+                            return new Promise<void>((resolve) => {
+                                const img = new Image();
+                                img.crossOrigin = "anonymous";
+                                img.onload = () => {
+                                    aiBackgroundsMap![s.id] = img;
+                                    resolve();
+                                };
+                                img.onerror = () => resolve();
+                                img.src = url;
+                            });
+                        }
+                    });
+
+                    await Promise.all(loadPromises);
+                }
+            }
+
             await processResize(
                 stageRef,
                 canvasWidth,
                 canvasHeight,
                 targetSizes,
-                title
+                title,
+                aiBackgroundsMap
             );
 
             onOpenChange(false);
-            toast.success("Successfully downloaded social media pack!");
-        } catch (err) {
+            toast.success("Berhasil mengunduh pack sosial media!");
+        } catch (err: unknown) {
             console.error("Auto-resize export failed:", err);
-            toast.error("Failed to export designs.");
+            const error = err as Error;
+            toast.error(error.message || "Gagal melakukan ekspor.");
         } finally {
             setIsExporting(false);
         }
@@ -99,6 +155,24 @@ export const AutoResizeDialog: React.FC<AutoResizeDialogProps> = ({ open, onOpen
                         </div>
                     ))}
                 </div>
+                
+                {backgroundUrl && (
+                    <div className="flex items-center justify-between border p-3 rounded-md bg-muted/50">
+                        <div className="flex flex-col space-y-1">
+                            <Label className="flex items-center text-foreground font-semibold">
+                                <Wand2 className="w-4 h-4 mr-2 text-primary" />
+                                AI Background Expansion
+                            </Label>
+                            <p className="text-xs text-muted-foreground">
+                                Gunakan AI untuk otomatis memperluas background (outpaint) sesuai rasio agar tidak terpotong.
+                            </p>
+                        </div>
+                        <Switch 
+                            checked={useAIExpansion} 
+                            onCheckedChange={setUseAIExpansion}
+                        />
+                    </div>
+                )}
 
                 <div className="flex justify-end pt-4 border-t">
                     <Button disabled={isExporting || selectedSizeIds.length === 0} onClick={handleExport} className="w-full sm:w-auto px-8">
