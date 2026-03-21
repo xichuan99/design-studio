@@ -257,20 +257,7 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ onBgStatusChan
                 </Button>
             </div>
 
-            {/* Empty State Overlay - rendered above canvas artboard */}
-            {isEmpty && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-20">
-                    <div className="bg-background/80 backdrop-blur-sm p-8 rounded-2xl border shadow-sm flex flex-col items-center max-w-sm text-center">
-                        <div className="h-12 w-12 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-4">
-                            <MousePointer2 className="h-6 w-6" />
-                        </div>
-                        <h3 className="font-semibold text-lg mb-2">Mulai desainmu</h3>
-                        <p className="text-sm text-muted-foreground mb-6">
-                            Tambahkan teks, bentuk, atau gambar dari toolbar kiri, atau hasilkan background AI dari panel kanan untuk memulai.
-                        </p>
-                    </div>
-                </div>
-            )}
+
 
             {/* Shimmer Loading Overlay */}
             {backgroundUrl && bgStatus === 'loading' && (
@@ -292,11 +279,7 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ onBgStatusChan
             )}
 
             <div
-                className={`transition-shadow will-change-transform relative z-10 ${
-                    isEmpty
-                        ? 'bg-transparent shadow-none ring-0'
-                        : 'shadow-[0_0_50px_rgba(0,0,0,0.5)] ring-1 ring-border/50 bg-card'
-                }`}
+                className="shadow-[0_0_50px_rgba(0,0,0,0.5)] ring-1 ring-border/50 bg-card transition-shadow will-change-transform relative z-10"
                 ref={canvasBoxRef}
                 style={{
                     width: `${canvasWidth}px`,
