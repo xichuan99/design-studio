@@ -98,9 +98,12 @@ def test_aspect_ratio_map_complete():
 
 
 def test_style_suffixes_complete():
-    """All expected styles have prompt suffixes."""
-    for style in ["auto", "macro", "cinematic", "comic", "infographic"]:
-        assert style in STYLE_SUFFIXES
+    """All 8 expected styles (5 original + 3 new) have prompt suffixes."""
+    for style in ["auto", "macro", "cinematic", "comic", "infographic",
+                  "isometric_3d", "product_hero", "blueprint"]:
+        assert style in STYLE_SUFFIXES, f"Missing style: {style}"
+        assert isinstance(STYLE_SUFFIXES[style], str)
+        assert len(STYLE_SUFFIXES[style]) > 10, f"Style suffix too short for: {style}"
 
 
 # --- Preprocess Tests ---

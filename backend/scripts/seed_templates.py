@@ -44,7 +44,7 @@ TEMPLATES = [
                 "bg_box": "rgba(220,38,38,0.9)",
             },
         ],
-        "prompt_suffix": "food photography, vibrant colors, dark moody background, appetizing",
+        "prompt_suffix": "appetizing food photography, vibrant colors, dark moody background, Rembrandt rim lighting, shot on 100mm macro f/2.8, PBR food textures, 8k photorealistic",
         "thumbnail_url": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&h=600&fit=crop",
     },
     {
@@ -82,7 +82,7 @@ TEMPLATES = [
                 "color": "#FCD34D",
             },
         ],
-        "prompt_suffix": "restaurant ambiance, warm lighting, elegant table setting, bokeh",
+        "prompt_suffix": "restaurant ambiance, warm ambient tungsten lighting, elegant table setting, shallow depth of field, 85mm f/1.4, cinematic bokeh glow",
         "thumbnail_url": "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=450&h=800&fit=crop",
     },
     {
@@ -120,7 +120,7 @@ TEMPLATES = [
                 "bg_box": "rgba(59,130,246,0.9)",
             },
         ],
-        "prompt_suffix": "refreshing cold drink, splashing water, bright summer vibe, condensation drops, 3d rendering",
+        "prompt_suffix": "refreshing cold drink, high-speed splashing water photography, bright summer sunlight, hyper-realistic condensation drops, studio product lighting, 100mm macro f/2.8",
         "thumbnail_url": "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=600&h=600&fit=crop",
     },
     {
@@ -158,7 +158,7 @@ TEMPLATES = [
                 "bg_box": "rgba(146,64,14,0.9)",
             },
         ],
-        "prompt_suffix": "coffee cup, latte art, warm morning light, wooden table, cafe aesthetic, cozy",
+        "prompt_suffix": "coffee cup, perfect latte art, warm golden hour morning light, rustic wooden table texture, subsurface scattering on foam, 50mm f/1.8, cozy cafe aesthetic",
         "thumbnail_url": "https://images.unsplash.com/photo-1497935586351-b67a49e012bf?w=800&h=450&fit=crop",
     },
     # 🛍️ Flash Sale / Discount
@@ -198,7 +198,7 @@ TEMPLATES = [
                 "bg_box": "rgba(239,68,68,0.95)",
             },
         ],
-        "prompt_suffix": "sale event, red and yellow tones, explosive energy, shopping bags, dynamic",
+        "prompt_suffix": "sale event, vibrant red and yellow tones, explosive dynamic energy, floating shopping bags, 3D abstract geometry, high contrast studio lighting",
         "thumbnail_url": "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=600&h=600&fit=crop",
     },
     {
@@ -237,7 +237,7 @@ TEMPLATES = [
                 "bg_box": "rgba(250,204,21,0.95)",
             },
         ],
-        "prompt_suffix": "flash sale, confetti, bright colors, fun playful energy, discount tags",
+        "prompt_suffix": "flash sale, floating confetti dynamics, bright saturated colors, fun playful energy, glowing neon discount tags, softbox diffused lighting",
         "thumbnail_url": "https://images.unsplash.com/photo-1620241608701-94efd3cb8534?w=450&h=800&fit=crop",
     },
     {
@@ -276,7 +276,7 @@ TEMPLATES = [
                 "bg_box": "rgba(255,255,255,0.9)",
             },
         ],
-        "prompt_suffix": "clearance sale, warehouse, abstract geometric shapes, yellow and black, high contrast",
+        "prompt_suffix": "clearance sale, warehouse background, 3D abstract geometric shapes, yellow and black color grading, high contrast harsh directional lighting, dramatic shadows",
         "thumbnail_url": "https://images.unsplash.com/photo-1555529771-835f59bfc50c?w=800&h=450&fit=crop",
     },
     # 📱 Product / E-commerce
@@ -315,7 +315,7 @@ TEMPLATES = [
                 "bg_box": "rgba(255,255,255,0.9)",
             },
         ],
-        "prompt_suffix": "fashion editorial, studio lighting, minimal background, high end fashion, stylish clothing, vogue",
+        "prompt_suffix": "editorial fashion photography, large softbox diffused lighting, minimal cyclorama background, high end fashion, realistic fabric textures, 85mm f/1.8 lens, Vogue magazine style, 8k photorealistic",
         "thumbnail_url": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=600&h=600&fit=crop",
     },
     {
@@ -353,7 +353,7 @@ TEMPLATES = [
                 "bg_box": "rgba(59,130,246,0.9)",
             },
         ],
-        "prompt_suffix": "modern gadgets, cyberpunk lighting, neon blue and purple, sleek technology, hovering devices",
+        "prompt_suffix": "modern gadgets, cyberpunk neon lighting, volumetric blue and purple fog, sleek dark technology, hovering devices, Octane render, glossy metallic materials",
         "thumbnail_url": "https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=800&h=450&fit=crop",
     },
     {
@@ -391,7 +391,7 @@ TEMPLATES = [
                 "bg_box": "rgba(244,114,182,0.9)",
             },
         ],
-        "prompt_suffix": "cosmetics skin care product mockup, pastel pink background, soft reflections, minimalist shadow, clean aesthetic",
+        "prompt_suffix": "cosmetics skin care product mockup, pastel pink background, soft reflections, caustic light patterns, minimalist sharp shadows, PBR material textures, clean aesthetic studio lighting",
         "thumbnail_url": "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=450&h=800&fit=crop",
     },
     # 📢 Event / Webinar Announcement
@@ -431,7 +431,7 @@ TEMPLATES = [
                 "bg_box": "rgba(79,70,229,0.9)",
             },
         ],
-        "prompt_suffix": "grand opening event, elegant ribbon cutting, celebration, luxurious atmosphere",
+        "prompt_suffix": "grand opening event, elegant ribbon cutting ceremony, falling gold confetti, luxurious atmosphere, warm cinematic lighting, 35mm f/1.4 lens",
         "thumbnail_url": "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=600&h=600&fit=crop",
     },
     {
@@ -470,7 +470,7 @@ TEMPLATES = [
                 "bg_box": "rgba(220,38,38,0.9)",
             },
         ],
-        "prompt_suffix": "live music concert, crowd silhouette, neon lights, laser beams, exciting atmosphere, stage lighting",
+        "prompt_suffix": "live music concert, energetic crowd silhouette, vibrant neon lights, volumetric laser beams, exciting atmosphere, dramatic stage lighting, high ISO film grain",
         "thumbnail_url": "https://images.unsplash.com/photo-1540039155733-d7696d4eb98e?w=800&h=450&fit=crop",
     },
     {
@@ -508,7 +508,7 @@ TEMPLATES = [
                 "bg_box": "rgba(59,130,246,0.9)",
             },
         ],
-        "prompt_suffix": "person working on laptop, bright modern office, online learning, educational, 3d illustrations",
+        "prompt_suffix": "person working on laptop, bright modern office environment, online learning concept, educational, clean 3D illustration style, isometric angle, ambient occlusion rendering",
         "thumbnail_url": "https://images.unsplash.com/photo-1516321497487-e288fb19713f?w=600&h=600&fit=crop",
     },
     # 🏢 Real Estate / Property
@@ -548,7 +548,7 @@ TEMPLATES = [
                 "bg_box": "rgba(234,179,8,0.9)",
             },
         ],
-        "prompt_suffix": "modern luxurious house exterior, sunset lighting, real estate, architectural photography",
+        "prompt_suffix": "modern luxurious house exterior, golden hour sunset lighting, real estate, professional architectural photography, wide angle 14mm lens, HDR lighting, crisp details",
         "thumbnail_url": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600&h=600&fit=crop",
     },
     {
@@ -586,7 +586,7 @@ TEMPLATES = [
                 "bg_box": "rgba(15,23,42,0.9)",
             },
         ],
-        "prompt_suffix": "bright spacious living room interior design, minimal furniture, large windows, natural light",
+        "prompt_suffix": "bright spacious living room interior design, minimal furniture, large windows with natural diffused daylight, professional interior photography, 24mm tilt-shift lens, photorealistic",
         "thumbnail_url": "https://images.unsplash.com/photo-1554995207-c18c203602cb?w=450&h=800&fit=crop",
     },
     # 🎉 Giveaways / Contest
@@ -626,7 +626,7 @@ TEMPLATES = [
                 "bg_box": "rgba(168,85,247,0.9)",
             },
         ],
-        "prompt_suffix": "floating gift boxes, confetti, vibrant gradient background, celebration, 3d render, purple and pink",
+        "prompt_suffix": "floating gift boxes, dynamic confetti physics, vibrant gradient background, celebration, Cinema 4D 3D render, glossy plastic material, purple and pink lighting",
         "thumbnail_url": "https://images.unsplash.com/photo-1513201099705-a9746e1e201f?w=600&h=600&fit=crop",
     },
     # 🤝 Hiring / Recruitment
@@ -665,7 +665,7 @@ TEMPLATES = [
                 "bg_box": "rgba(14,165,233,0.9)",
             },
         ],
-        "prompt_suffix": "modern office desk table top view, laptop, coffee cup, notepad with WE ARE HIRING text graphic, clean corporate aesthetic",
+        "prompt_suffix": "modern office desk top-down flatlay, laptop, coffee cup, notepad with WE ARE HIRING text graphic, clean corporate aesthetic, soft even studio lighting, sharp focus",
         "thumbnail_url": "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=600&h=600&fit=crop",
     },
     {
@@ -703,7 +703,7 @@ TEMPLATES = [
                 "bg_box": "rgba(255,255,255,0.9)",
             },
         ],
-        "prompt_suffix": "vibrant abstract shapes, dynamic composition, business recruitment concept, blue and purple gradient",
+        "prompt_suffix": "vibrant 3D abstract geometric shapes, dynamic composition, business recruitment concept, blue and purple gradient, smooth matte materials, raytraced global illumination",
         "thumbnail_url": "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=450&h=800&fit=crop",
     },
     # 💬 Testimonial / Review
@@ -743,7 +743,7 @@ TEMPLATES = [
                 "bg_box": "rgba(0,0,0,0.8)",
             },
         ],
-        "prompt_suffix": "5 stars rating icon graphic, subtle soft gradient background, simple clean layout, trust, customer feedback",
+        "prompt_suffix": "3D 5 stars rating icon graphic, subtle soft gradient background, simple clean layout, trust, customer feedback, glossy material finish, soft ambient lighting",
         "thumbnail_url": "https://images.unsplash.com/photo-1516245834210-c4c142787335?w=600&h=600&fit=crop",
     },
     # ❄️ Holiday / Festive
@@ -783,7 +783,7 @@ TEMPLATES = [
                 "bg_box": "rgba(255,255,255,0.9)",
             },
         ],
-        "prompt_suffix": "festive decoration, bokeh lights, elegant celebration, gold dust, holiday season",
+        "prompt_suffix": "festive decoration, warm bokeh lights, elegant celebration, floating atmospheric gold dust, holiday season, 85mm macro lens, shallow depth of field",
         "thumbnail_url": "https://images.unsplash.com/photo-1543362906-acfc16c67564?w=600&h=600&fit=crop",
     },
     # 📱 Story/Reels General
@@ -822,7 +822,7 @@ TEMPLATES = [
                 "bg_box": "rgba(255,255,255,0.95)",
             },
         ],
-        "prompt_suffix": "social media questions and answers concept, floating chat bubbles, bright sky blue gradient, fun",
+        "prompt_suffix": "social media questions and answers concept, 3D floating chat bubbles, bright sky blue gradient, fun dynamic composition, softbox lighting, matte plastic textures",
         "thumbnail_url": "https://images.unsplash.com/photo-1616469829581-73993eb86b02?w=450&h=800&fit=crop",
     },
     {
@@ -860,7 +860,7 @@ TEMPLATES = [
                 "bg_box": "rgba(30,41,59,0.85)",
             },
         ],
-        "prompt_suffix": "clean aesthetic, pastel tones, soft natural light, minimalist lifestyle, morning coffee",
+        "prompt_suffix": "clean aesthetic photography, pastel tones, soft natural window light, minimalist lifestyle workspace, morning coffee, 50mm f/1.8 lens, light and airy color grading",
         "thumbnail_url": "https://images.unsplash.com/photo-1449844908441-8829872d2607?w=450&h=800&fit=crop",
     },
     # 🎨 General Purpose
@@ -899,7 +899,7 @@ TEMPLATES = [
                 "bg_box": "rgba(99,102,241,0.9)",
             },
         ],
-        "prompt_suffix": "clean professional background, soft gradient, corporate, modern office vibe",
+        "prompt_suffix": "clean professional background, soft subtle gradient, corporate architecture abstraction, modern office vibe, smooth lighting, high-end 3D render",
         "thumbnail_url": "https://images.unsplash.com/photo-1497366216548-37526070297c?w=600&h=600&fit=crop",
     },
     {
@@ -938,7 +938,7 @@ TEMPLATES = [
                 "bg_box": "rgba(37,99,235,0.9)",
             },
         ],
-        "prompt_suffix": "fluid color waves, abstract colorful pattern, dynamic gradient, eye-catching graphic design",
+        "prompt_suffix": "fluid 3D color waves, abstract colorful liquid pattern, dynamic gradient, eye-catching graphic design, subsurface scattering, Octane render volumetric lighting",
         "thumbnail_url": "https://images.unsplash.com/photo-1557683316-973673baf926?w=800&h=450&fit=crop",
     },
     {
@@ -977,7 +977,7 @@ TEMPLATES = [
                 "bg_box": "transparent",
             },
         ],
-        "prompt_suffix": "breathtaking mountain landscape, sunrise, moody epic nature photography, cinematic",
+        "prompt_suffix": "breathtaking epic mountain landscape, golden sunrise, moody nature photography, cinematic color grading, wide angle 16mm lens, anamorphic lens flare",
         "thumbnail_url": "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=600&h=600&fit=crop",
     },
 ]

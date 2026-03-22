@@ -124,6 +124,11 @@ class RedesignRequest(BaseModel):
         None, description="ID Brand Kit aktif (jika ada)."
     )
 
+    preserve_product: bool = Field(
+        False,
+        description="Jika True, AI akan mempertahankan bentuk, warna, dan identitas produk asli.",
+    )
+
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
@@ -131,6 +136,7 @@ class RedesignRequest(BaseModel):
                 "raw_text": "Make it futuristic",
                 "strength": 0.65,
                 "aspect_ratio": "1:1",
+                "preserve_product": False,
             }
         }
     )
@@ -366,7 +372,7 @@ class AITextLayout(BaseModel):
 class VisualPromptPart(BaseModel):
     category: str = Field(
         ...,
-        description="one of: subject, setting, lighting, style, colors",
+        description="one of: subject, setting, lighting, style, colors, camera, material",
         json_schema_extra={"example": "subject"},
     )
     label: str = Field(

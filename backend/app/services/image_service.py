@@ -8,6 +8,7 @@ import os
 import fal_client
 import logging
 from app.core.config import settings
+from app.services.prompt_builder import PromptBuilder, STYLE_PRESETS, STYLE_SUFFIXES  # noqa: F401 – re-exported for backward compat
 
 logger = logging.getLogger(__name__)
 
@@ -19,21 +20,6 @@ ASPECT_RATIO_MAP = {
     "4:5": {"width": 896, "height": 1120},
 }
 
-# Style preference → prompt suffix mapping
-STYLE_SUFFIXES = {
-    "auto": "high quality, professional product photography, well lit, sharp focus, 8k resolution, photorealistic",
-    "macro": "shot on Laowa 24mm f/14 2X Macro Probe, ultra-detailed texture, sharp focus, clean macro photography, professional studio lighting",
-    "cinematic": "cinematic shot, dramatic directed lighting, dynamic angle, high contrast, shallow depth of field, 8k resolution, photorealistic",
-    "comic": "vibrant comic book style art, clean bold ink lines, flat colors, dynamic action pose, cel-shaded illustration",
-    "infographic": "clean flat design, solid neutral background, vector art style, minimalist corporate, sharp edges, bright evenly lit, 8k resolution",
-}
-
-# Negative prompt to ensure no text is generated in the image
-NEGATIVE_PROMPT = (
-    "text, letters, words, numbers, watermark, signature, logo, "
-    "blurry, low quality, deformed, ugly, bad anatomy"
-)
-
 
 async def generate_background(
     visual_prompt: str,
@@ -41,29 +27,27 @@ async def generate_background(
     style: str = "auto",
     aspect_ratio: str = "1:1",
     integrated_text: bool = False,
+    preserve_product: bool = False,
 ) -> dict:
     """
     Generates a background image using Fal.ai.
 
     Args:
         visual_prompt (str): The image generation prompt (from LLM output).
-        reference_image_url (str | None): Optional reference image for style transfer. Defaults to None.
-        style (str): Style preference (auto, macro, cinematic, comic, infographic). Defaults to "auto".
-        aspect_ratio (str): Target aspect ratio (1:1, 9:16, 16:9). Defaults to "1:1".
-        integrated_text (bool): If True, do not block text generation in the negative prompt. Defaults to False.
+        reference_image_url (str | None): Optional reference image for style transfer.
+        style (str): Style preset key (auto, macro, cinematic, comic, infographic,
+                     isometric_3d, product_hero, blueprint). Defaults to "auto".
+        aspect_ratio (str): Target aspect ratio (1:1, 9:16, 16:9, 4:5). Defaults to "1:1".
+        integrated_text (bool): If True, allow text in the generated image.
+        preserve_product (bool): If True, add product identity preservation constraint
+                                 for image-to-image redesign flows.
 
     Returns:
-        dict: A dictionary containing the generated image's information:
-              - image_url (str): The URL of the generated image.
-              - width (int): The width of the image.
-              - height (int): The height of the image.
-              - seed (int): The generation seed used.
-              - content_type (str): The MIME type of the generated image.
+        dict: image_url, width, height, seed, content_type.
 
     Raises:
         ValueError: If the FAL_KEY environment variable is missing.
         RuntimeError: If Fal.ai returns no images.
-        Exception: If the Fal.ai API call fails.
     """
     if not settings.FAL_KEY:
         raise ValueError("FAL_KEY is missing from environment")
@@ -71,22 +55,28 @@ async def generate_background(
     # Set the key in the environment for fal_client
     os.environ["FAL_KEY"] = settings.FAL_KEY
 
-    # Enhance prompt with style suffix and copy-space instructions
-    style_suffix = STYLE_SUFFIXES.get(style, STYLE_SUFFIXES["auto"])
-
+    # Assemble the enhanced prompt via the modular PromptBuilder
     if integrated_text:
-        # User wants text in the image. Remove the neg prompt text blockers.
-        enhanced_prompt = f"{visual_prompt}, {style_suffix}, high quality typography, readable text, clear lettering, professional graphic design"
-        actual_negative_prompt = "blurry, low quality, deformed, ugly, bad anatomy, misspelled words, random letters"
-    else:
-        # Standard behavior: clean background, no text
-        enhanced_prompt = (
-            f"Exact scene: {visual_prompt}. "
-            f"Style: {style_suffix}. "
-            "Professional photography, copy space area for text overlay, "
-            "empty background for product placement, high quality, 4k"
+        # User wants text rendered into the image itself
+        enhanced_prompt = PromptBuilder.build(
+            visual_prompt=visual_prompt,
+            style_key=style,
+            text_instruction="high quality typography, readable text, clear lettering, professional graphic design",
+            preserve_product=preserve_product,
         )
-        actual_negative_prompt = NEGATIVE_PROMPT
+        actual_negative_prompt = PromptBuilder.build_negative_prompt(
+            style_key=style,
+            extra_negatives=["misspelled words", "random letters"],
+        )
+    else:
+        # Standard: clean background, copy-space area, no text
+        enhanced_prompt = PromptBuilder.build(
+            visual_prompt=visual_prompt,
+            style_key=style,
+            text_instruction="copy space area for text overlay, empty background for product placement",
+            preserve_product=preserve_product,
+        )
+        actual_negative_prompt = PromptBuilder.build_negative_prompt(style_key=style)
 
     resolution = ASPECT_RATIO_MAP.get(aspect_ratio, ASPECT_RATIO_MAP["1:1"])
 

@@ -19,6 +19,20 @@ from app.core.exceptions import (
     AppException,
 )
 from uuid import UUID
+import re
+
+
+def sanitize_prompt_for_imagen(prompt: str) -> str:
+    """Remove age-related terms that may trigger safety filters in Imagen."""
+    replacements = {
+        r"\b(child|children|kid|kids|boy|girl|toddler|baby|infant|teen|teenager|young student|school child)(s)?\b": "person",
+        r"\b(young singer)\b": "singer",
+        r"\b(elementary school)\b": "",
+    }
+    sanitized = prompt
+    for pattern, replacement in replacements.items():
+        sanitized = re.sub(pattern, replacement, sanitized, flags=re.IGNORECASE)
+    return sanitized.strip()
 
 
 async def _apply_brand_kit_logo_if_exists(
@@ -414,14 +428,15 @@ async def generate_design(
         from google.genai import types
 
         from app.services.image_service import STYLE_SUFFIXES
+        from app.services.prompt_builder import PromptBuilder
 
-        style_suffix = STYLE_SUFFIXES.get(request.style_preference)
-        if style_suffix is None:
+        style_key = request.style_preference if request.style_preference else "auto"
+        if style_key not in STYLE_SUFFIXES:
             import logging
-            logging.warning(f"Unrecognized style preference: '{request.style_preference}'. Falling back to 'auto'.")
-            style_suffix = STYLE_SUFFIXES["auto"]
+            logging.warning(f"Unrecognized style preference: '{style_key}'. Falling back to 'auto'.")
+            style_key = "auto"
 
-        # Determine the best model and text instructions based on integration needs
+        # Determine text instructions based on integration needs
         if request.integrated_text:
             model_name = "gemini-3.1-flash-image-preview"
 
@@ -432,28 +447,21 @@ async def generate_design(
             if parsed.cta:
                 text_parts.append(f"'{parsed.cta}'")
             all_text = ", and ".join(text_parts)
-
-            text_instruction = f"high quality typography, clearly readable text showing {all_text}, with proper visual hierarchy, stylized to perfectly integrate organically into the scene"
+            text_instruction = (
+                f"high quality typography, clearly readable text showing {all_text}, "
+                "with proper visual hierarchy, stylized to perfectly integrate organically into the scene"
+            )
         else:
-            model_name = "imagen-4.0-fast-generate-001"  # Keep imagen for non-text backgrounds as it excels at pure aesthetics
+            model_name = "imagen-4.0-fast-generate-001"
             text_instruction = "professional graphic design background, copy space area for text overlay, no text, no letters, no words"
 
-        import re
-
-        def sanitize_prompt_for_imagen(prompt: str) -> str:
-            replacements = {
-                r"\b(child|children|kid|kids|boy|girl|toddler|baby|infant|teen|teenager|young student|school child)(s)?\b": "person",
-                r"\b(young singer)\b": "singer",
-                r"\b(elementary school)\b": "",  # remove specific young age contexts
-            }
-            sanitized = prompt
-            for pattern, replacement in replacements.items():
-                sanitized = re.sub(pattern, replacement, sanitized, flags=re.IGNORECASE)
-            return sanitized.strip()
-
-        enhanced_prompt = (
-            f"{sanitize_prompt_for_imagen(visual_prompt_final)}, {style_suffix}, "
-            f"{text_instruction}, high quality, 4k{strict_brand_suffix}"
+        enhanced_prompt = sanitize_prompt_for_imagen(
+            PromptBuilder.build(
+                visual_prompt=visual_prompt_final,
+                style_key=style_key,
+                text_instruction=text_instruction,
+                brand_suffix=strict_brand_suffix.lstrip(", "),
+            )
         )
 
         client = genai.Client(api_key=app_settings.GEMINI_API_KEY)
@@ -623,10 +631,12 @@ async def redesign_image(
         analysis = await analyze_reference_image(request.reference_image_url)
 
         # Build enriched prompt
-        style_suffix = (
-            f" {request.style_preference.value} style"
+        from app.services.prompt_builder import PromptBuilder
+
+        style_key = (
+            request.style_preference.value
             if request.style_preference
-            else ""
+            else "auto"
         )
 
         # Load brand kit colors if specified
@@ -647,15 +657,17 @@ async def redesign_image(
                 if kit and kit.colors:
                     colors = [c.get("hex") for c in kit.colors if c.get("hex")]
                     if colors:
-                        brand_suffix = (
-                            f", incorporate brand colors: {', '.join(colors)}"
-                        )
+                        brand_suffix = f"incorporate brand colors: {', '.join(colors)}"
             except Exception as e:
                 import logging
-
                 logging.warning(f"Could not load brand kit for redesign: {e}")
 
-        enriched_prompt = f"{request.raw_text} {analysis.suggested_prompt_suffix}{style_suffix}{brand_suffix}".strip()
+        enriched_prompt = PromptBuilder.build(
+            visual_prompt=f"{request.raw_text} {analysis.suggested_prompt_suffix}".strip(),
+            style_key=style_key,
+            brand_suffix=brand_suffix,
+            preserve_product=request.preserve_product,
+        )
 
         # Step 2: Run FLUX.2 Dev image-to-image
         image_bytes = await run_flux_redesign(

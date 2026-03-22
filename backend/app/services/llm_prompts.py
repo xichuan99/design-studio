@@ -12,10 +12,20 @@ TEXT ELEMENTS:
 
 VISUAL DESIGN:
 - visual_prompt_parts: An array of prompt components, each with:
-    - category: one of "subject", "setting", "lighting", "style", "colors"
-    - label: Indonesian display label (e.g., "Objek Utama", "Latar", "Pencahayaan", "Gaya Visual", "Palet Warna")
+    - category: one of "subject", "setting", "lighting", "style", "colors", "camera", "material"
+    - label: Indonesian display label for each category:
+        "subject" → "Objek Utama"
+        "setting" → "Latar Tempat"
+        "lighting" → "Pencahayaan"
+        "style" → "Gaya Visual"
+        "colors" → "Palet Warna"
+        "camera" → "Sudut Kamera"      ← NEW: lens spec, DOF, angle e.g. "85mm prime, f/1.8, shallow DoF"
+        "material" → "Tekstur Material" ← NEW: surface/texture e.g. "condensation droplets, PBR textures"
     - value: The English prompt fragment for this aspect
     - enabled: always true
+  GUIDANCE: Always include subject, setting, lighting. Include "camera" when the design benefits from a
+  specific lens feel (product shots, macro, cinematic). Include "material" when surface texture is key
+  (food/drink condensation, fabric, metallic sheen, 3D render materials).
 - visual_prompt: The full combined prompt (join all parts with ", "). Include WHERE the copy space / negative space should be. Example: "...with large empty space on the left side for text overlay". The copy space placement MUST match your layout decisions below.
 - indonesian_translation: A natural, friendly Indonesian sentence explaining what the `visual_prompt` describes. (e.g., "Gambar fotorealistik secangkir kopi susu di atas meja kayu dengan pencahayaan hangat dari jendela dan area kosong di kiri untuk teks.")
 - suggested_colors: 2-3 hex colors that complement each other and the design theme.
