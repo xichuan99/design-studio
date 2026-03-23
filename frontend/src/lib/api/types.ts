@@ -2,6 +2,7 @@ export interface ProjectPayload {
     id?: string;
     title: string;
     canvas_state: object;
+    canvas_schema_version?: number;
     status: string;
     aspect_ratio?: string;
 }
@@ -12,6 +13,7 @@ export interface HistoryEntry {
     project_id: string;
     action_type: string;
     canvas_state?: Record<string, unknown>;
+    canvas_schema_version?: number;
     prompt_used?: string;
     created_at: string;
 }

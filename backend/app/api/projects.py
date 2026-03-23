@@ -56,6 +56,7 @@ async def create_project(
         title=project_in.title or "Untitled Design",
         status=project_in.status or "draft",
         canvas_state=project_in.canvas_state,
+        canvas_schema_version=project_in.canvas_schema_version or 1,
         aspect_ratio=project_in.aspect_ratio or "1:1",
     )
     db.add(db_project)
@@ -122,6 +123,8 @@ async def update_project(
         project.status = project_in.status
     if project_in.canvas_state is not None:
         project.canvas_state = project_in.canvas_state
+    if project_in.canvas_schema_version is not None:
+        project.canvas_schema_version = project_in.canvas_schema_version
     if project_in.aspect_ratio is not None:
         project.aspect_ratio = project_in.aspect_ratio
 

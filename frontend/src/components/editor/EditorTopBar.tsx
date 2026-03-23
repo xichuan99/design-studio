@@ -12,6 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { SaveStatus } from '@/hooks/useAutoSave';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { buildVersionedCanvasPayload } from '@/lib/canvasPersistence';
 
 interface EditorTopBarProps {
     projectId?: string;
@@ -55,11 +56,12 @@ export const EditorTopBar: React.FC<EditorTopBarProps> = ({ projectId, saveStatu
         try {
             const payload = {
                 title: projectTitle || 'Untitled Design',
-                canvas_state: {
+                ...buildVersionedCanvasPayload({
                     elements,
                     backgroundUrl,
                     backgroundColor,
-                },
+                    originalPrompt,
+                }),
                 status: 'draft',
                 id: projectId,
             };

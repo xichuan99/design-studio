@@ -15,6 +15,7 @@ from app.api.history import router as history_router
 from app.api.brand_kits import router as brand_kits_router
 from app.api.ai_tools import router as ai_tools_router
 from app.api.ad_creator import router as ad_creator_router
+from app.api.template_marketplace import router as template_marketplace_router
 
 from app.core.exceptions import AppException, InternalServerError
 from app.schemas.error import ErrorResponse, ErrorDetail
@@ -144,6 +145,7 @@ app.include_router(history_router, prefix="/api/history", tags=["History"])
 app.include_router(brand_kits_router, prefix="/api/brand-kits", tags=["Brand Kits"])
 app.include_router(ai_tools_router, prefix="/api/tools", tags=["AI Tools"])
 app.include_router(ad_creator_router, prefix="/api/ad-creator", tags=["Ad Creator"])
+app.include_router(template_marketplace_router, prefix="/api", tags=["Template Marketplace"])
 
 @app.get(
     "/health",

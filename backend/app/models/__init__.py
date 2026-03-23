@@ -8,3 +8,8 @@ from app.models.design_history import DesignHistory as DesignHistory
 from app.models.brand_kit import BrandKit as BrandKit
 from app.models.credit_transaction import CreditTransaction as CreditTransaction
 from app.models.ai_tool_result import AiToolResult as AiToolResult
+from app.models.template_submission import TemplateSubmission as TemplateSubmission
+from app.models.template_review import TemplateReview as TemplateReview
+from app.models.template_version import TemplateVersion as TemplateVersion
+from app.models.template_favorite import TemplateFavorite as TemplateFavorite
+from app.models.template_usage_stat import TemplateUsageStat as TemplateUsageStat

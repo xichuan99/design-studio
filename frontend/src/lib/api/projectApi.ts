@@ -1,5 +1,6 @@
 import { useApiCore } from './coreApi';
 import * as Types from './types';
+import { buildVersionedCanvasPayload } from '../canvasPersistence';
 
 export function useProjectEndpoints() {
     const { API_BASE_URL, getHeaders } = useApiCore();
@@ -20,10 +21,18 @@ export function useProjectEndpoints() {
                 ? `${API_BASE_URL}/projects/${projectPayload.id}`
                 : `${API_BASE_URL}/projects/`;
     
+            const versionedCanvas = buildVersionedCanvasPayload(
+                projectPayload.canvas_state as Record<string, unknown>,
+                projectPayload.canvas_schema_version
+            );
+
             const res = await fetch(url, {
                 method,
                 headers: getHeaders(),
-                body: JSON.stringify(projectPayload),
+                body: JSON.stringify({
+                    ...projectPayload,
+                    ...versionedCanvas,
+                }),
             });
             if (!res.ok) throw new Error('Failed to save project');
             return res.json();
@@ -50,6 +59,7 @@ export function useProjectEndpoints() {
             return saveProject({
                 title: `Copy of ${source.title || 'Untitled Design'}`,
                 canvas_state: source.canvas_state,
+                canvas_schema_version: source.canvas_schema_version,
                 status: 'draft',
                 aspect_ratio: source.aspect_ratio || '1:1',
             });
@@ -63,11 +73,14 @@ export function useProjectEndpoints() {
             return res.json();
         };
 
-    const createHistory = async (data: { project_id: string; background_url: string; text_layers: Record<string, unknown>; generation_params?: Record<string, unknown> }) => {
+    const createHistory = async (data: { project_id: string; background_url: string; text_layers: Record<string, unknown>; generation_params?: Record<string, unknown>; canvas_schema_version?: number }) => {
             const res = await fetch(`${API_BASE_URL}/history/`, {
                 method: 'POST',
                 headers: getHeaders(),
-                body: JSON.stringify(data),
+                body: JSON.stringify({
+                    ...data,
+                    canvas_schema_version: data.canvas_schema_version ?? 1,
+                }),
             });
             if (!res.ok) throw new Error('Failed to create history entry');
             return res.json();

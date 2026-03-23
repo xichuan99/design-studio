@@ -35,6 +35,7 @@ interface Project {
     created_at?: string;
     aspect_ratio?: string;
     status?: string;
+    canvas_schema_version?: number;
     canvas_state?: { backgroundUrl?: string; elements?: Record<string, unknown>[] };
 }
 

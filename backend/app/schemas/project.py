@@ -97,6 +97,11 @@ class ProjectUpdate(BaseModel):
     canvas_state: Optional[Dict[str, Any]] = Field(
         None, description="State of the project canvas"
     )
+    canvas_schema_version: Optional[int] = Field(
+        1,
+        description="Version of the persisted canvas schema",
+        json_schema_extra={"example": 1},
+    )
     status: Optional[str] = Field(
         None, description="Project status", json_schema_extra={"example": "active"}
     )
@@ -110,6 +115,7 @@ class ProjectUpdate(BaseModel):
         json_schema_extra={
             "example": {
                 "title": "Promo Ramadhan",
+                "canvas_schema_version": 1,
                 "status": "active",
                 "aspect_ratio": "1:1",
             }
@@ -144,6 +150,11 @@ class ProjectResponse(BaseModel):
     canvas_state: Optional[Dict[str, Any]] = Field(
         None, description="State of the project canvas"
     )
+    canvas_schema_version: int = Field(
+        1,
+        description="Version of the persisted canvas schema",
+        json_schema_extra={"example": 1},
+    )
     created_at: datetime = Field(
         ...,
         description="Creation timestamp",
@@ -164,6 +175,7 @@ class ProjectResponse(BaseModel):
                 "title": "Promo Ramadhan",
                 "status": "active",
                 "aspect_ratio": "1:1",
+                "canvas_schema_version": 1,
                 "created_at": "2024-03-15T12:00:00Z",
                 "updated_at": "2024-03-15T12:00:00Z",
             }

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useCanvasStore, CanvasElement } from '@/store/useCanvasStore';
 import { useSession } from 'next-auth/react';
 import { API_BASE_URL } from '@/lib/api';
+import { buildVersionedCanvasPayload, CURRENT_CANVAS_SCHEMA_VERSION } from '@/lib/canvasPersistence';
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error' | 'unsaved';
 
@@ -11,6 +12,7 @@ interface SaveableState {
     backgroundUrl: string | null;
     backgroundColor: string;
     projectTitle: string;
+    originalPrompt: string | null;
 }
 
 function getSaveableState(): SaveableState {
@@ -20,6 +22,7 @@ function getSaveableState(): SaveableState {
         backgroundUrl: s.backgroundUrl,
         backgroundColor: s.backgroundColor,
         projectTitle: s.projectTitle,
+        originalPrompt: s.originalPrompt,
     };
 }
 
@@ -42,11 +45,12 @@ export function useAutoSave(projectId?: string | null) {
         const payload = {
             id: projectId,
             title: state.projectTitle || 'Untitled Design',
-            canvas_state: {
+            ...buildVersionedCanvasPayload({
                 elements: state.elements,
                 backgroundUrl: state.backgroundUrl,
                 backgroundColor: state.backgroundColor,
-            },
+                originalPrompt: state.originalPrompt,
+            }),
             status: 'draft',
         };
 
@@ -70,7 +74,8 @@ export function useAutoSave(projectId?: string | null) {
                     project_id: projectId,
                     background_url: state.backgroundUrl || '', // Fallback to empty string if null
                     text_layers: state.elements, // Using elements as text_layers for history snapshot
-                    generation_params: {} // Optional
+                    generation_params: {}, // Optional
+                    canvas_schema_version: CURRENT_CANVAS_SCHEMA_VERSION,
                 };
                 
                 await fetch(`${API_BASE_URL}/history/`, {

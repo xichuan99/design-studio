@@ -11,6 +11,7 @@ import { EditorTopBar } from "@/components/editor/EditorTopBar";
 import { CanvasWorkspace } from "@/components/editor/CanvasWorkspace";
 import { StylePanel } from "@/components/editor/StylePanel";
 import { useProjectApi } from "@/lib/api";
+import { normalizeCanvasState } from "@/lib/canvasPersistence";
 import { useCanvasStore } from "@/store/useCanvasStore";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { HistoryPanel } from "@/components/editor/HistoryPanel";
@@ -84,7 +85,8 @@ export default function EditorPage() {
                 const project = await getProjectRef.current(projectId as string);
 
                 if (project.canvas_state) {
-                    const hasBg = !!project.canvas_state.backgroundUrl;
+                    const canvasState = normalizeCanvasState(project.canvas_state);
+                    const hasBg = !!canvasState.backgroundUrl;
                     hasBackgroundRef.current = hasBg;
 
                     // Support dynamic aspect ratios
@@ -96,11 +98,11 @@ export default function EditorPage() {
                     useCanvasStore.getState().setCanvasDimensions(w, h);
 
                     loadStateRef.current(
-                        project.canvas_state.elements || [],
-                        project.canvas_state.backgroundUrl || null,
+                        canvasState.elements,
+                        canvasState.backgroundUrl,
                         project.title,
-                        project.canvas_state.backgroundColor,
-                        project.canvas_state.originalPrompt || null
+                        canvasState.backgroundColor,
+                        canvasState.originalPrompt || null
                     );
 
                     if (hasBg) {

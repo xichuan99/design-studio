@@ -9,7 +9,6 @@ from sqlalchemy.future import select
 from app.api.deps import get_current_user
 from app.core.database import get_db
 from app.models.credit_transaction import CreditTransaction
-from app.models.job import Job
 from app.models.user import User
 from app.schemas.credit import CreditHistoryResponse
 from app.schemas.user import UserUpdate, UserResponse
@@ -70,16 +69,10 @@ async def delete_my_account(
 ) -> None:
     """
     Deletes the current user's account and all related data.
-    Ensures manual cleanup of associated jobs, then deletes the user.
+    Relies on database cascade rules for owned records.
     """
     user_id = current_user.id
     try:
-        # Manually delete jobs (FK user_id has no ondelete CASCADE)
-        jobs_result = await db.execute(select(Job).where(Job.user_id == user_id))
-        for job in jobs_result.scalars().all():
-            await db.delete(job)
-
-        # Projects + DesignHistory will cascade via DB-level ondelete=CASCADE
         await db.delete(current_user)
         await db.commit()
         logger.info("User %s account deleted successfully", user_id)

@@ -23,6 +23,10 @@ class DesignHistoryCreate(BaseModel):
     generation_params: Optional[dict] = Field(
         None, description="Parameters used to generate the design"
     )
+    canvas_schema_version: int = Field(
+        1,
+        description="Version of the persisted canvas schema",
+    )
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -30,6 +34,7 @@ class DesignHistoryCreate(BaseModel):
                 "project_id": "123e4567-e89b-12d3-a456-426614174000",
                 "background_url": "https://example.com/bg.png",
                 "text_layers": [],
+                "canvas_schema_version": 1,
             }
         }
     )
@@ -43,6 +48,10 @@ class DesignHistoryResponse(BaseModel):
     generation_params: Optional[dict] = Field(
         None, description="Parameters used to generate the design"
     )
+    canvas_schema_version: int = Field(
+        1,
+        description="Version of the persisted canvas schema",
+    )
     created_at: Optional[str] = Field(None, description="Creation timestamp")
 
     model_config = ConfigDict(
@@ -52,6 +61,7 @@ class DesignHistoryResponse(BaseModel):
                 "project_id": "123e4567-e89b-12d3-a456-426614174000",
                 "background_url": "https://example.com/bg.png",
                 "text_layers": [],
+                "canvas_schema_version": 1,
                 "created_at": "2024-03-15T12:00:00Z",
             }
         }
@@ -86,6 +96,7 @@ async def list_history(
             "background_url": e.background_url,
             "text_layers": e.text_layers,
             "generation_params": e.generation_params,
+            "canvas_schema_version": e.canvas_schema_version or 1,
             "created_at": e.created_at.isoformat() if e.created_at else None,
         }
         for e in entries
@@ -111,6 +122,7 @@ async def create_history(
         background_url=data.background_url,
         text_layers=data.text_layers,
         generation_params=data.generation_params,
+        canvas_schema_version=data.canvas_schema_version or 1,
     )
     db.add(entry)
     await db.commit()
@@ -122,5 +134,6 @@ async def create_history(
         "background_url": entry.background_url,
         "text_layers": entry.text_layers,
         "generation_params": entry.generation_params,
+        "canvas_schema_version": entry.canvas_schema_version or 1,
         "created_at": entry.created_at.isoformat() if entry.created_at else None,
     }
