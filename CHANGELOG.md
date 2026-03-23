@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **AI Studio Visual Polish**: Enhanced aesthetic consistency across AI features with refined typography and container styles.
 - **Error Handling & UX**: Migrated simple alerts to a unified 3-tier system (`ErrorModal`, `InlineErrorBanner`, `toast`) and added visual warnings for low credits.
 - **Codebase Cleanup**: Audited and removed obsolete features related to earlier AI tool iterations.
+- **Landing SEO Pass (Pre-launch)**: Strengthened keyword-intent coverage for UMKM, foto produk, katalog, konten promo, and marketplace across landing copy and metadata.
+- **Metadata Hardening**: Added canonical strategy (`alternates.canonical`), richer Open Graph/Twitter metadata, and updated robots directives for clearer crawl/share behavior.
+- **Pre-launch Messaging Alignment**: Reframed landing copy to reduce overclaim risk, emphasize psychological user pains (clarity, confidence, control), and unify voice consistency.
+- **Trust-first UX Tuning**: Temporarily removed Video Demo render from the landing page until real demo assets are available.
 
 ### Fixed
 - Fixed Brand Settings loading indefinitely in the UI.
