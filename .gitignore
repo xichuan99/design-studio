@@ -28,6 +28,7 @@ dist/
 .DS_Store
 *.pem
 *.log
+build_log.txt
 *.tsbuildinfo
 next-env.d.ts
 
