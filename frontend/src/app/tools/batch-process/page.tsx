@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { BatchImageDropzone } from "@/components/tools/BatchImageDropzone";
+import { ToolProcessingState } from "@/components/tools/ToolProcessingState";
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowLeft, Download, Layers, CheckCircle2, XCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useProjectApi } from "@/lib/api";
+import { useToolJobProgress } from "@/hooks/useToolJobProgress";
 
 const OPERATIONS = [
   { id: "remove_bg", name: "Hapus Latar Belakang", cost: 1, desc: "Hapus background foto produk secara otomatis" },
@@ -31,9 +33,9 @@ export default function BatchProcessPage() {
   const [theme, setTheme] = useState("studio");
   const [logoFile, setLogoFile] = useState<File | null>(null);
 
-  const [loading, setLoading] = useState(false);
   const [resultUrl, setResultUrl] = useState<string>("");
   const [batchResult, setBatchResult] = useState<{success: number, error: number, errors: Array<{filename: string, error: string}>}>({success: 0, error: 0, errors: []});
+  const { loading, activeJob, startToolJob, cancelActiveJob } = useToolJobProgress();
   const api = useProjectApi();
 
   const handleFilesSelect = (selectedFiles: File[]) => {
@@ -53,7 +55,6 @@ export default function BatchProcessPage() {
         toast.error("Pilih file logo untuk watermark");
         return;
     }
-    setLoading(true);
 
     try {
       const params: Record<string, string> = {};
@@ -61,24 +62,79 @@ export default function BatchProcessPage() {
           params.theme = theme;
       }
 
-      const data = await api.batchProcess(files, operation, JSON.stringify(params), logoFile || undefined);
+      const uploadedItems = await Promise.all(
+        files.map(async (file) => {
+          const uploaded = await api.uploadImage(file);
+          return {
+            filename: file.name,
+            image_url: uploaded.url,
+          };
+        })
+      );
 
-      setResultUrl(data.url);
-      setBatchResult({
-          success: data.success_count,
-          error: data.error_count,
-          errors: data.errors
+      if (operation === "watermark" && logoFile) {
+        const uploadedLogo = await api.uploadImage(logoFile);
+        params.logo_url = uploadedLogo.url;
+      }
+
+      await startToolJob({
+        toolName: "batch",
+        payload: {
+          items: uploadedItems,
+          operation,
+          params,
+        },
+        idempotencyKey: `${operation}:${theme}:${files.map((f) => `${f.name}:${f.size}:${f.lastModified}`).join("|")}:${logoFile ? `${logoFile.name}:${logoFile.size}:${logoFile.lastModified}` : ""}`,
+        onCompleted: (job) => {
+          if (!job.result_url) return;
+          setResultUrl(job.result_url);
+          const meta = (job.result_meta || {}) as {
+            success_count?: number;
+            error_count?: number;
+            errors?: Array<{ filename: string; error: string }>;
+          };
+          setBatchResult({
+            success: meta.success_count ?? uploadedItems.length,
+            error: meta.error_count ?? 0,
+            errors: meta.errors ?? [],
+          });
+          setStep(3);
+          toast.success("Batch processing selesai");
+        },
+        onFailed: (job) => {
+          toast.error(job.error_message || "Proses batch gagal");
+        },
+        onCanceled: () => {
+          toast.message("Proses batch dibatalkan");
+        },
+        onError: (error) => {
+          if (error instanceof Error) {
+            toast.error(error.message);
+          } else {
+            toast.error("Gagal memantau status batch");
+          }
+        },
       });
-      setStep(3);
     } catch (err: unknown) {
       if (err instanceof Error) {
         toast.error(err.message);
       } else {
         toast.error(String(err));
       }
-    } finally {
-      setLoading(false);
     }
+  };
+
+  const handleCancel = async () => {
+    await cancelActiveJob({
+      onCanceled: () => toast.message("Proses batch dibatalkan"),
+      onError: (error) => {
+        if (error instanceof Error) {
+          toast.error(error.message);
+        } else {
+          toast.error("Gagal membatalkan proses");
+        }
+      },
+    });
   };
 
   return (
@@ -185,6 +241,13 @@ export default function BatchProcessPage() {
                   <span className="font-semibold text-primary">Total Biaya:</span>
                   <span className="text-xl font-bold font-jakarta text-primary">{calculateTotalCost()} Koin</span>
               </div>
+
+              <ToolProcessingState
+                loading={loading}
+                job={activeJob}
+                defaultMessage="Memproses batch gambar"
+                onCancel={handleCancel}
+              />
 
               <Button 
                 onClick={handleGenerate} 

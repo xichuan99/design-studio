@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { AppHeader } from "@/components/layout/AppHeader";
+import { ToolProcessingState } from "@/components/tools/ToolProcessingState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,13 +11,13 @@ import { Loader2, ArrowLeft, Download, PenSquare, Type, Wand2, Palette } from "l
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { toast } from "sonner";
-import { useProjectApi } from "@/lib/api";
+import { useToolJobProgress } from "@/hooks/useToolJobProgress";
 import { cn } from "@/lib/utils";
 import { CreditConfirmDialog } from '@/components/credits/CreditConfirmDialog';
 
 export default function TextBannerPage() {
     const router = useRouter();
-    const { generateTextBanner } = useProjectApi();
+    const { loading, activeJob, startToolJob, cancelActiveJob } = useToolJobProgress();
     
     const [step, setStep] = useState(1);
     const [text, setText] = useState('');
@@ -25,7 +26,6 @@ export default function TextBannerPage() {
     const [colorHint, setColorHint] = useState('');
     const [quality, setQuality] = useState<'draft' | 'standard' | 'premium'>('standard');
     
-    const [isGenerating, setIsGenerating] = useState(false);
     const [resultUrl, setResultUrl] = useState<string>('');
 
     const STYLE_PRESETS = [
@@ -47,28 +47,55 @@ export default function TextBannerPage() {
             return;
         }
 
-        setIsGenerating(true);
-
         try {
-            const result = await generateTextBanner({
-                text,
-                style: style === 'custom' ? customStyle : style,
-                color_hint: colorHint,
-                quality
+            const resolvedStyle = style === 'custom' ? customStyle : style;
+            await startToolJob({
+                toolName: 'text_banner',
+                payload: {
+                    text,
+                    style: resolvedStyle,
+                    color_hint: colorHint,
+                    quality,
+                },
+                idempotencyKey: `${text}:${resolvedStyle}:${colorHint}:${quality}`,
+                onCompleted: (job) => {
+                    if (job.result_url) {
+                        setResultUrl(job.result_url);
+                        setStep(2);
+                        toast.success('Banner berhasil dibuat');
+                    }
+                },
+                onFailed: (job) => {
+                    toast.error(job.error_message || 'Gagal membuat banner');
+                },
+                onCanceled: () => {
+                    toast.message('Proses text banner dibatalkan');
+                },
+                onError: (error) => {
+                    if (error instanceof Error) {
+                        toast.error(error.message);
+                    } else {
+                        toast.error('Gagal memantau status text banner');
+                    }
+                },
             });
-
-            if (result.url) {
-                setResultUrl(result.url);
-                setStep(2);
-            } else {
-                throw new Error('Tidak ada URL gambar yang dikembalikan dari server.');
-            }
         } catch (err: unknown) {
             const errorMessage = err instanceof Error ? err.message : 'Gagal membuat banner. Silakan coba lagi.';
             toast.error(errorMessage);
-        } finally {
-            setIsGenerating(false);
         }
+    };
+
+    const handleCancel = async () => {
+        await cancelActiveJob({
+            onCanceled: () => toast.message('Proses text banner dibatalkan'),
+            onError: (error) => {
+                if (error instanceof Error) {
+                    toast.error(error.message);
+                } else {
+                    toast.error('Gagal membatalkan proses');
+                }
+            },
+        });
     };
 
     const cost = quality === 'premium' ? 40 : 10;
@@ -193,19 +220,25 @@ export default function TextBannerPage() {
                         </div>
 
                         <div className="pt-6 mt-4 border-t">
+                            <ToolProcessingState
+                                loading={loading}
+                                job={activeJob}
+                                defaultMessage="AI sedang membuat text banner"
+                                onCancel={handleCancel}
+                            />
                             <CreditConfirmDialog
                                 title="Buat AI Text Banner"
                                 description={`Membuat banner teks berkualitas ${quality}. Proses ini membutuhkan ${cost} kredit.`}
                                 cost={cost}
                                 onConfirm={handleGenerate}
-                                disabled={isGenerating || !text.trim()}
+                                disabled={loading || !text.trim()}
                             >
                                 <Button
-                                    disabled={isGenerating || !text.trim()}
+                                    disabled={loading || !text.trim()}
                                     className="w-full text-base h-12 gap-2 font-bold shadow-md hover:shadow-lg transition-all"
                                     size="lg"
                                 >
-                                    {isGenerating ? (
+                                    {loading ? (
                                         <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Sedang Membuat...</>
                                     ) : (
                                         <>✨ Generate Text Banner ({cost} Kredit)</>

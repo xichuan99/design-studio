@@ -134,6 +134,43 @@ export interface AiToolResult {
     created_at: string;
 }
 
+export type AiToolJobStatus =
+    | 'queued'
+    | 'uploading'
+    | 'processing'
+    | 'saving'
+    | 'completed'
+    | 'failed'
+    | 'canceled'
+    | 'cancel_requested';
+
+export interface AiToolJob {
+    job_id: string;
+    tool_name: string;
+    status: AiToolJobStatus;
+    progress_percent: number;
+    phase_message: string | null;
+    result_url: string | null;
+    error_message: string | null;
+    cancel_requested: boolean;
+    created_at: string;
+    started_at: string | null;
+    finished_at: string | null;
+    result_meta?: Record<string, unknown> | null;
+}
+
+export type AiToolJobName =
+    | 'upscale'
+    | 'retouch'
+    | 'background_swap'
+    | 'product_scene'
+    | 'generative_expand'
+    | 'batch'
+    | 'id_photo'
+    | 'magic_eraser'
+    | 'text_banner'
+    | 'watermark';
+
 // --- AI Design Generations (from /designs/my-generations) ---
 export interface AiGeneration {
     id: string;

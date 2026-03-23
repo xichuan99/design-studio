@@ -4,11 +4,13 @@ import { useState } from "react";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { ImageDropzone } from "@/components/tools/ImageDropzone";
 import { BeforeAfterSlider } from "@/components/tools/BeforeAfterSlider";
+import { ToolProcessingState } from "@/components/tools/ToolProcessingState";
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowLeft, Download, PenSquare, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useProjectApi } from "@/lib/api";
+import { useToolJobProgress } from "@/hooks/useToolJobProgress";
 
 type RetouchLevel = "natural" | "balanced" | "maximal";
 type OutputFormat = "jpeg" | "png";
@@ -27,16 +29,48 @@ export default function RetouchPage() {
   const [beforeUrl, setBeforeUrl] = useState<string>("");
   const [outputFormat, setOutputFormat] = useState<OutputFormat>("jpeg");
   const [retouchLevel, setRetouchLevel] = useState<RetouchLevel>("balanced");
+  const { loading, activeJob, startToolJob, cancelActiveJob } = useToolJobProgress();
 
   const selectedLevel = RETOUCH_LEVELS.find((l) => l.id === retouchLevel)!;
 
   const handleFileSelect = async (file: File) => {
     setStep(2);
     try {
-      const data = await api.retouchImage(file, outputFormat, selectedLevel.fidelity);
-      setResultUrl(data.url);
-      setBeforeUrl(data.before_url);
-      setStep(3);
+      const uploaded = await api.uploadImage(file);
+      setBeforeUrl(uploaded.url);
+
+      await startToolJob({
+        toolName: "retouch",
+        payload: {
+          image_url: uploaded.url,
+          output_format: outputFormat,
+          fidelity: selectedLevel.fidelity,
+        },
+        idempotencyKey: `${file.name}:${file.size}:${file.lastModified}:${outputFormat}:${selectedLevel.id}`,
+        onCompleted: (job) => {
+          if (job.result_url) {
+            setResultUrl(job.result_url);
+            setStep(3);
+            toast.success("Retouch selesai");
+          }
+        },
+        onFailed: (job) => {
+          toast.error(job.error_message || "Proses retouch gagal");
+          setStep(1);
+        },
+        onCanceled: () => {
+          toast.message("Proses retouch dibatalkan");
+          setStep(1);
+        },
+        onError: (error) => {
+          if (error instanceof Error) {
+            toast.error(error.message);
+          } else {
+            toast.error("Gagal memantau status retouch");
+          }
+          setStep(1);
+        },
+      });
     } catch (err: unknown) {
       if (err instanceof Error) {
         toast.error(err.message);
@@ -45,6 +79,22 @@ export default function RetouchPage() {
       }
       setStep(1);
     }
+  };
+
+  const handleCancel = async () => {
+    await cancelActiveJob({
+      onCanceled: () => {
+        toast.message("Proses retouch dibatalkan");
+        setStep(1);
+      },
+      onError: (error) => {
+        if (error instanceof Error) {
+          toast.error(error.message);
+        } else {
+          toast.error("Gagal membatalkan proses retouch");
+        }
+      },
+    });
   };
 
   return (
@@ -114,13 +164,14 @@ export default function RetouchPage() {
         )}
 
         {step === 2 && (
-          <div className="flex flex-col items-center justify-center py-24 text-center space-y-4">
-            <Loader2 className="w-12 h-12 animate-spin text-primary" />
-            <h3 className="text-xl font-semibold">Sedang Menganalisa &amp; Memperbaiki Foto...</h3>
-            <p className="text-muted-foreground max-w-md">
-              AI kami sedang menyeimbangkan pencahayaan dan menghaluskan noda tanpa menghilangkan detail alami.
-            </p>
-          </div>
+          <ToolProcessingState
+            loading={loading}
+            job={activeJob}
+            variant="centered"
+            defaultMessage="Sedang Menganalisa & Memperbaiki Foto..."
+            description="AI kami sedang menyeimbangkan pencahayaan dan menghaluskan noda tanpa menghilangkan detail alami."
+            onCancel={handleCancel}
+          />
         )}
 
         {step === 3 && (

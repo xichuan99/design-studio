@@ -7,12 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { ToolProcessingState } from "@/components/tools/ToolProcessingState";
 import { Upload, Download, ShieldCheck, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { BeforeAfterSlider } from "@/components/tools/BeforeAfterSlider";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useProjectApi } from "@/lib/api";
+import { useToolJobProgress } from "@/hooks/useToolJobProgress";
 
 export default function WatermarkPlacerPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -20,7 +22,7 @@ export default function WatermarkPlacerPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [resultImage, setResultImage] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const { loading, activeJob, startToolJob, cancelActiveJob } = useToolJobProgress();
   
   // Settings
   const [position, setPosition] = useState<string>("bottom-right");
@@ -59,23 +61,59 @@ export default function WatermarkPlacerPage() {
   const handleProcess = async () => {
     if (!imageFile || !logoFile) return;
 
-    setIsProcessing(true);
     try {
-      const data = await api.applyWatermark(
-        imageFile,
-        logoFile,
-        position,
-        (opacity[0] / 100).toString(),
-        (scale[0] / 100).toString()
-      );
-      setResultImage(data.url);
-      // Success
+      const [uploadedImage, uploadedLogo] = await Promise.all([
+        api.uploadImage(imageFile),
+        api.uploadImage(logoFile),
+      ]);
+
+      await startToolJob({
+        toolName: "watermark",
+        payload: {
+          image_url: uploadedImage.url,
+          logo_url: uploadedLogo.url,
+          position,
+          opacity: opacity[0] / 100,
+          scale: scale[0] / 100,
+        },
+        idempotencyKey: `${imageFile.name}:${imageFile.size}:${imageFile.lastModified}:${logoFile.name}:${logoFile.size}:${logoFile.lastModified}:${position}:${opacity[0]}:${scale[0]}`,
+        onCompleted: (job) => {
+          if (job.result_url) {
+            setResultImage(job.result_url);
+            toast.success("Watermark berhasil diterapkan");
+          }
+        },
+        onFailed: (job) => {
+          toast.error(job.error_message || "Proses watermark gagal");
+        },
+        onCanceled: () => {
+          toast.message("Proses watermark dibatalkan");
+        },
+        onError: (error) => {
+          if (error instanceof Error) {
+            toast.error(error.message);
+          } else {
+            toast.error("Gagal memantau status watermark");
+          }
+        },
+      });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Terjadi kesalahan pada server";
       toast.error(errorMessage);
-    } finally {
-      setIsProcessing(false);
     }
+  };
+
+  const handleCancel = async () => {
+    await cancelActiveJob({
+      onCanceled: () => toast.message("Proses watermark dibatalkan"),
+      onError: (error) => {
+        if (error instanceof Error) {
+          toast.error(error.message);
+        } else {
+          toast.error("Gagal membatalkan proses");
+        }
+      },
+    });
   };
 
   const handleDownload = () => {
@@ -202,9 +240,9 @@ export default function WatermarkPlacerPage() {
                 size="lg"
                 className="w-full mt-4 font-bold tracking-wide"
                 onClick={handleProcess}
-                disabled={isProcessing || !imageFile || !logoFile}
+                disabled={loading || !imageFile || !logoFile}
               >
-                {isProcessing ? (
+                {loading ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Sedang Memproses...
                   </>
@@ -214,6 +252,13 @@ export default function WatermarkPlacerPage() {
                   </>
                 )}
               </Button>
+
+              <ToolProcessingState
+                loading={loading}
+                job={activeJob}
+                defaultMessage="Menerapkan watermark"
+                onCancel={handleCancel}
+              />
             </div>
           </Card>
         </div>
@@ -247,7 +292,7 @@ export default function WatermarkPlacerPage() {
               </div>
             )}
             
-            {isProcessing && (
+            {loading && (
               <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
                  <div className="w-16 h-16 relative">
                     <div className="absolute inset-0 border-4 border-orange-500/30 rounded-full"></div>
@@ -264,7 +309,7 @@ export default function WatermarkPlacerPage() {
               variant="default"
               className={cn("gap-2 shadow-lg hover:shadow-xl transition-all font-bold", !resultImage && "opacity-50 pointer-events-none")}
               onClick={handleDownload}
-              disabled={!resultImage || isProcessing}
+              disabled={!resultImage || loading}
             >
               <Download className="w-5 h-5" /> Download Hasil
             </Button>

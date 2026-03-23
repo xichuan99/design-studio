@@ -202,6 +202,60 @@ export function useAiToolsEndpoints() {
             return res.json();
         };
 
+    const createToolJob = async (payload: {
+            tool_name: Types.AiToolJobName;
+            payload?: Record<string, unknown>;
+            idempotency_key?: string;
+        }): Promise<Types.AiToolJob> => {
+            const res = await fetch(`${API_BASE_URL}/tools/jobs`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(payload),
+            });
+            if (!res.ok) {
+                const errBase = await res.json().catch(() => ({}));
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to create AI tool job');
+            }
+            return res.json();
+        };
+
+    const getToolJobStatus = async (jobId: string): Promise<Types.AiToolJob> => {
+            const res = await fetch(`${API_BASE_URL}/tools/jobs/${jobId}`, {
+                headers: getHeaders(),
+            });
+            if (!res.ok) {
+                const errBase = await res.json().catch(() => ({}));
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to fetch AI tool job status');
+            }
+            return res.json();
+        };
+
+    const cancelToolJob = async (jobId: string): Promise<Types.AiToolJob> => {
+            const res = await fetch(`${API_BASE_URL}/tools/jobs/${jobId}/cancel`, {
+                method: 'POST',
+                headers: getHeaders(),
+            });
+            if (!res.ok) {
+                const errBase = await res.json().catch(() => ({}));
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to cancel AI tool job');
+            }
+            return res.json();
+        };
+
+    const getMyToolJobs = async (toolName?: Types.AiToolJobName, limit: number = 20, offset: number = 0): Promise<Types.AiToolJob[]> => {
+            const params = new URLSearchParams({ limit: limit.toString(), offset: offset.toString() });
+            if (toolName) params.append('tool_name', toolName);
+
+            const res = await fetch(`${API_BASE_URL}/tools/my-jobs?${params.toString()}`, {
+                headers: getHeaders(),
+            });
+            if (!res.ok) {
+                const errBase = await res.json().catch(() => ({}));
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to fetch AI tool jobs');
+            }
+            return res.json();
+        };
+
     /**
      * Delete a generation job and reclaim storage quota.
      * @param jobId The UUID of the job to delete
@@ -575,5 +629,36 @@ export function useAiToolsEndpoints() {
             }
         };
 
-    return { generateDesign, redesignFromReference, clarifyCopywriting, clarifyUnified, generateCopywriting, parseDesignText, uploadImage, getJobStatus, getMyGenerations, deleteGeneration, generateMagicTextLayout, removeBackground, upscaleImage, generateTextBanner, retouchImage, generateIdPhoto, magicEraser, generativeExpand, backgroundSwap, suggestBackgrounds, productScene, batchProcess, applyWatermark, getMyToolResults, deleteToolResult, generateProjectTitle };
+    return {
+        generateDesign,
+        redesignFromReference,
+        clarifyCopywriting,
+        clarifyUnified,
+        generateCopywriting,
+        parseDesignText,
+        uploadImage,
+        getJobStatus,
+        getMyGenerations,
+        deleteGeneration,
+        createToolJob,
+        getToolJobStatus,
+        cancelToolJob,
+        getMyToolJobs,
+        generateMagicTextLayout,
+        removeBackground,
+        upscaleImage,
+        generateTextBanner,
+        retouchImage,
+        generateIdPhoto,
+        magicEraser,
+        generativeExpand,
+        backgroundSwap,
+        suggestBackgrounds,
+        productScene,
+        batchProcess,
+        applyWatermark,
+        getMyToolResults,
+        deleteToolResult,
+        generateProjectTitle,
+    };
 }

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { ImageDropzone } from "@/components/tools/ImageDropzone";
+import { ToolProcessingState } from "@/components/tools/ToolProcessingState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, ArrowLeft, Download, Camera, PenSquare } from "lucide-react";
@@ -10,6 +11,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { toast } from "sonner";
 import { useProjectApi } from "@/lib/api";
+import { useToolJobProgress } from "@/hooks/useToolJobProgress";
 
 export default function IdPhotoPage() {
   const router = useRouter();
@@ -23,9 +25,9 @@ export default function IdPhotoPage() {
   const [customH, setCustomH] = useState("");
   const [outputFormat, setOutputFormat] = useState<'jpeg' | 'png'>('jpeg');
   const [includePrintSheet, setIncludePrintSheet] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [resultUrl, setResultUrl] = useState<string>("");
   const [printSheetUrl, setPrintSheetUrl] = useState<string | null>(null);
+  const { loading, activeJob, startToolJob, cancelActiveJob } = useToolJobProgress();
 
   const handleFileSelect = (file: File) => {
     setOriginalFile(file);
@@ -42,22 +44,62 @@ export default function IdPhotoPage() {
       return;
     }
 
-    setLoading(true);
-
     try {
-      const data = await api.generateIdPhoto(originalFile, bgColor, size, customW, customH, outputFormat, includePrintSheet);
-      setResultUrl(data.url);
-      setPrintSheetUrl(data.print_sheet_url || null);
-      setStep(3);
+      const uploaded = await api.uploadImage(originalFile);
+      await startToolJob({
+        toolName: "id_photo",
+        payload: {
+          image_url: uploaded.url,
+          bg_color: bgColor,
+          size,
+          custom_width_cm: customW ? Number(customW) : undefined,
+          custom_height_cm: customH ? Number(customH) : undefined,
+          output_format: outputFormat,
+          include_print_sheet: includePrintSheet,
+        },
+        idempotencyKey: `${originalFile.name}:${originalFile.size}:${originalFile.lastModified}:${bgColor}:${size}:${customW}:${customH}:${outputFormat}:${includePrintSheet}`,
+        onCompleted: (job) => {
+          if (!job.result_url) return;
+          setResultUrl(job.result_url);
+          const meta = job.result_meta as { print_sheet_url?: string } | null | undefined;
+          setPrintSheetUrl(meta?.print_sheet_url || null);
+          setStep(3);
+          toast.success("Pasfoto berhasil dibuat");
+        },
+        onFailed: (job) => {
+          toast.error(job.error_message || "Proses pasfoto gagal");
+        },
+        onCanceled: () => {
+          toast.message("Proses pasfoto dibatalkan");
+        },
+        onError: (error) => {
+          if (error instanceof Error) {
+            toast.error(error.message);
+          } else {
+            toast.error("Gagal memantau status pasfoto");
+          }
+        },
+      });
     } catch (err: unknown) {
       if (err instanceof Error) {
         toast.error(err.message);
       } else {
         toast.error(String(err));
       }
-    } finally {
-      setLoading(false);
     }
+  };
+
+  const handleCancel = async () => {
+    await cancelActiveJob({
+      onCanceled: () => toast.message("Proses pasfoto dibatalkan"),
+      onError: (error) => {
+        if (error instanceof Error) {
+          toast.error(error.message);
+        } else {
+          toast.error("Gagal membatalkan proses");
+        }
+      },
+    });
   };
 
   return (
@@ -178,6 +220,13 @@ export default function IdPhotoPage() {
                   </div>
                 </div>
               </div>
+
+              <ToolProcessingState
+                loading={loading}
+                job={activeJob}
+                defaultMessage="AI sedang memproses pasfoto"
+                onCancel={handleCancel}
+              />
 
               <Button 
                 onClick={handleGenerate} 

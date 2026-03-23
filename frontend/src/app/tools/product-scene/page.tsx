@@ -4,12 +4,14 @@ import { useState } from "react";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { ImageDropzone } from "@/components/tools/ImageDropzone";
 import { BeforeAfterSlider } from "@/components/tools/BeforeAfterSlider";
+import { ToolProcessingState } from "@/components/tools/ToolProcessingState";
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowLeft, Download, PenSquare, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { toast } from "sonner";
 import { useProjectApi } from "@/lib/api";
+import { useToolJobProgress } from "@/hooks/useToolJobProgress";
 import { CreditCostBadge } from "@/components/credits/CreditCostBadge";
 import { CreditConfirmDialog } from "@/components/credits/CreditConfirmDialog";
 
@@ -29,8 +31,8 @@ export default function ProductScenePage() {
   const [previewOriginal, setPreviewOriginal] = useState<string>("");
   const [theme, setTheme] = useState("studio");
   const [aspectRatio, setAspectRatio] = useState("1:1");
-  const [loading, setLoading] = useState(false);
   const [resultUrl, setResultUrl] = useState<string>("");
+  const { loading, activeJob, startToolJob, cancelActiveJob } = useToolJobProgress();
   const api = useProjectApi();
 
   const handleFileSelect = (file: File) => {
@@ -42,21 +44,58 @@ export default function ProductScenePage() {
 
   const handleGenerate = async () => {
     if (!originalFile || !theme) return;
-    setLoading(true);
 
     try {
-      const data = await api.productScene(originalFile, theme, aspectRatio);
-      setResultUrl(data.url);
-      setStep(3);
+      const uploaded = await api.uploadImage(originalFile);
+      await startToolJob({
+        toolName: "product_scene",
+        payload: {
+          image_url: uploaded.url,
+          theme,
+          aspect_ratio: aspectRatio,
+        },
+        idempotencyKey: `${originalFile.name}:${originalFile.size}:${originalFile.lastModified}:${theme}:${aspectRatio}`,
+        onCompleted: (job) => {
+          if (job.result_url) {
+            setResultUrl(job.result_url);
+            setStep(3);
+            toast.success("Product scene selesai");
+          }
+        },
+        onFailed: (job) => {
+          toast.error(job.error_message || "Proses product scene gagal");
+        },
+        onCanceled: () => {
+          toast.message("Proses product scene dibatalkan");
+        },
+        onError: (error) => {
+          if (error instanceof Error) {
+            toast.error(error.message);
+          } else {
+            toast.error("Gagal memantau status product scene");
+          }
+        },
+      });
     } catch (err: unknown) {
       if (err instanceof Error) {
         toast.error(err.message);
       } else {
         toast.error(String(err));
       }
-    } finally {
-      setLoading(false);
     }
+  };
+
+  const handleCancel = async () => {
+    await cancelActiveJob({
+      onCanceled: () => toast.message("Proses product scene dibatalkan"),
+      onError: (error) => {
+        if (error instanceof Error) {
+          toast.error(error.message);
+        } else {
+          toast.error("Gagal membatalkan proses");
+        }
+      },
+    });
   };
 
   return (
@@ -152,6 +191,13 @@ export default function ProductScenePage() {
                   ))}
                 </div>
               </div>
+
+              <ToolProcessingState
+                loading={loading}
+                job={activeJob}
+                defaultMessage="AI sedang membuat product scene"
+                onCancel={handleCancel}
+              />
 
               <CreditConfirmDialog
                 title="AI Product Scene"

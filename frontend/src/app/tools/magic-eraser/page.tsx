@@ -5,11 +5,13 @@ import { AppHeader } from "@/components/layout/AppHeader";
 import { ImageDropzone } from "@/components/tools/ImageDropzone";
 import { CanvasMaskPainter } from "@/components/tools/CanvasMaskPainter";
 import { BeforeAfterSlider } from "@/components/tools/BeforeAfterSlider";
+import { ToolProcessingState } from "@/components/tools/ToolProcessingState";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, Download, PenSquare } from "lucide-react";
+import { ArrowLeft, Download, PenSquare } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useProjectApi } from "@/lib/api";
+import { useToolJobProgress } from "@/hooks/useToolJobProgress";
 import { CreditCostBadge } from "@/components/credits/CreditCostBadge";
 
 export default function MagicEraserPage() {
@@ -20,6 +22,7 @@ export default function MagicEraserPage() {
   const [originalFile, setOriginalFile] = useState<File | null>(null);
   const [previewOriginal, setPreviewOriginal] = useState<string>("");
   const [resultUrl, setResultUrl] = useState<string>("");
+  const { loading, activeJob, startToolJob, cancelActiveJob } = useToolJobProgress();
 
   const handleFileSelect = (file: File) => {
     setOriginalFile(file);
@@ -33,13 +36,43 @@ export default function MagicEraserPage() {
     setStep(3); // Loading state
 
     try {
-      // Need to convert blob to File object
       const maskFile = new File([maskBlob], "mask.png", { type: "image/png" });
-      
-      const data = await api.magicEraser(originalFile, maskFile);
-      setResultUrl(data.url);
-      setStep(4);
-      toast.success("Objek berhasil dihapus!");
+      const [uploadedOriginal, uploadedMask] = await Promise.all([
+        api.uploadImage(originalFile),
+        api.uploadImage(maskFile),
+      ]);
+
+      await startToolJob({
+        toolName: "magic_eraser",
+        payload: {
+          image_url: uploadedOriginal.url,
+          mask_url: uploadedMask.url,
+        },
+        idempotencyKey: `${originalFile.name}:${originalFile.size}:${originalFile.lastModified}:mask`,
+        onCompleted: (job) => {
+          if (job.result_url) {
+            setResultUrl(job.result_url);
+            setStep(4);
+            toast.success("Objek berhasil dihapus!");
+          }
+        },
+        onFailed: (job) => {
+          toast.error(job.error_message || "Proses magic eraser gagal");
+          setStep(2);
+        },
+        onCanceled: () => {
+          toast.message("Proses magic eraser dibatalkan");
+          setStep(2);
+        },
+        onError: (error) => {
+          if (error instanceof Error) {
+            toast.error(error.message);
+          } else {
+            toast.error("Gagal memantau status magic eraser");
+          }
+          setStep(2);
+        },
+      });
       
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -48,9 +81,23 @@ export default function MagicEraserPage() {
         toast.error(String(err));
       }
       setStep(2); // Back to drawing board on error
-    } finally {
-      // Done processing
     }
+  };
+
+  const handleCancel = async () => {
+    await cancelActiveJob({
+      onCanceled: () => {
+        toast.message("Proses magic eraser dibatalkan");
+        setStep(2);
+      },
+      onError: (error) => {
+        if (error instanceof Error) {
+          toast.error(error.message);
+        } else {
+          toast.error("Gagal membatalkan proses");
+        }
+      },
+    });
   };
 
   return (
@@ -92,20 +139,14 @@ export default function MagicEraserPage() {
         )}
 
         {step === 3 && (
-          <div className="flex flex-col items-center justify-center py-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="relative w-24 h-24 mb-8">
-              <div className="absolute inset-0 border-4 border-muted rounded-full"></div>
-              <div className="absolute inset-0 border-4 border-primary rounded-full border-t-transparent animate-spin"></div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 text-primary animate-pulse" />
-              </div>
-            </div>
-            <h3 className="text-2xl font-bold mb-2">Sedang Menghapus Objek</h3>
-            <p className="text-muted-foreground text-center max-w-md">
-              AI sedang menganalisis gambar dan mengisi bagian yang dihapus dengan area sekitarnya secara natural.
-              Proses ini memakan waktu sekitar 15-30 detik.
-            </p>
-          </div>
+          <ToolProcessingState
+            loading={loading || step === 3}
+            job={activeJob}
+            defaultMessage="AI sedang menghapus objek"
+            description="AI sedang menganalisis gambar dan mengisi area yang dihapus secara natural."
+            onCancel={handleCancel}
+            variant="centered"
+          />
         )}
 
         {step === 4 && (

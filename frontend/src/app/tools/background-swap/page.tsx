@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { ImageDropzone } from "@/components/tools/ImageDropzone";
 import { BeforeAfterSlider } from "@/components/tools/BeforeAfterSlider";
+import { ToolProcessingState } from "@/components/tools/ToolProcessingState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, ArrowLeft, Download, PenSquare, Sparkles, PencilLine } from "lucide-react";
@@ -11,6 +12,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { toast } from "sonner";
 import { useProjectApi } from "@/lib/api";
+import { useToolJobProgress } from "@/hooks/useToolJobProgress";
 
 type Suggestion = { title: string; emoji: string; prompt: string };
 
@@ -20,8 +22,8 @@ export default function BackgroundSwapPage() {
   const [originalFile, setOriginalFile] = useState<File | null>(null);
   const [previewOriginal, setPreviewOriginal] = useState<string>("");
   const [prompt, setPrompt] = useState("");
-  const [loading, setLoading] = useState(false);
   const [resultUrl, setResultUrl] = useState<string>("");
+  const { loading, activeJob, startToolJob, cancelActiveJob } = useToolJobProgress();
 
   // Suggestion mode state
   const [promptMode, setPromptMode] = useState<"suggest" | "custom">("suggest");
@@ -68,21 +70,57 @@ export default function BackgroundSwapPage() {
 
   const handleGenerate = async () => {
     if (!originalFile || !prompt) return;
-    setLoading(true);
 
     try {
-      const data = await api.backgroundSwap(originalFile, prompt);
-      setResultUrl(data.url);
-      setStep(3);
+      const uploaded = await api.uploadImage(originalFile);
+      await startToolJob({
+        toolName: "background_swap",
+        payload: {
+          image_url: uploaded.url,
+          prompt,
+        },
+        idempotencyKey: `${originalFile.name}:${originalFile.size}:${originalFile.lastModified}:${prompt}`,
+        onCompleted: (job) => {
+          if (job.result_url) {
+            setResultUrl(job.result_url);
+            setStep(3);
+            toast.success("Background swap selesai");
+          }
+        },
+        onFailed: (job) => {
+          toast.error(job.error_message || "Proses background swap gagal");
+        },
+        onCanceled: () => {
+          toast.message("Proses background swap dibatalkan");
+        },
+        onError: (error) => {
+          if (error instanceof Error) {
+            toast.error(error.message);
+          } else {
+            toast.error("Gagal memantau status background swap");
+          }
+        },
+      });
     } catch (err: unknown) {
       if (err instanceof Error) {
         toast.error(err.message);
       } else {
         toast.error(String(err));
       }
-    } finally {
-      setLoading(false);
     }
+  };
+
+  const handleCancel = async () => {
+    await cancelActiveJob({
+      onCanceled: () => toast.message("Proses background swap dibatalkan"),
+      onError: (error) => {
+        if (error instanceof Error) {
+          toast.error(error.message);
+        } else {
+          toast.error("Gagal membatalkan proses");
+        }
+      },
+    });
   };
 
   return (
@@ -249,10 +287,17 @@ export default function BackgroundSwapPage() {
                 disabled={!prompt || loading}
               >
                 {loading
-                  ? <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Sedang Memproses AI (60s)...</>
+                  ? <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> {activeJob?.phase_message || "Sedang Memproses AI..."}</>
                   : "✨ Generate AI Background"
                 }
               </Button>
+
+              <ToolProcessingState
+                loading={loading}
+                job={activeJob}
+                defaultMessage="Sedang Memproses AI..."
+                onCancel={handleCancel}
+              />
             </div>
           </div>
         )}

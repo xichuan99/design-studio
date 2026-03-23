@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { ImageDropzone } from "@/components/tools/ImageDropzone";
 import { BeforeAfterSlider } from "@/components/tools/BeforeAfterSlider";
+import { ToolProcessingState } from "@/components/tools/ToolProcessingState";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,7 @@ import { Loader2, ArrowLeft, Download, PenSquare, ChevronUp, ChevronDown, Chevro
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useProjectApi } from "@/lib/api";
+import { useToolJobProgress } from "@/hooks/useToolJobProgress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type ExpandDirection = "top" | "bottom" | "left" | "right";
@@ -24,8 +26,8 @@ export default function GenerativeExpandPage() {
   const [step, setStep] = useState(1);
   const [originalFile, setOriginalFile] = useState<File | null>(null);
   const [previewOriginal, setPreviewOriginal] = useState<string>("");
-  const [loading, setLoading] = useState(false);
   const [resultUrl, setResultUrl] = useState<string>("");
+    const { loading, activeJob, startToolJob, cancelActiveJob } = useToolJobProgress();
   
   // Original dimensions
   const [origWidth, setOrigWidth] = useState(1024);
@@ -64,39 +66,54 @@ export default function GenerativeExpandPage() {
 
   const handleGenerate = async () => {
     if (!originalFile) return;
-    
-    setLoading(true);
 
     try {
-      let data;
+            const uploaded = await api.uploadImage(originalFile);
+            const payload: Record<string, string | number> = {
+                image_url: uploaded.url,
+            };
       
       if (mode === "direction") {
-          data = await api.generativeExpand(
-              originalFile, 
-              direction, 
-              pixels[0], 
-              undefined, 
-              undefined, 
-              prompt
-          );
+                    payload.direction = direction;
+                    payload.pixels = pixels[0];
       } else {
           // Verify target isn't smaller than original
           if (targetWidth < origWidth || targetHeight < origHeight) {
               throw new Error("Target dimensions must be greater than or equal to original dimensions for outpainting. Use crop instead for shrinking.");
           }
-          data = await api.generativeExpand(
-              originalFile,
-              undefined,
-              undefined,
-              targetWidth,
-              targetHeight,
-              prompt
-          );
+                    payload.target_width = targetWidth;
+                    payload.target_height = targetHeight;
       }
+
+            if (prompt.trim()) {
+                payload.prompt = prompt.trim();
+            }
       
-      setResultUrl(data.url);
-      setStep(3);
-      toast.success("Gambar berhasil diperluas!");
+            await startToolJob({
+                toolName: "generative_expand",
+                payload,
+                idempotencyKey: `${originalFile.name}:${originalFile.size}:${originalFile.lastModified}:${mode}:${direction}:${pixels[0]}:${targetWidth}:${targetHeight}:${prompt}`,
+                onCompleted: (job) => {
+                    if (job.result_url) {
+                        setResultUrl(job.result_url);
+                        setStep(3);
+                        toast.success("Gambar berhasil diperluas!");
+                    }
+                },
+                onFailed: (job) => {
+                    toast.error(job.error_message || "Proses generative expand gagal");
+                },
+                onCanceled: () => {
+                    toast.message("Proses generative expand dibatalkan");
+                },
+                onError: (error) => {
+                    if (error instanceof Error) {
+                        toast.error(error.message);
+                    } else {
+                        toast.error("Gagal memantau status generative expand");
+                    }
+                },
+            });
       
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -104,10 +121,21 @@ export default function GenerativeExpandPage() {
       } else {
         toast.error(String(err));
       }
-    } finally {
-      setLoading(false);
     }
   };
+
+    const handleCancel = async () => {
+        await cancelActiveJob({
+            onCanceled: () => toast.message("Proses generative expand dibatalkan"),
+            onError: (error) => {
+                if (error instanceof Error) {
+                    toast.error(error.message);
+                } else {
+                    toast.error("Gagal membatalkan proses");
+                }
+            },
+        });
+    };
 
   const renderActivePreview = () => {
       if (mode === "direction") {
@@ -313,6 +341,13 @@ export default function GenerativeExpandPage() {
                     />
                     <p className="text-xs text-muted-foreground">Ketik ini jika ingin AI menggambar sesuatu yang spesifik di area yang kosong.</p>
                 </div>
+
+                <ToolProcessingState
+                    loading={loading}
+                    job={activeJob}
+                    defaultMessage="AI sedang memperluas gambar"
+                    onCancel={handleCancel}
+                />
 
                 <Button 
                     size="lg" 
