@@ -404,8 +404,8 @@ export default function LandingPage() {
                 
                 {/* Email Capture Form */}
                 <div className="mt-2 text-sm text-slate-300">
-                  <p className="mb-3 font-semibold text-white">Dapatkan Tips & Promo Eksklusif</p>
-                  <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); alert("Thanks for subscribing!"); }}>
+                  <p className="mb-3 font-semibold text-white">Dapatkan Tips Konten & Promo Eksklusif</p>
+                  <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); alert("Terima kasih! Kamu sudah terdaftar untuk update SmartDesign."); }}>
                     <div className="relative flex-1">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                       <input 
@@ -416,7 +416,7 @@ export default function LandingPage() {
                       />
                     </div>
                     <button type="submit" className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2.5 rounded-lg font-medium transition-colors">
-                      Subscribe
+                      Daftar
                     </button>
                   </form>
                 </div>
@@ -442,7 +442,7 @@ export default function LandingPage() {
                   </div>
                   <div>
                     <h5 className="text-white font-bold text-sm mb-1">Ajak Teman, Dapat Kredit!</h5>
-                    <p className="text-slate-400 text-xs">Undang UMKM lain dan dapatkan <span className="text-purple-400 font-bold">10 Kredit Bonus</span> untuk setiap teman yang mendaftar.</p>
+                    <p className="text-slate-400 text-xs">Undang pelaku UMKM lain dan dapatkan <span className="text-purple-400 font-bold">10 kredit bonus</span> untuk setiap teman yang mendaftar.</p>
                   </div>
                 </div>
 
