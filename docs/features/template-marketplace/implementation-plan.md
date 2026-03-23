@@ -2,13 +2,13 @@
 goal: Introduce a community template marketplace on top of the existing system template model
 version: 1.0
 date_created: 2026-03-23
-status: 'Planned'
+status: 'In Progress'
 tags: [feature, migration, marketplace]
 ---
 
 # Implementation Plan: Template Marketplace & Community Templates
 
-![Status: Planned](https://img.shields.io/badge/status-Planned-blue)
+![Status: In Progress](https://img.shields.io/badge/status-In%20Progress-yellow)
 
 ## Related docs
 
@@ -207,33 +207,33 @@ Recommended states:
 
 | Task | Description | File(s) | Completed |
 |------|-------------|---------|-----------|
-| TASK-001 | Add new SQLAlchemy models for submission, review, favorite, usage stats. | `backend/app/models/` | |
-| TASK-002 | Add Alembic migration for marketplace tables and indexes. | `backend/alembic/versions/<revision>_template_marketplace_foundation.py` | |
-| TASK-003 | Add Pydantic schemas for create/update/review/list payloads. | `backend/app/schemas/` | |
+| TASK-001 | Add new SQLAlchemy models for submission, review, favorite, usage stats. | `backend/app/models/` | ✅ |
+| TASK-002 | Add Alembic migration for marketplace tables and indexes. | `backend/alembic/versions/<revision>_template_marketplace_foundation.py` | ✅ |
+| TASK-003 | Add Pydantic schemas for create/update/review/list payloads. | `backend/app/schemas/` | ✅ |
 
 ### Phase 2: Creator workflow
 
 | Task | Description | File(s) | Completed |
 |------|-------------|---------|-----------|
-| TASK-004 | Add endpoint to publish an existing project as template submission. | `backend/app/api/template_submissions.py` | |
-| TASK-005 | Validate required canvas structure, title, category, and thumbnail. | `backend/app/services/template_submission_service.py` | |
-| TASK-006 | Persist preview snapshot and derived text-layer defaults from project canvas. | `backend/app/services/template_submission_service.py` | |
+| TASK-004 | Add endpoint to publish an existing project as template submission. | `backend/app/api/template_submissions.py` | ✅ (implemented in `backend/app/api/template_marketplace.py`) |
+| TASK-005 | Validate required canvas structure, title, category, and thumbnail. | `backend/app/services/template_submission_service.py` | ◑ (basic validation via schema + endpoint) |
+| TASK-006 | Persist preview snapshot and derived text-layer defaults from project canvas. | `backend/app/services/template_submission_service.py` | ✅ |
 
 ### Phase 3: Moderation workflow
 
 | Task | Description | File(s) | Completed |
 |------|-------------|---------|-----------|
-| TASK-007 | Add moderation queue endpoints. | `backend/app/api/admin_template_submissions.py` | |
-| TASK-008 | Record approve/reject decision history. | `backend/app/services/template_review_service.py` | |
-| TASK-009 | Promote approved templates into public listing state. | `backend/app/services/template_review_service.py` | |
+| TASK-007 | Add moderation queue endpoints. | `backend/app/api/admin_template_submissions.py` | ⏳ |
+| TASK-008 | Record approve/reject decision history. | `backend/app/services/template_review_service.py` | ⏳ |
+| TASK-009 | Promote approved templates into public listing state. | `backend/app/services/template_review_service.py` | ⏳ |
 
 ### Phase 4: Public marketplace flow
 
 | Task | Description | File(s) | Completed |
 |------|-------------|---------|-----------|
-| TASK-010 | Add public listing/filter endpoint. | `backend/app/api/community_templates.py` | |
-| TASK-011 | Add favorite endpoint and usage counters. | `backend/app/api/community_templates.py`, `backend/app/services/template_metrics_service.py` | |
-| TASK-012 | Add duplicate/use-template flow into project creation. | `backend/app/api/community_templates.py`, `backend/app/api/projects.py` | |
+| TASK-010 | Add public listing/filter endpoint. | `backend/app/api/community_templates.py` | ✅ (implemented in `backend/app/api/template_marketplace.py`) |
+| TASK-011 | Add favorite endpoint and usage counters. | `backend/app/api/community_templates.py`, `backend/app/services/template_metrics_service.py` | ⏳ |
+| TASK-012 | Add duplicate/use-template flow into project creation. | `backend/app/api/community_templates.py`, `backend/app/api/projects.py` | ⏳ |
 
 ## 9. Frontend Changes
 
@@ -278,11 +278,11 @@ Recommended states:
 
 | Test | Type | File |
 |------|------|------|
-| TEST-001 | pytest model/API | `backend/tests/test_template_submissions.py` |
-| TEST-002 | pytest moderation | `backend/tests/test_template_reviews.py` |
-| TEST-003 | pytest metrics | `backend/tests/test_template_usage_stats.py` |
-| TEST-004 | Playwright creator flow | `frontend/tests/e2e/template-submission.spec.ts` |
-| TEST-005 | Playwright public browse/use flow | `frontend/tests/e2e/community-templates.spec.ts` |
+| TEST-001 | pytest model/API | `backend/tests/test_template_marketplace_api.py` ✅ |
+| TEST-002 | pytest moderation | `backend/tests/test_template_reviews.py` ⏳ |
+| TEST-003 | pytest metrics | `backend/tests/test_template_usage_stats.py` ⏳ |
+| TEST-004 | Playwright creator flow | `frontend/tests/e2e/template-submission.spec.ts` ⏳ |
+| TEST-005 | Playwright public browse/use flow | `frontend/tests/e2e/community-templates.spec.ts` ⏳ |
 
 ### Minimum acceptance criteria
 
@@ -313,3 +313,8 @@ If this feature enters implementation soon, the first coding milestone should be
 4. ship public read-only listing after approval flow is stable.
 
 This keeps the rollout controlled and prevents marketplace complexity from leaking into the current curated template system too early.
+
+## 14. Current sync note (2026-03-23)
+
+- Backend foundation is in place (models, migration, base schema, submit + mine + published list endpoints, and base API tests).
+- Remaining scope is moderation workflow, favorites/usage endpoints, duplicate-use flow, and frontend UX pages.

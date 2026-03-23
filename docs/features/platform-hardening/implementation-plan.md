@@ -2,13 +2,13 @@
 goal: Harden data lifecycle, canvas schema compatibility, and template extensibility
 version: 1.0
 date_created: 2026-03-23
-status: 'Planned'
+status: 'In Progress'
 tags: [refactor, migration, infrastructure]
 ---
 
 # Implementation Plan: Platform Hardening Priorities
 
-![Status: Planned](https://img.shields.io/badge/status-Planned-blue)
+![Status: In Progress](https://img.shields.io/badge/status-In%20Progress-yellow)
 
 ## Related docs
 
@@ -38,11 +38,11 @@ tags: [refactor, migration, infrastructure]
 
 | Task | Description | File(s) | Completed |
 |------|-------------|---------|-----------|
-| TASK-001 | Update `Job` foreign keys to use explicit cascade policy for `user_id`, and evaluate the same for `project_id`. | `backend/app/models/job.py` | |
-| TASK-002 | Add Alembic migration to alter `jobs.user_id` and `jobs.project_id` foreign keys safely. | `backend/alembic/versions/<revision>_harden_job_foreign_keys.py` | |
-| TASK-003 | Simplify delete-account flow after FK hardening and keep defensive logging. | `backend/app/api/users.py` | |
-| TASK-004 | Audit project deletion behavior to ensure `Job` records do not become orphaned. | `backend/app/api/projects.py` | |
-| TASK-005 | Add regression tests for deleting a user with jobs and deleting a project referenced by jobs. | `backend/tests/test_user_account_deletion.py`, `backend/tests/test_project_lifecycle.py` | |
+| TASK-001 | Update `Job` foreign keys to use explicit cascade policy for `user_id`, and evaluate the same for `project_id`. | `backend/app/models/job.py` | ✅ |
+| TASK-002 | Add Alembic migration to alter `jobs.user_id` and `jobs.project_id` foreign keys safely. | `backend/alembic/versions/<revision>_harden_job_foreign_keys.py` | ✅ |
+| TASK-003 | Simplify delete-account flow after FK hardening and keep defensive logging. | `backend/app/api/users.py` | ✅ |
+| TASK-004 | Audit project deletion behavior to ensure `Job` records do not become orphaned. | `backend/app/api/projects.py` | ✅ |
+| TASK-005 | Add regression tests for deleting a user with jobs and deleting a project referenced by jobs. | `backend/tests/test_user_account_deletion.py`, `backend/tests/test_project_lifecycle.py` | ◑ (user deletion done) |
 
 ### Phase 2: Introduce Canvas Schema Versioning
 
@@ -50,16 +50,16 @@ tags: [refactor, migration, infrastructure]
 
 | Task | Description | File(s) | Completed |
 |------|-------------|---------|-----------|
-| TASK-006 | Add explicit schema version fields to persistence layer for projects and design history. | `backend/app/models/project.py`, `backend/app/models/design_history.py` | |
-| TASK-007 | Add Alembic migration for `projects.canvas_schema_version` and `design_history.canvas_schema_version`. | `backend/alembic/versions/<revision>_add_canvas_schema_version.py` | |
-| TASK-008 | Extend project request/response schemas to accept and return schema version metadata. | `backend/app/schemas/project.py` | |
-| TASK-009 | Extend history request/response schemas to accept and return schema version metadata. | `backend/app/api/history.py` | |
-| TASK-010 | Update create/update project endpoints to persist schema version with canvas state. | `backend/app/api/projects.py` | |
-| TASK-011 | Update history snapshot creation flow to persist schema version for snapshot payloads. | `backend/app/api/history.py` | |
-| TASK-012 | Define a frontend serializer/helper that exports current editor state with a stable schema version constant. | `frontend/src/lib/api/types.ts`, `frontend/src/store/useCanvasStore.ts` | |
-| TASK-013 | Update project save/load flow to send and read schema version explicitly. | `frontend/src/lib/api/projectApi.ts`, `frontend/src/components/editor/EditorTopBar.tsx`, `frontend/src/app/edit/[projectId]/page.tsx` | |
-| TASK-014 | Add backward-compatible loader rules for payloads with no schema version (treat as v1). | `frontend/src/store/useCanvasStore.ts` | |
-| TASK-015 | Add backend and frontend tests for v1 legacy payloads and current-version payloads. | `backend/tests/test_projects_api.py`, `backend/tests/test_history_api.py`, `frontend/tests/e2e/editor-canvas-versioning.spec.ts` | |
+| TASK-006 | Add explicit schema version fields to persistence layer for projects and design history. | `backend/app/models/project.py`, `backend/app/models/design_history.py` | ✅ |
+| TASK-007 | Add Alembic migration for `projects.canvas_schema_version` and `design_history.canvas_schema_version`. | `backend/alembic/versions/<revision>_add_canvas_schema_version.py` | ✅ |
+| TASK-008 | Extend project request/response schemas to accept and return schema version metadata. | `backend/app/schemas/project.py` | ✅ |
+| TASK-009 | Extend history request/response schemas to accept and return schema version metadata. | `backend/app/api/history.py` | ✅ |
+| TASK-010 | Update create/update project endpoints to persist schema version with canvas state. | `backend/app/api/projects.py` | ✅ |
+| TASK-011 | Update history snapshot creation flow to persist schema version for snapshot payloads. | `backend/app/api/history.py` | ✅ |
+| TASK-012 | Define a frontend serializer/helper that exports current editor state with a stable schema version constant. | `frontend/src/lib/api/types.ts`, `frontend/src/store/useCanvasStore.ts` | ✅ (via `frontend/src/lib/canvasPersistence.ts`) |
+| TASK-013 | Update project save/load flow to send and read schema version explicitly. | `frontend/src/lib/api/projectApi.ts`, `frontend/src/components/editor/EditorTopBar.tsx`, `frontend/src/app/edit/[projectId]/page.tsx` | ✅ |
+| TASK-014 | Add backward-compatible loader rules for payloads with no schema version (treat as v1). | `frontend/src/store/useCanvasStore.ts` | ✅ (normalization on load path) |
+| TASK-015 | Add backend and frontend tests for v1 legacy payloads and current-version payloads. | `backend/tests/test_projects_api.py`, `backend/tests/test_history_api.py`, `frontend/tests/e2e/editor-canvas-versioning.spec.ts` | ◑ (backend done, frontend pending) |
 
 ### Phase 3: Prepare Template Marketplace Schema Direction
 
@@ -67,11 +67,11 @@ tags: [refactor, migration, infrastructure]
 
 | Task | Description | File(s) | Completed |
 |------|-------------|---------|-----------|
-| TASK-016 | Document current `Template` limitations and target marketplace entities/ownership model. | `docs/architecture/data-model.md`, `docs/features/platform-hardening/implementation-plan.md` | |
-| TASK-017 | Draft target ERD for community templates, moderation, favorites, and usage stats. | `docs/features/template-marketplace/implementation-plan.md` | |
-| TASK-018 | Define preferred migration strategy: extend `Template` minimally vs add dedicated marketplace tables. | `docs/features/template-marketplace/implementation-plan.md` | |
-| TASK-019 | Identify API boundary changes required for submission, approval, publish/unpublish, and listing scopes. | `docs/features/template-marketplace/implementation-plan.md` | |
-| TASK-020 | Defer code implementation until roadmap item enters active sprint. | `docs/business/roadmap_2026/strategic_roadmap.md` | |
+| TASK-016 | Document current `Template` limitations and target marketplace entities/ownership model. | `docs/architecture/data-model.md`, `docs/features/platform-hardening/implementation-plan.md` | ✅ |
+| TASK-017 | Draft target ERD for community templates, moderation, favorites, and usage stats. | `docs/features/template-marketplace/implementation-plan.md` | ✅ |
+| TASK-018 | Define preferred migration strategy: extend `Template` minimally vs add dedicated marketplace tables. | `docs/features/template-marketplace/implementation-plan.md` | ✅ |
+| TASK-019 | Identify API boundary changes required for submission, approval, publish/unpublish, and listing scopes. | `docs/features/template-marketplace/implementation-plan.md` | ✅ |
+| TASK-020 | Defer code implementation until roadmap item enters active sprint. | `docs/business/roadmap_2026/strategic_roadmap.md` | ✅ |
 
 ## 3. Architecture Diagram
 
@@ -171,6 +171,7 @@ No schema migration in this plan yet. Output is design documentation only.
 ### Files likely affected
 
 - `frontend/src/store/useCanvasStore.ts`
+- `frontend/src/lib/canvasPersistence.ts`
 - `frontend/src/lib/api/types.ts`
 - `frontend/src/lib/api/projectApi.ts`
 - `frontend/src/components/editor/EditorTopBar.tsx`
@@ -181,13 +182,13 @@ No schema migration in this plan yet. Output is design documentation only.
 
 | Test | Type | File |
 |------|------|------|
-| TEST-001 | pytest API | `backend/tests/test_user_account_deletion.py` |
-| TEST-002 | pytest API | `backend/tests/test_project_lifecycle.py` |
-| TEST-003 | pytest API | `backend/tests/test_projects_api.py` |
-| TEST-004 | pytest API | `backend/tests/test_history_api.py` |
-| TEST-005 | migration verification | `backend/alembic/versions/<revision>_harden_job_foreign_keys.py` |
-| TEST-006 | Playwright E2E | `frontend/tests/e2e/editor-canvas-versioning.spec.ts` |
-| TEST-007 | frontend unit/integration | `frontend/src/store/useCanvasStore.test.ts` |
+| TEST-001 | pytest API | `backend/tests/test_user_account_deletion.py` ✅ |
+| TEST-002 | pytest API | `backend/tests/test_project_lifecycle.py` ⏳ |
+| TEST-003 | pytest API | `backend/tests/test_project_schema_versioning.py` ✅ |
+| TEST-004 | pytest API | `backend/tests/test_history_schema_versioning.py` ✅ |
+| TEST-005 | migration verification | `backend/alembic/versions/9b2f7c1d4e8a_harden_job_foreign_keys.py` ✅ |
+| TEST-006 | Playwright E2E | `frontend/tests/e2e/editor-canvas-versioning.spec.ts` ⏳ |
+| TEST-007 | frontend unit/integration | `frontend/src/store/useCanvasStore.test.ts` ⏳ |
 
 ### Acceptance criteria
 
@@ -196,6 +197,12 @@ No schema migration in this plan yet. Output is design documentation only.
 - legacy projects with no version metadata still load in editor
 - newly saved projects and history snapshots always persist `canvas_schema_version`
 - no current template browsing flow breaks during documentation-only marketplace prep
+
+### Current sync note (2026-03-23)
+
+- Phase 1: mostly complete, with one remaining regression test for project deletion path.
+- Phase 2: implementation complete; backend verification present, frontend versioning tests still pending.
+- Phase 3: documentation scope complete.
 
 ## 8. Risks & Assumptions
 

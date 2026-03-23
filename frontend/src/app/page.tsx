@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Sparkles, MonitorPlay, ArrowRight, Brush, Wand2, Upload, Download, ShoppingBag, ImageOff, Copy, Banknote, Store, Smartphone, Menu, X } from "lucide-react";
+import { Sparkles, MonitorPlay, ArrowRight, Brush, Wand2, Upload, Download, ShoppingBag, ImageOff, Copy, Banknote, Store, Smartphone, Menu, X, CheckCircle2, XCircle } from "lucide-react";
 import { CapabilityMarquee } from "@/components/landing/CapabilityMarquee";
 import { BeforeAfterSlider } from "@/components/landing/BeforeAfterSlider";
 import { ResultGallery } from "@/components/landing/ResultGallery";
@@ -99,15 +99,15 @@ export default function LandingPage() {
               </div>
               <div className="flex flex-col gap-4 text-left">
                 <h1 className="text-5xl lg:text-7xl font-bold leading-tight tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-purple-300">
-                  Foto HP Biasa → <br />Foto Produk Siap Jual dalam 30 Detik
+                  Dari Cerita Jadi Desain <br />Siap Posting dalam 30 Detik
                 </h1>
                 <h2 className="text-slate-400 text-lg lg:text-xl font-normal leading-relaxed max-w-xl">
-                  Calon pembeli menilai produk dari fotonya. Ubah foto HP seadanya jadi visual toko online yang memikat — tanpa keahlian desain, tanpa biaya mahal.
+                  Bukan sekadar generate gambar — tapi desain siap pakai dengan ukuran pas, warna sesuai brand, dan teks yang bisa langsung kamu edit.
                 </h2>
               </div>
               <div className="flex flex-col sm:flex-row gap-4">
                 <button onClick={handleLogin} className="flex items-center justify-center gap-2 rounded-xl h-14 px-8 bg-purple-600 text-white text-lg font-bold shadow-[0_0_20px_rgba(108,43,238,0.5)] hover:bg-purple-500 hover:scale-105 transition-all duration-300">
-                  <span>Coba Gratis — Dapat 3 Kredit</span>
+                  <span>Coba Gratis — Tanpa Kartu Kredit</span>
                   <ArrowRight className="h-5 w-5" />
                 </button>
                 <a href="#showcase" className="flex items-center justify-center gap-2 rounded-xl h-14 px-8 bg-white/5 border border-white/10 text-white text-lg font-medium hover:bg-white/10 transition-colors">
@@ -130,6 +130,47 @@ export default function LandingPage() {
               </div>
             </ScrollReveal>
           </div>
+
+          {/* Capability Marquee */}
+          <ScrollReveal>
+            <div className="py-20 border-t border-white/5 relative">
+              <div className="max-w-5xl mx-auto px-4">
+                <div className="text-center mb-10">
+                  <span className="text-purple-400 font-semibold tracking-wider uppercase text-sm">Realita di Lapangan</span>
+                  <h2 className="text-3xl md:text-5xl font-bold text-white mt-4 mb-4">AI Bisa Bikin Gambar. Tapi Belum Tentu Siap Posting.</h2>
+                  <p className="text-slate-400 text-lg max-w-3xl mx-auto">
+                    Banyak pemilik bisnis sudah coba AI. Masalahnya bukan di hasil gambar, tapi di proses yang masih bikin kerjaan jadi panjang.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+                    <h3 className="text-white font-bold mb-4">Yang Sering Terjadi</h3>
+                    <ul className="space-y-3 text-slate-300 text-sm">
+                      <li className="flex items-start gap-2"><XCircle className="w-4 h-4 mt-0.5 text-red-400 shrink-0" /> Teks sering typo atau kurang pas untuk promosi</li>
+                      <li className="flex items-start gap-2"><XCircle className="w-4 h-4 mt-0.5 text-red-400 shrink-0" /> Warna output tidak konsisten dengan brand</li>
+                      <li className="flex items-start gap-2"><XCircle className="w-4 h-4 mt-0.5 text-red-400 shrink-0" /> Ukuran desain harus resize ulang manual</li>
+                      <li className="flex items-start gap-2"><XCircle className="w-4 h-4 mt-0.5 text-red-400 shrink-0" /> Harus ulang jelaskan logo dan style setiap kali</li>
+                    </ul>
+                  </div>
+
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+                    <h3 className="text-white font-bold mb-4">Dengan SmartDesign Studio</h3>
+                    <ul className="space-y-3 text-slate-300 text-sm">
+                      <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-green-400 shrink-0" /> Prompt sederhana, hasil tetap terstruktur</li>
+                      <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-green-400 shrink-0" /> Desain mengikuti konteks visual bisnis UMKM</li>
+                      <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-green-400 shrink-0" /> Siap format IG, FB, dan marketplace</li>
+                      <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-green-400 shrink-0" /> Tetap bisa diedit langsung di canvas</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-purple-900/25 to-blue-900/25 border border-purple-500/20 rounded-2xl p-5 text-center text-slate-300">
+                  Bukan karena kamu kurang jago prompt. Memang kebanyakan AI chatbot tidak dirancang untuk alur desain bisnis end-to-end.
+                </div>
+              </div>
+            </div>
+          </ScrollReveal>
 
           {/* Capability Marquee */}
           <div className="mb-20">
@@ -262,6 +303,33 @@ export default function LandingPage() {
                     Punya ratusan produk baru? Jangan edit satu-satu! Gunakan fitur Batch Processing untuk mengaplikasikan efek, mengganti background, atau menambahkan watermark sekaligus dalam hitungan menit.
                   </p>
                 </div>
+              </div>
+            </div>
+          </ScrollReveal>
+
+          {/* Audience Fit Section */}
+          <ScrollReveal>
+            <div className="py-20 border-t border-white/5 relative">
+              <div className="flex flex-col items-center gap-4 text-center mb-10 px-4">
+                <span className="text-purple-400 font-semibold tracking-wider uppercase text-sm">Untuk Siapa</span>
+                <h2 className="text-3xl md:text-5xl font-bold leading-tight tracking-tight text-white">SmartDesign Dibuat untuk Pelaku UMKM yang Butuh Gerak Cepat</h2>
+                <p className="text-slate-400 text-lg max-w-3xl">
+                  Cocok untuk kamu yang butuh konten rutin, tapi tidak punya waktu panjang untuk desain manual setiap hari.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 px-4">
+                {[
+                  "Pemilik warung, kafe, atau toko online yang butuh konten promo harian",
+                  "Seller fashion yang perlu foto produk lebih rapi dan konsisten",
+                  "Pemilik jasa (salon, klinik, kursus) yang ingin terlihat profesional di media sosial",
+                  "Reseller yang ingin produksi konten cepat tanpa proses desain berulang",
+                ].map((item) => (
+                  <div key={item} className="bg-white/5 border border-white/10 rounded-2xl p-5 text-slate-200 text-sm md:text-base flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0 mt-0.5" />
+                    <span>{item}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </ScrollReveal>

@@ -16,7 +16,7 @@ export function PricingSection() {
           <span className="text-purple-400 font-semibold tracking-wider uppercase text-sm">Harga Kredit</span>
           <h2 className="text-4xl md:text-5xl font-bold text-white mt-4 mb-6">Bayar Sesuai Kebutuhan</h2>
           <p className="text-slate-400 max-w-2xl mx-auto text-lg">
-            Tidak ada biaya langganan bulanan yang hangus. Beli kredit hanya saat Anda butuh mengedit katalog produk. <strong className="text-white">1 Kredit = 1x Proses AI.</strong>
+            Mulai gratis, lalu lanjut sesuai kebutuhan bisnis kamu. Tidak ada biaya langganan yang hangus. <strong className="text-white">1 Kredit = 1x Proses AI.</strong>
           </p>
         </div>
 
@@ -41,7 +41,7 @@ export function PricingSection() {
                 <span className="font-bold text-white text-lg">100 Kredit</span>
               </div>
               <ul className="space-y-3 text-sm text-slate-300">
-                <li className="flex gap-2"><Check className="w-4 h-4 text-green-400 shrink-0" /> Termasuk daily claim (10 kr/hari)</li>
+                <li className="flex gap-2"><Check className="w-4 h-4 text-green-400 shrink-0" /> Termasuk daily claim (5 kr/hari)</li>
                 <li className="flex gap-2"><Check className="w-4 h-4 text-green-400 shrink-0" /> Akses semua tools AI</li>
               </ul>
             </div>
@@ -67,7 +67,7 @@ export function PricingSection() {
               </div>
               <ul className="space-y-3 text-sm text-slate-300">
                 <li className="flex gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0" /> Hemat 33%</li>
-                <li className="flex gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0" /> Ideal untuk toko skala menengah</li>
+                <li className="flex gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0" /> Daily claim 10 kr/hari</li>
               </ul>
             </div>
 
@@ -85,6 +85,7 @@ export function PricingSection() {
                     <span className="text-3xl font-bold text-white">Rp 150.000</span>
                     <span className="bg-blue-500/20 text-blue-400 text-xs px-2 py-0.5 rounded font-bold">Hemat 50%</span>
                   </div>
+                  <div className="text-xs text-slate-400 mt-1">Daily claim 20 kr/hari</div>
                 </div>
                 <div className="flex items-center gap-2 p-3 rounded-xl bg-black/30 border border-white/10 w-full sm:w-auto justify-center">
                   <Star className="w-6 h-6 text-yellow-500 fill-current" />
@@ -133,7 +134,7 @@ export function PricingSection() {
                 </button>
                 
                 <p className="text-center text-xs text-slate-500">
-                  Pembayaran aman via QRIS, GoPay, OVO, atau Transfer Bank.
+                  Pembayaran aman via QRIS, GoPay, OVO, atau transfer bank.
                 </p>
               </div>
              </div>
