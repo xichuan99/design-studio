@@ -6,23 +6,23 @@ import { ChevronDown } from "lucide-react";
 const faqs = [
   {
     question: "Apakah aplikasi ini gratis digunakan?",
-    answer: "Ya, Anda bisa mendaftar gratis dan akan langsung mendapatkan 3 kredit untuk mencoba semua fitur AI kami tanpa perlu memasukkan kartu kredit."
+    answer: "Ya, Anda bisa mulai gratis tanpa kartu kredit. Setelah itu, Anda hanya bayar saat butuh lewat sistem kredit (tanpa langganan bulanan), jadi biaya tetap fleksibel untuk skala UMKM."
   },
   {
     question: "Berapa lama proses edit fotonya?",
-    answer: "Sangat cepat! Rata-rata AI kami hanya membutuhkan waktu 10-30 detik per foto, tergantung pada kerumitan gambar dan fitur yang digunakan."
+    answer: "Proses edit umumnya terasa cepat untuk kebutuhan harian. Durasi tetap bisa berbeda tergantung kualitas file awal, antrean proses, dan jenis fitur yang dipakai."
   },
   {
     question: "Format file apa saja yang didukung?",
     answer: "Saat ini kami mendukung format JPG, PNG, dan WEBP untuk foto yang diunggah. Hasil editan bisa diunduh dalam kualitas tinggi (hingga 4K) berformat PNG dengan background transparan atau JPG."
   },
   {
-    question: "Apakah aman untuk foto produk eksklusif saya?",
-    answer: "Pasti aman. Kami tidak menggunakan foto unggahan Anda untuk melatih model AI publik kami, dan foto Anda akan dihapus secara otomatis dari server kami setelah 30 hari untuk menjaga privasi Anda."
+    question: "Bagaimana kualitas hasil fotonya untuk katalog marketplace?",
+    answer: "Kualitas akhir mengikuti kualitas foto awal dan jenis proses yang dipilih. SmartDesign membantu meningkatkan ketajaman, pencahayaan, dan konsistensi visual agar lebih siap untuk katalog marketplace, sambil tetap memberi kontrol edit manual jika perlu penyesuaian akhir."
   },
   {
     question: "Bagaimana cara kerja sistem kreditnya?",
-    answer: "Kami tidak menggunakan sistem langganan bulanan. Anda hanya perlu membeli kredit saat butuh. 1 kali proses AI (seperti hapus background atau ubah scene) memotong 1 kredit. Kredit bisa dibeli mulai dari Rp 10.000."
+    answer: "Kami tidak memakai langganan bulanan. Anda membeli kredit sesuai kebutuhan, lalu kredit terpotong saat proses AI dijalankan. Dengan model ini, Anda bisa mengontrol biaya produksi konten berdasarkan volume kerja aktual."
   },
   {
     question: "Bisakah saya mengedit langsung dari HP?",

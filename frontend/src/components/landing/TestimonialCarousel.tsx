@@ -6,21 +6,21 @@ import { Star } from "lucide-react";
 // Placeholder data - to be replaced with real user quotes later
 const testimonials = [
   {
-    quote: "Saya biasanya minta tolong desainer freelance sekitar Rp250rb per poster. Sekarang saya bisa bikin sendiri dalam hitungan menit dan hasilnya tetap rapi.",
+    quote: "Saya jadi lebih tenang saat menyiapkan materi promo harian, karena ada alur yang jelas dari ide sampai draft visual.",
     name: "Rina",
     role: "Pemilik Toko Kue Online, Surabaya",
     initials: "RN",
     color: "bg-purple-500"
   },
   {
-    quote: "Yang paling saya suka, format Instagram Story dan Feed bisa siap dalam satu alur. Jadi tim tidak buang waktu resize manual lagi.",
+    quote: "Yang paling membantu, tim jadi tidak bingung harus mulai dari mana. Prosesnya lebih rapi dan konsisten antar channel.",
     name: "Deni",
     role: "Reseller Fashion, Jakarta",
     initials: "DN",
     color: "bg-blue-500"
   },
   {
-    quote: "Fitur hapus background-nya rapi bahkan untuk produk detail. Waktu tim admin jauh lebih hemat untuk upload katalog harian.",
+    quote: "Untuk upload katalog, hasil visual terasa lebih konsisten sehingga kami lebih percaya diri saat publish produk baru.",
     name: "Siti Aminah",
     role: "Penjual Makanan Kering, TikTok Shop",
     initials: "SA",

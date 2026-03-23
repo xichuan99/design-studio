@@ -6,20 +6,54 @@ import { DeploymentGuard } from "@/components/providers/DeploymentGuard";
 import { WhatsAppButton } from "@/components/landing/WhatsAppButton";
 
 export const metadata: Metadata = {
-  title: "SmartDesign Studio | Foto Produk AI Siap Jual untuk UMKM",
-  description: "Ubah foto produk HP biasa menjadi kualitas studio dalam 30 detik dengan AI. Hemat 2-5 juta/bulan tanpa sewa fotografer. Coba gratis sekarang!",
-  keywords: ["edit foto produk ai", "foto produk umkm", "background remover ai", "foto katalog shopee", "aplikasi edit foto jualan", "ai image generator indonesia"],
+  metadataBase: new URL("https://smartdesign.id"),
+  title: "SmartDesign Studio | Foto Produk AI untuk UMKM",
+  description: "Bantu UMKM menyiapkan foto produk dan materi katalog lebih rapi dan konsisten. Cocok untuk tim kecil yang ingin proses konten promo terasa lebih terarah.",
+  keywords: [
+    "edit foto produk ai",
+    "foto produk umkm",
+    "background remover ai",
+    "foto katalog shopee",
+    "aplikasi edit foto jualan",
+    "ai image generator indonesia",
+    "konten promo marketplace",
+    "desain katalog umkm"
+  ],
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
-    title: "SmartDesign Studio | AI Foto Produk UMKM",
-    description: "Ubah foto hp biasa jadi foto katalog profesional dalam 30 detik.",
-    url: "https://smartdesign.id",
+    title: "SmartDesign Studio | Foto Produk AI untuk UMKM & Marketplace",
+    description: "Bantu pelaku UMKM menyiapkan visual produk yang lebih konsisten untuk katalog dan konten promo marketplace.",
+    url: "/",
     siteName: "SmartDesign Studio",
     locale: "id_ID",
     type: "website",
+    images: [
+      {
+        url: "/after-product.png",
+        width: 1200,
+        height: 630,
+        alt: "SmartDesign Studio - AI foto produk dan desain katalog untuk UMKM",
+      }
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "SmartDesign Studio | Foto Produk AI untuk UMKM",
+    description: "Bantu foto produk terlihat lebih rapi dan konsisten untuk kebutuhan katalog marketplace.",
+    images: ["/after-product.png"],
   },
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
   }
 };
 

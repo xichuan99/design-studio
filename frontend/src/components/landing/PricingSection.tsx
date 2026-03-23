@@ -16,7 +16,7 @@ export function PricingSection() {
           <span className="text-purple-400 font-semibold tracking-wider uppercase text-sm">Harga Kredit</span>
           <h2 className="text-4xl md:text-5xl font-bold text-white mt-4 mb-6">Bayar Sesuai Kebutuhan</h2>
           <p className="text-slate-400 max-w-2xl mx-auto text-lg">
-            Mulai gratis, lalu lanjut sesuai kebutuhan bisnis kamu. Tidak ada biaya langganan yang hangus. <strong className="text-white">1 Kredit = 1x Proses AI.</strong>
+            Mulai gratis, lalu lanjut sesuai ritme bisnis Anda. Tanpa komitmen langganan bulanan, jadi pengeluaran konten terasa lebih terkontrol. <strong className="text-white">1 Kredit = 1x Proses AI.</strong>
           </p>
         </div>
 
@@ -54,7 +54,7 @@ export function PricingSection() {
               onClick={() => setCreditsSelected(500)}
             >
               <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg">
-                Paling Populer
+                Sering Dipilih
               </div>
               <div className="text-slate-200 font-medium mb-2 mt-2">Paket Pro</div>
               <div className="flex items-baseline gap-2 mb-4">
@@ -66,7 +66,7 @@ export function PricingSection() {
                 <span className="font-bold text-white text-lg">500 Kredit</span>
               </div>
               <ul className="space-y-3 text-sm text-slate-300">
-                <li className="flex gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0" /> Hemat 33%</li>
+                <li className="flex gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0" /> Biaya per proses lebih ringan</li>
                 <li className="flex gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0" /> Daily claim 10 kr/hari</li>
               </ul>
             </div>
@@ -83,7 +83,7 @@ export function PricingSection() {
                   <div className="text-slate-400 font-medium mb-1">Paket Business</div>
                   <div className="flex items-baseline gap-2">
                     <span className="text-3xl font-bold text-white">Rp 150.000</span>
-                    <span className="bg-blue-500/20 text-blue-400 text-xs px-2 py-0.5 rounded font-bold">Hemat 50%</span>
+                    <span className="bg-blue-500/20 text-blue-400 text-xs px-2 py-0.5 rounded font-bold">Lebih efisien per proses</span>
                   </div>
                   <div className="text-xs text-slate-400 mt-1">Daily claim 20 kr/hari</div>
                 </div>
@@ -130,8 +130,12 @@ export function PricingSection() {
                 </div>
 
                 <button className="w-full py-4 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold text-lg hover:from-purple-500 hover:to-blue-500 transition-all shadow-lg hover:shadow-purple-500/25 mt-4">
-                  Beli Paket Ini
+                  Pilih Paket Ini
                 </button>
+
+                <p className="text-center text-xs text-slate-400 -mt-2">
+                  Mulai dari paket yang paling nyaman dulu, lalu sesuaikan saat kebutuhan produksi konten bertambah.
+                </p>
                 
                 <p className="text-center text-xs text-slate-500">
                   Pembayaran aman via QRIS, GoPay, OVO, atau transfer bank.

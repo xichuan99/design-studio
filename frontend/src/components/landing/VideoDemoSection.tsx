@@ -17,24 +17,24 @@ export function VideoDemoSection() {
         <div className="flex-1 space-y-8 z-10 text-center lg:text-left">
           <div className="inline-flex items-center gap-2 bg-blue-500/10 rounded-full px-4 py-1.5 border border-blue-500/20">
             <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
-            <span className="text-xs font-semibold uppercase tracking-wider text-blue-400">Live Demo</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-blue-400">Lihat Alur</span>
           </div>
           
           <h2 className="text-4xl md:text-5xl font-bold leading-tight text-white">
             Dari Foto Mentah ke <br/>
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
-              Katalog Profesional
+              Katalog yang Lebih Rapi
             </span>
           </h2>
           
           <p className="text-slate-400 text-lg max-w-xl mx-auto lg:mx-0">
-            Lihat bagaimana AI memproses gambar yang rumit hanya dalam hitungan detik. 
-            Tanpa perlu seleksi manual, tanpa perlu studio foto.
+            Lihat bagaimana AI membantu proses yang biasanya melelahkan jadi lebih sederhana.
+            Anda tetap pegang kontrol untuk revisi sampai visual terasa pas dengan brand.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4">
             <button className="flex items-center justify-center gap-2 rounded-xl h-14 px-8 bg-white text-slate-900 text-lg font-bold shadow-lg hover:bg-slate-200 transition-colors">
-              <span>Coba Sekarang</span>
+              <span>Mulai Coba</span>
               <ArrowRight className="h-5 w-5" />
             </button>
           </div>
@@ -74,7 +74,7 @@ export function VideoDemoSection() {
 
             <div className="absolute bottom-6 left-0 right-0 flex justify-center z-20">
               <span className="px-4 py-2 rounded-full bg-black/50 backdrop-blur-md text-sm text-white font-medium">
-                Tonton Demo (0:45)
+                Lihat Demo Singkat (0:45)
               </span>
             </div>
           </div>
