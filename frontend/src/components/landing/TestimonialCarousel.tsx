@@ -6,28 +6,28 @@ import { Star } from "lucide-react";
 // Placeholder data - to be replaced with real user quotes later
 const testimonials = [
   {
-    quote: "Penjualan saya naik 40% setelah ganti foto produk pakai SmartDesign. Sebelumnya foto produk saya jelek, sekarang terlihat profesional.",
+    quote: "Saya biasanya minta tolong desainer freelance sekitar Rp250rb per poster. Sekarang saya bisa bikin sendiri dalam hitungan menit dan hasilnya tetap rapi.",
     name: "Rina",
-    role: "Pemilik Toko Aksesori, Tokopedia",
+    role: "Pemilik Toko Kue Online, Surabaya",
     initials: "RN",
     color: "bg-purple-500"
   },
   {
-    quote: "Sangat menghemat biaya operasional. Saya tidak perlu lagi bayar jasa edit foto mingguan untuk upload katalog baru di Shopee.",
-    name: "Budi Santoso",
-    role: "Seller Pakaian Pria, Shopee",
-    initials: "BS",
+    quote: "Yang paling saya suka, format Instagram Story dan Feed bisa siap dalam satu alur. Jadi tim tidak buang waktu resize manual lagi.",
+    name: "Deni",
+    role: "Reseller Fashion, Jakarta",
+    initials: "DN",
     color: "bg-blue-500"
   },
   {
-    quote: "Fitur hapus background-nya sangat rapi, bahkan untuk produk yang bentuknya rumit. Proses 50 foto sekaligus sangat membantu waktu admin saya.",
+    quote: "Fitur hapus background-nya rapi bahkan untuk produk detail. Waktu tim admin jauh lebih hemat untuk upload katalog harian.",
     name: "Siti Aminah",
     role: "Penjual Makanan Kering, TikTok Shop",
     initials: "SA",
     color: "bg-emerald-500"
   },
   {
-    quote: "Kredit sistem ini sangat cocok untuk UMKM pemula seperti saya. Beli hanya pas lagi butuh edit katalog, tidak terikat langganan bulanan yang mahal.",
+    quote: "Model kreditnya fleksibel untuk UMKM. Saya beli saat butuh produksi konten, jadi lebih terkontrol dibanding langganan bulanan tetap.",
     name: "Dian Wahyu",
     role: "Toko Sepatu Lokal",
     initials: "DW",

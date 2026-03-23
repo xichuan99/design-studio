@@ -357,6 +357,35 @@ export default function LandingPage() {
             <PricingSection />
           </ScrollReveal>
 
+          {/* Final CTA */}
+          <ScrollReveal>
+            <div className="py-20 border-t border-white/5 relative">
+              <div className="mx-4 rounded-3xl border border-purple-500/20 bg-gradient-to-r from-purple-900/35 to-blue-900/30 p-8 md:p-12 text-center">
+                <h2 className="text-3xl md:text-5xl font-bold text-white leading-tight mb-4">
+                  Konten Harian Bisnismu Tidak Harus Makan Waktu Seharian
+                </h2>
+                <p className="text-slate-300 text-base md:text-lg max-w-3xl mx-auto mb-8">
+                  Mulai dari satu brief sederhana, lalu ubah jadi desain yang siap dipakai untuk promosi harian. Lebih cepat, lebih konsisten, dan tetap bisa kamu edit.
+                </p>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                  <button
+                    onClick={handleLogin}
+                    className="flex items-center justify-center gap-2 rounded-xl h-12 px-7 bg-purple-600 text-white font-bold shadow-[0_0_20px_rgba(108,43,238,0.5)] hover:bg-purple-500 transition-all"
+                  >
+                    <span>Mulai Gratis</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                  <a
+                    href="#showcase"
+                    className="flex items-center justify-center gap-2 rounded-xl h-12 px-7 bg-white/5 border border-white/10 text-white font-medium hover:bg-white/10 transition-colors"
+                  >
+                    Lihat Contoh Desain
+                  </a>
+                </div>
+              </div>
+            </div>
+          </ScrollReveal>
+
           {/* Footer & Growth Section */}
           <footer className="mt-20 pt-16 pb-8 border-t border-white/10 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/5 blur-[100px] rounded-full pointer-events-none -translate-y-1/2 translate-x-1/3"></div>
