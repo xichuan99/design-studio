@@ -9,6 +9,7 @@ import { TestimonialCarousel } from "@/components/landing/TestimonialCarousel";
 import { FAQSection } from "@/components/landing/FAQSection";
 import { PricingSection } from "@/components/landing/PricingSection";
 import { ScrollReveal } from "@/components/landing/ScrollReveal";
+import { PromptToDesignAnimation } from "@/components/landing/PromptToDesignAnimation";
 import { Gift, Mail } from "lucide-react";
 import { useState } from "react";
 
@@ -105,27 +106,25 @@ export default function LandingPage() {
                 </h2>
               </div>
               <div className="flex flex-col sm:flex-row gap-4">
-                <button onClick={handleLogin} className="flex items-center justify-center gap-2 rounded-xl h-14 px-8 bg-purple-600 text-white text-lg font-bold shadow-[0_0_20px_rgba(108,43,238,0.5)] hover:bg-purple-500 hover:scale-105 transition-all duration-300">
-                  <span>Mulai Uji Coba Gratis</span>
-                  <ArrowRight className="h-5 w-5" />
-                </button>
-                <a href="#showcase" className="flex items-center justify-center gap-2 rounded-xl h-14 px-8 bg-white/5 border border-white/10 text-white text-lg font-medium hover:bg-white/10 transition-colors">
+                <div className="flex flex-col gap-2">
+                  <button onClick={handleLogin} className="flex items-center justify-center gap-2 rounded-xl h-14 px-8 bg-purple-600 text-white text-lg font-bold shadow-[0_0_20px_rgba(108,43,238,0.5)] hover:bg-purple-500 hover:scale-105 transition-all duration-300">
+                    <span>Gabung Waitlist VIP</span>
+                    <ArrowRight className="h-5 w-5" />
+                  </button>
+                  <p className="text-slate-400 text-xs text-center font-medium">Hanya butuh email. Tidak ada spam.</p>
+                </div>
+                <a href="#showcase" className="flex items-center justify-center gap-2 rounded-xl h-14 px-8 bg-white/5 border border-white/10 text-white text-lg font-medium hover:bg-white/10 transition-colors h-fit">
                   <MonitorPlay className="h-5 w-5" />
                   <span>Lihat Contoh Alur ↓</span>
                 </a>
               </div>
             </div>
 
-            {/* Hero Image / Before-After Showcase */}
+            {/* Hero Image / Animated Prompt-to-Design Showcase */}
             <ScrollReveal className="flex-1 w-full relative group perspective-1000 z-10 scroll-mt-32" delay={300}>
               <div id="showcase">
                 <div className="absolute inset-0 bg-gradient-to-tr from-purple-500/40 to-blue-500/40 rounded-2xl blur-3xl -z-10 group-hover:blur-2xl transition-all duration-500"></div>
-                <BeforeAfterSlider 
-                  beforeImage="/before-product.png" 
-                  afterImage="/after-product.png" 
-                  className="shadow-2xl border border-white/10"
-                  altText="Perbandingan foto produk UMKM sebelum dan sesudah diedit dengan AI SmartDesign untuk katalog marketplace"
-                />
+                <PromptToDesignAnimation />
               </div>
             </ScrollReveal>
           </div>
@@ -383,7 +382,7 @@ export default function LandingPage() {
                     onClick={handleLogin}
                     className="flex items-center justify-center gap-2 rounded-xl h-12 px-7 bg-purple-600 text-white font-bold shadow-[0_0_20px_rgba(108,43,238,0.5)] hover:bg-purple-500 transition-all"
                   >
-                    <span>Mulai Uji Coba</span>
+                    <span>Gabung Waitlist VIP</span>
                     <ArrowRight className="h-4 w-4" />
                   </button>
                   <a

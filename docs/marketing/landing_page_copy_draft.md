@@ -30,7 +30,8 @@ ukuran pas, warna brand kamu, teks benar, langsung jadi.
 > Khusus untuk pemilik bisnis Indonesia yang tidak punya waktu panjang, tapi mau konten yang profesional.
 
 **CTA:**
-> `[ Coba Gratis — Tanpa Kartu Kredit ]`
+> `[ Amankan Akses Eksklusif 30 Hari — Gratis ]`
+> *(Hanya butuh email. Tidak ada spam.)*
 
 ---
 
@@ -135,16 +136,17 @@ Tidak perlu resize manual. Tidak perlu app lain.
 
 ---
 
-## Section 7: Pricing Teaser (pre-launch)
+## Section 7: Pricing Teaser & Lead Magnet (Pre-Launch)
 
 ```
-🎁  Daftar Sekarang, Gratis di Bulan Pertama
+🎁  Amankan Akses Eksklusif — Terbatas 200 Pengguna Pertama
 
-Kami baru saja meluncur dan ingin kamu yang pertama merasakan.
-Daftar sekarang dan dapatkan akses penuh secara gratis
-selama 30 hari pertama — tanpa harus memasukkan kartu kredit.
+Kami sedang menyelesaikan sentuhan terakhir. 
+Bergabung ke daftar tunggu VIP hari ini dan dapatkan gratis akses 30 hari penuh
+serta bonus "Contekan 50 Prompt AI untuk Promosi Toko" langsung di emailmu.
 
-[ Daftar Sekarang — Gratis 30 Hari ]
+[ Gabung Waitlist VIP & Klaim Bonus ]
+(Hanya butuh email. Tidak ada spam.)
 ```
 
 ---
@@ -152,12 +154,12 @@ selama 30 hari pertama — tanpa harus memasukkan kartu kredit.
 ## Section 8: Final CTA
 
 ```
-Konten harian bisnismu tidak harus makan waktu seharian.
+Konten harian bisnismu tidak harus memakan waktu seharian.
 
-Coba SmartDesign Studio sekarang.
-Bikin desain pertamamu dalam 60 detik.
+Jangan sampai kehilangan kesempatan menjadi early adopter.
+Amankan kuotamu sekarang.
 
-[ Mulai Gratis ]           [ Lihat Contoh Desain ]
+[ Gabung Waitlist VIP ]           [ Lihat Cara Kerjanya ]
 ```
 
 ---
