@@ -23,11 +23,16 @@ interface CancelArgs {
   onError?: JobErrorCallback;
 }
 
+type PollJobOptions = Omit<StartToolJobArgs, "toolName" | "payload" | "idempotencyKey">;
+
+type PollJobStatusFn = (jobId: string, options: PollJobOptions) => Promise<void>;
+
 export function useToolJobProgress() {
   const api = useProjectApi();
   const [loading, setLoading] = useState(false);
   const [activeJob, setActiveJob] = useState<AiToolJob | null>(null);
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pollJobStatusRef = useRef<PollJobStatusFn | null>(null);
 
   const stopPolling = useCallback(() => {
     if (pollTimerRef.current) {
@@ -43,16 +48,7 @@ export function useToolJobProgress() {
   }, [stopPolling]);
 
   const pollJobStatus = useCallback(
-    async (
-      jobId: string,
-      {
-        pollIntervalMs = 1500,
-        onCompleted,
-        onFailed,
-        onCanceled,
-        onError,
-      }: Omit<StartToolJobArgs, "toolName" | "payload" | "idempotencyKey">
-    ) => {
+    async (jobId: string, { pollIntervalMs = 1500, onCompleted, onFailed, onCanceled, onError }: PollJobOptions) => {
       try {
         const job = await api.getToolJobStatus(jobId);
         setActiveJob(job);
@@ -79,7 +75,10 @@ export function useToolJobProgress() {
         }
 
         pollTimerRef.current = setTimeout(() => {
-          void pollJobStatus(jobId, {
+          const poll = pollJobStatusRef.current;
+          if (!poll) return;
+
+          void poll(jobId, {
             pollIntervalMs,
             onCompleted,
             onFailed,
@@ -95,6 +94,10 @@ export function useToolJobProgress() {
     },
     [api, stopPolling]
   );
+
+  useEffect(() => {
+    pollJobStatusRef.current = pollJobStatus;
+  }, [pollJobStatus]);
 
   const startToolJob = useCallback(
     async ({

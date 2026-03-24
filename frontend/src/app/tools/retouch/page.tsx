@@ -6,7 +6,7 @@ import { ImageDropzone } from "@/components/tools/ImageDropzone";
 import { BeforeAfterSlider } from "@/components/tools/BeforeAfterSlider";
 import { ToolProcessingState } from "@/components/tools/ToolProcessingState";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, Download, PenSquare, Sparkles } from "lucide-react";
+import { ArrowLeft, Download, PenSquare, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useProjectApi } from "@/lib/api";
