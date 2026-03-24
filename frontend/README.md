@@ -26,6 +26,8 @@ npx tsc --noEmit # TypeScript type check
 | `/create` | **5-step AI generation flow** (lihat di bawah) |
 | `/edit/[projectId]` | Konva.js canvas editor |
 | `/projects` | Saved projects gallery |
+| `/forgot-password` | Request link reset password |
+| `/reset-password` | Form atur ulang password |
 
 ## Create Page — AI Generation Flow
 

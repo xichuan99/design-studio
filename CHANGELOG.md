@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Standalone Tools Cross-linking**: Added "Continue to Editor" functionality to seamlessly transition from standalone tools (Background Swap, Upscaler) to the main Editor.
 - **Credit History**: New database model, API endpoints, and frontend settings display to track credit transactions.
 - **AI Project Title Generation**: Automatic project naming using Gemini 2.0 Flash Lite based on user prompts.
+- **Authentication Hardening**: Implemented stateless JWT token rotation across FastAPI/NextAuth, and built a secure, rate-limited Password Recovery flow integrated with Resend Email API.
 
 ### Changed
 - **AI Studio Visual Polish**: Enhanced aesthetic consistency across AI features with refined typography and container styles.

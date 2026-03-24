@@ -52,6 +52,10 @@ FastAPI automatically generates interactive API documentation based on OpenAPI s
 | `GET`  | `/api/templates/` | List semua template |
 | `GET`  | `/api/projects/` | List project user |
 | `GET`  | `/api/users/me` | Profil + kredit user |
+| `POST` | `/api/auth/login` | Oauth2 login, return `access_token` & `refresh_token` |
+| `POST` | `/api/auth/refresh` | Sinkronisasi rotasi token (NextAuth) |
+| `POST` | `/api/auth/forgot-password` | Request email luma reset password (via Resend) |
+| `POST` | `/api/auth/reset-password` | Verifikasi token dan simpan password baru |
 
 ## AI Model Routing Strategy
 
