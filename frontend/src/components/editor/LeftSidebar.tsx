@@ -3,7 +3,15 @@
 import React, { useState } from 'react';
 import { useCanvasStore } from '@/store/useCanvasStore';
 import { useProjectApi } from '@/lib/api';
-import { BackgroundRemovalPanel } from './BackgroundRemovalPanel';
+import dynamic from 'next/dynamic';
+
+const BackgroundRemovalPanel = dynamic(
+    () => import('./BackgroundRemovalPanel').then(mod => mod.BackgroundRemovalPanel),
+    { 
+        loading: () => <div className="flex justify-center items-center h-full p-8"><span className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full" /></div>,
+        ssr: false
+    }
+);
 import BrandKitPanel from './BrandKitPanel';
 import { AIStudioPanel } from './AIStudioPanel';
 import { AIAssetsPanel } from './AIAssetsPanel';
@@ -140,6 +148,7 @@ export const LeftSidebar: React.FC = () => {
                                 ? "bg-primary/10 text-primary shadow-sm"
                                 : "text-muted-foreground hover:bg-muted hover:text-foreground"
                         )}
+                        aria-label={label}
                     >
                         {activeTab === id && !isCollapsed && (
                             <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-1/2 bg-primary rounded-r-md" />

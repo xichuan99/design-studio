@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Maximize2, X } from "lucide-react";
+import Image from "next/image";
 
 interface DesignPreviewProps {
     imageUrl: string | null;
@@ -13,13 +14,14 @@ export function DesignPreview({ imageUrl }: DesignPreviewProps) {
     return (
         <>
             {/* Normal Preview — fits within parent without scrolling */}
-            <div className="relative flex items-center justify-center group w-full h-full">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+            <div className="relative flex items-center justify-center group w-full h-full min-h-[300px]">
+                <Image
                     src={imageUrl}
                     alt="Generated Design"
-                    className="w-full h-full object-contain rounded-xl shadow-2xl drop-shadow-lg group-hover:scale-[1.005] transition-transform duration-700 ease-out cursor-pointer"
+                    fill
+                    className="object-contain rounded-xl shadow-2xl drop-shadow-lg group-hover:scale-[1.005] transition-transform duration-700 ease-out cursor-pointer"
                     onClick={() => setIsFullscreen(true)}
+                    unoptimized={imageUrl.startsWith('http')}
                 />
                 {/* Fullscreen hint */}
                 <button
@@ -43,13 +45,16 @@ export function DesignPreview({ imageUrl }: DesignPreviewProps) {
                     >
                         <X className="w-5 h-5" />
                     </button>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                        src={imageUrl}
-                        alt="Generated Design Fullscreen"
-                        className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
-                        onClick={(e) => e.stopPropagation()}
-                    />
+                    <div className="relative w-full h-full flex items-center justify-center">
+                        <Image
+                            src={imageUrl}
+                            alt="Generated Design Fullscreen"
+                            fill
+                            className="object-contain rounded-lg shadow-2xl"
+                            onClick={(e) => e.stopPropagation()}
+                            unoptimized={imageUrl.startsWith('http')}
+                        />
+                    </div>
                 </div>
             )}
         </>

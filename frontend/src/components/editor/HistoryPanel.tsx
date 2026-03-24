@@ -5,6 +5,7 @@ import { useProjectApi } from '@/lib/api';
 import { useCanvasStore } from '@/store/useCanvasStore';
 import { Loader2, History, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import Image from 'next/image';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -99,12 +100,14 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({ projectId }) => {
                         >
                             {/* Thumbnail */}
                             {entry.background_url && (
-                                <div className="aspect-video rounded overflow-hidden mb-2 bg-muted">
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img
+                                <div className="relative aspect-video rounded overflow-hidden mb-2 bg-muted">
+                                    <Image
                                         src={entry.background_url}
                                         alt="History snapshot"
-                                        className="w-full h-full object-cover"
+                                        fill
+                                        sizes="120px"
+                                        className="object-cover"
+                                        unoptimized={entry.background_url.startsWith('http')}
                                     />
                                 </div>
                             )}

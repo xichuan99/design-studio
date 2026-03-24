@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, Trash2, Download } from "lucide-react";
+import Image from "next/image";
 import { AiToolResult } from "@/lib/api/types";
 
 interface AssetCardProps {
@@ -54,12 +55,13 @@ export function AssetCard({ result, onDelete }: AssetCardProps) {
         <Card className="group relative overflow-hidden border-border/50 bg-card hover:border-primary/40 transition-colors">
             {/* Thumbnail */}
             <div className="aspect-square bg-muted relative overflow-hidden">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <Image
                     src={result.result_url}
                     alt={result.input_summary || label}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    loading="lazy"
+                    fill
+                    sizes="(max-width: 768px) 50vw, 33vw"
+                    className="object-cover transition-transform duration-300 group-hover:scale-105"
+                    unoptimized={result.result_url.startsWith('http')}
                 />
 
                 {/* Hover overlay */}

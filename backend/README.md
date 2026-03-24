@@ -30,7 +30,15 @@ Requires PostgreSQL and Redis. Start via Docker Compose from the project root:
 docker compose up -d
 ```
 
-## API Endpoints
+## API Endpoints & Documentation
+
+FastAPI automatically generates interactive API documentation based on OpenAPI standards. Once the server is running, you can access them at:
+
+- **Swagger UI (Interactive API Tester)**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **ReDoc (Detailed Documentation)**: [http://localhost:8000/redoc](http://localhost:8000/redoc)
+- **OpenAPI Schema (JSON)**: [http://localhost:8000/openapi.json](http://localhost:8000/openapi.json)
+
+**Available Endpoints Summary:**
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|

@@ -7,6 +7,7 @@ import { Loader2, Wallpaper, ImagePlus, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import Image from 'next/image';
 
 interface AIGeneration {
     id: string;
@@ -153,13 +154,15 @@ export const AIAssetsPanel: React.FC = () => {
                             
                         return (
                             <div key={asset.id} className="group relative rounded-xl border bg-muted/30 overflow-hidden aspect-square">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img 
-                                    src={previewUrl} 
+                                <Image 
+                                    src={previewUrl || ''} 
                                     alt="AI Gen" 
-                                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                    fill
+                                    sizes="(max-width: 768px) 50vw, 33vw"
+                                    className="object-cover transition-transform duration-300 group-hover:scale-105"
                                     crossOrigin="anonymous"
                                     title={asset.visual_prompt || asset.raw_text}
+                                    unoptimized={previewUrl?.startsWith('http')}
                                 />
                                 {/* Hover Actions Overlay */}
                                 <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/80 via-black/50 to-transparent flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 translate-y-2 group-hover:translate-y-0">

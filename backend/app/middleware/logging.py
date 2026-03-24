@@ -15,6 +15,7 @@ if not logger.handlers:
     formatter = logging.Formatter("%(message)s")
     handler.setFormatter(formatter)
     logger.addHandler(handler)
+    logger.propagate = False
 
 
 class StructuredLoggingMiddleware(BaseHTTPMiddleware):

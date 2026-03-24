@@ -127,6 +127,9 @@ async def create_product_scene(
     if len(content) > 10 * 1024 * 1024:
         raise ValidationError(detail="Image size exceeds 10MB limit")
 
+    from app.services.file_validation import validate_uploaded_image
+    validate_uploaded_image(content)
+
     from app.services.credit_service import log_credit_change
 
     await log_credit_change(
@@ -234,11 +237,17 @@ async def process_batch_images(
 
     # Read files
     # Only limit individual files to 5MB here for batch to save memory
+    from app.services.file_validation import validate_uploaded_image
+
+    if operation == "watermark" and "logo_bytes" in params:
+        validate_uploaded_image(params["logo_bytes"])
+
     file_data = []
     for f in files:
         content = await f.read()
         if len(content) > 5 * 1024 * 1024:
             raise ValidationError(detail=f"File {f.filename} terlalu besar (Max 5MB)")
+        validate_uploaded_image(content)
         file_data.append((f.filename, content))
 
     from app.services.credit_service import log_credit_change

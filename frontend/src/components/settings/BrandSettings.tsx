@@ -5,10 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Trash2, CheckCircle2, Palette, Loader2, Save, Sparkles, Globe } from 'lucide-react';
+import { Plus, Trash2, CheckCircle2, Palette, Loader2, Save, Sparkles, Globe, AlertTriangle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
+import { getContrastRatio } from '@/lib/utils';
 import BrandStrategyReport from './BrandStrategyReport';
 import {
     AlertDialog,
@@ -361,39 +362,60 @@ export default function BrandSettings() {
                             <Button variant="outline" size="sm" onClick={handleAddColor}><Plus className="w-4 h-4 mr-1"/> Tambah Warna</Button>
                         </div>
                         <div className="space-y-2">
-                            {editingBrand.colors?.map((color, i) => (
-                                <div key={i} className="flex gap-3 items-center bg-muted/30 p-3 rounded-lg border">
-                                    <div className="w-10 h-10 rounded shadow-sm border" style={{ backgroundColor: color.hex }}></div>
-                                    <Input 
-                                        className="w-24 font-mono text-sm" 
-                                        value={color.hex} 
-                                        onChange={e => handleUpdateColor(i, 'hex', e.target.value)}
-                                        placeholder="#000000"
-                                    />
-                                     <Input 
-                                        className="flex-1" 
-                                        value={color.name} 
-                                        onChange={e => handleUpdateColor(i, 'name', e.target.value)}
-                                        placeholder="Nama Warna (Opsional)"
-                                    />
-                                    <Select 
-                                        value={color.role} 
-                                        onValueChange={(val: ColorRole) => handleUpdateColor(i, 'role', val)}
-                                    >
-                                        <SelectTrigger className="w-[180px]">
-                                            <SelectValue placeholder="Pilih Role" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="background">Background</SelectItem>
-                                            <SelectItem value="primary">Primary</SelectItem>
-                                            <SelectItem value="secondary">Secondary</SelectItem>
-                                            <SelectItem value="accent">Accent</SelectItem>
-                                            <SelectItem value="text">Text</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    <Button variant="ghost" size="icon" onClick={() => handleRemoveColor(i)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                            {editingBrand.colors?.map((color, i) => {
+                                const bgColors = editingBrand.colors?.filter(c => c.role === 'background') || [];
+                                const textColors = editingBrand.colors?.filter(c => c.role === 'text') || [];
+                                
+                                let warning = null;
+                                if (color.role === 'text' && bgColors.length > 0) {
+                                    const ratio = getContrastRatio(color.hex, bgColors[0].hex);
+                                    if (ratio < 4.5) warning = `Rasio kontras dengan background terlalu rendah (${ratio.toFixed(1)}:1). Minimal 4.5:1.`;
+                                } else if (color.role === 'background' && textColors.length > 0) {
+                                    const ratio = getContrastRatio(color.hex, textColors[0].hex);
+                                    if (ratio < 4.5) warning = `Rasio kontras dengan teks terlalu rendah (${ratio.toFixed(1)}:1). Minimal 4.5:1.`;
+                                }
+
+                                return (
+                                <div key={i} className="flex flex-col gap-2 bg-muted/30 p-3 rounded-lg border">
+                                    <div className="flex gap-3 items-center">
+                                        <div className="w-10 h-10 rounded shadow-sm border" style={{ backgroundColor: color.hex }}></div>
+                                        <Input 
+                                            className="w-24 font-mono text-sm" 
+                                            value={color.hex} 
+                                            onChange={e => handleUpdateColor(i, 'hex', e.target.value)}
+                                            placeholder="#000000"
+                                        />
+                                         <Input 
+                                            className="flex-1" 
+                                            value={color.name} 
+                                            onChange={e => handleUpdateColor(i, 'name', e.target.value)}
+                                            placeholder="Nama Warna (Opsional)"
+                                        />
+                                        <Select 
+                                            value={color.role} 
+                                            onValueChange={(val: ColorRole) => handleUpdateColor(i, 'role', val)}
+                                        >
+                                            <SelectTrigger className="w-[180px]">
+                                                <SelectValue placeholder="Pilih Role" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="background">Background</SelectItem>
+                                                <SelectItem value="primary">Primary</SelectItem>
+                                                <SelectItem value="secondary">Secondary</SelectItem>
+                                                <SelectItem value="accent">Accent</SelectItem>
+                                                <SelectItem value="text">Text</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <Button variant="ghost" size="icon" onClick={() => handleRemoveColor(i)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                                    </div>
+                                    {warning && (
+                                        <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-500 font-medium px-1">
+                                            <AlertTriangle className="w-3.5 h-3.5" />
+                                            {warning}
+                                        </div>
+                                    )}
                                 </div>
-                            ))}
+                            )})}
                         </div>
                     </div>
                 </CardContent>

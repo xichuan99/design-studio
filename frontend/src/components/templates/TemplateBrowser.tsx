@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useProjectApi } from '@/lib/api';
 import { Loader2, LayoutTemplate } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import Image from 'next/image';
 
 interface TemplateData {
     id: string;
@@ -106,14 +107,16 @@ export const TemplateBrowser: React.FC<TemplateBrowserProps> = ({ onSelectTempla
                             className={`group relative rounded-xl border bg-card overflow-hidden hover:ring-2 hover:ring-primary transition-all focus:outline-none focus:ring-2 focus:ring-primary text-left shrink-0 ${compact ? 'w-24 snap-start' : ''} ${selectedTemplateId === t.id ? 'ring-2 ring-primary border-primary' : 'border-border'}`}
                         >
                             {/* Thumbnail or Placeholder */}
-                            <div className={`${compact ? 'aspect-square h-24 w-full' : 'aspect-square'} bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center`}>
+                            <div className={`${compact ? 'aspect-square h-24 w-full' : 'aspect-square'} bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center relative`}>
                                 {t.thumbnail_url ? (
                                     <>
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img
+                                        <Image
                                             src={t.thumbnail_url}
                                             alt={t.name}
-                                            className="w-full h-full object-cover"
+                                            fill
+                                            sizes="(max-width: 768px) 50vw, 33vw"
+                                            className="object-cover"
+                                            unoptimized={t.thumbnail_url.startsWith('http')}
                                         />
                                     </>
                                 ) : (

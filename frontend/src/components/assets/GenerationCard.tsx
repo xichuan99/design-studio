@@ -3,6 +3,7 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, Trash2, LinkIcon, Loader2 } from "lucide-react";
+import Image from "next/image";
 import { AiGeneration } from "@/lib/api/types";
 import { useState } from "react";
 import {
@@ -50,12 +51,13 @@ export function GenerationCard({ generation, onDelete }: GenerationCardProps) {
         <Card className="group relative overflow-hidden border-border/50 bg-card hover:border-primary/40 transition-colors">
             {/* Thumbnail */}
             <div className="aspect-square bg-muted relative overflow-hidden">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <Image
                     src={generation.result_url}
                     alt={label}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    loading="lazy"
+                    fill
+                    sizes="(max-width: 768px) 50vw, 33vw"
+                    className="object-cover transition-transform duration-300 group-hover:scale-105"
+                    unoptimized={generation.result_url.startsWith('http')}
                 />
 
                 {/* Hover overlay */}

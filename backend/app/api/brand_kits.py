@@ -172,15 +172,12 @@ async def extract_brand_colors(
     Extracts exactly 5 dominant brand colors from an uploaded logo or image.
     Uses Gemini Vision. Does not save to the database.
     """
-    if file.size and file.size > 5 * 1024 * 1024:
-        raise ValidationError(detail="File too large. Maximum size is 5MB.")
-
-    if not file.content_type or not file.content_type.startswith("image/"):
-        raise ValidationError(detail="File must be an image.")
-
     image_bytes = await file.read()
+    from app.services.file_validation import validate_uploaded_image
+    mime_type = await validate_uploaded_image(image_bytes, max_size_mb=5)
+
     colors = await extract_colors_from_image(
-        image_bytes, mime_type=file.content_type or "image/png"
+        image_bytes, mime_type=mime_type
     )
 
     return ColorExtractionResponse(colors=colors)

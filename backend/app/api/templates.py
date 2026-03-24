@@ -4,10 +4,12 @@ from app.schemas.error import ERROR_RESPONSES
 """Templates API: list and retrieve design templates."""
 
 from typing import Optional, List, Dict, Any
+import json
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.core.database import get_db
+from app.core.redis import redis_client
 from app.models.template import Template
 
 router = APIRouter(tags=["Templates"])
@@ -26,7 +28,12 @@ async def list_templates(
     aspect_ratio: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
 ):
-    """List all templates, optionally filtered by category or aspect_ratio."""
+    cache_key = f"templates:list:{category or 'all'}:{aspect_ratio or 'all'}"
+    if redis_client:
+        cached_data = await redis_client.get(cache_key)
+        if cached_data:
+            return json.loads(cached_data)
+
     query = select(Template)
 
     if category:
@@ -37,7 +44,7 @@ async def list_templates(
     result = await db.execute(query)
     templates = result.scalars().all()
 
-    return [
+    response_data = [
         {
             "id": str(t.id),
             "name": t.name,
@@ -50,6 +57,11 @@ async def list_templates(
         }
         for t in templates
     ]
+
+    if redis_client:
+        await redis_client.setex(cache_key, 3600, json.dumps(response_data))
+
+    return response_data
 
 
 @router.get(
@@ -64,14 +76,19 @@ async def get_template(
     template_id: str,
     db: AsyncSession = Depends(get_db),
 ):
-    """Get a single template by ID."""
+    cache_key = f"templates:detail:{template_id}"
+    if redis_client:
+        cached_data = await redis_client.get(cache_key)
+        if cached_data:
+            return json.loads(cached_data)
+
     result = await db.execute(select(Template).where(Template.id == template_id))
     template = result.scalar_one_or_none()
 
     if not template:
         raise NotFoundError(detail="Template not found")
 
-    return {
+    response_data = {
         "id": str(template.id),
         "name": template.name,
         "category": template.category,
@@ -81,3 +98,8 @@ async def get_template(
         "prompt_suffix": template.prompt_suffix,
         "thumbnail_url": template.thumbnail_url,
     }
+
+    if redis_client:
+        await redis_client.setex(cache_key, 3600, json.dumps(response_data))
+
+    return response_data

@@ -22,6 +22,7 @@ export const authOptions: NextAuthOptions = {
         GoogleProvider({
             clientId: process.env.GOOGLE_CLIENT_ID || "",
             clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+            checks: ['pkce', 'state'],
         }),
         CredentialsProvider({
             name: "Email/Password",
@@ -101,6 +102,7 @@ export const authOptions: NextAuthOptions = {
     },
     pages: {
         signIn: "/login",
+        error: "/login", // Redirect to login with error query param instead of default NextAuth error page
     },
 };
 

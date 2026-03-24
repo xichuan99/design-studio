@@ -52,18 +52,8 @@ async def upscale_image(
         temp_id = str(uuid.uuid4())[:8]
         image_bytes = await file.read()
 
-        # Try to guess mime type from filename if content_type is null
-        mime_type = file.content_type
-        if not mime_type:
-            if file.filename and file.filename.lower().endswith(".png"):
-                mime_type = "image/png"
-            elif file.filename and (
-                file.filename.lower().endswith(".jpg")
-                or file.filename.lower().endswith(".jpeg")
-            ):
-                mime_type = "image/jpeg"
-            else:
-                mime_type = "image/jpeg"  # Default fallback
+        from app.services.file_validation import validate_uploaded_image
+        mime_type = validate_uploaded_image(image_bytes)
 
         temp_url = await upload_image(
             image_bytes, content_type=mime_type, prefix=f"temp_upscale_{temp_id}"
@@ -146,6 +136,9 @@ async def retouch(
     content = await file.read()
     if len(content) > 10 * 1024 * 1024:
         raise ValidationError(detail="Image size exceeds 10MB limit")
+
+    from app.services.file_validation import validate_uploaded_image
+    validate_uploaded_image(content)
 
     from app.services.credit_service import log_credit_change
 
@@ -252,6 +245,9 @@ async def create_id_photo(
     if len(content) > 10 * 1024 * 1024:
         raise ValidationError(detail="Image size exceeds 10MB limit")
 
+    from app.services.file_validation import validate_uploaded_image
+    validate_uploaded_image(content)
+
     from app.services.credit_service import log_credit_change
 
     await log_credit_change(db, current_user, -COST_ID_PHOTO, f"Pasfoto Maker ({size})")
@@ -353,6 +349,10 @@ async def apply_watermark(
         raise ValidationError(
             detail="File sizes exceed limits (10MB for image, 5MB for logo)",
         )
+
+    from app.services.file_validation import validate_uploaded_image
+    validate_uploaded_image(content)
+    validate_uploaded_image(logo_content)
 
     try:
         start_time = time.time()

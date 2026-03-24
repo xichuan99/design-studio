@@ -6,6 +6,7 @@ import { useCanvasStore } from '@/store/useCanvasStore';
 import { useBrandKit } from '@/hooks/useBrandKit';
 import { Upload, AlertCircle, Loader2, Check, Zap } from 'lucide-react';
 import { toast } from 'sonner';
+import Image from 'next/image';
 
 export const SmartAdPanel: React.FC = () => {
     const { activeBrandProfile } = useBrandKit();
@@ -137,10 +138,9 @@ export const SmartAdPanel: React.FC = () => {
                                 onChange={handleImageChange}
                             />
                             {imagePreview ? (
-                                <div className="relative w-full aspect-video rounded-lg overflow-hidden flex items-center justify-center bg-black/5">
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img src={imagePreview} alt="Preview" className="max-w-full max-h-full object-contain" />
-                                    <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex items-center justify-center transition-opacity text-white text-sm font-medium">
+                                <div className="relative w-full aspect-video rounded-lg overflow-hidden flex items-center justify-center bg-black/5 border border-muted-foreground/10">
+                                    <Image src={imagePreview} alt="Preview" fill className="object-contain" unoptimized />
+                                    <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex items-center justify-center transition-opacity text-white text-sm font-medium z-10">
                                         Klik untuk ganti foto
                                     </div>
                                 </div>
@@ -250,10 +250,10 @@ export const SmartAdPanel: React.FC = () => {
                             <div key={concept.id} className="relative group rounded-xl overflow-hidden border border-border bg-background min-w-[85%] md:min-w-0 snap-center shrink-0">
                                 <div className="relative aspect-video w-full bg-muted">
                                     {/* Mock composite preview */}
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img src={concept.image_url} alt="Background" className="absolute inset-0 w-full h-full object-cover" />
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img src={result.foreground_url} alt="Product" className="absolute inset-0 w-full h-full object-contain p-4 drop-shadow-2xl" />
+                                    <Image src={concept.image_url} alt="Background" fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" unoptimized={concept.image_url.startsWith('http')} />
+                                    <div className="absolute inset-0 p-4 drop-shadow-2xl">
+                                        <Image src={result.foreground_url} alt="Product" fill sizes="(max-width: 768px) 100vw, 50vw" className="object-contain" unoptimized={result.foreground_url.startsWith('http')} />
+                                    </div>
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent" />
                                     
                                     <div className="absolute bottom-3 left-3 right-3 text-white">

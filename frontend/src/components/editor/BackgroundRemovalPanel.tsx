@@ -8,6 +8,7 @@ import { Loader2, Scissors, Upload, Plus } from "lucide-react";
 import { MAX_FILE_SIZE } from "@/app/create/types";
 import { CreditCostBadge } from '@/components/credits/CreditCostBadge';
 import { CreditConfirmDialog } from '@/components/credits/CreditConfirmDialog';
+import Image from "next/image";
 
 export function BackgroundRemovalPanel() {
     const { addElement, elements, canvasWidth, canvasHeight } = useCanvasStore();
@@ -162,7 +163,7 @@ export function BackgroundRemovalPanel() {
 
                 {!isProcessing && processedImagePreview && (
                     <div className="space-y-4">
-                        <div className="relative border rounded-xl overflow-hidden bg-muted/30 flex items-center justify-center p-4">
+                        <div className="relative border rounded-xl overflow-hidden bg-muted/30 flex items-center justify-center p-4 min-h-[250px]">
                             {/* Grid background to show transparency */}
                             <div className="absolute inset-0 z-0" style={{
                                 backgroundImage: `linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(135deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(135deg, transparent 75%, #ccc 75%)`,
@@ -170,11 +171,12 @@ export function BackgroundRemovalPanel() {
                                 backgroundPosition: `0 0, 10px 0, 10px -10px, 0px 10px`,
                                 opacity: 0.2
                             }} />
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img 
+                            <Image 
                                 src={processedImagePreview} 
                                 alt="Processed" 
-                                className="max-w-full max-h-[250px] object-contain relative z-10" 
+                                fill
+                                className="object-contain p-4 relative z-10" 
+                                unoptimized
                             />
                         </div>
 

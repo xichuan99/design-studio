@@ -12,14 +12,11 @@ import redis.asyncio as redis
 from fastapi import Depends
 
 from app.api.deps import get_current_user
-from app.core.config import settings
 from app.core.exceptions import AppException
+from app.core.redis import redis_client
 from app.models.user import User
 
 logger = logging.getLogger(__name__)
-
-# Shared redis client for rate limiting
-redis_client = redis.from_url(settings.REDIS_URL, decode_responses=True)
 
 
 async def _check_rate_limit(key: str, limit: int) -> None:
@@ -30,6 +27,9 @@ async def _check_rate_limit(key: str, limit: int) -> None:
     """
     current_time = int(time.time())
     window_start = current_time - 60
+
+    if not redis_client:
+        return
 
     try:
         async with redis_client.pipeline(transaction=True) as pipe:

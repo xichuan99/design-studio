@@ -80,39 +80,73 @@ async def generate_background(
 
     resolution = ASPECT_RATIO_MAP.get(aspect_ratio, ASPECT_RATIO_MAP["1:1"])
 
+    import asyncio
+
     # Choose model based on whether we have a reference image (image-to-image vs text-to-image)
     if reference_image_url:
-        model_id = "fal-ai/flux/dev/image-to-image"
-        logger.info(f"🎨 [DEV INFO] Rendering image via fal.ai model: {model_id}")
-        # Image-to-image with IP-Adapter for style transfer
-        result = await fal_client.run_async(
-            model_id,
-            arguments={
-                "prompt": enhanced_prompt,
-                "image_url": reference_image_url,
-                "image_size": resolution,
-                "num_images": 1,
-                "strength": 0.70,  # How much to deviate from reference (0=identical, 1=ignore)
-                "num_inference_steps": 28,
-                "guidance_scale": 3.5,
-                "negative_prompt": actual_negative_prompt,
-            },
-        )
+        primary_model_id = "fal-ai/flux/dev/image-to-image"
     else:
-        model_id = "fal-ai/flux-pro/v1.1"
-        logger.info(f"🎨 [DEV INFO] Rendering image via fal.ai model: {model_id}")
-        # Text-to-image generation (no reference)
-        result = await fal_client.run_async(
-            model_id,
-            arguments={
-                "prompt": enhanced_prompt,
-                "image_size": resolution,
-                "num_images": 1,
-                "num_inference_steps": 28,
-                "guidance_scale": 3.5,
-                "negative_prompt": actual_negative_prompt,
-            },
-        )
+        primary_model_id = "fal-ai/flux-pro/v1.1"
+
+    max_retries = 3
+    base_delay = 2.0
+    result = None
+
+    for attempt in range(max_retries):
+        try:
+            logger.info(f"🎨 [DEV INFO] Rendering image via fal.ai model: {primary_model_id} (Attempt {attempt + 1})")
+            if reference_image_url:
+                result = await fal_client.run_async(
+                    primary_model_id,
+                    arguments={
+                        "prompt": enhanced_prompt,
+                        "image_url": reference_image_url,
+                        "image_size": resolution,
+                        "num_images": 1,
+                        "strength": 0.70,
+                        "num_inference_steps": 28,
+                        "guidance_scale": 3.5,
+                        "negative_prompt": actual_negative_prompt,
+                    },
+                )
+            else:
+                result = await fal_client.run_async(
+                    primary_model_id,
+                    arguments={
+                        "prompt": enhanced_prompt,
+                        "image_size": resolution,
+                        "num_images": 1,
+                        "num_inference_steps": 28,
+                        "guidance_scale": 3.5,
+                        "negative_prompt": actual_negative_prompt,
+                    },
+                )
+            break  # Success, exit retry loop
+        except Exception as e:
+            logger.warning(f"Fal.ai image generation failed on attempt {attempt + 1}: {e}")
+            if attempt == max_retries - 1:
+                # Fallback to faster, more robust model if pro fails completely
+                if not reference_image_url:
+                    fallback_model = "fal-ai/flux/schnell"
+                    logger.warning(f"Attempting final fallback to {fallback_model}")
+                    try:
+                        result = await fal_client.run_async(
+                            fallback_model,
+                            arguments={
+                                "prompt": enhanced_prompt,
+                                "image_size": resolution,
+                                "num_images": 1,
+                            },
+                        )
+                        break
+                    except Exception as fallback_err:
+                        logger.error(f"Fallback model also failed: {fallback_err}")
+                        raise e  # Raise original error
+                else:
+                    raise e
+
+            # Exponential backoff
+            await asyncio.sleep(base_delay * (2 ** attempt))
 
     # Extract the generated image info
     images = result.get("images", [])

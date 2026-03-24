@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { AppHeader } from "@/components/layout/AppHeader";
@@ -48,7 +48,9 @@ export default function BrandPage() {
                         </div>
                     </div>
 
-                    <BrandSettings />
+                    <Suspense fallback={<div className="flex justify-center p-8"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>}>
+                        <BrandSettings />
+                    </Suspense>
                 </div>
             </div>
         </div>

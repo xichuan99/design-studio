@@ -50,6 +50,9 @@ async def background_swap(
     if len(content) > 10 * 1024 * 1024:
         raise ValidationError(detail="Image size exceeds 10MB limit")
 
+    from app.services.file_validation import validate_uploaded_image
+    validate_uploaded_image(content)
+
     from app.services.credit_service import log_credit_change
 
     await log_credit_change(db, current_user, -COST_BG_SWAP, "AI Background Swap")
@@ -127,6 +130,9 @@ async def background_suggest(
     if len(content) > 10 * 1024 * 1024:
         raise ValidationError(detail="Image size exceeds 10MB limit")
 
+    from app.services.file_validation import validate_uploaded_image
+    real_mime_type = validate_uploaded_image(content)
+
     from app.services.credit_service import log_credit_change
 
     await log_credit_change(db, current_user, -COST_BG_SUGGEST, "AI Background Suggest")
@@ -135,8 +141,7 @@ async def background_suggest(
     try:
         from app.services.bg_suggest_service import suggest_backgrounds
 
-        mime_type = file.content_type or "image/jpeg"
-        result = await suggest_backgrounds(content, mime_type=mime_type)
+        result = await suggest_backgrounds(content, mime_type=real_mime_type)
         return result
     except Exception as e:
         from app.services.credit_service import log_credit_change
@@ -178,6 +183,10 @@ async def magic_eraser(
     mask_content = await mask.read()
     if len(content) > 10 * 1024 * 1024 or len(mask_content) > 10 * 1024 * 1024:
         raise ValidationError(detail="Image or mask size exceeds 10MB limit")
+
+    from app.services.file_validation import validate_uploaded_image
+    validate_uploaded_image(content)
+    validate_uploaded_image(mask_content)
 
     from app.services.credit_service import log_credit_change
 
@@ -274,6 +283,9 @@ async def generative_expand(
     content = await file.read()
     if len(content) > 10 * 1024 * 1024:
         raise ValidationError(detail="Image size exceeds 10MB limit")
+
+    from app.services.file_validation import validate_uploaded_image
+    validate_uploaded_image(content)
 
     from app.services.credit_service import log_credit_change
 

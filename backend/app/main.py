@@ -5,6 +5,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
+from app.core.database import get_db
 
 from app.api.auth import router as auth_router
 from app.api.designs import router as designs_router
@@ -21,6 +25,9 @@ from app.core.exceptions import AppException, InternalServerError
 from app.schemas.error import ErrorResponse, ErrorDetail
 from app.middleware.request_id import RequestIDMiddleware
 from app.middleware.logging import StructuredLoggingMiddleware
+from app.core.logging_config import setup_logging
+
+setup_logging()
 
 # Initialize Sentry if DSN is provided
 SENTRY_DSN = os.getenv("SENTRY_DSN")
@@ -97,6 +104,14 @@ app.add_middleware(
 )
 
 
+@app.middleware("http")
+async def add_cache_headers(request: Request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "public, max-age=86400"
+    return response
+
+
 @app.exception_handler(AppException)
 async def app_exception_handler(request: Request, exc: AppException):
     request_id = getattr(request.state, "request_id", None)
@@ -155,11 +170,20 @@ app.include_router(template_marketplace_router, prefix="/api", tags=["Template M
     response_model=dict,
     status_code=200,
 )
-async def health_check():
+async def health_check(db: AsyncSession = Depends(get_db)):
     """
-    Returns the health status of the API.
+    Returns the health status of the API and its database connection.
     """
-    return {"status": "ok"}
+    try:
+        await db.execute(text("SELECT 1"))
+        db_status = "ok"
+    except Exception as e:
+        return JSONResponse(
+            status_code=503,
+            content={"status": "error", "database": "disconnected", "detail": str(e)}
+        )
+
+    return {"status": "ok", "database": db_status}
 
 
 # Always mount static files for local dev uploads (fallback when S3 fails)

@@ -63,6 +63,8 @@ export const AppHeader = ({ renderActions }: AppHeaderProps = {}) => {
                 <button
                     className="md:hidden p-1.5 rounded-md hover:bg-muted transition-colors"
                     onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                    aria-label={mobileMenuOpen ? "Tutup menu" : "Buka menu"}
+                    aria-expanded={mobileMenuOpen}
                 >
                     {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                 </button>

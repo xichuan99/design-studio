@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Sparkles, ImagePlus, Wallpaper, RefreshCw, X, Square, Smartphone, Monitor, FileImage, Upload, Trash2, Film, Palette, Layout } from 'lucide-react';
+import Image from 'next/image';
 import { InlineErrorBanner } from '@/components/feedback/InlineErrorBanner';
 import { ErrorModal, ErrorModalType } from '@/components/feedback/ErrorModal';
 import { cn } from '@/lib/utils';
@@ -441,12 +442,13 @@ export const AIPromptPanel: React.FC = () => {
                     ) : (
                         <div className="space-y-3">
                             <div className="relative w-full h-24 rounded-lg overflow-hidden border bg-muted/30">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img 
+                                <Image 
                                     src={productImageUrl} 
                                     alt="Product" 
-                                    className="w-full h-full object-contain"
+                                    fill
+                                    className="object-contain"
                                     crossOrigin="anonymous"
+                                    unoptimized={productImageUrl.startsWith('http')}
                                 />
                             </div>
                             <div className="flex items-center justify-between bg-muted/30 p-2 rounded-lg border border-border/50">
@@ -482,13 +484,14 @@ export const AIPromptPanel: React.FC = () => {
                 {generatedUrl && previewUrl && (
                     <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
                         <label className="text-xs font-semibold text-muted-foreground uppercase">Hasil Generate</label>
-                        <div className="rounded-xl overflow-hidden border bg-muted/30 shadow-sm">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
+                        <div className={cn("relative rounded-xl overflow-hidden border bg-muted/30 shadow-sm w-full", getAspectRatioClass(aspectRatio))}>
+                            <Image
                                 src={previewUrl}
                                 alt="AI Generated"
-                                className={cn("w-full object-cover rounded shadow-sm", getAspectRatioClass(aspectRatio))}
+                                fill
+                                className="object-cover rounded shadow-sm"
                                 crossOrigin="anonymous"
+                                unoptimized={previewUrl.startsWith('http')}
                             />
                         </div>
 

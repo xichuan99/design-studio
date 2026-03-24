@@ -8,6 +8,7 @@ import { generateCanvasElementsFromTemplate } from "@/lib/templateEngine";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ParsedDesignData, VisualPromptPart, BriefQuestion, MAX_FILE_SIZE } from "@/app/create/types";
+import { usePostHog } from 'posthog-js/react';
 
 export type CreateStep = 'input' | 'brief' | 'results' | 'generating' | 'preview';
 export type CreateMode = 'generate' | 'redesign';
@@ -30,6 +31,7 @@ export interface SavedCreateState {
 
 export function useCreateDesign() {
     const router = useRouter();
+    const posthog = usePostHog();
     const { generateDesign, redesignFromReference, getJobStatus, saveProject, uploadImage, getActiveBrandKit, clarifyUnified, generateCopywriting, parseDesignText, generateProjectTitle, getStorageUsage } = useProjectApi();
 
     const [rawText, setRawText] = useState("");
@@ -239,6 +241,7 @@ export function useCreateDesign() {
     const handleGeneratePrompt = useCallback(async (answers: Record<string, string>) => {
         setIsParsing(true);
         setBriefAnswers(answers);
+        posthog?.capture('create_brief_submitted', { create_mode: createMode });
         try {
             const [parsed, copywritingData] = await Promise.allSettled([
                 parseDesignText({
@@ -260,6 +263,7 @@ export function useCreateDesign() {
                 throw new Error("Failed to parse visual design text");
             }
             setParsedData(parsed.value);
+            posthog?.capture('create_prompt_parsed', { create_mode: createMode });
 
             if (copywritingData.status === 'fulfilled') {
                 setCopyVariations(copywritingData.value.variations || []);
@@ -288,6 +292,7 @@ export function useCreateDesign() {
         setParsedData(null);
         setBriefQuestions([]);
         setBriefAnswers({});
+        posthog?.capture('create_analyze_started', { create_mode: createMode, has_brand_kit: brandKitEnabled });
 
         try {
             const clarifyData = await clarifyUnified({ raw_text: rawText, mode: createMode });
@@ -314,6 +319,7 @@ export function useCreateDesign() {
         
         setIsGeneratingImage(true);
         setCurrentStep('generating');
+        posthog?.capture('create_generation_started', { create_mode: createMode, aspect_ratio: aspectRatio });
 
         try {
             let assembledPrompt = rawText;
@@ -403,6 +409,7 @@ export function useCreateDesign() {
                         quantum_layout: statusData.quantum_layout || undefined
                     } : null);
                     setCurrentStep('preview');
+                    posthog?.capture('create_generation_success', { create_mode: createMode });
                 } else {
                     throw new Error(statusData.error_message || "Generation failed");
                 }
@@ -430,6 +437,7 @@ export function useCreateDesign() {
                             quantum_layout: statusData.quantum_layout || undefined
                         } : null);
                         setCurrentStep('preview');
+                        posthog?.capture('create_generation_success', { create_mode: createMode });
                     } else if (statusData.status === "failed") {
                         throw new Error(statusData.error_message || "Design generation failed");
                     }
@@ -441,6 +449,7 @@ export function useCreateDesign() {
         } catch (error) {
             console.error(error);
             const errorMessage = error instanceof Error ? error.message : "Gagal memproses desain.";
+            posthog?.capture('create_generation_failed', { create_mode: createMode, error_message: errorMessage });
             
             setCurrentStep('results');
             
@@ -590,6 +599,7 @@ export function useCreateDesign() {
                 localStorage.setItem('designStudio_copyVariations', JSON.stringify(copyVariations));
             }
 
+            posthog?.capture('create_proceed_to_editor', { create_mode: createMode });
             router.push(`/edit/${newProject.id}`);
         } catch (error) {
             console.error('Failed to create project', error);

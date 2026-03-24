@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Eye, EyeOff, Lock, Unlock, Image as ImageIcon, Square, Edit2, Layers, GripVertical, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import Image from 'next/image';
 
 import {
     DndContext,
@@ -233,9 +234,8 @@ export const LayersPanel: React.FC = () => {
     const getThumbnail = (el: CanvasElement) => {
         if (el.type === 'image' && el.url) {
             return (
-                <div className="w-6 h-6 rounded overflow-hidden bg-muted flex items-center justify-center border flex-shrink-0">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={el.url && el.url.startsWith('http') ? `/api/proxy-image?url=${encodeURIComponent(el.url)}` : el.url} alt="Thumbnail" className="w-full h-full object-cover" />
+                <div className="relative w-6 h-6 rounded overflow-hidden bg-muted flex items-center justify-center border flex-shrink-0">
+                    <Image src={el.url && el.url.startsWith('http') ? `/api/proxy-image?url=${encodeURIComponent(el.url)}` : (el.url || '')} alt="Thumbnail" fill sizes="24px" className="object-cover" unoptimized={true} />
                 </div>
             );
         }

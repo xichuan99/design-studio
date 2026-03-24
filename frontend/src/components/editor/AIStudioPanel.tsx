@@ -1,9 +1,24 @@
 "use client";
 
 import React, { useState } from 'react';
-import { AIPromptPanel } from './AIPromptPanel';
-import { SmartAdPanel } from './SmartAdPanel';
-import { Sparkles, Image as ImageIcon } from 'lucide-react';
+import dynamic from 'next/dynamic';
+import { Sparkles, Image as ImageIcon, Loader2 } from 'lucide-react';
+
+const AIPromptPanel = dynamic(
+    () => import('./AIPromptPanel').then(mod => mod.AIPromptPanel),
+    { 
+        loading: () => <div className="flex h-full items-center justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>,
+        ssr: false 
+    }
+);
+
+const SmartAdPanel = dynamic(
+    () => import('./SmartAdPanel').then(mod => mod.SmartAdPanel),
+    { 
+        loading: () => <div className="flex h-full items-center justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>,
+        ssr: false 
+    }
+);
 import { cn } from '@/lib/utils';
 
 type StudioTab = 'prompt' | 'ad_creator';

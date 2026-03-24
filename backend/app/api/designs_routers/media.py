@@ -5,7 +5,7 @@ from app.api.deps import get_current_user
 from app.api.rate_limit import rate_limit_dependency
 from app.models.user import User
 from app.schemas.error import ERROR_RESPONSES
-from app.core.exceptions import InternalServerError, ValidationError
+from app.core.exceptions import InternalServerError
 
 router = APIRouter(tags=["Designs - Media"])
 
@@ -26,19 +26,15 @@ async def upload_user_image(
     """Uploads a user image (for canvas or reference) and returns the public URL."""
     from app.services.storage_service import upload_image_tracked
 
-    if file.size and file.size > 5 * 1024 * 1024:
-        raise ValidationError(detail="File too large. Max 5MB.")
-
-    if not file.content_type.startswith("image/"):
-        raise ValidationError(detail="Only image files are allowed.")
-
     content = await file.read()
+    from app.services.file_validation import validate_uploaded_image
+    mime_type = await validate_uploaded_image(content, max_size_mb=5)
     try:
         url = await upload_image_tracked(
             image_bytes=content,
             user_id=current_user.id,
             db=db,
-            content_type=file.content_type,
+            content_type=mime_type,
             prefix=f"uploads/{current_user.id}",
         )
         return {"url": url}
@@ -66,13 +62,9 @@ async def api_remove_background(
     Stand-alone endpoint to remove background from an uploaded image.
     Returns the URL of the processed PNG transparent image.
     """
-    if not file.content_type.startswith("image/"):
-        raise ValidationError(detail="File must be an image")
-
-    # Read file content safely
     content = await file.read()
-    if len(content) > 10 * 1024 * 1024:  # 10MB limit
-        raise ValidationError(detail="Image size exceeds 10MB limit")
+    from app.services.file_validation import validate_uploaded_image
+    await validate_uploaded_image(content, max_size_mb=10)
 
     from app.services.bg_removal_service import remove_background
 
