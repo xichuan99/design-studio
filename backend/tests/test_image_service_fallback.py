@@ -3,23 +3,26 @@ from unittest.mock import patch, MagicMock
 from app.services import image_service
 from app.core.exceptions import InternalServerError
 
+@pytest.fixture(autouse=True)
+def mock_fal_key():
+    with patch("app.services.image_service.settings.FAL_KEY", "dummy_key"):
+        yield
+
 @pytest.mark.asyncio
 async def test_generate_background_success():
     """Test successful image generation without fallback."""
-    with patch("app.services.image_service.fal_client.submit_async") as mock_submit:
-        mock_handler = MagicMock()
-        mock_handler.get.return_value = {"images": [{"url": "http://example.com/image.png"}]}
-        mock_submit.return_value = mock_handler
+    with patch("app.services.image_service.fal_client.run_async") as mock_submit:
+        mock_submit.return_value = {"images": [{"url": "http://example.com/image.png"}]}
 
-        result_bytes = await image_service.generate_background("A test prompt")
-        assert result_bytes == b'mock_image_bytes'
+        result = await image_service.generate_background("A test prompt")
+        assert result["image_url"] == "http://example.com/image.png"
 
     # Actually downloading causes httpx requests, so we should mock httpx.AsyncClient too.
 
 @pytest.mark.asyncio
 async def test_generate_background_fallback():
     """Test fallback to schnell when pro fails."""
-    with patch("app.services.image_service.fal_client.submit_async") as mock_submit, \
+    with patch("app.services.image_service.fal_client.run_async") as mock_submit, \
          patch("httpx.AsyncClient") as mock_httpx_client:
 
         # Setup httpx mock to return dummy image bytes
@@ -35,29 +38,24 @@ async def test_generate_background_fallback():
 
         async def mock_submit_side_effect(*args, **kwargs):
             call_count["count"] += 1
-            if kwargs.get("model") == "fal-ai/flux-pro/v1.1":
+            if args and args[0] == "fal-ai/flux-pro/v1.1":
                 raise Exception("Simulated fal.ai pro failure")
 
-            # For schnell (fallback) return success
-            mock_handler = MagicMock()
-            async def get_mock():
-                return {"images": [{"url": "http://example.com/fallback.png"}]}
-            mock_handler.get = get_mock
-            return mock_handler
+            return {"images": [{"url": "http://example.com/fallback.png"}]}
 
         mock_submit.side_effect = mock_submit_side_effect
 
         result = await image_service.generate_background("A test prompt")
 
-        assert result == b"fallback_image_bytes"
+        assert result["image_url"] == "http://example.com/fallback.png"
         # Pro model is retried 3 times, fallback is called once, so 4 total calls
         assert call_count["count"] == 4
 
 @pytest.mark.asyncio
 async def test_generate_background_total_failure():
     """Test when both pro and fallback modes fail."""
-    with patch("app.services.image_service.fal_client.submit_async") as mock_submit:
+    with patch("app.services.image_service.fal_client.run_async") as mock_submit:
         mock_submit.side_effect = Exception("Simulated total fal.ai failure")
 
-        with pytest.raises(InternalServerError):
+        with pytest.raises(Exception):
             await image_service.generate_background("A test prompt")

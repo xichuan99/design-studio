@@ -4,7 +4,7 @@ from app.core.exceptions import ValidationError
 
 ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/webp"}
 
-async def validate_uploaded_image(file_bytes: bytes, max_size_mb: int = 5) -> str:
+def validate_uploaded_image(file_bytes: bytes, max_size_mb: int = 5) -> str:
     """
     Validates that the uploaded file bytes represent a valid image.
     Uses Pillow to verify the internal file signature (magic bytes).

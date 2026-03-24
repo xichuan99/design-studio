@@ -5,6 +5,12 @@ from app.api.rate_limit import rate_limit_dependency
 from app.api.deps import get_db
 from app.models.user import User
 
+import pytest
+
+@pytest.fixture(autouse=True)
+def mock_validation():
+    with patch("app.services.file_validation.validate_uploaded_image", return_value="image/png"):
+        yield
 
 # Setup local fixtures
 def override_rate_limit():
