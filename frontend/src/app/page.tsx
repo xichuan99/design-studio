@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation";
 import { Sparkles, MonitorPlay, ArrowRight, Brush, Wand2, Upload, Download, ShoppingBag, ImageOff, Copy, Banknote, Store, Smartphone, Menu, X, CheckCircle2, XCircle } from "lucide-react";
 import { CapabilityMarquee } from "@/components/landing/CapabilityMarquee";
-import { BeforeAfterSlider } from "@/components/landing/BeforeAfterSlider";
 import { ResultGallery } from "@/components/landing/ResultGallery";
 import { TestimonialCarousel } from "@/components/landing/TestimonialCarousel";
 import { FAQSection } from "@/components/landing/FAQSection";

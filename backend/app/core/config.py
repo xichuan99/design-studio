@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str = ""
     OPENROUTER_API_KEY: str = ""
 
+    # Email
+    RESEND_API_KEY: str = ""
+
     # Image Generation (Fal.ai)
     FAL_KEY: str = ""
 

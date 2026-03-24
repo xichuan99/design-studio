@@ -1,7 +1,6 @@
 import pytest
 from unittest.mock import patch, MagicMock
 from app.services import image_service
-from app.core.exceptions import InternalServerError
 
 @pytest.fixture(autouse=True)
 def mock_fal_key():

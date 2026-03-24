@@ -18,8 +18,7 @@ test.describe('ErrorBoundary Behavior', () => {
     await page.goto('/projects');
     
     // We expect the InlineErrorBanner or a general error message to appear
-    // The ErrorBoundary fallback UI typically contains "Something went wrong"
-    const errorMessage = page.getByText(/something went wrong|failed to load/i).first();
+    await expect(page.getByText(/something went wrong|failed to load/i).first()).toBeVisible();
     
     // We should be able to see it or the page should handle it gracefully
     // Note: If Next.js dev server catches it first, it might show the dev overlay.

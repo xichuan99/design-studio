@@ -284,7 +284,7 @@ export function useCreateDesign() {
         } finally {
             setIsParsing(false);
         }
-    }, [rawText, aspectRatio, integratedText, activeBrandKit, brandKitEnabled, parseDesignText, generateCopywriting]);
+    }, [rawText, aspectRatio, integratedText, activeBrandKit, brandKitEnabled, parseDesignText, generateCopywriting, createMode, posthog]);
 
     const handleAnalyze = useCallback(async () => {
         if (!rawText.trim()) return;
@@ -312,7 +312,7 @@ export function useCreateDesign() {
             toast.error(errorMessage);
             setIsParsing(false); // Make sure to stop loading on error!
         }
-    }, [rawText, createMode, clarifyUnified, handleGeneratePrompt]);
+    }, [rawText, createMode, clarifyUnified, handleGeneratePrompt, brandKitEnabled, posthog]);
 
     const handleGenerateImage = useCallback(async () => {
         if (!parsedData) return;
@@ -511,7 +511,7 @@ export function useCreateDesign() {
         } finally {
             setIsGeneratingImage(false);
         }
-    }, [parsedData, rawText, referenceFile, aspectRatio, integratedText, removeProductBg, activeBrandKit, brandKitEnabled, createMode, redesignStrength, getStorageUsage, uploadImage, generateDesign, redesignFromReference, getJobStatus, router]);
+    }, [parsedData, rawText, referenceFile, aspectRatio, integratedText, removeProductBg, activeBrandKit, brandKitEnabled, createMode, redesignStrength, getStorageUsage, uploadImage, generateDesign, redesignFromReference, getJobStatus, router, posthog]);
 
     const handleProceedToEditor = useCallback(async () => {
         if (!parsedData) return;
@@ -606,7 +606,7 @@ export function useCreateDesign() {
             toast.error('Gagal melanjutkan ke editor. Silakan coba lagi.');
             setIsSaving(false);
         }
-    }, [parsedData, imageHistory, activeImageIndex, aspectRatio, integratedText, rawText, generateProjectTitle, saveProject, router, copyVariations]);
+    }, [parsedData, imageHistory, activeImageIndex, aspectRatio, integratedText, rawText, generateProjectTitle, saveProject, router, copyVariations, createMode, posthog]);
 
     return {
         rawText, setRawText,

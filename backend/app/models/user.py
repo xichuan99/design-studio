@@ -21,4 +21,8 @@ class User(Base):
     credits_remaining = Column(Integer, nullable=False, default=DEFAULT_CREDITS)
     storage_used = Column(BigInteger, nullable=False, default=0)
     storage_quota = Column(BigInteger, nullable=False, default=STORAGE_QUOTA_FREE)
+
+    reset_token = Column(String, nullable=True, index=True)
+    reset_token_expires = Column(DateTime(timezone=True), nullable=True)
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
