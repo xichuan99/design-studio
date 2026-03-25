@@ -229,8 +229,13 @@ All endpoints except `/health`, `/docs`, and `/api/templates` require authentica
 | `PUT` | `/api/users/me` | JSON `UserUpdate` | JSON `UserResponse` | Update current user profile | Yes |
 | `DELETE` | `/api/users/me` | None | Status 204 | Delete current user | Yes |
 | `GET` | `/api/users/me/credits/history` | None | JSON `CreditHistoryResponse` | Get user credit transaction history | Yes |
+| `GET` | `/api/users/me/storage` | None | JSON `{"used": int, "quota": int, "percentage": float, "used_mb": float, "quota_mb": float}` | Get user storage usage and quota | Yes |
 | **Auth** | | | | | |
-| `POST` | `/api/auth/login` | JSON `LoginRequest` | JSON `AuthResponse` | Authenticate and get token | No |
+| `POST` | `/api/auth/register` | JSON `RegisterRequest` | JSON `AuthResponse` | Register new account with email/password | No |
+| `POST` | `/api/auth/login` | JSON `LoginRequest` | JSON `AuthResponse` | Authenticate and get JWT token pair | No |
+| `POST` | `/api/auth/refresh` | JSON `RefreshTokenRequest` | JSON `AuthResponse` | Issue new access/refresh token pair | No |
+| `POST` | `/api/auth/forgot-password` | JSON `{"email": "..."}` | JSON `{"message": "..."}` | Send password reset email (rate-limited) | No |
+| `POST` | `/api/auth/reset-password` | JSON `{"token": "...", "new_password": "..."}` | JSON `{"message": "..."}` | Reset password using valid reset token | No |
 
 > 💡 Full interactive API docs available at `http://localhost:8000/docs` when the server is running.
 

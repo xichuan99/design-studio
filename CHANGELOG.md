@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed backend API issues preventing Brand Kits from saving.
 - Fixed GitHub Actions CI compile errors related to Recharts Tooltip typings in `ProductDetail.tsx` and general workflow failures.
 - Fixed Ruff linting errors (trailing whitespace, blank lines, undefined variables) across backend AI tools services (`ai_tools.py`, `retouch_service.py`, `id_photo_service.py`).
+- Fixed `README.md` API Reference missing 5 live endpoints: `POST /api/auth/register`, `POST /api/auth/refresh`, `POST /api/auth/forgot-password`, `POST /api/auth/reset-password`, and `GET /api/users/me/storage`.
 
 ## [1.0.0] - 2026-03-13
 
