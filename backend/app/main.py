@@ -21,6 +21,9 @@ from app.api.ai_tools import router as ai_tools_router
 from app.api.ad_creator import router as ad_creator_router
 from app.api.template_marketplace import router as template_marketplace_router
 
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
 from app.core.exceptions import AppException, InternalServerError
 from app.schemas.error import ErrorResponse, ErrorDetail
 from app.middleware.request_id import RequestIDMiddleware
@@ -125,6 +128,61 @@ async def app_exception_handler(request: Request, exc: AppException):
         status_code=exc.status_code,
         content=error_response.model_dump(),
         headers=exc.headers,
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    request_id = getattr(request.state, "request_id", None)
+
+    errors = exc.errors()
+    detail = "Validation error"
+    if errors:
+        first_err = errors[0]
+        loc = ".".join([str(x) for x in first_err.get("loc", [])])
+        msg = first_err.get("msg", "")
+        if loc:
+            detail = f"Validation failed at '{loc}': {msg}"
+        else:
+            detail = f"Validation failed: {msg}"
+
+    error_response = ErrorResponse(
+        error=ErrorDetail(
+            error_code="VALIDATION_ERROR",
+            detail=detail
+        ),
+        request_id=request_id,
+    )
+
+    return JSONResponse(
+        status_code=422,
+        content=error_response.model_dump(),
+    )
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    request_id = getattr(request.state, "request_id", None)
+
+    error_code = "HTTP_ERROR"
+    if exc.status_code == 404:
+        error_code = "NOT_FOUND"
+    elif exc.status_code == 401:
+        error_code = "UNAUTHORIZED"
+    elif exc.status_code == 403:
+        error_code = "FORBIDDEN"
+    elif exc.status_code == 405:
+        error_code = "METHOD_NOT_ALLOWED"
+
+    error_response = ErrorResponse(
+        error=ErrorDetail(error_code=error_code, detail=str(exc.detail)),
+        request_id=request_id,
+    )
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=error_response.model_dump(),
+        headers=getattr(exc, "headers", None),
     )
 
 

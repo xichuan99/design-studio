@@ -43,7 +43,7 @@ AI_TOOL_EXECUTORS: dict[str, AiToolExecutor] = {
 }
 
 
-async def run_ai_tool_job(job_id: str):
+async def run_ai_tool_job(job_id: str, current_retry: int = 0, max_retries: int = 0):
     async with AsyncSessionLocal() as session:
         job = await session.get(AiToolJob, job_id)
         if not job:
@@ -61,21 +61,38 @@ async def run_ai_tool_job(job_id: str):
             return
 
     try:
+        if current_retry > 0:
+            logger.info(f"Retrying AI tool job (Attempt {current_retry}/{max_retries}) | Tool: {job.tool_name}", extra={"job_id": job_id})
+        else:
+            logger.info(f"Starting AI tool job | Tool: {job.tool_name}", extra={"job_id": job_id})
+
         await executor(job_id)
+        logger.info(f"AI tool job completed successfully | Tool: {job.tool_name}", extra={"job_id": job_id})
     except Exception as exc:
-        logger.exception("AI tool job failed", extra={"job_id": job_id})
-        await fail_ai_tool_job(job_id, str(exc))
+        is_final_attempt = current_retry >= max_retries
 
-        async with AsyncSessionLocal() as session:
-            job = await session.get(AiToolJob, job_id)
-            if not job:
-                return
+        if is_final_attempt:
+            logger.exception("AI tool job failed permanently", extra={"job_id": job_id})
+            await fail_ai_tool_job(job_id, str(exc))
 
-            await refund_ai_tool_job_if_needed(
-                session,
-                job,
-                reason=f"Refund: job gagal ({job.tool_name})",
+            async with AsyncSessionLocal() as session:
+                job_record = await session.get(AiToolJob, job_id)
+                if not job_record:
+                    return
+
+                await refund_ai_tool_job_if_needed(
+                    session,
+                    job_record,
+                    reason=f"Refund: job gagal ({job_record.tool_name})",
+                )
+                job_record.finished_at = datetime.now(timezone.utc)
+                session.add(job_record)
+                await session.commit()
+        else:
+            logger.warning(
+                f"AI tool job failed. Will retry (Attempt {current_retry}/{max_retries}). Error: {str(exc)}",
+                extra={"job_id": job_id}
             )
-            job.finished_at = datetime.now(timezone.utc)
-            session.add(job)
-            await session.commit()
+
+        raise
+

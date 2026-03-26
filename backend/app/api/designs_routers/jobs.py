@@ -64,9 +64,21 @@ async def get_my_generations(
 async def get_job_status(
     job_id: str,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Poll job status. Returns result URL when completed."""
-    result = await db.execute(select(Job).where(Job.id == job_id))
+    try:
+        import uuid
+        job_uuid = uuid.UUID(job_id)
+    except ValueError:
+        raise ValidationError(detail="Invalid job ID format")
+
+    result = await db.execute(
+        select(Job).where(
+            Job.id == job_uuid,
+            Job.user_id == current_user.id
+        )
+    )
     job = result.scalar_one_or_none()
 
     if not job:

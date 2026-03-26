@@ -12,14 +12,15 @@ class TemplateFavorite(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     template_submission_id = Column(
         UUID(as_uuid=True),
         ForeignKey("template_submissions.id", ondelete="CASCADE"),
         nullable=False,
+        index=True,
     )
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     user = relationship("User")
     template_submission = relationship("TemplateSubmission")

@@ -19,7 +19,7 @@ class CreditTransaction(Base):
     amount = Column(Integer, nullable=False)
     balance_after = Column(Integer, nullable=False)
     description = Column(String, nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     # Ensure the back-reference exists implicitly or explicitly on User
     user = relationship("User", backref="credit_transactions")

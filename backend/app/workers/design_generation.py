@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from datetime import datetime, timezone
+
+logger = logging.getLogger(__name__)
 
 from sqlalchemy import update
 
@@ -41,10 +44,17 @@ async def _execute_pipeline(
     integrated_text: bool,
     brand_colors: list | None = None,
     brand_typography: dict | None = None,
+    current_retry: int = 0,
+    max_retries: int = 0,
 ):
     """Execute the full generation pipeline."""
     try:
-        await _update_job_status(job_id, status="processing")
+        if current_retry > 0:
+            logger.info(f"Retrying design generation (Attempt {current_retry}/{max_retries}) | Job: {job_id}")
+            await _update_job_status(job_id, status="processing", error_message=None)
+        else:
+            logger.info(f"Starting design generation | Job: {job_id}")
+            await _update_job_status(job_id, status="processing")
 
         parsed = await parse_design_text(
             raw_text,
@@ -106,29 +116,37 @@ async def _execute_pipeline(
             result_url=permanent_url,
             completed_at=datetime.now(timezone.utc),
         )
+        logger.info(f"Design generation completed successfully | Job: {job_id}")
 
     except Exception as e:
-        async with AsyncSessionLocal() as session:
-            job_record = await session.get(Job, job_id)
-            if job_record:
-                job_record.status = "failed"
-                job_record.error_message = str(e)
-                job_record.completed_at = datetime.now(timezone.utc)
+        is_final_attempt = current_retry >= max_retries
 
-                from app.models.user import User
+        if is_final_attempt:
+            logger.exception(f"Design generation failed permanently | Job: {job_id}")
+            async with AsyncSessionLocal() as session:
+                job_record = await session.get(Job, job_id)
+                if job_record:
+                    job_record.status = "failed"
+                    job_record.error_message = str(e)
+                    job_record.completed_at = datetime.now(timezone.utc)
 
-                user_record = await session.get(User, job_record.user_id)
-                if user_record:
-                    from app.services.credit_service import log_credit_change
+                    from app.models.user import User
 
-                    await log_credit_change(
-                        session, user_record, 1, "Refund: server task gagal"
-                    )
-            await session.commit()
+                    user_record = await session.get(User, job_record.user_id)
+                    if user_record:
+                        from app.services.credit_service import log_credit_change
+
+                        await log_credit_change(
+                            session, user_record, 1, "Refund: server task gagal"
+                        )
+                await session.commit()
+        else:
+            logger.warning(f"Design generation failed. Will retry (Attempt {current_retry}/{max_retries}). Error: {str(e)} | Job: {job_id}")
+
         raise
 
 
-@celery_app.task(bind=True, name="generate_design", time_limit=300, soft_time_limit=270)
+@celery_app.task(bind=True, name="generate_design", time_limit=300, soft_time_limit=270, max_retries=3)
 def generate_design_task(
     self,
     job_id: str,
@@ -141,15 +159,22 @@ def generate_design_task(
     brand_typography: dict | None = None,
 ):
     """Celery task: runs the full design generation pipeline."""
-    _run_async(
-        _execute_pipeline(
-            job_id,
-            raw_text,
-            aspect_ratio,
-            style,
-            reference_url,
-            integrated_text,
-            brand_colors,
-            brand_typography,
+    try:
+        _run_async(
+            _execute_pipeline(
+                job_id,
+                raw_text,
+                aspect_ratio,
+                style,
+                reference_url,
+                integrated_text,
+                brand_colors,
+                brand_typography,
+                current_retry=self.request.retries,
+                max_retries=self.max_retries,
+            )
         )
-    )
+    except Exception as exc:
+        delay = (2 ** self.request.retries) * 5
+        logger.info(f"Retrying task for design job {job_id} in {delay}s...")
+        raise self.retry(exc=exc, countdown=delay)

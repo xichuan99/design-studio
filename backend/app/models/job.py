@@ -15,20 +15,22 @@ class Job(Base):
         UUID(as_uuid=True),
         ForeignKey("projects.id", ondelete="SET NULL"),
         nullable=True,
+        index=True,
     )
     user_id = Column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
+        index=True,
     )
 
     # Job status: queued | processing | completed | failed
-    status = Column(String(20), default="queued", nullable=False)
+    status = Column(String(20), default="queued", nullable=False, index=True)
 
     # Input data (stored as JSON string for replay)
     raw_text = Column(Text, nullable=False)
-    aspect_ratio = Column(String(10), default="1:1")
-    style_preference = Column(String(20), default="bold")
+    aspect_ratio = Column(String(10), default="1:1", nullable=False)
+    style_preference = Column(String(20), default="bold", nullable=False)
     reference_image_url = Column(Text, nullable=True)
 
     # Output
@@ -41,5 +43,5 @@ class Job(Base):
 
     error_message = Column(Text, nullable=True)
 
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     completed_at = Column(DateTime(timezone=True), nullable=True)

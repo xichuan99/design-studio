@@ -15,9 +15,21 @@ from app.workers.ai_tool_jobs_runner import run_ai_tool_job
 from app.workers.celery_app import celery_app
 
 
-@celery_app.task(name="app.workers.tasks.process_ai_tool_job_task")
-def process_ai_tool_job_task(job_id: str):
-    _run_async(run_ai_tool_job(job_id))
+import logging
+logger = logging.getLogger(__name__)
+
+@celery_app.task(bind=True, name="app.workers.tasks.process_ai_tool_job_task", max_retries=3)
+def process_ai_tool_job_task(self, job_id: str):
+    try:
+        _run_async(run_ai_tool_job(
+            job_id,
+            current_retry=self.request.retries,
+            max_retries=self.max_retries
+        ))
+    except Exception as exc:
+        delay = (2 ** self.request.retries) * 5
+        logger.info(f"Retrying task for job {job_id} in {delay}s...")
+        raise self.retry(exc=exc, countdown=delay)
 
 
 def run_ai_tool_job_now(job_id: str):

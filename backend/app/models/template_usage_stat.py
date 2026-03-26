@@ -21,7 +21,7 @@ class TemplateUsageStat(Base):
     duplicate_count = Column(Integer, nullable=False, default=0)
     favorite_count = Column(Integer, nullable=False, default=0)
     updated_at = Column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )
 
     template_submission = relationship("TemplateSubmission")

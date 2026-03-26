@@ -7,6 +7,7 @@ export interface PersistedCanvasState {
     backgroundUrl: string | null;
     backgroundColor: string;
     originalPrompt?: string | null;
+    [key: string]: unknown;
 }
 
 export interface VersionedCanvasPayload {

@@ -1,25 +1,55 @@
+export interface CanvasElement {
+    id: string;
+    type: string;
+    x: number;
+    y: number;
+    width?: number;
+    height?: number;
+    rotation?: number;
+    text?: string;
+    fontFamily?: string;
+    fontSize?: number;
+    fill?: string;
+    align?: string;
+    [key: string]: unknown;
+}
+
+export interface ProjectCanvasState {
+    elements?: CanvasElement[];
+    backgroundUrl?: string;
+    [key: string]: unknown;
+}
+
 export interface ProjectPayload {
     id?: string;
     title: string;
-    canvas_state: object;
+    canvas_state: ProjectCanvasState | Record<string, unknown>;
     canvas_schema_version?: number;
     status: string;
     aspect_ratio?: string;
 }
 
 // --- History Types ---
+export interface HistoryCreateRequest {
+    project_id: string;
+    background_url: string;
+    text_layers: Record<string, unknown>;
+    generation_params?: Record<string, unknown>;
+    canvas_schema_version?: number;
+}
+
 export interface HistoryEntry {
     id: string;
     project_id: string;
     action_type: string;
-    canvas_state?: Record<string, unknown>;
+    canvas_state?: ProjectCanvasState | Record<string, unknown>;
     canvas_schema_version?: number;
     prompt_used?: string;
     created_at: string;
 }
 
 // --- Brand Kit Types ---
-export type ColorRole = 'background' | 'primary_text' | 'secondary_text' | 'accent' | 'primary' | 'secondary' | string;
+export type ColorRole = 'primary' | 'secondary' | 'accent' | 'background' | 'text';
 
 export interface Template {
     id: string;
@@ -27,7 +57,7 @@ export interface Template {
     description: string;
     category: string;
     aspect_ratio: string;
-    layout_data: unknown;
+    layout_data: ProjectCanvasState | Record<string, unknown>;
     thumbnail_url?: string;
 }
 
@@ -91,6 +121,23 @@ export interface GenerateBrandKitRequest {
 // Alias for semantic clarity in hooks and UI
 export type BrandKitProfile = BrandKit;
 
+// --- User Types ---
+export interface UserUpdate {
+    name?: string;
+}
+
+export interface UserResponse {
+    id: string;
+    email: string;
+    name: string;
+    avatar_url?: string | null;
+    credits_remaining: number;
+    storage_used: number;
+    storage_quota: number;
+    provider: string;
+    created_at: string;
+}
+
 // --- Credit History Types ---
 export interface CreditTransaction {
     id: string;
@@ -116,6 +163,22 @@ export interface StorageUsage {
 }
 
 // --- Copywriting Types ---
+export interface CopywritingClarifyRequest {
+    product_description: string;
+}
+
+export interface ClarifyUnifiedRequest {
+    raw_text: string;
+    mode?: string;
+}
+
+export interface CopywritingRequest {
+    product_description: string;
+    tone?: string;
+    brand_name?: string;
+    clarification_answers?: Record<string, string>;
+}
+
 export interface CopywritingVariation {
     style: string;
     headline: string;
@@ -124,16 +187,115 @@ export interface CopywritingVariation {
     full_text: string;
 }
 
-// --- AI Tool Results ---
-export interface AiToolResult {
-    id: string;
-    tool_name: string;
-    result_url: string;
-    input_summary: string | null;
-    file_size: number;
-    created_at: string;
+export interface CopywritingResponse {
+    variations: CopywritingVariation[];
 }
 
+// --- Text Parser Types ---
+export interface VisualPromptPart {
+    category: string;
+    label: string;
+    value: string;
+    enabled: boolean;
+}
+
+export interface AITextLayout {
+    x: number;
+    y: number;
+    font_family: string;
+    font_size: number;
+    font_weight: number;
+    color: string;
+    align: string;
+}
+
+export interface ParsedTextElements {
+    headline: string;
+    sub_headline?: string;
+    cta?: string;
+    visual_prompt: string;
+    indonesian_translation: string;
+    visual_prompt_parts: VisualPromptPart[];
+    suggested_colors: string[];
+    headline_layout?: AITextLayout;
+    sub_headline_layout?: AITextLayout;
+    cta_layout?: AITextLayout;
+}
+
+export interface ParseDesignTextRequest {
+    raw_text: string;
+    aspect_ratio?: string;
+    style_preference?: string;
+    num_variations?: number;
+    integrated_text?: boolean;
+    clarification_answers?: Record<string, string>;
+}
+
+// --- Magic Text Types ---
+export interface MagicTextRequest {
+    image_base64: string;
+    text: string;
+    canvas_width?: number;
+    canvas_height?: number;
+    style_hint?: string;
+}
+
+export interface MagicTextElement {
+    text: string;
+    font_family: string;
+    font_size: number;
+    font_weight: number;
+    color: string;
+    align: string;
+    x: number;
+    y: number;
+    letter_spacing: number;
+    line_height: number;
+    text_transform: string;
+    text_shadow?: string;
+    opacity: number;
+    rotation: number;
+    background_color?: string;
+    background_padding: number;
+    background_radius: number;
+}
+
+export interface MagicTextResponse {
+    elements: MagicTextElement[];
+}
+
+// --- Generation Jobs Types ---
+export interface GenerateDesignRequest {
+    raw_text: string;
+    mode?: string;
+    reference_image_url?: string;
+    template_id?: string;
+    aspect_ratio: string;
+    style_preference?: string;
+    color_palette_override?: string[];
+    num_variations?: number;
+    integrated_text?: boolean;
+    clarification_answers?: Record<string, string>;
+    brand_kit_id?: string;
+    product_image_url?: string;
+    remove_product_bg?: boolean;
+}
+
+export interface RedesignRequest {
+    reference_image_url: string;
+    raw_text?: string;
+    strength?: number;
+    aspect_ratio: string;
+    style_preference?: string;
+    brand_kit_id?: string;
+    preserve_product?: boolean;
+}
+
+export interface UploadImageResponse {
+    url: string;
+}
+
+// --- AI Tool Jobs Types ---
 export type AiToolJobStatus =
     | 'queued'
     | 'uploading'
@@ -143,6 +305,18 @@ export type AiToolJobStatus =
     | 'failed'
     | 'canceled'
     | 'cancel_requested';
+
+export type AiToolJobName =
+    | 'upscale'
+    | 'retouch'
+    | 'background_swap'
+    | 'product_scene'
+    | 'generative_expand'
+    | 'batch'
+    | 'id_photo'
+    | 'magic_eraser'
+    | 'text_banner'
+    | 'watermark';
 
 export interface AiToolJob {
     job_id: string;
@@ -159,19 +333,45 @@ export interface AiToolJob {
     result_meta?: Record<string, unknown> | null;
 }
 
-export type AiToolJobName =
-    | 'upscale'
-    | 'retouch'
-    | 'background_swap'
-    | 'product_scene'
-    | 'generative_expand'
-    | 'batch'
-    | 'id_photo'
-    | 'magic_eraser'
-    | 'text_banner'
-    | 'watermark';
+export interface CreateToolJobRequest {
+    tool_name: AiToolJobName;
+    payload?: Record<string, unknown>;
+    idempotency_key?: string;
+}
 
-// --- AI Design Generations (from /designs/my-generations) ---
+// --- Generation Output Types ---
+export interface TextLayer {
+    id: string;
+    role: string;
+    text: string;
+    font_family: string;
+    font_weight: number;
+    font_size: number;
+    color: string;
+    text_align: string;
+    x: number;
+    y: number;
+    rotation: number;
+    opacity: number;
+    shadow?: string;
+    background_box?: string;
+}
+
+export interface DesignVariation {
+    background_image_url: string;
+    text_layers: TextLayer[];
+}
+
+export interface DesignGenerationResponse {
+    job_id: string;
+    project_id: string;
+    status: string;
+    variations: DesignVariation[];
+    credits_used: number;
+    credits_remaining: number;
+    generation_time_ms?: number;
+}
+
 export interface AiGeneration {
     id: string;
     project_id?: string | null;
@@ -181,21 +381,37 @@ export interface AiGeneration {
     created_at: string;
 }
 
-// --- Design Generation Request Types ---
-export interface GenerateDesignRequest {
-    raw_text: string;
-    aspect_ratio?: string;
-    reference_image_url?: string;
-    remove_product_bg?: boolean;
-    product_image_url?: string;
-    brand_kit_id?: string;
-    template_id?: string;
+export interface AiToolResult {
+    id: string;
+    tool_name: string;
+    result_url: string;
+    input_summary: string | null;
+    file_size: number;
+    created_at: string;
 }
 
-export interface RedesignFromReferenceRequest {
-    reference_image_url: string;
-    raw_text: string;
-    strength?: number;
-    aspect_ratio?: string;
+// --- Ad Creator Types ---
+export interface AdCreatorRequest {
+    image_base64: string;
+    brief?: string;
     brand_kit_id?: string;
+}
+
+export interface BatchResizeRequest {
+    image_url: string;
+    target_sizes: string[];
+}
+
+export interface AdConcept {
+    id: string;
+    concept_name: string;
+    image_url: string;
+    headline: string;
+    tagline: string;
+    call_to_action: string;
+}
+
+export interface AdCreatorResponse {
+    foreground_url: string;
+    concepts: AdConcept[];
 }

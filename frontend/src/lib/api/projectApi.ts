@@ -73,7 +73,7 @@ export function useProjectEndpoints() {
             return res.json();
         };
 
-    const createHistory = async (data: { project_id: string; background_url: string; text_layers: Record<string, unknown>; generation_params?: Record<string, unknown>; canvas_schema_version?: number }) => {
+    const createHistory = async (data: Types.HistoryCreateRequest) => {
             const res = await fetch(`${API_BASE_URL}/history/`, {
                 method: 'POST',
                 headers: getHeaders(),

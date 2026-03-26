@@ -11,7 +11,7 @@ class BrandKit(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     name = Column(String, nullable=False, default="Brand Kit Saya")
     logo_url = Column(
@@ -25,7 +25,7 @@ class BrandKit(Base):
     )  # Stored as JSON dict: {"primaryFont": "...", "secondaryFont": "..."}
     brand_strategy = Column(JSON, nullable=True)  # Strategy report
     is_active = Column(Boolean, nullable=False, default=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     # Relationship
     user = relationship("User")

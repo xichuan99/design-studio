@@ -54,3 +54,8 @@ backend/fix_tests.py
 
 # Business docs (private)
 docs/business/
+
+# AI Agents & Tools
+.cursor/
+.cursorrules
+_agents/

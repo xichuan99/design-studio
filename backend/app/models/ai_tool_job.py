@@ -33,6 +33,6 @@ class AiToolJob(Base):
     idempotency_key = Column(String(64), nullable=True)
     cancel_requested = Column(Boolean, nullable=False, default=False)
 
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     started_at = Column(DateTime(timezone=True), nullable=True)
     finished_at = Column(DateTime(timezone=True), nullable=True)

@@ -11,6 +11,8 @@ from app.core.database import get_db
 from app.models.design_history import DesignHistory
 from app.api.deps import get_current_user
 from app.models.user import User
+from app.models.project import Project
+from app.core.exceptions import NotFoundError
 from pydantic import BaseModel, Field, ConfigDict
 
 router = APIRouter(tags=["History"])
@@ -84,7 +86,11 @@ async def list_history(
     """List all design history entries for a project, newest first."""
     result = await db.execute(
         select(DesignHistory)
-        .where(DesignHistory.project_id == project_id)
+        .join(Project, DesignHistory.project_id == Project.id)
+        .where(
+            DesignHistory.project_id == project_id,
+            Project.user_id == current_user.id
+        )
         .order_by(desc(DesignHistory.created_at))
     )
     entries = result.scalars().all()
@@ -117,6 +123,17 @@ async def create_history(
     current_user: User = Depends(get_current_user),
 ):
     """Save a design history snapshot for a project."""
+    # Verify that the project exists and belongs to the user
+    result = await db.execute(
+        select(Project).where(
+            Project.id == data.project_id,
+            Project.user_id == current_user.id
+        )
+    )
+    project = result.scalar_one_or_none()
+    if not project:
+        raise NotFoundError(detail="Project not found")
+
     entry = DesignHistory(
         project_id=data.project_id,
         background_url=data.background_url,

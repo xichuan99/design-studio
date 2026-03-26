@@ -17,17 +17,7 @@ async function fetchWithTimeout(resource: RequestInfo, options: RequestInit & { 
 export function useAiToolsEndpoints() {
     const { API_BASE_URL, getHeaders } = useApiCore();
 
-    const generateDesign = async (payload: {
-            raw_text: string;
-            aspect_ratio: string;
-            style_preference?: string;
-            reference_image_url?: string;
-            template_id?: string;
-            integrated_text?: boolean;
-            remove_product_bg?: boolean;
-            product_image_url?: string;
-            brand_kit_id?: string; // Added brand_kit_id
-        }) => {
+    const generateDesign = async (payload: Types.GenerateDesignRequest): Promise<Types.DesignGenerationResponse> => {
             try {
                 const res = await fetchWithTimeout(`${API_BASE_URL}/designs/generate`, {
                     method: 'POST',
@@ -52,9 +42,7 @@ export function useAiToolsEndpoints() {
             }
         };
 
-    const clarifyCopywriting = async (payload: {
-            product_description: string;
-        }) => {
+    const clarifyCopywriting = async (payload: Types.CopywritingClarifyRequest) => {
             try {
                 const res = await fetchWithTimeout(`${API_BASE_URL}/designs/clarify-copywriting`, {
                     method: 'POST',
@@ -76,10 +64,7 @@ export function useAiToolsEndpoints() {
             }
         };
 
-    const clarifyUnified = async (payload: {
-            raw_text: string;
-            mode?: string;
-        }) => {
+    const clarifyUnified = async (payload: Types.ClarifyUnifiedRequest) => {
             try {
                 const res = await fetchWithTimeout(`${API_BASE_URL}/designs/clarify-unified`, {
                     method: 'POST',
@@ -101,12 +86,7 @@ export function useAiToolsEndpoints() {
             }
         };
 
-    const generateCopywriting = async (payload: {
-            product_description: string;
-            tone?: string;
-            brand_name?: string;
-            clarification_answers?: Record<string, string>;
-        }): Promise<{ variations: Types.CopywritingVariation[] }> => {
+    const generateCopywriting = async (payload: Types.CopywritingRequest): Promise<Types.CopywritingResponse> => {
             try {
                 const res = await fetchWithTimeout(`${API_BASE_URL}/designs/generate-copywriting`, {
                     method: 'POST',
@@ -131,14 +111,7 @@ export function useAiToolsEndpoints() {
             }
         };
 
-    const parseDesignText = async (payload: {
-            raw_text: string;
-            aspect_ratio?: string;
-            style_preference?: string;
-            num_variations?: number;
-            integrated_text?: boolean;
-            clarification_answers?: Record<string, string>;
-        }) => {
+    const parseDesignText = async (payload: Types.ParseDesignTextRequest): Promise<Types.ParsedTextElements> => {
             try {
                 const res = await fetchWithTimeout(`${API_BASE_URL}/designs/parse`, {
                     method: 'POST',
@@ -202,11 +175,7 @@ export function useAiToolsEndpoints() {
             return res.json();
         };
 
-    const createToolJob = async (payload: {
-            tool_name: Types.AiToolJobName;
-            payload?: Record<string, unknown>;
-            idempotency_key?: string;
-        }): Promise<Types.AiToolJob> => {
+    const createToolJob = async (payload: Types.CreateToolJobRequest): Promise<Types.AiToolJob> => {
             const res = await fetch(`${API_BASE_URL}/tools/jobs`, {
                 method: 'POST',
                 headers: getHeaders(),
@@ -273,7 +242,7 @@ export function useAiToolsEndpoints() {
         return true;
     };
 
-    const generateMagicTextLayout = async (payload: { image_base64: string; text: string; canvas_width?: number; canvas_height?: number; style_hint?: string }) => {
+    const generateMagicTextLayout = async (payload: Types.MagicTextRequest): Promise<Types.MagicTextResponse> => {
             const res = await fetch(`${API_BASE_URL}/designs/magic-text`, {
                 method: 'POST',
                 headers: getHeaders(),
@@ -598,13 +567,7 @@ export function useAiToolsEndpoints() {
             return res.json();
         };
 
-    const redesignFromReference = async (payload: {
-            reference_image_url: string;
-            raw_text?: string;
-            strength?: number;
-            aspect_ratio: string;
-            brand_kit_id?: string;
-        }) => {
+    const redesignFromReference = async (payload: Types.RedesignRequest): Promise<Types.DesignGenerationResponse> => {
             try {
                 const res = await fetchWithTimeout(`${API_BASE_URL}/designs/redesign`, {
                     method: 'POST',

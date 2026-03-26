@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useAdCreatorEndpoints, AdCreatorResponse } from '@/lib/api/adCreatorApi';
+import { useAdCreatorEndpoints } from '@/lib/api/adCreatorApi';
+import { AdCreatorResponse } from '@/lib/api/types';
 import { useCanvasStore } from '@/store/useCanvasStore';
 import { useBrandKit } from '@/hooks/useBrandKit';
 import { Upload, AlertCircle, Loader2, Check, Zap } from 'lucide-react';
@@ -246,7 +247,7 @@ export const SmartAdPanel: React.FC = () => {
                     </div>
                     
                     <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 md:grid md:grid-cols-1 md:overflow-visible custom-scrollbar">
-                        {result.concepts.map((concept, index) => (
+                        {result.concepts.map((concept: AdCreatorResponse['concepts'][0], index: number) => (
                             <div key={concept.id} className="relative group rounded-xl overflow-hidden border border-border bg-background min-w-[85%] md:min-w-0 snap-center shrink-0">
                                 <div className="relative aspect-video w-full bg-muted">
                                     {/* Mock composite preview */}

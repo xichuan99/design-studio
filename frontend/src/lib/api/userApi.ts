@@ -4,7 +4,7 @@ import * as Types from './types';
 export function useUserEndpoints() {
     const { API_BASE_URL, getHeaders } = useApiCore();
 
-    const getUserProfile = async () => {
+    const getUserProfile = async (): Promise<Types.UserResponse> => {
             const res = await fetch(`${API_BASE_URL}/users/me`, {
                 headers: getHeaders(),
             });
@@ -12,7 +12,7 @@ export function useUserEndpoints() {
             return res.json();
         };
 
-    const updateProfile = async (name: string) => {
+    const updateProfile = async (name: string): Promise<Types.UserResponse> => {
             const res = await fetch(`${API_BASE_URL}/users/me`, {
                 method: 'PUT',
                 headers: getHeaders(),
@@ -29,7 +29,7 @@ export function useUserEndpoints() {
             return res.json();
         };
 
-    const deleteAccount = async () => {
+    const deleteAccount = async (): Promise<void> => {
             const res = await fetch(`${API_BASE_URL}/users/me`, {
                 method: 'DELETE',
                 headers: getHeaders(),

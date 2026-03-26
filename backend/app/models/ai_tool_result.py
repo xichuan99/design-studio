@@ -12,11 +12,11 @@ class AiToolResult(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     tool_name = Column(String(50), nullable=False, index=True)
     result_url = Column(Text, nullable=False)
     input_summary = Column(String(200), nullable=True)
     file_size = Column(Integer, nullable=False, default=0)
 
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

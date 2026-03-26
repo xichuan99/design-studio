@@ -15,13 +15,14 @@ class TemplateReview(Base):
         UUID(as_uuid=True),
         ForeignKey("template_submissions.id", ondelete="CASCADE"),
         nullable=False,
+        index=True,
     )
     reviewer_user_id = Column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
     decision = Column(String, nullable=False)
     notes = Column(Text, nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     template_submission = relationship("TemplateSubmission")
     reviewer = relationship("User")

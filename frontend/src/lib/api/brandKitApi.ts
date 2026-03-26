@@ -7,11 +7,9 @@ export function useBrandKitEndpoints() {
     const extractBrandColors = async (file: File): Promise<{ colors: Types.ColorSwatch[] }> => {
             const formData = new FormData();
             formData.append('file', file);
-            // @ts-expect-error session token
-            const token = session?.accessToken;
-            const headers: Record<string, string> = {};
-            if (token) headers['Authorization'] = `Bearer ${token}`;
-    
+            const headers = getHeaders();
+            delete headers['Content-Type']; // Let browser set multipart boundary
+
             const res = await fetch(`${API_BASE_URL}/brand-kits/extract`, {
                 method: 'POST',
                 headers,

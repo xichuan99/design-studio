@@ -12,18 +12,18 @@ class TemplateSubmission(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     owner_user_id = Column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     source_project_id = Column(
-        UUID(as_uuid=True), ForeignKey("projects.id", ondelete="SET NULL"), nullable=True
+        UUID(as_uuid=True), ForeignKey("projects.id", ondelete="SET NULL"), nullable=True, index=True
     )
 
     title = Column(String, nullable=False)
     description = Column(Text, nullable=True)
-    category = Column(String, nullable=False)
+    category = Column(String, nullable=False, index=True)
     industry = Column(String, nullable=True)
     aspect_ratio = Column(String, nullable=False, default="1:1")
-    status = Column(String, nullable=False, default="draft")
+    status = Column(String, nullable=False, default="draft", index=True)
 
     preview_canvas_state = Column(JSON, nullable=False)
     default_text_layers = Column(JSON, nullable=False, default=[])
@@ -33,9 +33,9 @@ class TemplateSubmission(Base):
     is_featured = Column(Boolean, nullable=False, default=False)
     submitted_at = Column(DateTime(timezone=True), nullable=True)
     published_at = Column(DateTime(timezone=True), nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )
 
     owner = relationship("User")
