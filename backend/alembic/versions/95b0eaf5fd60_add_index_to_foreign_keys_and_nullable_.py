@@ -21,7 +21,6 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     # Users
     op.alter_column('users', 'created_at', existing_type=sa.DateTime(timezone=True), nullable=False)
-    op.alter_column('users', 'updated_at', existing_type=sa.DateTime(timezone=True), nullable=False)
 
     # Projects
     op.create_index(op.f('ix_projects_user_id'), 'projects', ['user_id'], unique=False, if_not_exists=True)
@@ -83,7 +82,6 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     # Users
-    op.alter_column('users', 'updated_at', existing_type=sa.DateTime(timezone=True), nullable=True)
     op.alter_column('users', 'created_at', existing_type=sa.DateTime(timezone=True), nullable=True)
 
     # Projects
