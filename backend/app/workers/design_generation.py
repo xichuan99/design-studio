@@ -175,6 +175,9 @@ def generate_design_task(
             )
         )
     except Exception as exc:
+        if self.request.retries >= self.max_retries:
+            logger.error(f"Task for design job {job_id} failed after {self.max_retries} retries: {exc}")
+            return
         delay = (2 ** self.request.retries) * 5
         logger.info(f"Retrying task for design job {job_id} in {delay}s...")
         raise self.retry(exc=exc, countdown=delay)

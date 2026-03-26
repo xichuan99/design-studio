@@ -33,7 +33,7 @@ export interface ProjectPayload {
 export interface HistoryCreateRequest {
     project_id: string;
     background_url: string;
-    text_layers: Record<string, unknown>;
+    text_layers: unknown[];
     generation_params?: Record<string, unknown>;
     canvas_schema_version?: number;
 }

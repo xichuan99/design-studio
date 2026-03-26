@@ -27,12 +27,16 @@ def process_ai_tool_job_task(self, job_id: str):
             max_retries=self.max_retries
         ))
     except Exception as exc:
+        if self.request.retries >= self.max_retries:
+            logger.error(f"Task for job {job_id} failed after {self.max_retries} retries: {exc}")
+            return
         delay = (2 ** self.request.retries) * 5
         logger.info(f"Retrying task for job {job_id} in {delay}s...")
         raise self.retry(exc=exc, countdown=delay)
 
 
 def run_ai_tool_job_now(job_id: str):
+    """Run the AI tool job synchronously (no retry). For dev/testing use only."""
     _run_async(run_ai_tool_job(job_id))
 
 

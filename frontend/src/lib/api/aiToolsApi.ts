@@ -140,15 +140,9 @@ export function useAiToolsEndpoints() {
             const formData = new FormData();
             formData.append('file', file);
     
-            // Custom headers to avoid application/json content-type
-            // @ts-expect-error session token
-            const token = session?.accessToken;
-            const headers: Record<string, string> = {};
-            if (token) headers['Authorization'] = `Bearer ${token}`;
-    
             const res = await fetch(`${API_BASE_URL}/designs/upload`, {
                 method: 'POST',
-                headers,
+                headers: getHeaders(true),
                 body: formData,
             });
             if (!res.ok) {
@@ -259,15 +253,9 @@ export function useAiToolsEndpoints() {
             const formData = new FormData();
             formData.append('file', file);
     
-            // Custom headers to avoid application/json content-type
-            // @ts-expect-error session token
-            const token = session?.accessToken;
-            const headers: Record<string, string> = {};
-            if (token) headers['Authorization'] = `Bearer ${token}`;
-    
             const res = await fetch(`${API_BASE_URL}/designs/remove-background`, {
                 method: 'POST',
-                headers,
+                headers: getHeaders(true),
                 body: formData,
             });
             if (!res.ok) {

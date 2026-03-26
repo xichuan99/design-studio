@@ -50,24 +50,25 @@ async def run_ai_tool_job(job_id: str, current_retry: int = 0, max_retries: int 
             logger.error("AI tool job not found", extra={"job_id": job_id})
             return
 
-        executor = AI_TOOL_EXECUTORS.get(job.tool_name)
+        tool_name = job.tool_name
+        executor = AI_TOOL_EXECUTORS.get(tool_name)
         if executor is None:
-            await fail_ai_tool_job(job_id, f"Unsupported tool: {job.tool_name}")
+            await fail_ai_tool_job(job_id, f"Unsupported tool: {tool_name}")
             await refund_ai_tool_job_if_needed(
                 session,
                 job,
-                reason=f"Refund: tool {job.tool_name} tidak didukung",
+                reason=f"Refund: tool {tool_name} tidak didukung",
             )
             return
 
     try:
         if current_retry > 0:
-            logger.info(f"Retrying AI tool job (Attempt {current_retry}/{max_retries}) | Tool: {job.tool_name}", extra={"job_id": job_id})
+            logger.info(f"Retrying AI tool job (Attempt {current_retry}/{max_retries}) | Tool: {tool_name}", extra={"job_id": job_id})
         else:
-            logger.info(f"Starting AI tool job | Tool: {job.tool_name}", extra={"job_id": job_id})
+            logger.info(f"Starting AI tool job | Tool: {tool_name}", extra={"job_id": job_id})
 
         await executor(job_id)
-        logger.info(f"AI tool job completed successfully | Tool: {job.tool_name}", extra={"job_id": job_id})
+        logger.info(f"AI tool job completed successfully | Tool: {tool_name}", extra={"job_id": job_id})
     except Exception as exc:
         is_final_attempt = current_retry >= max_retries
 

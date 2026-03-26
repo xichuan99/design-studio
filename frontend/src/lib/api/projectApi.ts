@@ -9,7 +9,10 @@ export function useProjectEndpoints() {
             const res = await fetch(`${API_BASE_URL}/projects/${id}`, {
                 headers: getHeaders(),
             });
-            if (!res.ok) throw new Error('Failed to fetch project');
+            if (!res.ok) {
+                const errBase = await res.json().catch(() => ({}));
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to fetch project');
+            }
             return res.json();
         };
 
@@ -34,7 +37,10 @@ export function useProjectEndpoints() {
                     ...versionedCanvas,
                 }),
             });
-            if (!res.ok) throw new Error('Failed to save project');
+            if (!res.ok) {
+                const errBase = await res.json().catch(() => ({}));
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to save project');
+            }
             return res.json();
         };
 
@@ -42,7 +48,10 @@ export function useProjectEndpoints() {
             const res = await fetch(`${API_BASE_URL}/projects/`, {
                 headers: getHeaders(),
             });
-            if (!res.ok) throw new Error('Failed to fetch projects');
+            if (!res.ok) {
+                const errBase = await res.json().catch(() => ({}));
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to fetch projects');
+            }
             return res.json();
         };
 
@@ -51,7 +60,10 @@ export function useProjectEndpoints() {
                 method: 'DELETE',
                 headers: getHeaders(),
             });
-            if (!res.ok) throw new Error('Failed to delete project');
+            if (!res.ok) {
+                const errBase = await res.json().catch(() => ({}));
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to delete project');
+            }
         };
 
     const duplicateProject = async (sourceId: string) => {
@@ -69,7 +81,10 @@ export function useProjectEndpoints() {
             const res = await fetch(`${API_BASE_URL}/history/${projectId}`, {
                 headers: getHeaders(),
             });
-            if (!res.ok) throw new Error('Failed to fetch history');
+            if (!res.ok) {
+                const errBase = await res.json().catch(() => ({}));
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to fetch history');
+            }
             return res.json();
         };
 
@@ -82,7 +97,10 @@ export function useProjectEndpoints() {
                     canvas_schema_version: data.canvas_schema_version ?? 1,
                 }),
             });
-            if (!res.ok) throw new Error('Failed to create history entry');
+            if (!res.ok) {
+                const errBase = await res.json().catch(() => ({}));
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to create history entry');
+            }
             return res.json();
         };
 
@@ -94,7 +112,10 @@ export function useProjectEndpoints() {
             const res = await fetch(`${API_BASE_URL}/templates/${qs}`, {
                 headers: getHeaders(),
             });
-            if (!res.ok) throw new Error('Failed to fetch templates');
+            if (!res.ok) {
+                const errBase = await res.json().catch(() => ({}));
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to fetch templates');
+            }
             return res.json();
         };
 
