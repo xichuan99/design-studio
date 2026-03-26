@@ -23,15 +23,15 @@ def upgrade() -> None:
     op.alter_column('users', 'created_at', existing_type=sa.DateTime(timezone=True), nullable=False)
 
     # Projects
-    op.create_index(op.f('ix_projects_user_id'), 'projects', ['user_id'], unique=False)
-    op.create_index(op.f('ix_projects_status'), 'projects', ['status'], unique=False)
+    op.create_index(op.f('ix_projects_user_id'), 'projects', ['user_id'], unique=False, if_not_exists=True)
+    op.create_index(op.f('ix_projects_status'), 'projects', ['status'], unique=False, if_not_exists=True)
     op.alter_column('projects', 'created_at', existing_type=sa.DateTime(timezone=True), nullable=False)
     op.alter_column('projects', 'updated_at', existing_type=sa.DateTime(timezone=True), nullable=False)
 
     # Jobs
-    op.create_index(op.f('ix_jobs_project_id'), 'jobs', ['project_id'], unique=False)
-    op.create_index(op.f('ix_jobs_user_id'), 'jobs', ['user_id'], unique=False)
-    op.create_index(op.f('ix_jobs_status'), 'jobs', ['status'], unique=False)
+    op.create_index(op.f('ix_jobs_project_id'), 'jobs', ['project_id'], unique=False, if_not_exists=True)
+    op.create_index(op.f('ix_jobs_user_id'), 'jobs', ['user_id'], unique=False, if_not_exists=True)
+    op.create_index(op.f('ix_jobs_status'), 'jobs', ['status'], unique=False, if_not_exists=True)
     op.alter_column('jobs', 'aspect_ratio', existing_type=sa.String(length=10), nullable=False)
     op.alter_column('jobs', 'style_preference', existing_type=sa.String(length=20), nullable=False)
     op.alter_column('jobs', 'created_at', existing_type=sa.DateTime(timezone=True), nullable=False)
@@ -40,31 +40,31 @@ def upgrade() -> None:
     op.alter_column('ai_tool_jobs', 'created_at', existing_type=sa.DateTime(timezone=True), nullable=False)
 
     # Brand Kits
-    op.create_index(op.f('ix_brand_kits_user_id'), 'brand_kits', ['user_id'], unique=False)
+    op.create_index(op.f('ix_brand_kits_user_id'), 'brand_kits', ['user_id'], unique=False, if_not_exists=True)
     op.alter_column('brand_kits', 'created_at', existing_type=sa.DateTime(timezone=True), nullable=False)
 
     # Credit Transactions
     op.alter_column('credit_transactions', 'created_at', existing_type=sa.DateTime(timezone=True), nullable=False)
 
     # Design History
-    op.create_index(op.f('ix_design_history_project_id'), 'design_history', ['project_id'], unique=False)
+    op.create_index(op.f('ix_design_history_project_id'), 'design_history', ['project_id'], unique=False, if_not_exists=True)
     op.alter_column('design_history', 'created_at', existing_type=sa.DateTime(timezone=True), nullable=False)
 
     # Template Favorites
-    op.create_index(op.f('ix_template_favorites_user_id'), 'template_favorites', ['user_id'], unique=False)
-    op.create_index(op.f('ix_template_favorites_template_submission_id'), 'template_favorites', ['template_submission_id'], unique=False)
+    op.create_index(op.f('ix_template_favorites_user_id'), 'template_favorites', ['user_id'], unique=False, if_not_exists=True)
+    op.create_index(op.f('ix_template_favorites_template_submission_id'), 'template_favorites', ['template_submission_id'], unique=False, if_not_exists=True)
     op.alter_column('template_favorites', 'created_at', existing_type=sa.DateTime(timezone=True), nullable=False)
 
     # Template Reviews
-    op.create_index(op.f('ix_template_reviews_template_submission_id'), 'template_reviews', ['template_submission_id'], unique=False)
-    op.create_index(op.f('ix_template_reviews_reviewer_user_id'), 'template_reviews', ['reviewer_user_id'], unique=False)
+    op.create_index(op.f('ix_template_reviews_template_submission_id'), 'template_reviews', ['template_submission_id'], unique=False, if_not_exists=True)
+    op.create_index(op.f('ix_template_reviews_reviewer_user_id'), 'template_reviews', ['reviewer_user_id'], unique=False, if_not_exists=True)
     op.alter_column('template_reviews', 'created_at', existing_type=sa.DateTime(timezone=True), nullable=False)
 
     # Template Submissions
-    op.create_index(op.f('ix_template_submissions_owner_user_id'), 'template_submissions', ['owner_user_id'], unique=False)
-    op.create_index(op.f('ix_template_submissions_source_project_id'), 'template_submissions', ['source_project_id'], unique=False)
-    op.create_index(op.f('ix_template_submissions_category'), 'template_submissions', ['category'], unique=False)
-    op.create_index(op.f('ix_template_submissions_status'), 'template_submissions', ['status'], unique=False)
+    op.create_index(op.f('ix_template_submissions_owner_user_id'), 'template_submissions', ['owner_user_id'], unique=False, if_not_exists=True)
+    op.create_index(op.f('ix_template_submissions_source_project_id'), 'template_submissions', ['source_project_id'], unique=False, if_not_exists=True)
+    op.create_index(op.f('ix_template_submissions_category'), 'template_submissions', ['category'], unique=False, if_not_exists=True)
+    op.create_index(op.f('ix_template_submissions_status'), 'template_submissions', ['status'], unique=False, if_not_exists=True)
     op.alter_column('template_submissions', 'created_at', existing_type=sa.DateTime(timezone=True), nullable=False)
     op.alter_column('template_submissions', 'updated_at', existing_type=sa.DateTime(timezone=True), nullable=False)
 
@@ -72,11 +72,11 @@ def upgrade() -> None:
     op.alter_column('template_usage_stats', 'updated_at', existing_type=sa.DateTime(timezone=True), nullable=False)
 
     # Template Versions
-    op.create_index(op.f('ix_template_versions_template_submission_id'), 'template_versions', ['template_submission_id'], unique=False)
+    op.create_index(op.f('ix_template_versions_template_submission_id'), 'template_versions', ['template_submission_id'], unique=False, if_not_exists=True)
     op.alter_column('template_versions', 'created_at', existing_type=sa.DateTime(timezone=True), nullable=False)
 
     # AI Tool Results
-    op.create_index(op.f('ix_ai_tool_results_user_id'), 'ai_tool_results', ['user_id'], unique=False)
+    op.create_index(op.f('ix_ai_tool_results_user_id'), 'ai_tool_results', ['user_id'], unique=False, if_not_exists=True)
     op.alter_column('ai_tool_results', 'created_at', existing_type=sa.DateTime(timezone=True), nullable=False)
 
 
