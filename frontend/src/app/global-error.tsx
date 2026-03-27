@@ -16,9 +16,9 @@ export default function GlobalError({
 
   return (
     <html lang="id" className="dark">
-      <body className="font-sans antialiased text-white bg-[#0A0A0A]">
-        <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center">
-          <div className="bg-[#1A1A1A] border border-[#333] min-w-[300px] max-w-md p-8 pt-10 rounded-2xl flex flex-col items-center">
+      <body className="font-sans antialiased bg-background text-foreground">
+        <div className="min-h-screen flex items-center justify-center p-4">
+          <div className="bg-card text-card-foreground border border-border min-w-[300px] max-w-md p-8 pt-10 rounded-2xl flex flex-col items-center">
             <div className="w-16 h-16 bg-red-500/10 text-red-500 flex items-center justify-center rounded-full mb-6">
               <AlertTriangle className="w-8 h-8" />
             </div>

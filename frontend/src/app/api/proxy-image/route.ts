@@ -19,6 +19,8 @@ export async function GET(request: NextRequest) {
             headers: {
                 'ETag': serverETag,
                 'Cache-Control': 'public, max-age=86400',
+                'Access-Control-Allow-Origin': '*',
+                'Vary': 'Origin',
             },
         });
     }

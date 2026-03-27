@@ -11,7 +11,7 @@ interface ImageNodeProps {
     onChange: (newAttrs: Partial<CanvasElement>) => void;
 }
 
-export const ImageNode: React.FC<ImageNodeProps> = ({
+export const ImageNode: React.FC<ImageNodeProps> = React.memo(({
     element,
     isSelected,
     onSelect,
@@ -90,4 +90,6 @@ export const ImageNode: React.FC<ImageNodeProps> = ({
             )}
         </>
     );
-};
+}, (prev, next) => prev.element === next.element && prev.isSelected === next.isSelected);
+
+ImageNode.displayName = 'ImageNode';

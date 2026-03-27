@@ -45,21 +45,25 @@ export const TemplateBrowser: React.FC<TemplateBrowserProps> = ({ onSelectTempla
     const { getTemplates } = useProjectApi();
     const [templates, setTemplates] = useState<TemplateData[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [selectedCategory, setSelectedCategory] = useState('All');
 
+    const fetchTemplates = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const category = selectedCategory === 'All' ? undefined : selectedCategory;
+            const data = await getTemplates(category, aspectRatio);
+            setTemplates(data);
+        } catch (err) {
+            console.error('Failed to load templates:', err);
+            setError('Gagal memuat template. Periksa koneksi Anda.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchTemplates = async () => {
-            setLoading(true);
-            try {
-                const category = selectedCategory === 'All' ? undefined : selectedCategory;
-                const data = await getTemplates(category, aspectRatio);
-                setTemplates(data);
-            } catch (err) {
-                console.error('Failed to load templates:', err);
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchTemplates();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedCategory, aspectRatio]);
@@ -92,6 +96,12 @@ export const TemplateBrowser: React.FC<TemplateBrowserProps> = ({ onSelectTempla
             {loading ? (
                 <div className="flex items-center justify-center py-12">
                     <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                </div>
+            ) : error ? (
+                <div className="text-center py-12 text-muted-foreground flex flex-col items-center gap-3">
+                    <LayoutTemplate className="w-10 h-10 mx-auto opacity-50 text-destructive" />
+                    <p className="text-sm">{error}</p>
+                    <Button variant="outline" size="sm" onClick={fetchTemplates}>Coba Lagi</Button>
                 </div>
             ) : templates.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">

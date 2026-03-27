@@ -35,7 +35,7 @@ interface ShapeNodeProps {
     onChange: (newAttrs: Partial<CanvasElement>) => void;
 }
 
-export const ShapeNode: React.FC<ShapeNodeProps> = ({
+export const ShapeNode: React.FC<ShapeNodeProps> = React.memo(({
     element,
     isSelected,
     onSelect,
@@ -170,4 +170,6 @@ export const ShapeNode: React.FC<ShapeNodeProps> = ({
             )}
         </>
     );
-};
+}, (prev, next) => prev.element === next.element && prev.isSelected === next.isSelected);
+
+ShapeNode.displayName = 'ShapeNode';

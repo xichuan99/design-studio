@@ -480,8 +480,31 @@ export const AIPromptPanel: React.FC = () => {
                     />
                 )}
 
+                {/* Loading Skeleton */}
+                {isGenerating && !generatedUrl && (
+                    <div className="space-y-3 animate-in fade-in zoom-in duration-300">
+                        <label className="text-xs font-semibold text-primary uppercase flex items-center gap-2">
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            Sedang Membuat Gambar...
+                        </label>
+                        <div className={cn("relative rounded-xl overflow-hidden border border-primary/20 bg-muted/20 shadow-sm w-full", getAspectRatioClass(aspectRatio))}>
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+                                <div className="relative">
+                                    <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse"></div>
+                                    <Sparkles className="h-8 w-8 text-primary/60 relative z-10 animate-spin-slow" />
+                                </div>
+                                <div className="space-y-2 w-1/2 opacity-60">
+                                    <div className="h-2 bg-primary/20 rounded-full animate-pulse"></div>
+                                    <div className="h-2 bg-primary/20 rounded-full w-4/5 mx-auto animate-pulse delay-75"></div>
+                                </div>
+                            </div>
+                            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_2s_infinite]"></div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Preview Card */}
-                {generatedUrl && previewUrl && (
+                {generatedUrl && previewUrl && !isGenerating && (
                     <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
                         <label className="text-xs font-semibold text-muted-foreground uppercase">Hasil Generate</label>
                         <div className={cn("relative rounded-xl overflow-hidden border bg-muted/30 shadow-sm w-full", getAspectRatioClass(aspectRatio))}>

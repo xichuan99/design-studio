@@ -12,7 +12,7 @@ interface TextNodeProps {
     onChange: (newAttrs: Partial<CanvasElement>) => void;
 }
 
-export const TextNode: React.FC<TextNodeProps> = ({
+export const TextNode: React.FC<TextNodeProps> = React.memo(({
     element,
     isSelected,
     onSelect,
@@ -146,4 +146,6 @@ export const TextNode: React.FC<TextNodeProps> = ({
             )}
         </>
     );
-};
+}, (prev, next) => prev.element === next.element && prev.isSelected === next.isSelected);
+
+TextNode.displayName = 'TextNode';

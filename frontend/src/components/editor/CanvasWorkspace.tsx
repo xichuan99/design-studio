@@ -299,7 +299,7 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ onBgStatusChan
     return (
         <div
             ref={containerRef}
-            className="w-full h-full relative overflow-auto bg-[#0a0f1d] flex-1 flex items-center justify-center min-h-[500px]"
+            className="w-full h-full relative overflow-auto bg-muted/20 flex-1 flex items-center justify-center min-h-[500px]"
             style={showGrid ? {
                 backgroundImage: 'radial-gradient(circle, hsl(var(--primary) / 0.15) 1px, transparent 1px)',
                 backgroundSize: '32px 32px'
