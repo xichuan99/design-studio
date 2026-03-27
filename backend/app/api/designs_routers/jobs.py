@@ -1,6 +1,6 @@
 from app.core.exceptions import NotFoundError, ValidationError
 from app.schemas.error import ERROR_RESPONSES
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import desc
@@ -21,20 +21,29 @@ router = APIRouter(tags=["Designs - Jobs"])
     responses=ERROR_RESPONSES,
 )
 async def get_my_generations(
+    folder_id: str | None = Query(None, description="Filter by folder ID"),
     limit: int = 20,
     offset: int = 0,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """Fetch completed AI design generations for the current user."""
+    query = select(Job).where(
+        Job.user_id == current_user.id,
+        Job.status == "completed",
+        Job.result_url.isnot(None),
+    )
+
+    if folder_id:
+        try:
+            import uuid
+            f_uuid = uuid.UUID(folder_id)
+            query = query.where(Job.folder_id == f_uuid)
+        except ValueError:
+            pass
+
     result = await db.execute(
-        select(Job)
-        .where(
-            Job.user_id == current_user.id,
-            Job.status == "completed",
-            Job.result_url.isnot(None),
-        )
-        .order_by(desc(Job.created_at))
+        query.order_by(desc(Job.created_at))
         .offset(offset)
         .limit(limit)
     )
@@ -47,6 +56,7 @@ async def get_my_generations(
             "result_url": job.result_url,
             "visual_prompt": job.visual_prompt,
             "raw_text": job.raw_text,
+            "seed": job.seed,
             "created_at": job.created_at.isoformat() if job.created_at else None,
         }
         for job in jobs
@@ -99,6 +109,7 @@ async def get_job_status(
                 "cta": job.parsed_cta,
                 "visual_prompt": job.visual_prompt,
                 "quantum_layout": job.quantum_layout,
+                "seed": job.seed,
                 "completed_at": job.completed_at.isoformat()
                 if job.completed_at
                 else None,

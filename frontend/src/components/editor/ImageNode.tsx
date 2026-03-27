@@ -49,7 +49,9 @@ export const ImageNode: React.FC<ImageNodeProps> = React.memo(({
                 cornerRadius={element.cornerRadius || 0}
                 stroke={element.stroke}
                 strokeWidth={element.strokeWidth || 0}
-                draggable
+                visible={element.visible !== false}
+                listening={!element.locked}
+                draggable={!element.locked}
                 onDragEnd={(e) => {
                     onChange({
                         x: e.target.x(),
@@ -76,7 +78,7 @@ export const ImageNode: React.FC<ImageNodeProps> = React.memo(({
                 }}
             />
 
-            {isSelected && (
+            {isSelected && !element.locked && (
                 <Transformer
                     ref={trRef}
                     boundBoxFunc={(oldBox, newBox) => {

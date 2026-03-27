@@ -28,6 +28,7 @@ async def generate_background(
     aspect_ratio: str = "1:1",
     integrated_text: bool = False,
     preserve_product: bool = False,
+    seed: str | None = None,
 ) -> dict:
     """
     Generates a background image using Fal.ai.
@@ -94,33 +95,25 @@ async def generate_background(
 
     for attempt in range(max_retries):
         try:
-            logger.info(f"🎨 [DEV INFO] Rendering image via fal.ai model: {primary_model_id} (Attempt {attempt + 1})")
+            fal_args = {
+                "prompt": enhanced_prompt,
+                "image_size": resolution,
+                "num_images": 1,
+                "num_inference_steps": 28,
+                "guidance_scale": 3.5,
+                "negative_prompt": actual_negative_prompt,
+            }
             if reference_image_url:
-                result = await fal_client.run_async(
-                    primary_model_id,
-                    arguments={
-                        "prompt": enhanced_prompt,
-                        "image_url": reference_image_url,
-                        "image_size": resolution,
-                        "num_images": 1,
-                        "strength": 0.70,
-                        "num_inference_steps": 28,
-                        "guidance_scale": 3.5,
-                        "negative_prompt": actual_negative_prompt,
-                    },
-                )
-            else:
-                result = await fal_client.run_async(
-                    primary_model_id,
-                    arguments={
-                        "prompt": enhanced_prompt,
-                        "image_size": resolution,
-                        "num_images": 1,
-                        "num_inference_steps": 28,
-                        "guidance_scale": 3.5,
-                        "negative_prompt": actual_negative_prompt,
-                    },
-                )
+                fal_args["image_url"] = reference_image_url
+                fal_args["strength"] = 0.70
+
+            if seed:
+                try:
+                    fal_args["seed"] = int(seed)
+                except ValueError:
+                    pass
+
+            result = await fal_client.run_async(primary_model_id, arguments=fal_args)
             break  # Success, exit retry loop
         except Exception as e:
             logger.warning(f"Fal.ai image generation failed on attempt {attempt + 1}: {e}")

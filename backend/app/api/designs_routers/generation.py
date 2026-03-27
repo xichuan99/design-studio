@@ -262,6 +262,7 @@ async def generate_design(
         style_preference=request.style_preference,
         reference_image_url=getattr(request, "reference_image_url", None),
         user_id=current_user.id,
+        seed=getattr(request, "seed", None),
         status="queued",
     )
     db.add(job)
@@ -356,6 +357,7 @@ async def generate_design(
                 integrated_text=request.integrated_text,
                 brand_colors=brand_colors,
                 brand_typography=brand_typography,
+                seed=getattr(request, "seed", None),
             )
             return {
                 "job_id": str(job.id),
@@ -470,11 +472,18 @@ async def generate_design(
         if model_name == "gemini-3.1-flash-image-preview":
             # Nano Banana 2 uses generate_content for image generation
             # Explicitly append aspect ratio to the prompt
-            nb2_prompt = f"{enhanced_prompt}, aspect ratio {request.aspect_ratio}"
+            gen_config = {}
+            if getattr(request, "seed", None):
+                try:
+                    gen_config["seed"] = int(request.seed)
+                except ValueError:
+                    pass
+
             response = await asyncio.to_thread(
                 client.models.generate_content,
                 model=model_name,
-                contents=nb2_prompt,
+                contents=enhanced_prompt,
+                config=types.GenerateContentConfig(**gen_config) if gen_config else None
             )
             if response.candidates:
                 for candidate in response.candidates:
@@ -487,14 +496,21 @@ async def generate_design(
                         break
         else:
             # Traditional Imagen models use generate_images
+            imagen_config = {
+                "number_of_images": 1,
+                "aspect_ratio": request.aspect_ratio.replace(":", ":"),
+            }
+            if getattr(request, "seed", None):
+                try:
+                    imagen_config["seed"] = int(request.seed)
+                except ValueError:
+                    pass
+
             response = await asyncio.to_thread(
                 client.models.generate_images,
                 model=model_name,
                 prompt=enhanced_prompt,
-                config=types.GenerateImagesConfig(
-                    number_of_images=1,
-                    aspect_ratio=request.aspect_ratio.replace(":", ":"),
-                ),
+                config=types.GenerateImagesConfig(**imagen_config),
             )
             if response.generated_images:
                 image_bytes = response.generated_images[0].image.image_bytes

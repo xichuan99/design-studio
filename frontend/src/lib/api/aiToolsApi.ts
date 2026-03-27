@@ -160,9 +160,11 @@ export function useAiToolsEndpoints() {
             return res.json();
         };
 
-    const getMyGenerations = async (limit: number = 20, offset: number = 0) => {
-            const qs = new URLSearchParams({ limit: limit.toString(), offset: offset.toString() }).toString();
-            const res = await fetch(`${API_BASE_URL}/designs/my-generations?${qs}`, {
+    const getMyGenerations = async (limit: number = 20, offset: number = 0, folderId?: string | null) => {
+            const params = new URLSearchParams({ limit: limit.toString(), offset: offset.toString() });
+            if (folderId) params.append('folder_id', folderId);
+            
+            const res = await fetch(`${API_BASE_URL}/designs/my-generations?${params.toString()}`, {
                 headers: getHeaders(),
             });
             if (!res.ok) throw new Error('Failed to fetch AI generations');
@@ -522,9 +524,10 @@ export function useAiToolsEndpoints() {
                 throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to apply watermark');
             }
             return response.json();
-        };    const getMyToolResults = async (toolName?: string, limit: number = 20, offset: number = 0) => {
+        };    const getMyToolResults = async (toolName?: string, limit: number = 20, offset: number = 0, folderId?: string | null) => {
             const params = new URLSearchParams({ limit: limit.toString(), offset: offset.toString() });
             if (toolName) params.append('tool_name', toolName);
+            if (folderId) params.append('folder_id', folderId);
             
             const res = await fetch(`${API_BASE_URL}/tools/my-results?${params.toString()}`, {
                 headers: getHeaders(),

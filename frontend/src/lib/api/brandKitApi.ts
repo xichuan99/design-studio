@@ -62,8 +62,13 @@ export function useBrandKitEndpoints() {
         return res.json();
     };
 
-    const getBrandKits = async (): Promise<Types.BrandKit[]> => {
-            const res = await fetch(`${API_BASE_URL}/brand-kits`, { headers: getHeaders() });
+    const getBrandKits = async (folderId?: string): Promise<Types.BrandKit[]> => {
+            const params = new URLSearchParams();
+            if (folderId !== undefined) {
+                 params.set('folder_id', folderId);
+            }
+            const qs = params.toString() ? `?${params.toString()}` : '';
+            const res = await fetch(`${API_BASE_URL}/brand-kits${qs}`, { headers: getHeaders() });
             if (!res.ok) throw new Error('Failed to fetch brand kits');
             return res.json();
         };

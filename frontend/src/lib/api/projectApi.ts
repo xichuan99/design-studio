@@ -44,8 +44,13 @@ export function useProjectEndpoints() {
             return res.json();
         };
 
-    const getProjects = async () => {
-            const res = await fetch(`${API_BASE_URL}/projects/`, {
+    const getProjects = async (folderId?: string) => {
+            const params = new URLSearchParams();
+            if (folderId !== undefined) {
+                 params.set('folder_id', folderId);
+            }
+            const qs = params.toString() ? `?${params.toString()}` : '';
+            const res = await fetch(`${API_BASE_URL}/projects/${qs}`, {
                 headers: getHeaders(),
             });
             if (!res.ok) {
@@ -119,5 +124,40 @@ export function useProjectEndpoints() {
             return res.json();
         };
 
-    return { getProject, saveProject, getProjects, deleteProject, duplicateProject, getHistory, createHistory, getTemplates };
+    const getProjectVersions = async (projectId: string): Promise<Types.ProjectVersionResponse[]> => {
+        const res = await fetch(`${API_BASE_URL}/projects/${projectId}/versions`, {
+            headers: getHeaders(),
+        });
+        if (!res.ok) {
+            const errBase = await res.json().catch(() => ({}));
+            throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to fetch project versions');
+        }
+        return res.json();
+    };
+
+    const createProjectVersion = async (projectId: string, data: Types.ProjectVersionCreate): Promise<Types.ProjectVersionResponse> => {
+        const res = await fetch(`${API_BASE_URL}/projects/${projectId}/versions`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(data),
+        });
+        if (!res.ok) {
+            const errBase = await res.json().catch(() => ({}));
+            throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to create project version');
+        }
+        return res.json();
+    };
+
+    const deleteProjectVersion = async (projectId: string, versionId: string): Promise<void> => {
+        const res = await fetch(`${API_BASE_URL}/projects/${projectId}/versions/${versionId}`, {
+            method: 'DELETE',
+            headers: getHeaders(),
+        });
+        if (!res.ok) {
+            const errBase = await res.json().catch(() => ({}));
+            throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to delete project version');
+        }
+    };
+
+    return { getProject, saveProject, getProjects, deleteProject, duplicateProject, getHistory, createHistory, getTemplates, getProjectVersions, createProjectVersion, deleteProjectVersion };
 }

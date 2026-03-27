@@ -28,9 +28,9 @@ const SUPPORTED_FONTS = [
     'Plus Jakarta Sans', 'DM Sans'
 ];
 
-export default function BrandSettings() {
+export default function BrandSettings({ selectedFolderId }: { selectedFolderId?: string | null }) {
     const api = useProjectApi();
-    const { brandKits, activeBrandProfile, isLoading, switchBrand, refreshKits } = useBrandKit();
+    const { brandKits, activeBrandProfile, isLoading, switchBrand, refreshKits } = useBrandKit(selectedFolderId || undefined);
     const [isSaving, setIsSaving] = useState(false);
     const [kitToDelete, setKitToDelete] = useState<string | null>(null);
 
@@ -58,7 +58,8 @@ export default function BrandSettings() {
             name: 'New Brand Kit',
             logos: [],
             colors: [{ hex: '#000000', name: 'Dark', role: 'text' }],
-            typography: { primaryFont: 'Inter', secondaryFont: 'Inter' }
+            typography: { primaryFont: 'Inter', secondaryFont: 'Inter' },
+            folder_id: selectedFolderId || null
         });
     };
 

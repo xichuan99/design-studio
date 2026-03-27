@@ -26,6 +26,9 @@ class BrandKit(Base):
     brand_strategy = Column(JSON, nullable=True)  # Strategy report
     is_active = Column(Boolean, nullable=False, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    folder_id = Column(
+        UUID(as_uuid=True), ForeignKey("folders.id", ondelete="SET NULL"), nullable=True, index=True
+    )
 
     # Relationship
     user = relationship("User")

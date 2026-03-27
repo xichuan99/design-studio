@@ -67,6 +67,8 @@ export const ShapeNode: React.FC<ShapeNodeProps> = React.memo(({
         shadowOffsetX: element.shadowOffsetX,
         shadowOffsetY: element.shadowOffsetY,
         shadowOpacity: element.shadowOpacity,
+        visible: element.visible !== false,
+        listening: !element.locked,
         draggable: !element.locked,
         onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) => {
             onChange({
@@ -152,7 +154,7 @@ export const ShapeNode: React.FC<ShapeNodeProps> = React.memo(({
         <>
             {renderShape()}
 
-            {isSelected && (
+            {isSelected && !element.locked && (
                 <Transformer
                     ref={trRef}
                     boundBoxFunc={(oldBox, newBox) => {

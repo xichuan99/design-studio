@@ -372,7 +372,7 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ onBgStatusChan
                     <div className="absolute inset-0 z-0 bg-muted animate-pulse" />
                 )}
                 <div className="relative z-10 w-full h-full">
-                    <StageCanvas width={canvasWidth} height={canvasHeight} onBgStatusChange={setBgStatus} />
+                    <StageCanvas width={canvasWidth} height={canvasHeight} showGrid={showGrid} onBgStatusChange={setBgStatus} />
                 </div>
             </div>
 

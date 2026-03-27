@@ -150,6 +150,10 @@ class BrandKitUpdate(BaseModel):
         description="Whether this brand kit is active",
         json_schema_extra={"example": True},
     )
+    folder_id: Optional[UUID] = Field(
+        None,
+        description="ID of the folder this brand kit belongs to",
+    )
 
     model_config = ConfigDict(
         json_schema_extra={"example": {"name": "Brand Kit Baru", "is_active": True}}
@@ -176,6 +180,10 @@ class BrandKitResponse(BrandKitBase):
         ...,
         description="Brand kit creation timestamp",
         json_schema_extra={"example": "2024-03-15T12:00:00Z"},
+    )
+    folder_id: Optional[UUID] = Field(
+        None,
+        description="ID of the folder this brand kit belongs to",
     )
 
     model_config = ConfigDict(

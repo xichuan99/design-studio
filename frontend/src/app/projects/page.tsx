@@ -3,13 +3,15 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { redirect, useRouter } from "next/navigation";
-import { Loader2, Plus, PenSquare, Trash2, Layers, MoreVertical, Copy, Edit2, Check, X, Wand2, Search, ArrowUpDown, SearchX } from "lucide-react";
+import { Loader2, Plus, PenSquare, Trash2, Layers, MoreVertical, Copy, Edit2, Check, X, Wand2, Search, ArrowUpDown, SearchX, FolderOpen, Folder as FolderIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardFooter } from "@/components/ui/card";
 import { useProjectApi } from "@/lib/api";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { FolderSidebar } from "@/components/projects/FolderSidebar";
+import { Folder } from "@/lib/api/types";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -37,14 +39,21 @@ interface Project {
     status?: string;
     canvas_schema_version?: number;
     canvas_state?: { backgroundUrl?: string; elements?: Record<string, unknown>[] };
+    folder_id?: string | null;
 }
 
 export default function ProjectsPage() {
     const { status } = useSession();
     const router = useRouter();
-    const { getProjects, deleteProject, duplicateProject, saveProject } = useProjectApi();
+    const { getProjects, deleteProject, duplicateProject, saveProject, getFolders } = useProjectApi();
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
+    
+    // Folder states
+    const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+    const [movingProject, setMovingProject] = useState<Project | null>(null);
+    const [folders, setFolders] = useState<Folder[]>([]);
+    
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
     const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
@@ -61,19 +70,24 @@ export default function ProjectsPage() {
     useEffect(() => {
         if (status === "loading") return;
 
-        const fetchProjects = async () => {
+        const fetchData = async () => {
+            setLoading(true);
             try {
-                const data = await getProjects();
-                setProjects(data);
+                const [projectsData, foldersData] = await Promise.all([
+                    getProjects(selectedFolderId || undefined),
+                    getFolders()
+                ]);
+                setProjects(projectsData);
+                setFolders(foldersData);
             } catch (err) {
-                console.error("Failed to load projects", err);
+                console.error("Failed to load data", err);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchProjects();
-    }, [status, getProjects]);
+        fetchData();
+    }, [status, selectedFolderId, getProjects, getFolders]);
 
     const handleNewDesignClick = () => {
         const saved = localStorage.getItem('smartdesign_create_state');
@@ -145,7 +159,8 @@ export default function ProjectsPage() {
                 id: project.id,
                 title: editingTitle,
                 canvas_state: project.canvas_state || {},
-                status: 'draft'
+                status: 'draft',
+                folder_id: project.folder_id
             });
             setProjects(projects.map(p => p.id === project.id ? { ...p, title: editingTitle } : p));
             setEditingId(null);
@@ -153,6 +168,32 @@ export default function ProjectsPage() {
         } catch (err) {
             console.error('Failed to rename project', err);
             toast.error('Gagal mengubah nama proyek.');
+        }
+    };
+
+    const handleMoveProject = async (folderId: string | null) => {
+        if (!movingProject) return;
+        try {
+            await saveProject({
+                id: movingProject.id,
+                title: movingProject.title,
+                canvas_state: movingProject.canvas_state || {},
+                status: 'draft',
+                folder_id: folderId
+            });
+            
+            // Remove from list if we are currently filtering by folder and we just moved it
+            if (selectedFolderId !== folderId) {
+                setProjects(projects.filter(p => p.id !== movingProject.id));
+            } else {
+                setProjects(projects.map(p => p.id === movingProject.id ? { ...p, folder_id: folderId } : p));
+            }
+            toast.success("Design dipindahkan");
+        } catch (err) {
+            console.error('Failed to move project', err);
+            toast.error('Gagal memindahkan design.');
+        } finally {
+            setMovingProject(null);
         }
     };
 
@@ -188,13 +229,24 @@ export default function ProjectsPage() {
     return (
         <div className="min-h-screen bg-background flex flex-col">
             <AppHeader />
-            <div className="flex-1 p-6 md:p-8">
-                <div className="max-w-6xl mx-auto space-y-8">
+            <div className="flex-1 flex max-w-[1600px] w-full mx-auto">
+                <div className="w-64 shrink-0 border-r border-border/50 p-6 hidden md:block">
+                    <FolderSidebar 
+                        selectedFolderId={selectedFolderId} 
+                        onSelectFolder={setSelectedFolderId} 
+                    />
+                </div>
+                
+                <div className="flex-1 p-6 md:p-8 space-y-8 min-w-0">
                     {/* Page Header */}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                         <div>
-                            <h1 className="text-2xl sm:text-3xl font-jakarta font-bold text-foreground">Desain Saya</h1>
-                            <p className="text-muted-foreground mt-1 text-sm sm:text-base">Kelola semua proyek dan desain yang tersimpan.</p>
+                            <h1 className="text-2xl sm:text-3xl font-jakarta font-bold text-foreground">
+                                {selectedFolderId ? folders.find(f => f.id === selectedFolderId)?.name || 'Workspace' : 'Semua Desain'}
+                            </h1>
+                            <p className="text-muted-foreground mt-1 text-sm sm:text-base">
+                                {selectedFolderId ? 'Kelola desain dalam workspace ini.' : 'Kelola semua proyek dan desain yang tersimpan.'}
+                            </p>
                         </div>
                         <Button onClick={handleNewDesignClick} size="lg" className="gap-2 font-semibold shadow-md hover:shadow-lg transition-shadow w-full sm:w-auto">
                             <Plus className="w-5 h-5" /> Desain Baru
@@ -381,6 +433,9 @@ export default function ProjectsPage() {
                                                         {duplicatingId === project.id ? <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /> : <Copy className="w-4 h-4 text-muted-foreground" />}
                                                         Duplicate
                                                     </DropdownMenuItem>
+                                                    <DropdownMenuItem className="cursor-pointer gap-2" onClick={(e) => { e.stopPropagation(); setMovingProject(project); }}>
+                                                        <FolderOpen className="w-4 h-4 text-muted-foreground" /> Move to Workspace
+                                                    </DropdownMenuItem>
                                                     <DropdownMenuSeparator />
                                                     <DropdownMenuItem className="cursor-pointer gap-2 text-destructive focus:bg-destructive/10 focus:text-destructive" onClick={(e) => confirmDeleteProject(e, project.id)} disabled={deletingId === project.id}>
                                                         {deletingId === project.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
@@ -455,6 +510,43 @@ export default function ProjectsPage() {
                                 Lanjutkan
                             </Button>
                         </div>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+            {/* Move Project Dialog */}
+            <AlertDialog open={!!movingProject} onOpenChange={(open) => !open && setMovingProject(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Pindahkan ke Workspace</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Pilih workspace tujuan untuk desain &quot;{movingProject?.title || 'Tanpa Judul'}&quot;.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    
+                    <div className="py-2 space-y-2 max-h-[300px] overflow-y-auto">
+                        <Button
+                            variant="outline"
+                            className="w-full justify-start font-medium h-10"
+                            onClick={() => handleMoveProject(null)}
+                        >
+                            <FolderOpen className="w-4 h-4 mr-3 text-muted-foreground" />
+                            Tanpa Workspace (Semua Desain)
+                        </Button>
+                        {folders.map(folder => (
+                            <Button
+                                key={folder.id}
+                                variant="outline"
+                                className="w-full justify-start font-medium h-10"
+                                onClick={() => handleMoveProject(folder.id)}
+                            >
+                                <FolderIcon className="w-4 h-4 mr-3 text-muted-foreground" />
+                                {folder.name}
+                            </Button>
+                        ))}
+                    </div>
+
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setMovingProject(null)}>Batal</AlertDialogCancel>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

@@ -10,7 +10,7 @@ from app.models.design_history import DesignHistory
 from app.models.user import User
 
 
-def _override_current_user() -> User:
+async def _override_current_user() -> User:
     return User(
         id="550e8400-e29b-41d4-a716-446655440000",
         email="owner@example.com",
@@ -21,6 +21,9 @@ def _override_current_user() -> User:
 def test_create_history_defaults_canvas_schema_version() -> None:
     mock_db = AsyncMock()
     mock_db.add = MagicMock()
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = MagicMock()
+    mock_db.execute.return_value = mock_result
 
     async def refresh_side_effect(entry: DesignHistory) -> None:
         entry.id = uuid4()

@@ -52,6 +52,7 @@ async def save_tool_result(
 )
 async def list_my_results(
     tool_name: str | None = Query(None, description="Filter by tool name"),
+    folder_id: str | None = Query(None, description="Filter by folder ID"),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
@@ -62,6 +63,14 @@ async def list_my_results(
 
     if tool_name:
         query = query.where(AiToolResult.tool_name == tool_name)
+
+    if folder_id:
+        try:
+            import uuid
+            f_uuid = uuid.UUID(folder_id)
+            query = query.where(AiToolResult.folder_id == f_uuid)
+        except ValueError:
+            pass
 
     query = query.order_by(desc(AiToolResult.created_at)).offset(offset).limit(limit)
 

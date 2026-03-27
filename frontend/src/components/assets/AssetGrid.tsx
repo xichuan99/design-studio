@@ -49,7 +49,7 @@ function LoadingState() {
     );
 }
 
-export function AssetGrid() {
+export function AssetGrid({ selectedFolderId }: { selectedFolderId?: string | null }) {
     const { getMyToolResults, deleteToolResult, getMyGenerations, deleteGeneration } = useAiToolsEndpoints();
     const [activeTab, setActiveTab] = useState<TabId>("tools");
     const [toolResults, setToolResults] = useState<AiToolResult[]>([]);
@@ -71,26 +71,26 @@ export function AssetGrid() {
     const loadToolResults = useCallback(async (toolName: string) => {
         setLoadingTools(true);
         try {
-            const data = await getMyToolResultsRef.current(toolName || undefined, 100, 0);
+            const data = await getMyToolResultsRef.current(toolName || undefined, 100, 0, selectedFolderId);
             setToolResults(data);
         } catch (err) {
             console.error("Failed to load tool results:", err);
         } finally {
             setLoadingTools(false);
         }
-    }, []);
+    }, [selectedFolderId]);
 
     const loadGenerations = useCallback(async () => {
         setLoadingGenerations(true);
         try {
-            const data = await getMyGenerationsRef.current(100, 0);
+            const data = await getMyGenerationsRef.current(100, 0, selectedFolderId);
             setGenerations(data);
         } catch (err) {
             console.error("Failed to load generations:", err);
         } finally {
             setLoadingGenerations(false);
         }
-    }, []);
+    }, [selectedFolderId]);
 
     useEffect(() => {
         loadToolResults(activeFilter);

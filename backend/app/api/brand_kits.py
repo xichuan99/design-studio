@@ -232,6 +232,7 @@ async def create_brand_kit(
             typography=typography_json,
             brand_strategy=brand_strategy_json,
             is_active=True,
+            folder_id=brand_kit_in.folder_id,
         )
 
         db.add(new_kit)
@@ -255,17 +256,18 @@ async def create_brand_kit(
     responses=ERROR_RESPONSES,
 )
 async def list_brand_kits(
+    folder_id: Optional[UUID] = None,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Get all Brand Kits belonging to the current user.
     """
-    result = await db.execute(
-        select(BrandKit)
-        .where(BrandKit.user_id == current_user.id)
-        .order_by(BrandKit.created_at.desc())
-    )
+    query = select(BrandKit).where(BrandKit.user_id == current_user.id)
+    if folder_id:
+        query = query.where(BrandKit.folder_id == folder_id)
+
+    result = await db.execute(query.order_by(BrandKit.created_at.desc()))
     kits = result.scalars().all()
     return kits
 
@@ -323,6 +325,9 @@ async def update_brand_kit(
         raise NotFoundError(detail="Brand Kit not found.")
 
     update_data = kit_update.model_dump(exclude_unset=True)
+
+    if "folder_id" in update_data:
+        kit.folder_id = update_data["folder_id"]
 
     if "is_active" in update_data and update_data["is_active"] is True:
         await db.execute(

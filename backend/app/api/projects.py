@@ -1,6 +1,6 @@
 from app.core.exceptions import NotFoundError
 from app.schemas.error import ERROR_RESPONSES
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,7 +12,9 @@ from app.core.database import get_db
 from app.api.deps import get_current_user
 from app.models.user import User
 from app.models.project import Project
+from app.models.project_version import ProjectVersion
 from app.schemas.project import ProjectResponse, ProjectUpdate
+from app.schemas.project_version import ProjectVersionCreate, ProjectVersionResponse
 
 router = APIRouter(tags=["Projects"])
 
@@ -26,13 +28,16 @@ router = APIRouter(tags=["Projects"])
     responses=ERROR_RESPONSES,
 )
 async def list_projects(
+    folder_id: Optional[UUID] = None,
     db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
     """List all saved projects for the current user."""
+    query = select(Project).where(Project.user_id == current_user.id)
+    if folder_id:
+        query = query.where(Project.folder_id == folder_id)
+
     result = await db.execute(
-        select(Project)
-        .where(Project.user_id == current_user.id)
-        .order_by(desc(Project.updated_at))
+        query.order_by(desc(Project.updated_at))
     )
     return result.scalars().all()
 
@@ -58,6 +63,7 @@ async def create_project(
         canvas_state=project_in.canvas_state,
         canvas_schema_version=project_in.canvas_schema_version or 1,
         aspect_ratio=project_in.aspect_ratio or "1:1",
+        folder_id=project_in.folder_id,
     )
     db.add(db_project)
     await db.commit()
@@ -127,6 +133,8 @@ async def update_project(
         project.canvas_schema_version = project_in.canvas_schema_version
     if project_in.aspect_ratio is not None:
         project.aspect_ratio = project_in.aspect_ratio
+    if hasattr(project_in, "folder_id") and project_in.folder_id is not None:
+        project.folder_id = project_in.folder_id
 
     await db.commit()
     await db.refresh(project)
@@ -157,5 +165,108 @@ async def delete_project(
         raise NotFoundError(detail="Project not found")
 
     await db.delete(project)
+    await db.commit()
+    return None
+
+
+@router.post(
+    "/{project_id}/versions",
+    response_model=ProjectVersionResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create Project Version",
+    description="Create a snapshot of the current project state.",
+    responses=ERROR_RESPONSES,
+)
+async def create_project_version(
+    project_id: UUID,
+    version_in: ProjectVersionCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Save a new version snapshot for a project."""
+    # Verify project exists and belongs to user
+    result = await db.execute(
+        select(Project).where(
+            Project.id == project_id, Project.user_id == current_user.id
+        )
+    )
+    project = result.scalar_one_or_none()
+    if not project:
+        raise NotFoundError(detail="Project not found")
+
+    # If canvas_state is not provided, use current project canvas_state
+    canvas_state = version_in.canvas_state if version_in.canvas_state else project.canvas_state
+
+    db_version = ProjectVersion(
+        project_id=project_id,
+        user_id=current_user.id,
+        version_name=version_in.version_name or "Auto Save",
+        canvas_state=canvas_state,
+        canvas_schema_version=version_in.canvas_schema_version or project.canvas_schema_version,
+    )
+    db.add(db_version)
+    await db.commit()
+    await db.refresh(db_version)
+    return db_version
+
+
+@router.get(
+    "/{project_id}/versions",
+    response_model=List[ProjectVersionResponse],
+    status_code=status.HTTP_200_OK,
+    summary="List Project Versions",
+    description="List all versions for a specific project.",
+    responses=ERROR_RESPONSES,
+)
+async def list_project_versions(
+    project_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List all saved versions for a project."""
+    # Verify project exists and belongs to user
+    result = await db.execute(
+        select(Project).where(
+            Project.id == project_id, Project.user_id == current_user.id
+        )
+    )
+    if not result.scalar_one_or_none():
+        raise NotFoundError(detail="Project not found")
+
+    versions_result = await db.execute(
+        select(ProjectVersion)
+        .where(ProjectVersion.project_id == project_id)
+        .order_by(desc(ProjectVersion.created_at))
+    )
+    return versions_result.scalars().all()
+
+
+@router.delete(
+    "/{project_id}/versions/{version_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete Project Version",
+    description="Permanently delete a saved project version.",
+    responses=ERROR_RESPONSES,
+)
+async def delete_project_version(
+    project_id: UUID,
+    version_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> None:
+    """Delete a saved project version."""
+    result = await db.execute(
+        select(ProjectVersion).where(
+            ProjectVersion.id == version_id,
+            ProjectVersion.project_id == project_id,
+            ProjectVersion.user_id == current_user.id
+        )
+    )
+    version = result.scalar_one_or_none()
+
+    if not version:
+        raise NotFoundError(detail="Project version not found")
+
+    await db.delete(version)
     await db.commit()
     return None

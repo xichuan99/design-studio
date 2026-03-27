@@ -27,7 +27,26 @@ export interface ProjectPayload {
     canvas_schema_version?: number;
     status: string;
     aspect_ratio?: string;
+    folder_id?: string | null;
 }
+
+// --- Project Version Types ---
+export interface ProjectVersionCreate {
+    version_name?: string;
+    canvas_state?: ProjectCanvasState | Record<string, unknown>;
+    canvas_schema_version?: number;
+}
+
+export interface ProjectVersionResponse {
+    id: string;
+    project_id: string;
+    user_id: string;
+    version_name: string;
+    canvas_state?: ProjectCanvasState | Record<string, unknown>;
+    canvas_schema_version: number;
+    created_at: string;
+}
+
 
 // --- History Types ---
 export interface HistoryCreateRequest {
@@ -46,6 +65,27 @@ export interface HistoryEntry {
     canvas_schema_version?: number;
     prompt_used?: string;
     created_at: string;
+}
+
+// --- Folder Types ---
+export interface Folder {
+    id: string;
+    name: string;
+    parent_id: string | null;
+    user_id: string;
+    created_at: string;
+    updated_at: string;
+    children?: Folder[]; // Used for tree structures if populated
+}
+
+export interface FolderCreate {
+    name: string;
+    parent_id?: string | null;
+}
+
+export interface FolderUpdate {
+    name?: string;
+    parent_id?: string | null;
 }
 
 // --- Brand Kit Types ---
@@ -100,6 +140,7 @@ export interface BrandStrategy {
 export interface BrandKit {
     id: string;
     user_id: string;
+    folder_id?: string | null;
     name: string;
     logo_url: string | null;
     logos: string[];
@@ -279,6 +320,7 @@ export interface GenerateDesignRequest {
     brand_kit_id?: string;
     product_image_url?: string;
     remove_product_bg?: boolean;
+    seed?: string;
 }
 
 export interface RedesignRequest {
@@ -378,6 +420,7 @@ export interface AiGeneration {
     result_url: string;
     visual_prompt: string | null;
     raw_text: string | null;
+    seed?: string | null;
     created_at: string;
 }
 

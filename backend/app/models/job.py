@@ -23,6 +23,12 @@ class Job(Base):
         nullable=False,
         index=True,
     )
+    folder_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("folders.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     # Job status: queued | processing | completed | failed
     status = Column(String(20), default="queued", nullable=False, index=True)
@@ -35,6 +41,7 @@ class Job(Base):
 
     # Output
     result_url = Column(Text, nullable=True)
+    seed = Column(String(50), nullable=True)
     parsed_headline = Column(Text, nullable=True)
     parsed_sub_headline = Column(Text, nullable=True)
     parsed_cta = Column(Text, nullable=True)

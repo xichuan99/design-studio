@@ -110,6 +110,10 @@ class ProjectUpdate(BaseModel):
         description="Aspect ratio of the project",
         json_schema_extra={"example": "1:1"},
     )
+    folder_id: Optional[UUID] = Field(
+        None,
+        description="ID of the folder this project belongs to",
+    )
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -154,6 +158,10 @@ class ProjectResponse(BaseModel):
         1,
         description="Version of the persisted canvas schema",
         json_schema_extra={"example": 1},
+    )
+    folder_id: Optional[UUID] = Field(
+        None,
+        description="ID of the folder this project belongs to",
     )
     created_at: datetime = Field(
         ...,

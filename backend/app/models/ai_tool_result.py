@@ -14,6 +14,12 @@ class AiToolResult(Base):
     user_id = Column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
+    folder_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("folders.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     tool_name = Column(String(50), nullable=False, index=True)
     result_url = Column(Text, nullable=False)
     input_summary = Column(String(200), nullable=True)

@@ -30,6 +30,7 @@ export const TextNode: React.FC<TextNodeProps> = React.memo(({
     }, [isSelected, isEditing]);
 
     const handleDoubleClick = () => {
+        if (element.locked) return;
         onSelect();
         setIsEditing(true);
     };
@@ -69,7 +70,9 @@ export const TextNode: React.FC<TextNodeProps> = React.memo(({
                 shadowOffsetX={element.shadowOffsetX}
                 shadowOffsetY={element.shadowOffsetY}
                 shadowOpacity={element.shadowOpacity}
-                draggable={!isEditing}
+                visible={element.visible !== false}
+                listening={!element.locked && !isEditing}
+                draggable={!isEditing && !element.locked}
                 onDragEnd={(e) => {
                     onChange({
                         x: e.target.x(),
@@ -131,7 +134,7 @@ export const TextNode: React.FC<TextNodeProps> = React.memo(({
                 </Html>
             )}
 
-            {isSelected && !isEditing && (
+            {isSelected && !isEditing && !element.locked && (
                 <Transformer
                     ref={trRef}
                     padding={0}

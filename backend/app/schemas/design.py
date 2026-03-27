@@ -65,6 +65,9 @@ class DesignGenerationRequest(BaseModel):
         False,
         description="Whether the product image should have its background removed before compositing",
     )
+    seed: Optional[str] = Field(
+        None, description="Optional seed for reproducible generation"
+    )
 
     model_config = ConfigDict(
         json_schema_extra={

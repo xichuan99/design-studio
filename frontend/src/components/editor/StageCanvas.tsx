@@ -11,10 +11,11 @@ import { getLineGuideStops, getObjectSnappingEdges, getGuides, drawGuides } from
 interface StageCanvasProps {
     width: number;
     height: number;
+    showGrid?: boolean;
     onBgStatusChange?: (status: string) => void;
 }
 
-export const StageCanvas: React.FC<StageCanvasProps> = ({ width, height, onBgStatusChange }) => {
+export const StageCanvas: React.FC<StageCanvasProps> = ({ width, height, showGrid, onBgStatusChange }) => {
     const {
         elements,
         backgroundUrl,
@@ -126,6 +127,13 @@ export const StageCanvas: React.FC<StageCanvasProps> = ({ width, height, onBgSta
         });
         if (setP) {
             e.target.absolutePosition(absPos);
+        } else if (showGrid) {
+            // Apply 16px grid snapping when no object snapping occurs
+            const SNAP_SIZE = 16;
+            e.target.absolutePosition({
+                x: Math.round(absPos.x / SNAP_SIZE) * SNAP_SIZE,
+                y: Math.round(absPos.y / SNAP_SIZE) * SNAP_SIZE
+            });
         }
     };
 
@@ -201,6 +209,7 @@ export const StageCanvas: React.FC<StageCanvasProps> = ({ width, height, onBgSta
                     y={el.y}
                     rotation={el.rotation}
                     draggable={!el.locked}
+                    listening={!el.locked}
                     onClick={(e) => {
                         e.cancelBubble = true;
                         if (el.locked) return;

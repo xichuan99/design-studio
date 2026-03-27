@@ -4,10 +4,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useCanvasStore } from '@/store/useCanvasStore';
 import { useProjectApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
-import { Undo, Redo, Download as DownloadIcon, Loader2, ChevronLeft, Cloud, CloudAlert, Check, Keyboard, Info } from 'lucide-react';
+import { Undo, Redo, Download as DownloadIcon, Loader2, ChevronLeft, Cloud, CloudAlert, Check, Keyboard, Info, History } from 'lucide-react';
 import { ExportDialog } from './ExportDialog';
 import { KeyboardShortcutsDialog } from './KeyboardShortcutsDialog';
 import { AutoResizeDialog } from './AutoResizeDialog';
+import { ProjectVersionDialog } from './ProjectVersionDialog';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SaveStatus } from '@/hooks/useAutoSave';
 import { toast } from 'sonner';
@@ -27,6 +28,7 @@ export const EditorTopBar: React.FC<EditorTopBarProps> = ({ projectId, saveStatu
     const [exportOpen, setExportOpen] = useState(false);
     const [shortcutsOpen, setShortcutsOpen] = useState(false);
     const [autoResizeOpen, setAutoResizeOpen] = useState(false);
+    const [versionHistoryOpen, setVersionHistoryOpen] = useState(false);
 
     // Title Editor State
     const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -178,6 +180,9 @@ export const EditorTopBar: React.FC<EditorTopBarProps> = ({ projectId, saveStatu
             {/* Right section: History, Save status, Export */}
             <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1 mr-2 border-r pr-3">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => setVersionHistoryOpen(true)} title="Version History">
+                        <History className="h-4 w-4" />
+                    </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => setShortcutsOpen(true)} title="Keyboard Shortcuts">
                         <Keyboard className="h-4 w-4" />
                     </Button>
@@ -221,6 +226,11 @@ export const EditorTopBar: React.FC<EditorTopBarProps> = ({ projectId, saveStatu
                 <KeyboardShortcutsDialog
                     open={shortcutsOpen}
                     onOpenChange={setShortcutsOpen}
+                />
+                <ProjectVersionDialog
+                    open={versionHistoryOpen}
+                    onOpenChange={setVersionHistoryOpen}
+                    projectId={projectId}
                 />
             </div>
         </div>

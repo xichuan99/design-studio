@@ -6,8 +6,11 @@ import { useProjectApi, BrandKit, Template } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Sparkles, ImagePlus, Wallpaper, RefreshCw, X, Square, Smartphone, Monitor, FileImage, Upload, Trash2, Film, Palette, Layout } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Loader2, Sparkles, ImagePlus, Wallpaper, RefreshCw, X, Square, Smartphone, Monitor, FileImage, Upload, Trash2, Film, Palette, Layout, History } from 'lucide-react';
 import Image from 'next/image';
+import { AiGeneration } from '@/lib/api/types';
 import { InlineErrorBanner } from '@/components/feedback/InlineErrorBanner';
 import { ErrorModal, ErrorModalType } from '@/components/feedback/ErrorModal';
 import { cn } from '@/lib/utils';
@@ -31,7 +34,12 @@ const STYLE_PRESETS = [
 
 export const AIPromptPanel: React.FC = () => {
     const { setBackgroundUrl, addElement } = useCanvasStore();
-    const { generateDesign, getJobStatus, getBrandKits, getTemplates, uploadImage } = useProjectApi();
+    const { generateDesign, getJobStatus, getBrandKits, getTemplates, uploadImage, getMyGenerations, upscaleImage, removeBackground } = useProjectApi();
+
+    const [activeTab, setActiveTab] = useState("generate");
+    const [seed, setSeed] = useState<string>('');
+    const [history, setHistory] = useState<AiGeneration[]>([]);
+    const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
     const [brandKits, setBrandKits] = useState<BrandKit[]>([]);
     const [templates, setTemplates] = useState<Template[]>([]);
@@ -63,8 +71,28 @@ export const AIPromptPanel: React.FC = () => {
         fetchOptions();
     }, [getBrandKits, getTemplates]);
 
+    const fetchHistory = async () => {
+        setIsLoadingHistory(true);
+        try {
+            const data = await getMyGenerations(20, 0);
+            setHistory(data);
+        } catch (error) {
+            console.error("Failed to load history:", error);
+        } finally {
+            setIsLoadingHistory(false);
+        }
+    };
+
+    const handleTabChange = (val: string) => {
+        setActiveTab(val);
+        if (val === 'history') {
+            fetchHistory();
+        }
+    };
+
     const [prompt, setPrompt] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
+    const [isProcessingImage, setIsProcessingImage] = useState(false);
     const [generatedUrl, setGeneratedUrl] = useState<string | null>(null);
 
     const [aspectRatio, setAspectRatio] = useState('1:1');
@@ -101,6 +129,7 @@ export const AIPromptPanel: React.FC = () => {
                 template_id: selectedTemplate !== 'none' ? selectedTemplate : undefined,
                 product_image_url: productImageUrl ?? undefined,
                 remove_product_bg: productImageUrl ? removeProductBg : undefined,
+                seed: seed ? seed : undefined,
             });
             const jobId = jobData.job_id;
 
@@ -234,6 +263,43 @@ export const AIPromptPanel: React.FC = () => {
         setInlineError(null);
     };
 
+    const checkAndDownloadImage = async (url: string): Promise<File> => {
+        const proxyUrl = url.startsWith('http') ? `/api/proxy-image?url=${encodeURIComponent(url)}` : url;
+        const response = await fetch(proxyUrl);
+        const blob = await response.blob();
+        return new File([blob], 'image.png', { type: blob.type });
+    };
+
+    const handleUpscale = async () => {
+        if (!generatedUrl) return;
+        setIsProcessingImage(true);
+        setInlineError(null);
+        try {
+            const file = await checkAndDownloadImage(generatedUrl);
+            const res = await upscaleImage(file, 2.0);
+            setGeneratedUrl(res.url);
+        } catch (err: any) {
+            setInlineError({ message: err.message || 'Gagal melakukan upscale', type: 'error' });
+        } finally {
+            setIsProcessingImage(false);
+        }
+    };
+
+    const handleRemoveGeneratedBg = async () => {
+        if (!generatedUrl) return;
+        setIsProcessingImage(true);
+        setInlineError(null);
+        try {
+            const file = await checkAndDownloadImage(generatedUrl);
+            const res = await removeBackground(file);
+            setGeneratedUrl(res.url);
+        } catch (err: any) {
+            setInlineError({ message: err.message || 'Gagal menghapus background', type: 'error' });
+        } finally {
+            setIsProcessingImage(false);
+        }
+    };
+
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -279,7 +345,14 @@ export const AIPromptPanel: React.FC = () => {
                 <h2 className="font-semibold text-sm">AI Image Generator</h2>
             </div>
 
-            <div className="flex-1 overflow-y-auto space-y-3 pr-1 pb-4">
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="flex-1 flex flex-col min-h-0">
+                <TabsList className="grid w-full grid-cols-2 mb-2">
+                    <TabsTrigger value="generate">Generate</TabsTrigger>
+                    <TabsTrigger value="history" className="gap-2"><History className="w-4 h-4" /> Riwayat</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="generate" className="flex-1 flex flex-col min-h-0 data-[state=active]:flex mt-0">
+                    <div className="flex-1 overflow-y-auto space-y-3 pr-1 pb-4">
                 {/* Prompt Input */}
                 <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Prompt</label>
@@ -362,6 +435,20 @@ export const AIPromptPanel: React.FC = () => {
                     </summary>
                     <div className="px-3 pt-3 space-y-5 animate-in fade-in slide-in-from-top-2">
                 <div className="flex flex-col gap-3 pb-2">
+                    {/* Seed Input */}
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Seed (Opsional)</label>
+                        <Input 
+                            type="text"
+                            placeholder="Contoh: 12345 atau random text"
+                            value={seed}
+                            onChange={(e) => setSeed(e.target.value)}
+                            disabled={isGenerating}
+                            className="h-8 text-xs border-border/60 bg-card/80"
+                        />
+                        <p className="text-[10px] text-muted-foreground">Isi dengan nilai untuk hasil yang konsisten pada prompt yang sama.</p>
+                    </div>
+
                     {/* Template Selector */}
                     <div className="space-y-1.5">
                         <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Template Preset</label>
@@ -519,6 +606,28 @@ export const AIPromptPanel: React.FC = () => {
                         </div>
 
                         <div className="space-y-2">
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="flex-1 gap-1.5"
+                                    onClick={handleRemoveGeneratedBg}
+                                    disabled={isProcessingImage}
+                                >
+                                    {isProcessingImage ? <Loader2 className="h-3.5 w-3.5 animate-spin"/> : <Sparkles className="h-3.5 w-3.5 text-primary" />}
+                                    Hapus BG
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="flex-1 gap-1.5"
+                                    onClick={handleUpscale}
+                                    disabled={isProcessingImage}
+                                >
+                                    {isProcessingImage ? <Loader2 className="h-3.5 w-3.5 animate-spin"/> : <Sparkles className="h-3.5 w-3.5 text-primary" />}
+                                    Upscale
+                                </Button>
+                            </div>
                             <Button
                                 className="w-full gap-2"
                                 onClick={handleSetAsBackground}
@@ -591,6 +700,40 @@ export const AIPromptPanel: React.FC = () => {
                     </CreditConfirmDialog>
                 </div>
             )}
+                </TabsContent>
+
+                <TabsContent value="history" className="flex-1 overflow-y-auto mt-0 data-[state=active]:flex flex-col gap-3 pr-1 pb-4">
+                    {isLoadingHistory ? (
+                        <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+                    ) : history.length === 0 ? (
+                        <div className="text-center py-8 text-sm text-muted-foreground">Belum ada riwayat generasi.</div>
+                    ) : (
+                        <div className="grid grid-cols-2 gap-3">
+                            {history.map(item => (
+                                <div key={item.id} className="group relative rounded-lg border bg-card overflow-hidden">
+                                    <div className="aspect-square relative bg-muted/30">
+                                        <Image src={item.result_url.startsWith('http') ? `/api/proxy-image?url=${encodeURIComponent(item.result_url)}` : item.result_url} alt="History" fill className="object-cover" crossOrigin="anonymous" unoptimized={item.result_url.startsWith('http')} />
+                                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-2">
+                                            <Button size="sm" variant="secondary" className="w-full text-[10px] h-7" onClick={() => {
+                                                if (item.raw_text) setPrompt(item.raw_text);
+                                                if (item.seed) setSeed(item.seed);
+                                                setActiveTab("generate");
+                                            }}>Pakai Prompt & Seed</Button>
+                                            <Button size="sm" variant="default" className="w-full text-[10px] h-7" onClick={() => {
+                                                setBackgroundUrl(item.result_url);
+                                            }}>Jadikan BG</Button>
+                                        </div>
+                                    </div>
+                                    <div className="p-2 space-y-1">
+                                        <p className="text-[10px] text-muted-foreground line-clamp-2">{item.raw_text || item.visual_prompt || "No prompt"}</p>
+                                        {item.seed && <p className="text-[9px] font-mono text-primary/80">Seed: {item.seed}</p>}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </TabsContent>
+            </Tabs>
 
             {/* Error Modal */}
             <ErrorModal

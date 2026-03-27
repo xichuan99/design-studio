@@ -6,27 +6,21 @@ import uuid
 from app.core.database import Base
 
 
-class Project(Base):
-    __tablename__ = "projects"
+class ProjectVersion(Base):
+    __tablename__ = "project_versions"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    project_id = Column(
+        UUID(as_uuid=True), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     user_id = Column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
-    title = Column(String, nullable=False, default="Untitled Design")
-    status = Column(String, nullable=False, default="draft", index=True)
-    aspect_ratio = Column(String, nullable=False, default="1:1")
+    version_name = Column(String, nullable=False, default="Auto Save")
     canvas_state = Column(JSON, nullable=True)
     canvas_schema_version = Column(Integer, nullable=False, default=1, server_default="1")
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
-    )
-    folder_id = Column(
-        UUID(as_uuid=True), ForeignKey("folders.id", ondelete="SET NULL"), nullable=True, index=True
-    )
 
-    # relationship
+    # relationships
+    project = relationship("Project", back_populates="versions")
     user = relationship("User")
-    folder = relationship("Folder", back_populates="projects")
-    versions = relationship("ProjectVersion", back_populates="project", cascade="all, delete-orphan")

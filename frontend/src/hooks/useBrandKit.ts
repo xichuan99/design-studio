@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { BrandKitProfile, useProjectApi } from '@/lib/api';
 
-export function useBrandKit() {
+export function useBrandKit(folderId?: string) {
     const api = useProjectApi();
     const [brandKits, setBrandKits] = useState<BrandKitProfile[]>([]);
     const [activeBrandProfile, setActiveBrandProfile] = useState<BrandKitProfile | null>(null);
@@ -10,7 +10,7 @@ export function useBrandKit() {
     const fetchBrandKits = useCallback(async () => {
         setIsLoading(true);
         try {
-            const data = await api.getBrandKits();
+            const data = await api.getBrandKits(folderId);
             setBrandKits(data);
             
             // Set the active profile
@@ -22,7 +22,7 @@ export function useBrandKit() {
             setIsLoading(false);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [folderId]);
 
     useEffect(() => {
         fetchBrandKits();

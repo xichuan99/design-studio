@@ -44,6 +44,7 @@ async def _execute_pipeline(
     integrated_text: bool,
     brand_colors: list | None = None,
     brand_typography: dict | None = None,
+    seed: str | None = None,
     current_retry: int = 0,
     max_retries: int = 0,
 ):
@@ -101,6 +102,7 @@ async def _execute_pipeline(
             style=style,
             aspect_ratio=aspect_ratio,
             integrated_text=integrated_text,
+            seed=seed,
         )
 
         gen_bytes = await download_image(result["image_url"])
@@ -157,6 +159,7 @@ def generate_design_task(
     integrated_text: bool = False,
     brand_colors: list | None = None,
     brand_typography: dict | None = None,
+    seed: str | None = None,
 ):
     """Celery task: runs the full design generation pipeline."""
     try:
@@ -170,6 +173,7 @@ def generate_design_task(
                 integrated_text,
                 brand_colors,
                 brand_typography,
+                seed=seed,
                 current_retry=self.request.retries,
                 max_retries=self.max_retries,
             )
