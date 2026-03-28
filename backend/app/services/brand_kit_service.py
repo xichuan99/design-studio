@@ -56,7 +56,7 @@ async def extract_colors_from_image(
             model="gemini-2.5-flash",
             contents=[
                 "Extract the 5 dominant brand colors from this logo/image. Respond with pure JSON only.",
-                {"mime_type": mime_type, "data": image_bytes},
+                genai.types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
             ],
             config=genai.types.GenerateContentConfig(
                 system_instruction=BRAND_COLORS_SYSTEM_PROMPT,
