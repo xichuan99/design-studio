@@ -108,7 +108,7 @@ export default function CreatePage() {
             <div className="flex flex-1 overflow-hidden relative">
                 {/* Mobile sidebar toggle */}
                 <button
-                    className="md:hidden absolute top-3 left-3 z-30 bg-card border rounded-lg p-2 shadow-md hover:bg-muted transition-colors"
+                    className="md:hidden absolute top-3 left-3 z-30 bg-card border rounded-lg p-3 min-w-[44px] min-h-[44px] flex items-center justify-center shadow-md hover:bg-muted transition-colors"
                     onClick={() => setSidebarOpen(!sidebarOpen)}
                 >
                     {sidebarOpen ? <PanelLeftClose className="w-5 h-5" /> : <PanelLeftOpen className="w-5 h-5" />}

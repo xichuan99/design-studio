@@ -69,7 +69,7 @@ export function UnifiedPreviewEditor({
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors sm:hidden"
+                            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors sm:hidden h-11 w-11"
                             onClick={onReset}
                             title="Mulai Baru"
                         >

@@ -70,7 +70,7 @@ export function PromptToDesignAnimation() {
                 <div className="w-7 h-7 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0 border border-blue-500/30">
                   <span className="text-blue-400 text-[10px] font-bold">You</span>
                 </div>
-                <div className="bg-blue-600/20 text-blue-100 p-2.5 rounded-2xl rounded-tl-sm text-sm border border-blue-500/20 leading-relaxed shadow-sm">
+                <div className="bg-blue-600/20 text-blue-100 p-2.5 rounded-2xl rounded-tl-sm text-sm border border-blue-500/20 leading-relaxed shadow-sm min-h-[44px] min-w-[32px] w-fit break-words">
                   {typedText}
                   {step === 1 && <span className="animate-pulse ml-0.5">|</span>}
                 </div>

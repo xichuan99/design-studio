@@ -177,13 +177,9 @@ export default function EditorPage() {
             {/* Mobile layout: Stack vertically, sidebars are slide-ins */}
             <main className="flex flex-1 overflow-hidden relative">
                 
-                {/* Left Sidebar (AI & Tools) - Hidden on mobile by default */}
-                <div className={`
-                    fixed md:relative left-0 top-14 bottom-[57px] md:bottom-0 md:top-0 z-40 md:z-auto
-                    h-full transition-transform duration-300 transform
-                    ${leftPanelOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-                `}>
-                    <LeftSidebar />
+                {/* Left Sidebar (AI & Tools) - Mobile handles its own BottomSheet now */}
+                <div className="h-full z-40 md:z-auto relative">
+                    <LeftSidebar mobileOpen={leftPanelOpen} onMobileClose={() => setLeftPanelOpen(false)} />
                 </div>
 
                 <div className="flex-1 overflow-hidden relative tour-edit-canvas">

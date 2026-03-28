@@ -25,7 +25,12 @@ import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { BottomSheet } from '@/components/ui/bottom-sheet';
 
-export const LeftSidebar: React.FC = () => {
+interface LeftSidebarProps {
+    mobileOpen?: boolean;
+    onMobileClose?: () => void;
+}
+
+export const LeftSidebar: React.FC<LeftSidebarProps> = ({ mobileOpen, onMobileClose }) => {
     const isMobile = useIsMobile();
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [activeTab, setActiveTab] = useState<'teks' | 'tools' | 'aistudio' | 'assets' | 'bgremoval' | 'brandkit'>('aistudio');
@@ -293,25 +298,34 @@ export const LeftSidebar: React.FC = () => {
 
     if (isMobile) {
         return (
-            <>
-                {/* Mobile Bottom Navigation Component */}
-                <div className="fixed bottom-0 left-0 right-0 h-16 bg-background/95 backdrop-blur-xl border-t shadow-[0_-4px_20px_rgba(0,0,0,0.1)] z-50 flex items-center justify-around px-2 pb-safe tour-edit-ai">
-                    {navItems.map((item) => (
-                        <div key={item.id} className="w-14">
-                            <NavButton id={item.id} icon={item.icon} label={item.label} />
-                        </div>
-                    ))}
+            <BottomSheet
+                isOpen={!!mobileOpen}
+                onClose={() => onMobileClose?.()}
+                title={navItems.find(n => n.id === activeTab)?.label}
+            >
+                {/* Render the tabs nav row natively inside the sheet */}
+                <div className="flex overflow-x-auto gap-2 pb-3 mb-4 border-b shrink-0 hide-scrollbar pt-1">
+                    {navItems.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                            <button
+                                key={item.id}
+                                onClick={() => setActiveTab(item.id)}
+                                className={cn(
+                                    "flex flex-col items-center justify-center min-w-[72px] rounded-xl p-2 transition-colors",
+                                    activeTab === item.id 
+                                        ? "bg-primary/10 text-primary border border-primary/20" 
+                                        : "text-muted-foreground hover:bg-muted border border-transparent"
+                                )}
+                            >
+                                <Icon className="h-5 w-5 mb-1.5" />
+                                <span className="text-[10px] font-medium whitespace-nowrap">{item.label}</span>
+                            </button>
+                        );
+                    })}
                 </div>
-                
-                {/* Mobile Slide-up Bottom Sheet */}
-                <BottomSheet
-                    isOpen={!isCollapsed}
-                    onClose={closePanel}
-                    title={navItems.find(n => n.id === activeTab)?.label}
-                >
-                    {renderActivePanel()}
-                </BottomSheet>
-            </>
+                {renderActivePanel()}
+            </BottomSheet>
         );
     }
 return (
