@@ -1,5 +1,6 @@
 import { useApiCore } from './coreApi';
 import * as Types from './types';
+import { useCallback } from 'react';
 
 async function fetchWithTimeout(resource: RequestInfo, options: RequestInit & { timeout?: number } = {}) {
     const { timeout = 120000, ...fetchOptions } = options; // Default 120 seconds
@@ -17,7 +18,7 @@ async function fetchWithTimeout(resource: RequestInfo, options: RequestInit & { 
 export function useAiToolsEndpoints() {
     const { API_BASE_URL, getHeaders } = useApiCore();
 
-    const generateDesign = async (payload: Types.GenerateDesignRequest): Promise<Types.DesignGenerationResponse> => {
+    const generateDesign = useCallback(async (payload: Types.GenerateDesignRequest): Promise<Types.DesignGenerationResponse> => {
             try {
                 const res = await fetchWithTimeout(`${API_BASE_URL}/designs/generate`, {
                     method: 'POST',
@@ -40,9 +41,9 @@ export function useAiToolsEndpoints() {
                 }
                 throw error;
             }
-        };
+        }, [API_BASE_URL, getHeaders]);
 
-    const clarifyCopywriting = async (payload: Types.CopywritingClarifyRequest) => {
+    const clarifyCopywriting = useCallback(async (payload: Types.CopywritingClarifyRequest) => {
             try {
                 const res = await fetchWithTimeout(`${API_BASE_URL}/designs/clarify-copywriting`, {
                     method: 'POST',
@@ -62,9 +63,9 @@ export function useAiToolsEndpoints() {
                 }
                 throw error;
             }
-        };
+        }, [API_BASE_URL, getHeaders]);
 
-    const clarifyUnified = async (payload: Types.ClarifyUnifiedRequest) => {
+    const clarifyUnified = useCallback(async (payload: Types.ClarifyUnifiedRequest) => {
             try {
                 const res = await fetchWithTimeout(`${API_BASE_URL}/designs/clarify-unified`, {
                     method: 'POST',
@@ -84,9 +85,9 @@ export function useAiToolsEndpoints() {
                 }
                 throw error;
             }
-        };
+        }, [API_BASE_URL, getHeaders]);
 
-    const generateCopywriting = async (payload: Types.CopywritingRequest): Promise<Types.CopywritingResponse> => {
+    const generateCopywriting = useCallback(async (payload: Types.CopywritingRequest): Promise<Types.CopywritingResponse> => {
             try {
                 const res = await fetchWithTimeout(`${API_BASE_URL}/designs/generate-copywriting`, {
                     method: 'POST',
@@ -109,9 +110,9 @@ export function useAiToolsEndpoints() {
                 }
                 throw error;
             }
-        };
+        }, [API_BASE_URL, getHeaders]);
 
-    const parseDesignText = async (payload: Types.ParseDesignTextRequest): Promise<Types.ParsedTextElements> => {
+    const parseDesignText = useCallback(async (payload: Types.ParseDesignTextRequest): Promise<Types.ParsedTextElements> => {
             try {
                 const res = await fetchWithTimeout(`${API_BASE_URL}/designs/parse`, {
                     method: 'POST',
@@ -134,9 +135,9 @@ export function useAiToolsEndpoints() {
                 }
                 throw error;
             }
-        };
+        }, [API_BASE_URL, getHeaders]);
 
-    const uploadImage = async (file: File) => {
+    const uploadImage = useCallback(async (file: File) => {
             const formData = new FormData();
             formData.append('file', file);
     
@@ -150,17 +151,17 @@ export function useAiToolsEndpoints() {
                 throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to upload image');
             }
             return res.json(); // returns { url: string }
-        };
+        }, [API_BASE_URL, getHeaders]);
 
-    const getJobStatus = async (jobId: string) => {
+    const getJobStatus = useCallback(async (jobId: string) => {
             const res = await fetch(`${API_BASE_URL}/designs/jobs/${jobId}`, {
                 headers: getHeaders(),
             });
             if (!res.ok) throw new Error('Failed to fetch job status');
             return res.json();
-        };
+        }, [API_BASE_URL, getHeaders]);
 
-    const getMyGenerations = async (limit: number = 20, offset: number = 0, folderId?: string | null) => {
+    const getMyGenerations = useCallback(async (limit: number = 20, offset: number = 0, folderId?: string | null) => {
             const params = new URLSearchParams({ limit: limit.toString(), offset: offset.toString() });
             if (folderId) params.append('folder_id', folderId);
             
@@ -169,9 +170,9 @@ export function useAiToolsEndpoints() {
             });
             if (!res.ok) throw new Error('Failed to fetch AI generations');
             return res.json();
-        };
+        }, [API_BASE_URL, getHeaders]);
 
-    const createToolJob = async (payload: Types.CreateToolJobRequest): Promise<Types.AiToolJob> => {
+    const createToolJob = useCallback(async (payload: Types.CreateToolJobRequest): Promise<Types.AiToolJob> => {
             const res = await fetch(`${API_BASE_URL}/tools/jobs`, {
                 method: 'POST',
                 headers: getHeaders(),
@@ -182,9 +183,9 @@ export function useAiToolsEndpoints() {
                 throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to create AI tool job');
             }
             return res.json();
-        };
+        }, [API_BASE_URL, getHeaders]);
 
-    const getToolJobStatus = async (jobId: string): Promise<Types.AiToolJob> => {
+    const getToolJobStatus = useCallback(async (jobId: string): Promise<Types.AiToolJob> => {
             const res = await fetch(`${API_BASE_URL}/tools/jobs/${jobId}`, {
                 headers: getHeaders(),
             });
@@ -193,9 +194,9 @@ export function useAiToolsEndpoints() {
                 throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to fetch AI tool job status');
             }
             return res.json();
-        };
+        }, [API_BASE_URL, getHeaders]);
 
-    const cancelToolJob = async (jobId: string): Promise<Types.AiToolJob> => {
+    const cancelToolJob = useCallback(async (jobId: string): Promise<Types.AiToolJob> => {
             const res = await fetch(`${API_BASE_URL}/tools/jobs/${jobId}/cancel`, {
                 method: 'POST',
                 headers: getHeaders(),
@@ -205,9 +206,9 @@ export function useAiToolsEndpoints() {
                 throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to cancel AI tool job');
             }
             return res.json();
-        };
+        }, [API_BASE_URL, getHeaders]);
 
-    const getMyToolJobs = async (toolName?: Types.AiToolJobName, limit: number = 20, offset: number = 0): Promise<Types.AiToolJob[]> => {
+    const getMyToolJobs = useCallback(async (toolName?: Types.AiToolJobName, limit: number = 20, offset: number = 0): Promise<Types.AiToolJob[]> => {
             const params = new URLSearchParams({ limit: limit.toString(), offset: offset.toString() });
             if (toolName) params.append('tool_name', toolName);
 
@@ -219,13 +220,13 @@ export function useAiToolsEndpoints() {
                 throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to fetch AI tool jobs');
             }
             return res.json();
-        };
+        }, [API_BASE_URL, getHeaders]);
 
     /**
      * Delete a generation job and reclaim storage quota.
      * @param jobId The UUID of the job to delete
      */
-    const deleteGeneration = async (jobId: string) => {
+    const deleteGeneration = useCallback(async (jobId: string) => {
         const res = await fetch(`${API_BASE_URL}/designs/jobs/${jobId}`, {
             method: 'DELETE',
             headers: getHeaders(),
@@ -236,9 +237,9 @@ export function useAiToolsEndpoints() {
         }
         // Returns 204 No Content, so no JSON parsing needed
         return true;
-    };
+    }, [API_BASE_URL, getHeaders]);
 
-    const generateMagicTextLayout = async (payload: Types.MagicTextRequest): Promise<Types.MagicTextResponse> => {
+    const generateMagicTextLayout = useCallback(async (payload: Types.MagicTextRequest): Promise<Types.MagicTextResponse> => {
             const res = await fetch(`${API_BASE_URL}/designs/magic-text`, {
                 method: 'POST',
                 headers: getHeaders(),
@@ -249,9 +250,9 @@ export function useAiToolsEndpoints() {
                 throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to generate magic text layout');
             }
             return res.json();
-        };
+        }, [API_BASE_URL, getHeaders]);
 
-    const removeBackground = async (file: File) => {
+    const removeBackground = useCallback(async (file: File) => {
             const formData = new FormData();
             formData.append('file', file);
     
@@ -265,9 +266,9 @@ export function useAiToolsEndpoints() {
                 throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to remove background');
             }
             return res.json(); // returns { url: string }
-        };
+        }, [API_BASE_URL, getHeaders]);
 
-    const upscaleImage = async (file: File, scale: number = 2.0): Promise<{ url: string }> => {
+    const upscaleImage = useCallback(async (file: File, scale: number = 2.0): Promise<{ url: string }> => {
             const formData = new FormData();
             formData.append('file', file);
             formData.append('scale', scale.toString());
@@ -282,9 +283,9 @@ export function useAiToolsEndpoints() {
                 throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to upscale image');
             }
             return response.json();
-        };
+        }, [API_BASE_URL, getHeaders]);
 
-    const generateTextBanner = async (payload: {
+    const generateTextBanner = useCallback(async (payload: {
             text: string;
             style?: string;
             color_hint?: string;
@@ -307,9 +308,9 @@ export function useAiToolsEndpoints() {
                 throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to generate text banner');
             }
             return response.json();
-        };
+        }, [API_BASE_URL, getHeaders]);
 
-    const retouchImage = async (file: File, outputFormat: 'jpeg' | 'png' = 'jpeg', fidelity: number = 0.7): Promise<{ url: string, before_url: string }> => {
+    const retouchImage = useCallback(async (file: File, outputFormat: 'jpeg' | 'png' = 'jpeg', fidelity: number = 0.7): Promise<{ url: string, before_url: string }> => {
             const formData = new FormData();
             formData.append('file', file);
             formData.append('output_format', outputFormat);
@@ -325,9 +326,9 @@ export function useAiToolsEndpoints() {
                 throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to retouch image');
             }
             return response.json();
-        };
+        }, [API_BASE_URL, getHeaders]);
 
-    const generateIdPhoto = async (
+    const generateIdPhoto = useCallback(async (
             file: File, 
             bgColor: string, 
             size: string, 
@@ -355,9 +356,9 @@ export function useAiToolsEndpoints() {
                 throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to generate ID photo');
             }
             return response.json();
-        };
+        }, [API_BASE_URL, getHeaders]);
 
-    const magicEraser = async (
+    const magicEraser = useCallback(async (
             file: File,
             mask: File,
             prompt?: string
@@ -378,9 +379,9 @@ export function useAiToolsEndpoints() {
                 throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to apply Magic Eraser');
             }
             return response.json();
-        };
+        }, [API_BASE_URL, getHeaders]);
 
-    const generativeExpand = async (
+    const generativeExpand = useCallback(async (
             file: File,
             direction?: string,
             pixels?: number,
@@ -408,9 +409,9 @@ export function useAiToolsEndpoints() {
                 throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to apply Generative Expand');
             }
             return response.json();
-        };
+        }, [API_BASE_URL, getHeaders]);
 
-    const backgroundSwap = async (
+    const backgroundSwap = useCallback(async (
             file: File,
             prompt?: string,
         ): Promise<{ url: string }> => {
@@ -429,9 +430,9 @@ export function useAiToolsEndpoints() {
                 throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to apply background swap');
             }
             return response.json();
-        };
+        }, [API_BASE_URL, getHeaders]);
 
-    const suggestBackgrounds = async (
+    const suggestBackgrounds = useCallback(async (
             file: File
         ): Promise<{ suggestions: Array<{ title: string; emoji: string; prompt: string }> }> => {
             const formData = new FormData();
@@ -449,9 +450,9 @@ export function useAiToolsEndpoints() {
                 throw new Error((errBase?.error?.detail || errBase?.detail) || 'Gagal menganalisis gambar');
             }
             return response.json();
-        };
+        }, [API_BASE_URL, getHeaders]);
 
-    const productScene = async (
+    const productScene = useCallback(async (
             file: File,
             theme: string,
             aspectRatio: string
@@ -472,9 +473,9 @@ export function useAiToolsEndpoints() {
                 throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to generate product scene');
             }
             return response.json();
-        };
+        }, [API_BASE_URL, getHeaders]);
 
-    const batchProcess = async (
+    const batchProcess = useCallback(async (
             files: File[],
             operation: string,
             paramsJson: string,
@@ -497,9 +498,9 @@ export function useAiToolsEndpoints() {
                 throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to process batch');
             }
             return response.json();
-        };
+        }, [API_BASE_URL, getHeaders]);
 
-    const applyWatermark = async (
+    const applyWatermark = useCallback(async (
             file: File,
             logo: File,
             position: string,
@@ -524,7 +525,7 @@ export function useAiToolsEndpoints() {
                 throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to apply watermark');
             }
             return response.json();
-        };    const getMyToolResults = async (toolName?: string, limit: number = 20, offset: number = 0, folderId?: string | null) => {
+        }, [API_BASE_URL, getHeaders]);    const getMyToolResults = useCallback(async (toolName?: string, limit: number = 20, offset: number = 0, folderId?: string | null) => {
             const params = new URLSearchParams({ limit: limit.toString(), offset: offset.toString() });
             if (toolName) params.append('tool_name', toolName);
             if (folderId) params.append('folder_id', folderId);
@@ -534,9 +535,9 @@ export function useAiToolsEndpoints() {
             });
             if (!res.ok) throw new Error('Failed to fetch AI tool results');
             return res.json();
-        };
+        }, [API_BASE_URL, getHeaders]);
 
-    const deleteToolResult = async (resultId: string) => {
+    const deleteToolResult = useCallback(async (resultId: string) => {
             const res = await fetch(`${API_BASE_URL}/tools/results/${resultId}`, {
                 method: 'DELETE',
                 headers: getHeaders(),
@@ -544,11 +545,11 @@ export function useAiToolsEndpoints() {
             if (!res.ok) throw new Error('Failed to delete AI tool result');
             // Returns 204 No Content, so no JSON parsing needed
             return true;
-        };
+        }, [API_BASE_URL, getHeaders]);
 
     // --- Brand Kit API ---
 
-    const generateProjectTitle = async (prompt: string) => {
+    const generateProjectTitle = useCallback(async (prompt: string) => {
             const res = await fetch(`${API_BASE_URL}/designs/generate-title`, {
                 method: 'POST',
                 headers: getHeaders(),
@@ -556,9 +557,9 @@ export function useAiToolsEndpoints() {
             });
             if (!res.ok) throw new Error('Failed to generate project title');
             return res.json();
-        };
+        }, [API_BASE_URL, getHeaders]);
 
-    const redesignFromReference = async (payload: Types.RedesignRequest): Promise<Types.DesignGenerationResponse> => {
+    const redesignFromReference = useCallback(async (payload: Types.RedesignRequest): Promise<Types.DesignGenerationResponse> => {
             try {
                 const res = await fetchWithTimeout(`${API_BASE_URL}/designs/redesign`, {
                     method: 'POST',
@@ -581,7 +582,7 @@ export function useAiToolsEndpoints() {
                 }
                 throw error;
             }
-        };
+        }, [API_BASE_URL, getHeaders]);
 
     return {
         generateDesign,

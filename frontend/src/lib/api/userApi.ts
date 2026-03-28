@@ -1,18 +1,19 @@
 import { useApiCore } from './coreApi';
 import * as Types from './types';
+import { useCallback } from 'react';
 
 export function useUserEndpoints() {
     const { API_BASE_URL, getHeaders } = useApiCore();
 
-    const getUserProfile = async (): Promise<Types.UserResponse> => {
+    const getUserProfile = useCallback(async (): Promise<Types.UserResponse> => {
             const res = await fetch(`${API_BASE_URL}/users/me`, {
                 headers: getHeaders(),
             });
             if (!res.ok) throw new Error('Failed to fetch user profile');
             return res.json();
-        };
+        }, [API_BASE_URL, getHeaders]);
 
-    const updateProfile = async (name: string): Promise<Types.UserResponse> => {
+    const updateProfile = useCallback(async (name: string): Promise<Types.UserResponse> => {
             const res = await fetch(`${API_BASE_URL}/users/me`, {
                 method: 'PUT',
                 headers: getHeaders(),
@@ -27,9 +28,9 @@ export function useUserEndpoints() {
                 throw new Error(detail);
             }
             return res.json();
-        };
+        }, [API_BASE_URL, getHeaders]);
 
-    const deleteAccount = async (): Promise<void> => {
+    const deleteAccount = useCallback(async (): Promise<void> => {
             const res = await fetch(`${API_BASE_URL}/users/me`, {
                 method: 'DELETE',
                 headers: getHeaders(),
@@ -38,9 +39,9 @@ export function useUserEndpoints() {
                 const errBody = await res.json().catch(() => ({}));
                 throw new Error(errBody.detail || 'Gagal menghapus akun');
             }
-        };
+        }, [API_BASE_URL, getHeaders]);
 
-    const getCreditHistory = async (limit: number = 50, offset: number = 0): Promise<Types.CreditHistoryResponse> => {
+    const getCreditHistory = useCallback(async (limit: number = 50, offset: number = 0): Promise<Types.CreditHistoryResponse> => {
             const qs = new URLSearchParams({ limit: limit.toString(), offset: offset.toString() }).toString();
             const res = await fetch(`${API_BASE_URL}/users/me/credits/history?${qs}`, {
                 headers: getHeaders(),
@@ -50,9 +51,9 @@ export function useUserEndpoints() {
                 throw new Error(errBody.detail || 'Failed to fetch credit history');
             }
             return res.json();
-        };
+        }, [API_BASE_URL, getHeaders]);
 
-    const getStorageUsage = async (): Promise<Types.StorageUsage> => {
+    const getStorageUsage = useCallback(async (): Promise<Types.StorageUsage> => {
             const res = await fetch(`${API_BASE_URL}/users/me/storage`, {
                 headers: getHeaders(),
             });
@@ -61,7 +62,7 @@ export function useUserEndpoints() {
                 throw new Error(errBody.detail || 'Failed to fetch storage usage');
             }
             return res.json();
-        };
+        }, [API_BASE_URL, getHeaders]);
 
     return { getUserProfile, updateProfile, deleteAccount, getCreditHistory, getStorageUsage };
 }

@@ -1,11 +1,12 @@
 import { useApiCore } from './coreApi';
 import * as Types from './types';
 import { buildVersionedCanvasPayload } from '../canvasPersistence';
+import { useCallback } from 'react';
 
 export function useProjectEndpoints() {
     const { API_BASE_URL, getHeaders } = useApiCore();
 
-    const getProject = async (id: string) => {
+    const getProject = useCallback(async (id: string) => {
             const res = await fetch(`${API_BASE_URL}/projects/${id}`, {
                 headers: getHeaders(),
             });
@@ -14,9 +15,9 @@ export function useProjectEndpoints() {
                 throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to fetch project');
             }
             return res.json();
-        };
+        }, [API_BASE_URL, getHeaders]);
 
-    const saveProject = async (projectPayload: Types.ProjectPayload) => {
+    const saveProject = useCallback(async (projectPayload: Types.ProjectPayload) => {
             // If it has an ID, we update, else create. For our flow right now:
             // Actually our POST /api/projects creates. PUT /api/projects/:id updates.
             const method = projectPayload.id ? 'PUT' : 'POST';
@@ -42,9 +43,9 @@ export function useProjectEndpoints() {
                 throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to save project');
             }
             return res.json();
-        };
+        }, [API_BASE_URL, getHeaders]);
 
-    const getProjects = async (folderId?: string) => {
+    const getProjects = useCallback(async (folderId?: string) => {
             const params = new URLSearchParams();
             if (folderId !== undefined) {
                  params.set('folder_id', folderId);
@@ -58,9 +59,9 @@ export function useProjectEndpoints() {
                 throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to fetch projects');
             }
             return res.json();
-        };
+        }, [API_BASE_URL, getHeaders]);
 
-    const deleteProject = async (id: string) => {
+    const deleteProject = useCallback(async (id: string) => {
             const res = await fetch(`${API_BASE_URL}/projects/${id}`, {
                 method: 'DELETE',
                 headers: getHeaders(),
@@ -69,9 +70,9 @@ export function useProjectEndpoints() {
                 const errBase = await res.json().catch(() => ({}));
                 throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to delete project');
             }
-        };
+        }, [API_BASE_URL, getHeaders]);
 
-    const duplicateProject = async (sourceId: string) => {
+    const duplicateProject = useCallback(async (sourceId: string) => {
             const source = await getProject(sourceId);
             return saveProject({
                 title: `Copy of ${source.title || 'Untitled Design'}`,
@@ -80,9 +81,9 @@ export function useProjectEndpoints() {
                 status: 'draft',
                 aspect_ratio: source.aspect_ratio || '1:1',
             });
-        };
+        }, [getProject, saveProject]);
 
-    const getHistory = async (projectId: string) => {
+    const getHistory = useCallback(async (projectId: string) => {
             const res = await fetch(`${API_BASE_URL}/history/${projectId}`, {
                 headers: getHeaders(),
             });
@@ -91,9 +92,9 @@ export function useProjectEndpoints() {
                 throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to fetch history');
             }
             return res.json();
-        };
+        }, [API_BASE_URL, getHeaders]);
 
-    const createHistory = async (data: Types.HistoryCreateRequest) => {
+    const createHistory = useCallback(async (data: Types.HistoryCreateRequest) => {
             const res = await fetch(`${API_BASE_URL}/history/`, {
                 method: 'POST',
                 headers: getHeaders(),
@@ -107,9 +108,9 @@ export function useProjectEndpoints() {
                 throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to create history entry');
             }
             return res.json();
-        };
+        }, [API_BASE_URL, getHeaders]);
 
-    const getTemplates = async (category?: string, aspectRatio?: string) => {
+    const getTemplates = useCallback(async (category?: string, aspectRatio?: string) => {
             const params = new URLSearchParams();
             if (category) params.set('category', category);
             if (aspectRatio) params.set('aspect_ratio', aspectRatio);
@@ -122,9 +123,9 @@ export function useProjectEndpoints() {
                 throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to fetch templates');
             }
             return res.json();
-        };
+        }, [API_BASE_URL, getHeaders]);
 
-    const getProjectVersions = async (projectId: string): Promise<Types.ProjectVersionResponse[]> => {
+    const getProjectVersions = useCallback(async (projectId: string): Promise<Types.ProjectVersionResponse[]> => {
         const res = await fetch(`${API_BASE_URL}/projects/${projectId}/versions`, {
             headers: getHeaders(),
         });
@@ -133,9 +134,9 @@ export function useProjectEndpoints() {
             throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to fetch project versions');
         }
         return res.json();
-    };
+    }, [API_BASE_URL, getHeaders]);
 
-    const createProjectVersion = async (projectId: string, data: Types.ProjectVersionCreate): Promise<Types.ProjectVersionResponse> => {
+    const createProjectVersion = useCallback(async (projectId: string, data: Types.ProjectVersionCreate): Promise<Types.ProjectVersionResponse> => {
         const res = await fetch(`${API_BASE_URL}/projects/${projectId}/versions`, {
             method: 'POST',
             headers: getHeaders(),
@@ -146,9 +147,9 @@ export function useProjectEndpoints() {
             throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to create project version');
         }
         return res.json();
-    };
+    }, [API_BASE_URL, getHeaders]);
 
-    const deleteProjectVersion = async (projectId: string, versionId: string): Promise<void> => {
+    const deleteProjectVersion = useCallback(async (projectId: string, versionId: string): Promise<void> => {
         const res = await fetch(`${API_BASE_URL}/projects/${projectId}/versions/${versionId}`, {
             method: 'DELETE',
             headers: getHeaders(),
@@ -157,7 +158,7 @@ export function useProjectEndpoints() {
             const errBase = await res.json().catch(() => ({}));
             throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to delete project version');
         }
-    };
+    }, [API_BASE_URL, getHeaders]);
 
     return { getProject, saveProject, getProjects, deleteProject, duplicateProject, getHistory, createHistory, getTemplates, getProjectVersions, createProjectVersion, deleteProjectVersion };
 }

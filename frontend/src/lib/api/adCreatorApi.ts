@@ -1,5 +1,6 @@
 import { useApiCore } from './coreApi';
 import * as Types from './types';
+import { useCallback } from 'react';
 
 async function fetchWithTimeout(resource: RequestInfo, options: RequestInit & { timeout?: number } = {}) {
     const { timeout = 120000, ...fetchOptions } = options; // Default 120 seconds
@@ -17,7 +18,7 @@ async function fetchWithTimeout(resource: RequestInfo, options: RequestInit & { 
 export function useAdCreatorEndpoints() {
     const { API_BASE_URL, getHeaders } = useApiCore();
 
-    const generateSmartAd = async (payload: Types.AdCreatorRequest): Promise<Types.AdCreatorResponse> => {
+    const generateSmartAd = useCallback(async (payload: Types.AdCreatorRequest): Promise<Types.AdCreatorResponse> => {
         try {
             const res = await fetchWithTimeout(`${API_BASE_URL}/ad-creator/generate`, {
                 method: 'POST',
@@ -41,9 +42,9 @@ export function useAdCreatorEndpoints() {
             }
             throw error;
         }
-    };
+    }, [API_BASE_URL, getHeaders]);
 
-    const batchResize = async (payload: Types.BatchResizeRequest): Promise<{ results: Record<string, string> }> => {
+    const batchResize = useCallback(async (payload: Types.BatchResizeRequest): Promise<{ results: Record<string, string> }> => {
         try {
             const res = await fetchWithTimeout(`${API_BASE_URL}/ad-creator/batch-resize`, {
                 method: 'POST',
@@ -67,7 +68,7 @@ export function useAdCreatorEndpoints() {
             }
             throw error;
         }
-    };
+    }, [API_BASE_URL, getHeaders]);
 
     return { generateSmartAd, batchResize };
 }

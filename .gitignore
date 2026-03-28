@@ -58,4 +58,5 @@ docs/business/
 # AI Agents & Tools
 .cursor/
 .cursorrules
-_agents/
+.agents/
+_agents
