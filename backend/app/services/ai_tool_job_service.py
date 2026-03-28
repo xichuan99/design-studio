@@ -114,3 +114,24 @@ async def request_cancel_job(
     await db.commit()
     await db.refresh(job)
     return job
+
+
+async def fail_ai_tool_job(
+    db: AsyncSession,
+    job_id: str | UUID,
+    error_message: str,
+) -> None:
+    """Sets a job status to failed with an error message."""
+    query = select(AiToolJob).where(AiToolJob.id == job_id)
+    result = await db.execute(query)
+    job = result.scalar_one_or_none()
+
+    if not job:
+        return
+
+    job.status = "failed"
+    job.error_message = error_message
+    job.finished_at = datetime.now(timezone.utc)
+
+    db.add(job)
+    await db.commit()

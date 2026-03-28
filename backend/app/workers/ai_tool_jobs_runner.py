@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from typing import Awaitable, Callable
 
 from app.core.database import AsyncSessionLocal
@@ -53,7 +52,7 @@ async def run_ai_tool_job(job_id: str, current_retry: int = 0, max_retries: int 
         tool_name = job.tool_name
         executor = AI_TOOL_EXECUTORS.get(tool_name)
         if executor is None:
-            await fail_ai_tool_job(job_id, f"Unsupported tool: {tool_name}")
+            await fail_ai_tool_job(session, job_id, f"Unsupported tool: {tool_name}")
             await refund_ai_tool_job_if_needed(
                 session,
                 job,
@@ -74,21 +73,17 @@ async def run_ai_tool_job(job_id: str, current_retry: int = 0, max_retries: int 
 
         if is_final_attempt:
             logger.exception("AI tool job failed permanently", extra={"job_id": job_id})
-            await fail_ai_tool_job(job_id, str(exc))
 
             async with AsyncSessionLocal() as session:
-                job_record = await session.get(AiToolJob, job_id)
-                if not job_record:
-                    return
+                await fail_ai_tool_job(session, job_id, str(exc))
 
-                await refund_ai_tool_job_if_needed(
-                    session,
-                    job_record,
-                    reason=f"Refund: job gagal ({job_record.tool_name})",
-                )
-                job_record.finished_at = datetime.now(timezone.utc)
-                session.add(job_record)
-                await session.commit()
+                job_record = await session.get(AiToolJob, job_id)
+                if job_record:
+                    await refund_ai_tool_job_if_needed(
+                        session,
+                        job_record,
+                        reason=f"Refund: job gagal ({job_record.tool_name})",
+                    )
         else:
             logger.warning(
                 f"AI tool job failed. Will retry (Attempt {current_retry}/{max_retries}). Error: {str(exc)}",
