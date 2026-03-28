@@ -44,7 +44,7 @@ def _convert_to_openai_messages(contents, system_instruction=None):
         messages.append({"role": "system", "content": sys_text})
 
     user_content_items = []
-    
+
     for content in contents:
         if isinstance(content, str):
             user_content_items.append({"type": "text", "text": content})
@@ -61,12 +61,12 @@ def _convert_to_openai_messages(contents, system_instruction=None):
             role = "user" if content.role == "user" else "assistant"
             text = " ".join([p.text for p in getattr(content, "parts", []) if hasattr(p, "text")])
             messages.append({"role": role, "content": text})
-            
+
     # Append any collected user parts into one user message payload
     if user_content_items:
         # Openrouter can accept array of dicts for multimodal
         messages.append({"role": "user", "content": user_content_items})
-        
+
     return messages
 
 def call_openrouter(model_id: str, contents: list, config: types.GenerateContentConfig = None):
