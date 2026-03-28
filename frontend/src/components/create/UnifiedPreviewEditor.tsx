@@ -1,12 +1,10 @@
-import React from "react";
-import { Loader2, ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import React, { useMemo } from "react";
 import { ParsedDesignData } from "@/app/create/types";
-import { DesignPreview } from "@/components/create/DesignPreview";
-import { VisualPromptEditor } from "@/components/create/VisualPromptEditor";
-import { GenerationHistoryList } from "./inputs/GenerationHistoryList";
+import { CanvasContainer } from "@/components/create/parts/CanvasContainer";
+import { EditorToolbar } from "@/components/create/parts/EditorToolbar";
+import { AdjustmentSidebar } from "@/components/create/parts/AdjustmentSidebar";
 
-interface UnifiedPreviewEditorProps {
+export interface UnifiedPreviewEditorProps {
     parsedData: ParsedDesignData;
     imageHistory: { url: string; prompt: string }[];
     activeImageIndex: number;
@@ -21,6 +19,9 @@ interface UnifiedPreviewEditorProps {
     onReset?: () => void;
 }
 
+/**
+ * Top-level composer component coordinating the Canvas, Toolbar, and Sidebar sections.
+ */
 export function UnifiedPreviewEditor({
     parsedData,
     imageHistory,
@@ -34,77 +35,36 @@ export function UnifiedPreviewEditor({
     isGeneratingImage,
     onReset
 }: UnifiedPreviewEditorProps) {
+    
+    // Resolve the active image to render (latest generated or currently selected in history)
+    const currentImageUrl = useMemo(() => {
+        return imageHistory[activeImageIndex]?.url || parsedData.generated_image_url || null;
+    }, [imageHistory, activeImageIndex, parsedData.generated_image_url]);
+
     return (
         <div className="flex flex-col md:flex-row w-full h-full overflow-hidden bg-background">
-            {/* LEFT: Image Preview (60%) */}
+            {/* LEFT: Image Preview & Toolbar Controls (60%) */}
             <div className="flex-1 flex flex-col min-w-0 border-r md:h-full h-[60vh]">
-                <div className="flex-1 flex items-center justify-center p-4 min-h-0 overflow-hidden bg-muted/20 relative">
-                    <DesignPreview
-                        imageUrl={imageHistory[activeImageIndex]?.url || parsedData.generated_image_url || null}
-                    />
-                </div>
-
-                {/* Left Bottom Controls (Thumbnail Strip & Proceed CTA) */}
-                <div className="shrink-0 border-t border-border/30 bg-background/80 backdrop-blur-sm px-4 py-3 flex gap-4 items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <GenerationHistoryList 
-                            imageHistory={imageHistory}
-                            activeImageIndex={activeImageIndex}
-                            setActiveImageIndex={setActiveImageIndex}
-                        />
-                        
-                        {/* Mulai Baru Button */}
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors hidden sm:flex"
-                            onClick={onReset}
-                        >
-                            <span className="mr-2">🔄</span> Mulai Baru
-                        </Button>
-                    </div>
-                    
-                    <div className="flex items-center gap-3 shrink-0 ml-auto">
-                        {/* Mobile Icon-only Mulai Baru */}
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors sm:hidden h-11 w-11"
-                            onClick={onReset}
-                            title="Mulai Baru"
-                        >
-                            🔄
-                        </Button>
-                        <Button
-                            size="sm"
-                            className="font-bold shadow-lg h-10 px-6 shrink-0"
-                            onClick={onProceedToEditor}
-                            disabled={isSaving || isGeneratingImage}
-                        >
-                            {isSaving ? (
-                                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Masuk Editor...</>
-                            ) : (
-                                <>Lanjut ke Editor <ArrowRight className="w-4 h-4 ml-2" /></>
-                            )}
-                        </Button>
-                    </div>
-                </div>
+                <CanvasContainer imageUrl={currentImageUrl} />
+                <EditorToolbar 
+                    imageHistory={imageHistory}
+                    activeImageIndex={activeImageIndex}
+                    setActiveImageIndex={setActiveImageIndex}
+                    isSaving={isSaving}
+                    isGeneratingImage={isGeneratingImage}
+                    onReset={onReset}
+                    onProceedToEditor={onProceedToEditor}
+                />
             </div>
 
             {/* RIGHT: Editor & Tweak Panel (40%) */}
-            <div className="w-full md:w-[400px] shrink-0 flex flex-col bg-card/50 overflow-y-auto">
-                <div className="p-5 flex-1">
-                    <h3 className="font-semibold text-lg mb-4 text-foreground">Sempurnakan Prompt AI</h3>
-                    <VisualPromptEditor
-                        parsedData={parsedData}
-                        onTogglePromptPart={onTogglePromptPart}
-                        onModifyPromptParts={onModifyPromptParts}
-                        compact={true}
-                        onGenerate={onGenerate}
-                        isGeneratingImage={isGeneratingImage}
-                    />
-                </div>
-            </div>
+            <AdjustmentSidebar 
+                parsedData={parsedData}
+                onTogglePromptPart={onTogglePromptPart}
+                onModifyPromptParts={onModifyPromptParts}
+                onGenerate={onGenerate}
+                isGeneratingImage={isGeneratingImage}
+            />
         </div>
     );
 }

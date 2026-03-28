@@ -51,7 +51,7 @@ async def background_swap(
         raise ValidationError(detail="Image size exceeds 10MB limit")
 
     from app.services.file_validation import validate_uploaded_image
-    validate_uploaded_image(content)
+    await validate_uploaded_image(content, user_id=current_user.id, db=db)
 
     from app.services.credit_service import log_credit_change
 
@@ -131,7 +131,7 @@ async def background_suggest(
         raise ValidationError(detail="Image size exceeds 10MB limit")
 
     from app.services.file_validation import validate_uploaded_image
-    real_mime_type = validate_uploaded_image(content)
+    real_mime_type = await validate_uploaded_image(content, user_id=current_user.id, db=db)
 
     from app.services.credit_service import log_credit_change
 
@@ -185,8 +185,8 @@ async def magic_eraser(
         raise ValidationError(detail="Image or mask size exceeds 10MB limit")
 
     from app.services.file_validation import validate_uploaded_image
-    validate_uploaded_image(content)
-    validate_uploaded_image(mask_content)
+    await validate_uploaded_image(content, user_id=current_user.id, db=db)
+    await validate_uploaded_image(mask_content, user_id=current_user.id, db=db)
 
     from app.services.credit_service import log_credit_change
 
@@ -285,7 +285,7 @@ async def generative_expand(
         raise ValidationError(detail="Image size exceeds 10MB limit")
 
     from app.services.file_validation import validate_uploaded_image
-    validate_uploaded_image(content)
+    await validate_uploaded_image(content, user_id=current_user.id, db=db)
 
     from app.services.credit_service import log_credit_change
 

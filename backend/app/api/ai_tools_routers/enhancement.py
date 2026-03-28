@@ -53,7 +53,7 @@ async def upscale_image(
         image_bytes = await file.read()
 
         from app.services.file_validation import validate_uploaded_image
-        mime_type = validate_uploaded_image(image_bytes)
+        mime_type = await validate_uploaded_image(image_bytes, user_id=current_user.id, db=db)
 
         temp_url = await upload_image(
             image_bytes, content_type=mime_type, prefix=f"temp_upscale_{temp_id}"
@@ -138,7 +138,7 @@ async def retouch(
         raise ValidationError(detail="Image size exceeds 10MB limit")
 
     from app.services.file_validation import validate_uploaded_image
-    validate_uploaded_image(content)
+    await validate_uploaded_image(content, user_id=current_user.id, db=db)
 
     from app.services.credit_service import log_credit_change
 
@@ -246,7 +246,7 @@ async def create_id_photo(
         raise ValidationError(detail="Image size exceeds 10MB limit")
 
     from app.services.file_validation import validate_uploaded_image
-    validate_uploaded_image(content)
+    await validate_uploaded_image(content, user_id=current_user.id, db=db)
 
     from app.services.credit_service import log_credit_change
 
@@ -351,8 +351,8 @@ async def apply_watermark(
         )
 
     from app.services.file_validation import validate_uploaded_image
-    validate_uploaded_image(content)
-    validate_uploaded_image(logo_content)
+    await validate_uploaded_image(content, user_id=current_user.id, db=db)
+    await validate_uploaded_image(logo_content, user_id=current_user.id, db=db)
 
     try:
         start_time = time.time()

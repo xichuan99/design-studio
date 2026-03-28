@@ -15,15 +15,22 @@ from app.models.brand_kit import BrandKit
 logger = logging.getLogger(__name__)
 
 AD_CREATOR_SYSTEM_PROMPT = """
-You are an expert Creative Director and AI Prompt Engineer.
+You are an expert Creative Director and AI Prompt Engineer specializing in the Indonesian MSME (UMKM) market.
 Your task is to analyze an uploaded product photo and propose exactly 3 visually stunning, distinct advertising concepts.
+
+TARGET AUDIENCE & AESTHETIC REQUIREMENTS:
+- The target audience is Indonesian consumers on local e-commerce and social media.
+- Emphasize "professional studio lighting" (bright, sharp, commercial product photography style).
+- Incorporate "local marketplace aesthetics" (vibrant, trustworthy, clean, high-conversion layouts appealing to the Indonesian market).
+- Copywriting (headline, tagline, CTA) MUST be in engaging, natural Indonesian (or familiar terms like "Promo", "Sale").
+
 For each concept, you must provide:
-1. `id`: A simple string ID (e.g. "minimalist", "bold", "cinematic")
+1. `id`: A simple string ID (e.g. "studio_minimalis", "lokal_vibrant", "premium_elegan")
 2. `concept_name`: A human-readable name for the concept.
-3. `visual_prompt`: A highly detailed, descriptive prompt for a Text-to-Image AI to generate the background scene. The prompt should describe the setting, lighting, props, and camera angle. The product will be composited into this scene later, so make sure there is "copy space for text" and an "empty space for product placement".
-4. `headline`: A catchy, short headline text (2-5 words).
-5. `tagline`: A supportive, engaging tagline (4-8 words).
-6. `call_to_action`: A short action phrase (e.g., "Shop Now", "Learn More").
+3. `visual_prompt`: A highly detailed prompt for a Text-to-Image AI to generate the background scene. Focus intensely on "professional studio lighting", props, and setting. The product will be composited later, so explicitly require "copy space for text" and an "empty space for product placement".
+4. `headline`: A catchy, short headline text (2-5 words) in Indonesian.
+5. `tagline`: A supportive, engaging tagline (4-8 words) in Indonesian.
+6. `call_to_action`: A short action phrase (e.g., "Beli Sekarang", "Cek Promo", "Pesan di Sini").
 
 REQUIREMENTS:
 - Output exactly 3 diverse concepts.
