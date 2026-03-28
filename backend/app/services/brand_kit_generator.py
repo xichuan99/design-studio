@@ -74,6 +74,7 @@ Desired Emotional Tone: {emotional_tone}
 
     def call_gemini():
         from app.services.llm_client import call_gemini_with_fallback
+
         client = get_genai_client()
         response = call_gemini_with_fallback(
             client=client,
@@ -85,7 +86,14 @@ Desired Emotional Tone: {emotional_tone}
                 temperature=0.7,
             ),
         )
-        return json.loads(response.text)
+
+        result_text = response.text.strip()
+        if result_text.startswith("```json"):
+            result_text = result_text[7:-3].strip()
+        elif result_text.startswith("```"):
+            result_text = result_text[3:-3].strip()
+
+        return json.loads(result_text)
 
     try:
         return await asyncio.to_thread(call_gemini)
@@ -134,4 +142,3 @@ async def generate_logo_from_prompt(prompt: str) -> bytes:
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Gagal generate logo: {str(e)}",
         )
-

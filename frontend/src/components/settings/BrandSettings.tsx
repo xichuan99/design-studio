@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useBrandKit } from '@/hooks/useBrandKit';
 import { useProjectApi, BrandKitProfile, ColorRole, ColorSwatch } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -51,6 +51,28 @@ export default function BrandSettings({ selectedFolderId }: { selectedFolderId?:
     const [isGeneratingAI, setIsGeneratingAI] = useState(false);
     const [isExtractingUrl, setIsExtractingUrl] = useState(false);
     const [showStrategyReport, setShowStrategyReport] = useState(false);
+
+    // Dynamic AI Google Fonts Hook
+    useEffect(() => {
+        if (!editingBrand?.typography) return;
+        const fontsToLoad = new Set([
+            editingBrand.typography.primaryFont,
+            editingBrand.typography.secondaryFont
+        ].filter(Boolean));
+
+        fontsToLoad.forEach(font => {
+            if (!font) return;
+            const formattedFont = font.replace(/ /g, '+');
+            const url = `https://fonts.googleapis.com/css2?family=${formattedFont}:wght@400;500;600;700&display=swap`;
+            
+            if (!document.querySelector(`link[href^="https://fonts.googleapis.com/css2?family=${formattedFont}"]`)) {
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = url;
+                document.head.appendChild(link);
+            }
+        });
+    }, [editingBrand?.typography, editingBrand?.typography?.primaryFont, editingBrand?.typography?.secondaryFont]);
 
     const handleCreateNew = () => {
         setShowStrategyReport(false);
@@ -317,44 +339,54 @@ export default function BrandSettings({ selectedFolderId }: { selectedFolderId?:
                         <div className="flex justify-between items-center">
                             <Label>Tipografi</Label>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                             <div>
-                                <Label className="text-xs text-muted-foreground">Primary Font (Headline)</Label>
-                                <Select 
-                                    value={editingBrand.typography?.primaryFont || 'Inter'} 
-                                    onValueChange={val => setEditingBrand({...editingBrand, typography: { ...editingBrand.typography, primaryFont: val }})}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Pilih Font" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {SUPPORTED_FONTS.map(font => (
-                                            <SelectItem key={font} value={font} style={{ fontFamily: font }}>
-                                                {font}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                             </div>
-                             <div>
-                                <Label className="text-xs text-muted-foreground">Secondary Font (Body)</Label>
-                                <Select 
-                                    value={editingBrand.typography?.secondaryFont || 'Inter'} 
-                                    onValueChange={val => setEditingBrand({...editingBrand, typography: { ...editingBrand.typography, secondaryFont: val }})}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Pilih Font" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {SUPPORTED_FONTS.map(font => (
-                                            <SelectItem key={font} value={font} style={{ fontFamily: font }}>
-                                                {font}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                             </div>
-                        </div>
+                        {(() => {
+                            const primaryFont = editingBrand.typography?.primaryFont || 'Inter';
+                            const allPrimaryFonts = SUPPORTED_FONTS.includes(primaryFont) ? SUPPORTED_FONTS : [primaryFont, ...SUPPORTED_FONTS];
+
+                            const secondaryFont = editingBrand.typography?.secondaryFont || 'Inter';
+                            const allSecondaryFonts = SUPPORTED_FONTS.includes(secondaryFont) ? SUPPORTED_FONTS : [secondaryFont, ...SUPPORTED_FONTS];
+
+                            return (
+                                <div className="grid grid-cols-2 gap-4">
+                                     <div>
+                                        <Label className="text-xs text-muted-foreground">Primary Font (Headline)</Label>
+                                        <Select 
+                                            value={editingBrand.typography?.primaryFont || 'Inter'} 
+                                            onValueChange={val => setEditingBrand({...editingBrand, typography: { ...editingBrand.typography, primaryFont: val }})}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Pilih Font" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {allPrimaryFonts.map(font => (
+                                                    <SelectItem key={font} value={font} style={{ fontFamily: font }}>
+                                                        {font}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                     </div>
+                                     <div>
+                                        <Label className="text-xs text-muted-foreground">Secondary Font (Body)</Label>
+                                        <Select 
+                                            value={editingBrand.typography?.secondaryFont || 'Inter'} 
+                                            onValueChange={val => setEditingBrand({...editingBrand, typography: { ...editingBrand.typography, secondaryFont: val }})}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Pilih Font" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {allSecondaryFonts.map(font => (
+                                                    <SelectItem key={font} value={font} style={{ fontFamily: font }}>
+                                                        {font}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                     </div>
+                                </div>
+                            );
+                        })()}
                     </div>
 
                     <div className="space-y-4">
