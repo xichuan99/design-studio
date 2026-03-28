@@ -243,6 +243,9 @@ jobs:
           script: |
             set -e
             cd ~/design-studio
+            
+            # Tarik perubahan terbaru dari repository
+            git pull origin main
 
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin 2>/dev/null
 

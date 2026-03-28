@@ -278,8 +278,8 @@ export const AIPromptPanel: React.FC = () => {
             const file = await checkAndDownloadImage(generatedUrl);
             const res = await upscaleImage(file, 2.0);
             setGeneratedUrl(res.url);
-        } catch (err: any) {
-            setInlineError({ message: err.message || 'Gagal melakukan upscale', type: 'error' });
+        } catch (err: unknown) {
+            setInlineError({ message: err instanceof Error ? err.message : 'Gagal melakukan upscale', type: 'error' });
         } finally {
             setIsProcessingImage(false);
         }
@@ -293,8 +293,8 @@ export const AIPromptPanel: React.FC = () => {
             const file = await checkAndDownloadImage(generatedUrl);
             const res = await removeBackground(file);
             setGeneratedUrl(res.url);
-        } catch (err: any) {
-            setInlineError({ message: err.message || 'Gagal menghapus background', type: 'error' });
+        } catch (err: unknown) {
+            setInlineError({ message: err instanceof Error ? err.message : 'Gagal menghapus background', type: 'error' });
         } finally {
             setIsProcessingImage(false);
         }
