@@ -73,9 +73,12 @@ Desired Emotional Tone: {emotional_tone}
 """
 
     def call_gemini():
+        from app.services.llm_client import call_gemini_with_fallback
         client = get_genai_client()
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
+        response = call_gemini_with_fallback(
+            client=client,
+            primary_model="gemini-2.5-flash",
+            fallback_model="qwen/qwen-2.5-72b-instruct",
             contents=[BRAND_KIT_SYSTEM_PROMPT, context],
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
