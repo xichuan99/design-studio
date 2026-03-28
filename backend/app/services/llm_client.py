@@ -34,7 +34,7 @@ def get_genai_client() -> genai.Client:
     )
 
 def _convert_to_openai_messages(contents, system_instruction=None):
-    """Utility to convert Gemini contents to OpenAI/OpenRouter messages format."""
+    import base64
     messages = []
     if system_instruction:
         # Check if system_instruction is a string or a more complex object
@@ -43,13 +43,30 @@ def _convert_to_openai_messages(contents, system_instruction=None):
              sys_text = " ".join([p.text for p in system_instruction.parts if hasattr(p, "text")])
         messages.append({"role": "system", "content": sys_text})
 
+    user_content_items = []
+    
     for content in contents:
         if isinstance(content, str):
-            messages.append({"role": "user", "content": content})
+            user_content_items.append({"type": "text", "text": content})
+        elif hasattr(content, "inline_data") and content.inline_data:
+            # Handle image data part
+            b64_data = base64.b64encode(content.inline_data.data).decode("utf-8")
+            mime_type = content.inline_data.mime_type
+            user_content_items.append({
+                "type": "image_url",
+                "image_url": {"url": f"data:{mime_type};base64,{b64_data}"}
+            })
         elif hasattr(content, "role"):
+            # It's a structured History object for multi-turn chats
             role = "user" if content.role == "user" else "assistant"
-            text = " ".join([p.text for p in content.parts if hasattr(p, "text")])
+            text = " ".join([p.text for p in getattr(content, "parts", []) if hasattr(p, "text")])
             messages.append({"role": role, "content": text})
+            
+    # Append any collected user parts into one user message payload
+    if user_content_items:
+        # Openrouter can accept array of dicts for multimodal
+        messages.append({"role": "user", "content": user_content_items})
+        
     return messages
 
 def call_openrouter(model_id: str, contents: list, config: types.GenerateContentConfig = None):
