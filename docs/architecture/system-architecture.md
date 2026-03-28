@@ -17,6 +17,7 @@ Dokumen ini merangkum arsitektur sistem saat ini berdasarkan implementasi yang a
 - [Data Model Overview](../architecture/data-model.md)
 - [Deployment Topology](../architecture/deployment-topology.md)
 - [Design Generation Sequence](../architecture/design-generation-sequence.md)
+- [Security & API Guidelines](../architecture/security-guidelines.md)
 - [Platform Hardening Plan](../features/platform-hardening/implementation-plan.md)
 
 ---
