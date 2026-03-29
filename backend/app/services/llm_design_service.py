@@ -232,6 +232,7 @@ async def parse_design_text(
     clarification_answers: Optional[dict] = None,
     brand_colors: Optional[list[str]] = None,
     brand_typography: Optional[dict] = None,
+    brand_memory_context: Optional[list[str]] = None,
 ) -> ParsedTextElements:
     """
     Parses raw text into structured design elements and a visual prompt.
@@ -242,6 +243,7 @@ async def parse_design_text(
         clarification_answers (Optional[dict]): User's answers to clarification questions. Defaults to None.
         brand_colors (Optional[list[str]]): List of hex colors from the active brand kit. Defaults to None.
         brand_typography (Optional[dict]): Dictionary of fonts from the active brand kit. Defaults to None.
+        brand_memory_context (Optional[list[str]]): RAG context retrieved from brand guidelines. Defaults to None.
 
     Returns:
         ParsedTextElements: An object containing layout details, visual prompt parts, and translations.
@@ -293,12 +295,21 @@ async def parse_design_text(
         Do NOT use any other font. These brand fonts are mandatory.
         """
 
+    brand_memory_modifier = ""
+    if brand_memory_context:
+        brand_memory_modifier = f"""
+        BRAND GUIDELINES & CONTEXT (RAG MEMORY):
+        The user's brand has specific historical guidelines and constraints. YOU MUST incorporate these rules into your design decisions:
+        {json.dumps(brand_memory_context, indent=2)}
+        """
+
     final_prompt = (
         SYSTEM_PROMPT
         + prompt_modifier
         + clarification_modifier
         + brand_colors_modifier
         + brand_typography_modifier
+        + brand_memory_modifier
     )
 
     if not settings.GEMINI_API_KEY:

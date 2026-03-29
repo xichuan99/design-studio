@@ -99,5 +99,35 @@ export function useBrandKitEndpoints() {
             if (!res.ok) throw new Error('Failed to delete Brand Kit');
         }, [API_BASE_URL, getHeaders]);
 
-    return { extractBrandColors, saveBrandKit, getBrandKits, getActiveBrandKit, updateBrandKit, deleteBrandKit, generateBrandKit, extractBrandFromUrl };
+    const uploadBrandGuideline = useCallback(async (kitId: string, file: File): Promise<{ status: string, chunks_stored: number }> => {
+        const formData = new FormData();
+        formData.append('file', file);
+        const headers = getHeaders();
+        // Browser sets multipart boundary automatically
+        delete headers['Content-Type'];
+
+        const res = await fetch(`${API_BASE_URL}/brand-kits/${kitId}/documents`, {
+            method: 'POST',
+            headers,
+            body: formData,
+        });
+
+        if (!res.ok) {
+            const errBase = await res.json().catch(() => ({}));
+            throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to upload document');
+        }
+        return res.json();
+    }, [API_BASE_URL, getHeaders]);
+
+    return { 
+        extractBrandColors, 
+        saveBrandKit, 
+        getBrandKits, 
+        getActiveBrandKit, 
+        updateBrandKit, 
+        deleteBrandKit, 
+        generateBrandKit, 
+        extractBrandFromUrl,
+        uploadBrandGuideline
+    };
 }

@@ -32,3 +32,6 @@ class BrandKit(Base):
 
     # Relationship
     user = relationship("User")
+    memories = relationship(
+        "BrandMemory", back_populates="brand_kit", cascade="all, delete-orphan"
+    )

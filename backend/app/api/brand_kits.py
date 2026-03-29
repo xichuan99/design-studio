@@ -387,3 +387,53 @@ async def delete_brand_kit(
 
     await db.delete(kit)
     await db.commit()
+
+@router.post(
+    "/{kit_id}/documents",
+    status_code=status.HTTP_200_OK,
+    summary="Upload Brand Guidelines",
+    description="Uploads a PDF to be processed and stored in the Brand Kit's memory for RAG.",
+    responses=ERROR_RESPONSES,
+)
+async def upload_brand_guidelines(
+    kit_id: UUID,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    import logging
+    from app.services.rag_service import extract_text_from_pdf, chunk_and_store_guidelines
+
+    # Verify ownership
+    result = await db.execute(
+        select(BrandKit).where(
+            BrandKit.id == kit_id, BrandKit.user_id == current_user.id
+        )
+    )
+    kit = result.scalar_one_or_none()
+
+    if not kit:
+        raise NotFoundError(detail="Brand Kit not found.")
+
+    if file.content_type != "application/pdf":
+        raise ValidationError(detail="Only PDF files are supported currently.")
+
+    try:
+        file_bytes = await file.read()
+        raw_text = await extract_text_from_pdf(file_bytes)
+
+        if not raw_text.strip():
+            raise ValidationError(detail="No text could be extracted from the PDF.")
+
+        chunks_stored = await chunk_and_store_guidelines(
+            db=db,
+            brand_kit_id=kit_id,
+            raw_text=raw_text,
+            chunk_size=150  # chunks of 150 words for finer retrieval
+        )
+
+        return {"status": "success", "chunks_stored": chunks_stored}
+    except Exception as e:
+        logging.exception(f"Exception uploading guidelines: {e}")
+        from app.core.exceptions import InternalServerError
+        raise InternalServerError(detail="Failed to process document.")

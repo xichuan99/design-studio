@@ -16,3 +16,4 @@ from app.models.template_favorite import TemplateFavorite as TemplateFavorite
 from app.models.template_usage_stat import TemplateUsageStat as TemplateUsageStat
 from app.models.folder import Folder as Folder
 from app.models.project_version import ProjectVersion as ProjectVersion
+from app.models.brand_memory import BrandMemory as BrandMemory

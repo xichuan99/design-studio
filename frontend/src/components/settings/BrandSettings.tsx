@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Trash2, CheckCircle2, Palette, Loader2, Save, Sparkles, Globe, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, CheckCircle2, Palette, Loader2, Save, Sparkles, Globe, AlertTriangle, FileText, Upload } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
@@ -112,7 +112,27 @@ export default function BrandSettings({ selectedFolderId }: { selectedFolderId?:
     };
 
     const fileInputRef = React.useRef<HTMLInputElement>(null);
+    const pdfInputRef = React.useRef<HTMLInputElement>(null);
     const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+    const [isUploadingPdf, setIsUploadingPdf] = useState(false);
+
+    const handleUploadPdf = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !editingBrand?.id) return;
+
+        try {
+            setIsUploadingPdf(true);
+            const res = await api.uploadBrandGuideline(editingBrand.id, file);
+            toast.success(`Dokumen pedoman berhasil ditambahkan (${res.chunks_stored} blok konteks).`);
+        } catch (err) {
+            console.error("Failed to upload PDF:", err);
+            const errorMessage = err instanceof Error ? err.message : "Gagal mengunggah dokumen pedoman.";
+            toast.error(errorMessage);
+        } finally {
+            setIsUploadingPdf(false);
+            if (pdfInputRef.current) pdfInputRef.current.value = '';
+        }
+    };
 
     const handleUploadLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -387,6 +407,44 @@ export default function BrandSettings({ selectedFolderId }: { selectedFolderId?:
                                 </div>
                             );
                         })()}
+                    </div>
+
+                    {/* Brand Guidelines PDF Upload */}
+                    <div className="space-y-4">
+                        <div className="flex justify-between flex-row items-center border border-border p-4 rounded-xl bg-card">
+                            <div className="max-w-[70%]">
+                                <Label className="flex items-center gap-2 text-sm font-semibold mb-1">
+                                    <FileText className="w-5 h-5 text-primary" /> Pedoman Merek AI (PDF)
+                                </Label>
+                                <p className="text-xs text-muted-foreground leading-relaxed">
+                                    Unggah dokumen <i>Brand Guidelines</i> resmi Anda. Sistem RAG kami akan mengiris dan membaca dokumen ini untuk menyesuaikan gaya <i>copywriting</i> dan desain dengan standar merek Anda.
+                                </p>
+                            </div>
+                            <div className="flex-shrink-0">
+                                <input
+                                    type="file"
+                                    accept="application/pdf"
+                                    className="hidden"
+                                    ref={pdfInputRef}
+                                    onChange={handleUploadPdf}
+                                />
+                                <Button 
+                                    variant={editingBrand.id ? "default" : "secondary"}
+                                    size="sm" 
+                                    onClick={() => pdfInputRef.current?.click()}
+                                    disabled={isUploadingPdf || !editingBrand.id}
+                                    className={!editingBrand.id ? "opacity-50 cursor-not-allowed" : ""}
+                                >
+                                    {isUploadingPdf ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2"/>} 
+                                    {isUploadingPdf ? "Membaca Dokumen..." : "Upload Pedoman"}
+                                </Button>
+                            </div>
+                        </div>
+                        {!editingBrand.id && (
+                            <div className="text-xs bg-amber-500/10 text-amber-600 dark:text-amber-500 p-2.5 rounded-lg flex items-center gap-2 font-medium border border-amber-500/20">
+                                <AlertTriangle className="w-4 h-4 shrink-0" /> Simpan Brand Kit ini terlebih dahulu sebelum dapat mengunggah dokumen pedoman AI.
+                            </div>
+                        )}
                     </div>
 
                     <div className="space-y-4">
