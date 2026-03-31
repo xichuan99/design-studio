@@ -225,15 +225,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Copy docker-compose.yml ke server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "docker-compose.yml"
-          target: "~/design-studio"
-
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -243,6 +234,9 @@ jobs:
           script: |
             set -e
             cd ~/design-studio
+            
+            # Reset perubahan lokal apapun termasuk docker-compose.yml
+            git reset --hard HEAD
             
             # Tarik perubahan terbaru dari repository
             git pull origin main
