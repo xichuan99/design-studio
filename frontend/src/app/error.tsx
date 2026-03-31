@@ -14,17 +14,40 @@ export default function GlobalError({
   useEffect(() => {
     // Log the error to an error reporting service if needed
     console.error("Global error caught:", error);
+  }, [error]);
 
-    // Auto-recovery for Server Action mismatch errors after deployments
-    if (
-      error.message?.includes("Failed to find Server Action") ||
-      error.message?.includes("NEXT_ROUTER_PREFETCH")
-    ) {
-      console.log("Detected older deployment version mismatch. Auto-reloading...");
-      // Hard refresh to get the latest JS bundle
+  const isSkewError = 
+    error.message?.includes("Failed to find Server Action") ||
+    error.message?.includes("NEXT_ROUTER_PREFETCH") ||
+    error.digest?.includes("NEXT_NOT_FOUND");
+
+  useEffect(() => {
+    if (isSkewError) {
+      console.warn("Auto-reloading due to deployment skew...");
       window.location.reload();
     }
-  }, [error]);
+  }, [isSkewError]);
+
+  // If version mismatch is detected, show a clean, transition UI
+  // rather than a frightening error screen.
+  if (isSkewError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4 text-center">
+        <div className="flex flex-col items-center gap-6">
+          <div className="relative">
+            <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse" />
+            <RefreshCcw className="w-12 h-12 text-primary animate-spin relative z-10" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-bold text-foreground">Sinkronisasi Aplikasi</h2>
+            <p className="text-muted-foreground max-w-[250px]">
+              Sedang memuat versi terbaru untuk menjaga data Anda tetap sinkron...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4 text-center">

@@ -43,25 +43,26 @@ export function DeploymentGuard() {
           // Version mismatch detected!
           setHasNotified(true);
           
-          toast.message("Versi Baru Tersedia ✨", {
-            description: "Aplikasi telah diperbarui dengan fitur baru atau perbaikan. Silakan muat ulang halaman.",
-            duration: Infinity, // Don't auto-dismiss
+          toast.info("Update Tersedia ✨", {
+            description: "Aplikasi telah diperbarui. Memuat ulang untuk sinkronisasi...",
+            duration: 3000, 
+            onAutoClose: () => window.location.reload(),
             action: (
               <Button 
                 onClick={() => window.location.reload()} 
                 size="sm" 
-                className="gap-2 shrink-0 bg-primary/20 hover:bg-primary/30 text-primary border-primary/30"
-                variant="outline"
+                className="gap-2 shrink-0"
+                variant="default"
               >
                 <RefreshCcw className="w-3.5 h-3.5" />
-                Refresh
+                Refresh Sekarang
               </Button>
             ),
           });
         }
-      } catch (error) {
+      } catch (_error) {
         // Silently ignore network errors to not bother the user
-        console.warn("Failed to check deployment version:", error);
+        // console.warn("Failed to check deployment version:", _error);
       }
     };
 
@@ -78,9 +79,19 @@ export function DeploymentGuard() {
       if (
         errorMsg.includes("Failed to find Server Action") || 
         errorMsg.includes("NEXT_NOT_FOUND") ||
-        errorMsg.includes("digest") // Next.js often uses digest for minified errors
+        errorMsg.includes("NEXT_ROUTER_PREFETCH") ||
+        errorMsg.includes("digest") // Next.js internal error ID
       ) {
-        console.log("Detected possible deployment sync error, checking version...");
+        console.warn("Detected possible deployment sync error (skew):", errorMsg);
+        
+        // Immediate action for Server Action mismatch
+        if (errorMsg.includes("Failed to find Server Action")) {
+          // Force immediate silent reload to "fix" the state
+          console.log("Forcing immediate reload due to Server Action mismatch...");
+          window.location.reload();
+          return;
+        }
+
         checkDeploymentVersion();
       }
     };
