@@ -2,15 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { usePathname } from "next/navigation";
 import { RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const CHECK_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
+const CHECK_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
 
 export function DeploymentGuard() {
   const [hasNotified, setHasNotified] = useState(false);
-  const pathname = usePathname();
 
   useEffect(() => {
     // Only run on client
@@ -67,25 +65,54 @@ export function DeploymentGuard() {
       }
     };
 
-    // Check immediately on mount, but after a small delay to let page load finish
+    // 1. Reactive: Catch Server Action failures immediately
+    const handleActionError = (event: PromiseRejectionEvent | ErrorEvent) => {
+      if (hasNotified) return;
+
+      const errorMsg = (event instanceof PromiseRejectionEvent 
+        ? (event.reason?.message || event.reason?.toString()) 
+        : event.message) || "";
+
+      // Check for common Next.js build mismatch error patterns
+      // "Failed to find Server Action" is the standard message
+      if (
+        errorMsg.includes("Failed to find Server Action") || 
+        errorMsg.includes("NEXT_NOT_FOUND") ||
+        errorMsg.includes("digest") // Next.js often uses digest for minified errors
+      ) {
+        console.log("Detected possible deployment sync error, checking version...");
+        checkDeploymentVersion();
+      }
+    };
+
+    // 2. Proactive: Check when user returns to tab
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        checkDeploymentVersion();
+      }
+    };
+
+    // Listeners
+    window.addEventListener("unhandledrejection", handleActionError);
+    window.addEventListener("error", handleActionError);
+    window.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", checkDeploymentVersion);
+
+    // Initial check after mount
     const initialTimer = setTimeout(checkDeploymentVersion, 5000);
     
-    // Set up polling
+    // Polling interval
     const intervalId = setInterval(checkDeploymentVersion, CHECK_INTERVAL_MS);
 
     return () => {
+      window.removeEventListener("unhandledrejection", handleActionError);
+      window.removeEventListener("error", handleActionError);
+      window.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", checkDeploymentVersion);
       clearTimeout(initialTimer);
       clearInterval(intervalId);
     };
   }, [hasNotified]);
 
-  // Optionally, you can also re-check on certain route changes 
-  // if you want to be more proactive when user navigates
-  useEffect(() => {
-    // We already check on mount/interval, but we can reset the notification
-    // state if they somehow navigated but didn't refresh (though NextJS usually
-    // soft-navigates making this redundant, it's safe to keep track of pathname)
-  }, [pathname]);
-
-  return null; // This component doesn't render anything visible directly
+  return null;
 }
