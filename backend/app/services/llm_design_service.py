@@ -211,18 +211,32 @@ async def generate_unified_brief_questions(
         config=types.GenerateContentConfig(
             system_instruction=system_instruction,
             response_mime_type="application/json",
-            response_schema=BriefQuestionsResponse.model_json_schema(),
+            response_schema=BriefQuestionsResponse,
             temperature=0.7,
         ),
     )
 
     try:
-        parsed = BriefQuestionsResponse.model_validate_json(response.text)
+        import json
+        result_text = response.text.strip()
+        if result_text.startswith("```json"):
+            result_text = result_text[7:]
+        if result_text.startswith("```"):
+            result_text = result_text[3:]
+        if result_text.endswith("```"):
+            result_text = result_text[:-3]
+
+        data = json.loads(result_text.strip())
+        # Fallback heuristic: some LLMs return "clarification_questions" instead of "questions"
+        if "clarification_questions" in data and "questions" not in data:
+            data["questions"] = data.pop("clarification_questions")
+
+        parsed = BriefQuestionsResponse.model_validate(data)
         return parsed.model_dump()
     except Exception as e:
         import logging
 
-        logging.exception("Error extracting unified questions via LLM")
+        logging.exception(f"Error extracting unified questions via LLM: {response.text}")
         raise e
 
 

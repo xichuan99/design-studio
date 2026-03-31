@@ -75,7 +75,7 @@ class CreateToolJobRequest(BaseModel):
         "watermark",
     ]
     payload: dict[str, Any] = Field(default_factory=dict)
-    idempotency_key: str | None = Field(default=None, max_length=64)
+    idempotency_key: str | None = Field(default=None, max_length=255)
 
 
 @router.post(
@@ -140,9 +140,9 @@ async def create_tool_job(
 
             process_ai_tool_job_task.delay(str(job.id))
         else:
-            from app.workers.tasks import run_ai_tool_job_now
+            from app.workers.tasks import run_ai_tool_job
 
-            asyncio.create_task(run_ai_tool_job_now(str(job.id)))
+            asyncio.create_task(run_ai_tool_job(str(job.id)))
 
     return serialize_job(job)
 

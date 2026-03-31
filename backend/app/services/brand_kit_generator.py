@@ -125,8 +125,8 @@ async def generate_logo_from_prompt(prompt: str) -> bytes:
     }
 
     try:
-        # fal-ai/flux-2/dev text to image.
-        result = await fal_client.run_async("fal-ai/flux-2/dev", arguments=arguments)
+        # fal-ai/flux/dev text to image.
+        result = await fal_client.run_async("fal-ai/flux/dev", arguments=arguments)
 
         if "images" in result and len(result["images"]) > 0:
             result_url = result["images"][0]["url"]

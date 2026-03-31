@@ -30,7 +30,7 @@ class AiToolJob(Base):
     progress_percent = Column(Integer, nullable=False, default=0)
     provider_latency_ms = Column(Integer, nullable=True)
 
-    idempotency_key = Column(String(64), nullable=True)
+    idempotency_key = Column(String(255), nullable=True)
     cancel_requested = Column(Boolean, nullable=False, default=False)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

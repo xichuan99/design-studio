@@ -124,8 +124,8 @@ export default function CreatePage() {
                 )}
 
                 {/* Sidebar Inputs */}
-                <aside className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 absolute md:relative w-full max-w-[420px] md:w-[420px] border-r flex flex-col bg-card overflow-y-auto shrink-0 z-20 shadow-xl h-full transition-transform duration-200`}>
-                    <div className="p-4 space-y-6 flex-1 relative">
+                <aside className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 absolute md:relative w-full max-w-[420px] md:w-[420px] border-r flex flex-col bg-card shrink-0 z-20 shadow-xl h-full transition-transform duration-200`}>
+                    <div className="p-4 space-y-6 flex-1 overflow-y-auto relative">
                         <SidebarInputForm
                             createMode={createMode}
                             setCreateMode={setCreateMode}

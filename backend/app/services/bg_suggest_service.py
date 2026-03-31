@@ -110,27 +110,55 @@ async def suggest_backgrounds(
         "Generate 3 background suggestions for this product photo."
     )
 
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=[user_message],
-        config=genai_types.GenerateContentConfig(
-            system_instruction=SUGGESTION_SYSTEM_PROMPT,
-            response_mime_type="application/json",
-        ),
-    )
+    try:
+        from app.services.llm_client import call_gemini_with_fallback
 
-    result_text = response.text.strip()
-    # Strip possible markdown fences
-    if result_text.startswith("```json"):
-        result_text = result_text[7:]
-    if result_text.startswith("```"):
-        result_text = result_text[3:]
-    if result_text.endswith("```"):
-        result_text = result_text[:-3]
+        response = call_gemini_with_fallback(
+            client=client,
+            primary_model="gemini-2.5-flash",
+            fallback_model="qwen/qwen-2.5-72b-instruct",
+            contents=[user_message],
+            config=genai_types.GenerateContentConfig(
+                system_instruction=SUGGESTION_SYSTEM_PROMPT,
+                response_mime_type="application/json",
+            ),
+        )
 
-    parsed = json.loads(result_text.strip())
-    suggestions = parsed.get("suggestions", [])
+        result_text = response.text.strip()
+        # Strip possible markdown fences
+        if result_text.startswith("```json"):
+            result_text = result_text[7:]
+        if result_text.startswith("```"):
+            result_text = result_text[3:]
+        if result_text.endswith("```"):
+            result_text = result_text[:-3]
 
-    # Guarantee at most 3 items
-    return {"suggestions": suggestions[:3]}
+        parsed = json.loads(result_text.strip())
+        suggestions = parsed.get("suggestions", [])
+
+        # Guarantee at most 3 items
+        return {"suggestions": suggestions[:3]}
+    except Exception:
+        logger.warning(
+            "Gemini suggestion generation failed, using fallback suggestions", exc_info=True
+        )
+        return {
+            "suggestions": [
+                {
+                    "title": "Studio Minimal",
+                    "emoji": "✨",
+                    "prompt": "Minimalist clean studio setting, neutral background, soft even lighting, professional product photography, 8k, photorealistic"
+                },
+                {
+                    "title": "Alam Terbuka",
+                    "emoji": "🌿",
+                    "prompt": "Natural outdoor setting, dappled sunlight, blurred soft foliage background, professional product photography, 8k, photorealistic"
+                },
+                {
+                    "title": "Meja Kayu",
+                    "emoji": "🪵",
+                    "prompt": "Rustic wooden table surface, warm golden hour lighting, cozy atmosphere, professional product photography, 8k, photorealistic"
+                }
+            ]
+        }
 

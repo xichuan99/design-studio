@@ -315,7 +315,7 @@ export function useCreateDesign() {
     }, [rawText, createMode, clarifyUnified, handleGeneratePrompt, brandKitEnabled, posthog]);
 
     const handleGenerateImage = useCallback(async () => {
-        if (!parsedData) return;
+        if (!parsedData && createMode !== 'redesign') return;
         
         setIsGeneratingImage(true);
         setCurrentStep('generating');
@@ -323,7 +323,7 @@ export function useCreateDesign() {
 
         try {
             let assembledPrompt = rawText;
-            if (parsedData.visual_prompt_parts && parsedData.visual_prompt_parts.length > 0) {
+            if (parsedData?.visual_prompt_parts && parsedData.visual_prompt_parts.length > 0) {
                 const activeParts = parsedData.visual_prompt_parts
                     .filter((p: VisualPromptPart) => p.enabled)
                     .map((p: VisualPromptPart) => p.value);
@@ -407,7 +407,14 @@ export function useCreateDesign() {
                         ...prev,
                         generated_image_url: newUrl,
                         quantum_layout: statusData.quantum_layout || undefined
-                    } : null);
+                    } : {
+                        layout_instruction: "Placeholder layout",
+                        visual_prompt: finalPrompt,
+                        image_caption: "Redesign from reference",
+                        indonesian_translation: finalPrompt,
+                        generated_image_url: newUrl,
+                        quantum_layout: statusData.quantum_layout || undefined
+                    });
                     setCurrentStep('preview');
                     posthog?.capture('create_generation_success', { create_mode: createMode });
                 } else {
@@ -435,7 +442,14 @@ export function useCreateDesign() {
                             ...prev,
                             generated_image_url: newUrl,
                             quantum_layout: statusData.quantum_layout || undefined
-                        } : null);
+                        } : {
+                            layout_instruction: "Placeholder layout",
+                            visual_prompt: finalPrompt,
+                            image_caption: "Redesign from reference",
+                            indonesian_translation: finalPrompt,
+                            generated_image_url: newUrl,
+                            quantum_layout: statusData.quantum_layout || undefined
+                        });
                         setCurrentStep('preview');
                         posthog?.capture('create_generation_success', { create_mode: createMode });
                     } else if (statusData.status === "failed") {

@@ -35,9 +35,6 @@ export function CanvasMaskPainter({ imageUrl, onMaskComplete, className = "" }: 
   const [cursorPos, setCursorPos] = useState<Point | null>(null);
   const [isHovering, setIsHovering] = useState(false);
   
-  // High-res canvas scale for better mask quality
-  const scale = 2;
-
   const getCoordinates = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent): Point | null => {
     if (!canvasRef.current) return null;
     const canvas = canvasRef.current;
@@ -54,12 +51,9 @@ export function CanvasMaskPainter({ imageUrl, onMaskComplete, className = "" }: 
       clientY = (e as React.MouseEvent | MouseEvent).clientY;
     }
 
-    const scaleX = canvas.width / scale / rect.width;
-    const scaleY = canvas.height / scale / rect.height;
-
     return {
-      x: (clientX - rect.left) * scaleX,
-      y: (clientY - rect.top) * scaleY
+      x: clientX - rect.left,
+      y: clientY - rect.top
     };
   };
 
