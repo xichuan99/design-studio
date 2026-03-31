@@ -4,4 +4,8 @@ Sentry.init({
     dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
     tracesSampleRate: 1.0,
     debug: false,
+    ignoreErrors: [
+        "Failed to find Server Action",
+        "NEXT_ROUTER_PREFETCH",
+    ],
 });

@@ -1,70 +1,79 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { usePathname } from "next/navigation";
 import { toast } from "sonner";
 import { RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const CHECK_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
+const CHECK_INTERVAL_MS = 1 * 60 * 1000; // 1 minute
 
 export function DeploymentGuard() {
   const [hasNotified, setHasNotified] = useState(false);
 
+  // Read the current build ID injected during build time
+  const initialBuildId = process.env.NEXT_PUBLIC_BUILD_ID || "dev";
+
+  const checkDeploymentVersion = useCallback(async () => {
+    if (hasNotified || initialBuildId === "dev") return;
+
+    try {
+      const response = await fetch("/api/health", {
+        // Ensure we don't cache this request
+        cache: "no-store", 
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0",
+        },
+      });
+
+      if (!response.ok) return;
+
+      const data = await response.json();
+      const serverBuildId = data.buildId;
+
+      if (serverBuildId && serverBuildId !== "dev" && serverBuildId !== initialBuildId) {
+        // Version mismatch detected!
+        setHasNotified(true);
+        
+        toast.info("Update Tersedia ✨", {
+          description: "Aplikasi telah diperbarui. Memuat ulang untuk sinkronisasi...",
+          duration: 3000, 
+          onAutoClose: () => window.location.reload(),
+          action: (
+            <Button 
+              onClick={() => window.location.reload()} 
+              size="sm" 
+              className="gap-2 shrink-0"
+              variant="default"
+            >
+              <RefreshCcw className="w-3.5 h-3.5" />
+              Refresh Sekarang
+            </Button>
+          ),
+        });
+      }
+    } catch (_error) {
+      // Silently ignore network errors to not bother the user
+    }
+  }, [hasNotified, initialBuildId]);
+
+  // Re-check version on every client-side navigation
+  const pathname = usePathname();
+  useEffect(() => {
+    if (!hasNotified) {
+      // Defer to next tick to avoid "cascading render" lint warning
+      const timer = setTimeout(() => {
+        void checkDeploymentVersion();
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [pathname, hasNotified, checkDeploymentVersion]);
+
   useEffect(() => {
     // Only run on client
     if (typeof window === "undefined") return;
-
-    // Read the current build ID injected during build time
-    const initialBuildId = process.env.NEXT_PUBLIC_BUILD_ID || "dev";
-
-    // Skip checking if we're in dev mode
-    if (initialBuildId === "dev") return;
-
-    const checkDeploymentVersion = async () => {
-      if (hasNotified) return;
-
-      try {
-        const response = await fetch("/api/health", {
-          // Ensure we don't cache this request
-          cache: "no-store", 
-          headers: {
-            "Cache-Control": "no-cache, no-store, must-revalidate",
-            "Pragma": "no-cache",
-            "Expires": "0",
-          },
-        });
-
-        if (!response.ok) return;
-
-        const data = await response.json();
-        const serverBuildId = data.buildId;
-
-        if (serverBuildId && serverBuildId !== "dev" && serverBuildId !== initialBuildId) {
-          // Version mismatch detected!
-          setHasNotified(true);
-          
-          toast.info("Update Tersedia ✨", {
-            description: "Aplikasi telah diperbarui. Memuat ulang untuk sinkronisasi...",
-            duration: 3000, 
-            onAutoClose: () => window.location.reload(),
-            action: (
-              <Button 
-                onClick={() => window.location.reload()} 
-                size="sm" 
-                className="gap-2 shrink-0"
-                variant="default"
-              >
-                <RefreshCcw className="w-3.5 h-3.5" />
-                Refresh Sekarang
-              </Button>
-            ),
-          });
-        }
-      } catch (_error) {
-        // Silently ignore network errors to not bother the user
-        // console.warn("Failed to check deployment version:", _error);
-      }
-    };
 
     // 1. Reactive: Catch Server Action failures immediately
     const handleActionError = (event: PromiseRejectionEvent | ErrorEvent) => {
@@ -123,7 +132,7 @@ export function DeploymentGuard() {
       clearTimeout(initialTimer);
       clearInterval(intervalId);
     };
-  }, [hasNotified]);
+  }, [hasNotified, checkDeploymentVersion]);
 
   return null;
 }
