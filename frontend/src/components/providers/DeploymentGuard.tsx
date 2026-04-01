@@ -1,21 +1,19 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { toast } from "sonner";
 import { RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const CHECK_INTERVAL_MS = 1 * 60 * 1000; // 1 minute
+const CHECK_INTERVAL_MS = 30 * 1000; // 30 seconds
 
 export function DeploymentGuard() {
   const [hasNotified, setHasNotified] = useState(false);
-
-  // Read the current build ID injected during build time
-  const initialBuildId = process.env.NEXT_PUBLIC_BUILD_ID || "dev";
+  const assignedBuildIdRef = useRef<string | null>(null);
 
   const checkDeploymentVersion = useCallback(async () => {
-    if (hasNotified || initialBuildId === "dev") return;
+    if (hasNotified) return;
 
     try {
       const response = await fetch("/api/health", {
@@ -33,31 +31,36 @@ export function DeploymentGuard() {
       const data = await response.json();
       const serverBuildId = data.buildId;
 
-      if (serverBuildId && serverBuildId !== "dev" && serverBuildId !== initialBuildId) {
-        // Version mismatch detected!
-        setHasNotified(true);
-        
-        toast.info("Update Tersedia ✨", {
-          description: "Aplikasi telah diperbarui. Memuat ulang untuk sinkronisasi...",
-          duration: 3000, 
-          onAutoClose: () => window.location.reload(),
-          action: (
-            <Button 
-              onClick={() => window.location.reload()} 
-              size="sm" 
-              className="gap-2 shrink-0"
-              variant="default"
-            >
-              <RefreshCcw className="w-3.5 h-3.5" />
-              Refresh Sekarang
-            </Button>
-          ),
-        });
+      if (serverBuildId && serverBuildId !== "dev") {
+        if (!assignedBuildIdRef.current) {
+          // First successful request sets the baseline for this client
+          assignedBuildIdRef.current = serverBuildId;
+        } else if (serverBuildId !== assignedBuildIdRef.current) {
+          // Version mismatch detected proactively!
+          setHasNotified(true);
+          
+          toast.info("Update Tersedia ✨", {
+            description: "Aplikasi telah diperbarui. Memuat ulang untuk sinkronisasi...",
+            duration: 3000, 
+            onAutoClose: () => window.location.reload(),
+            action: (
+              <Button 
+                onClick={() => window.location.reload()} 
+                size="sm" 
+                className="gap-2 shrink-0"
+                variant="default"
+              >
+                <RefreshCcw className="w-3.5 h-3.5" />
+                Refresh Sekarang
+              </Button>
+            ),
+          });
+        }
       }
     } catch (_error) {
       // Silently ignore network errors to not bother the user
     }
-  }, [hasNotified, initialBuildId]);
+  }, [hasNotified]);
 
   // Re-check version on every client-side navigation
   const pathname = usePathname();
