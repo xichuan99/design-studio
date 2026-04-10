@@ -115,7 +115,7 @@ async def suggest_backgrounds(
 
         response = call_gemini_with_fallback(
             client=client,
-            primary_model="gemini-2.5-flash",
+            primary_model="openrouter/minimax/minimax-m2.7",
             fallback_model="qwen/qwen-2.5-72b-instruct",
             contents=[user_message],
             config=genai_types.GenerateContentConfig(

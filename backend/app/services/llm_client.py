@@ -135,29 +135,41 @@ def call_gemini_with_fallback(
     If 503 occur (overload), it automatically retries with the fallback model via OpenRouter.
     Simplified to 2 layers: Native Gemini -> OpenRouter.
     """
-    try:
-        # Layer 1: Gemini Primary (Native)
-        logger.info(f"🧠 [DEV INFO] Resolving prompt via PRIMARY LLM: {primary_model}")
-        response = client.models.generate_content(
-            model=primary_model,
-            contents=contents,
-            config=config,
-        )
-        if hasattr(response, "usage_metadata") and response.usage_metadata:
-            tokens = getattr(response.usage_metadata, "total_token_count", "unknown")
-            logger.info(f"🪙 [DEV INFO] Gemini Tokens Used: {tokens}")
-        return response
-    except Exception as e:
-        # Check for 503 Service Unavailable or other transient errors
-        is_503 = hasattr(e, "code") and e.code == 503
-
-        if is_503:
-            logger.warning(
-                f"Gemini {primary_model} overloaded (503). "
-                f"Falling back to OpenRouter ({fallback_model})."
+    if primary_model.startswith("openrouter/"):
+        actual_model = primary_model.replace("openrouter/", "", 1)
+        logger.info(f"🧠 [DEV INFO] Resolving prompt via PRIMARY LLM (OpenRouter direct routing): {actual_model}")
+        try:
+            return call_openrouter(
+                model_id=actual_model,
+                contents=contents,
+                config=config
             )
-        else:
-            logger.error(f"Gemini primary failed: {str(e)}. Moving to OpenRouter ({fallback_model}).")
+        except Exception as e:
+            logger.error(f"OpenRouter primary failed: {str(e)}. Moving to OpenRouter fallback ({fallback_model}).")
+    else:
+        try:
+            # Layer 1: Gemini Primary (Native)
+            logger.info(f"🧠 [DEV INFO] Resolving prompt via PRIMARY LLM: {primary_model}")
+            response = client.models.generate_content(
+                model=primary_model,
+                contents=contents,
+                config=config,
+            )
+            if hasattr(response, "usage_metadata") and response.usage_metadata:
+                tokens = getattr(response.usage_metadata, "total_token_count", "unknown")
+                logger.info(f"🪙 [DEV INFO] Gemini Tokens Used: {tokens}")
+            return response
+        except Exception as e:
+            # Check for 503 Service Unavailable or other transient errors
+            is_503 = hasattr(e, "code") and e.code == 503
+
+            if is_503:
+                logger.warning(
+                    f"Gemini {primary_model} overloaded (503). "
+                    f"Falling back to OpenRouter ({fallback_model})."
+                )
+            else:
+                logger.error(f"Gemini primary failed: {str(e)}. Moving to OpenRouter ({fallback_model}).")
 
     # Layer 2: OpenRouter (e.g. Qwen 3.5 9B) as last resort
     logger.warning(f"Attempting final fallback via OpenRouter ({fallback_model})")

@@ -107,7 +107,7 @@ async def build_ad_concepts(
 
             response = call_gemini_with_fallback(
                 client=client,
-                primary_model="gemini-2.5-flash",
+                primary_model="openrouter/minimax/minimax-m2.7",
                 fallback_model="google/gemini-2.5-flash",  # OpenRouter fallback
                 contents=contents,
                 config=types.GenerateContentConfig(
