@@ -6,7 +6,7 @@ from google.genai import types
 from app.core.config import settings
 
 from app.services.llm_prompts import MAGIC_TEXT_SYSTEM
-from app.services.llm_client import get_genai_client
+from app.services.llm_client import get_genai_client, call_gemini_with_fallback
 
 
 async def generate_magic_text_layout(
@@ -88,8 +88,10 @@ async def generate_magic_text_layout(
 
     context_string = aspect_context + style_context + brand_colors_instruction
 
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
+    response = call_gemini_with_fallback(
+        client=client,
+        primary_model="openrouter/qwen/qwen-vl-max",
+        fallback_model="qwen/qwen-vl-plus",
         contents=[
             types.Part.from_bytes(data=image_bytes, mime_type="image/png"),
             f"Here is the text I want to place on this image: {text}{context_string}",

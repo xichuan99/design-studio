@@ -10,7 +10,7 @@ from app.core.config import settings
 from app.schemas.design import ReferenceAnalysis, AspectRatio
 from app.core.exceptions import AppException
 from fastapi import status
-from app.services.llm_client import get_genai_client
+from app.services.llm_client import get_genai_client, call_gemini_with_fallback
 
 # System Prompt for Gemini Vision
 VISION_ANALYSIS_PROMPT = """
@@ -69,8 +69,10 @@ async def analyze_reference_image(image_url: str) -> ReferenceAnalysis:
         # Call Gemini Vision synchronously in a thread
         def call_gemini():
             genai_client = get_genai_client()
-            response = genai_client.models.generate_content(
-                model="gemini-2.5-flash",
+            response = call_gemini_with_fallback(
+                client=genai_client,
+                primary_model="openrouter/qwen/qwen-vl-max",
+                fallback_model="qwen/qwen-vl-plus",
                 contents=[
                     types.Part.from_bytes(
                         data=image_bytes, mime_type="image/jpeg"
