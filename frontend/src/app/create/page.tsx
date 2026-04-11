@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { redirect, useRouter } from "next/navigation";
-import { Loader2, PanelLeftOpen, PanelLeftClose, ImagePlus, Wand2, Sparkles, Clock } from "lucide-react";
+import { Loader2, PanelLeftOpen, PanelLeftClose, ImagePlus, Wand2, Sparkles, Clock, Scissors } from "lucide-react";
+import { usePostHog } from 'posthog-js/react';
 import { toast } from "sonner";
 import { useProjectApi, ProjectPayload } from "@/lib/api";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
@@ -18,10 +19,12 @@ import { ErrorModal } from "@/components/feedback/ErrorModal";
 import { InlineErrorBanner } from "@/components/feedback/InlineErrorBanner";
 import { BrandSwitcher } from '@/components/editor/BrandSwitcher';
 import { useCreateDesign } from "./hooks/useCreateDesign";
+import { INTENT_FIRST_ENTRY_ENABLED } from "@/lib/feature-flags";
 
 export default function CreatePage() {
     const { status } = useSession();
     const router = useRouter();
+    const posthog = usePostHog();
     const { getProjects, saveProject } = useProjectApi();
     const [latestProject, setLatestProject] = useState<ProjectPayload | null>(null);
     const [isLoadingProject, setIsLoadingProject] = useState(true);
@@ -81,7 +84,8 @@ export default function CreatePage() {
         handleGeneratePrompt,
         handleGenerateImage,
         handleProceedToEditor,
-        brandKitEnabled, setBrandKitEnabled
+        brandKitEnabled, setBrandKitEnabled,
+        setUserIntent
     } = useCreateDesign();
 
     if (status === "loading") {
@@ -290,104 +294,184 @@ export default function CreatePage() {
                                 )}
                             </div>
                         </div>
-                    ) : (
+                    ) : ( 
                         <div className="max-w-4xl w-full mx-auto h-full flex flex-col items-center justify-center animation-fade-in px-4">
-                            <h2 className="text-3xl font-bold mb-8 text-center text-foreground">Bagaimana Anda ingin memulai?</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl">
-                                <button
-                                    onClick={() => {
-                                        setCreateMode('generate');
-                                        setSidebarOpen(true);
-                                    }}
-                                    className="group flex flex-col items-center text-center p-8 bg-card border shadow-sm hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 rounded-3xl transition-all"
-                                >
-                                    <div className="w-20 h-20 mb-6 rounded-2xl bg-primary/10 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
-                                        <Wand2 className="w-10 h-10 text-primary" />
-                                    </div>
-                                    <h3 className="text-xl font-bold mb-3 text-foreground">Generate dari Teks</h3>
-                                    <p className="text-muted-foreground leading-relaxed text-sm">
-                                        Deskripsikan ide visual Anda, dan AI akan meracik komposisi serta merender gambar kustom untuk produk.
-                                    </p>
-                                </button>
-                                
-                                <button
-                                    onClick={() => {
-                                        setCreateMode('redesign');
-                                        setSidebarOpen(true);
-                                        setShowManualRef(true);
-                                    }}
-                                    className="group flex flex-col items-center text-center p-8 bg-card border shadow-sm hover:border-indigo-500/50 hover:shadow-xl hover:shadow-indigo-500/5 rounded-3xl transition-all"
-                                >
-                                    <div className="w-20 h-20 mb-6 rounded-2xl bg-indigo-500/10 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
-                                        <ImagePlus className="w-10 h-10 text-indigo-500" />
-                                    </div>
-                                    <h3 className="text-xl font-bold mb-3 text-foreground">Redesign Gambar</h3>
-                                    <p className="text-muted-foreground leading-relaxed text-sm">
-                                        Unggah referensi foto layout, dan biarkan AI meniru gayanya untuk desain baru dengan kontrol penuh atas tingkat perubahan.
-                                    </p>
-                                </button>
-                                
-                                {/* Smart Ad Card */}
-                                <button
-                                    onClick={async () => {
-                                        const toastId = toast.loading("Menyiapkan Smart Ad...");
-                                        try {
-                                            const newProject = await saveProject({
-                                                title: "Smart Ad",
-                                                status: "draft",
-                                                aspect_ratio: "1:1",
-                                                canvas_state: {
-                                                    elements: [],
-                                                    backgroundUrl: null,
-                                                    backgroundColor: "#ffffff"
-                                                }
-                                            });
-                                            toast.dismiss(toastId);
-                                            router.push(`/edit/${newProject.id}?panel=smart-ad`);
-                                        } catch {
-                                            toast.error("Gagal membuat canvas baru", { id: toastId });
-                                        }
-                                    }}
-                                    className="group flex flex-col items-center text-center p-8 bg-card border shadow-sm hover:border-purple-500/50 hover:shadow-xl hover:shadow-purple-500/5 rounded-3xl transition-all relative overflow-hidden"
-                                >
-                                    <div className="absolute top-4 right-4 bg-purple-500 text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">
-                                        New
-                                    </div>
-                                    <div className="w-20 h-20 mb-6 rounded-2xl bg-purple-500/10 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
-                                        <Sparkles className="w-10 h-10 text-purple-500" />
-                                    </div>
-                                    <h3 className="text-xl font-bold mb-3 text-foreground">Smart Ad Creator</h3>
-                                    <p className="text-muted-foreground leading-relaxed text-sm">
-                                        Ubah foto produk biasa menjadi iklan profesional yang siap pakai untuk berbagai platform media sosial dalam sekejap.
-                                    </p>
-                                </button>
+                            <h2 className="text-3xl font-bold mb-8 text-center text-foreground">
+                                {INTENT_FIRST_ENTRY_ENABLED ? "Apa yang ingin Anda buat hari ini?" : "Bagaimana Anda ingin memulai?"}
+                            </h2>
+                            
+                            {INTENT_FIRST_ENTRY_ENABLED ? (
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl">
+                                    {/* Intent 1: Ad from Photo */}
+                                    <button
+                                        onClick={async () => {
+                                            setUserIntent('ad_from_photo');
+                                            setCreateMode('redesign');
+                                            setSidebarOpen(true);
+                                            setShowManualRef(true);
+                                            posthog?.capture('intent_selected', { intent: 'ad_from_photo' });
+                                        }}
+                                        className="group flex flex-col items-center text-center p-8 bg-card border shadow-sm hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 rounded-3xl transition-all h-full"
+                                    >
+                                        <div className="w-20 h-20 mb-6 rounded-2xl bg-primary/10 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
+                                            <Sparkles className="w-10 h-10 text-primary" />
+                                        </div>
+                                        <h3 className="text-xl font-bold mb-2 text-foreground">Buat Iklan dari Foto</h3>
+                                        <p className="text-muted-foreground leading-relaxed text-sm">
+                                            Upload foto produk, kami bantu jadi iklan siap posting.
+                                        </p>
+                                    </button>
 
-                                {/* Proyek Terakhir Card */}
-                                <button
-                                    onClick={() => {
-                                        if (latestProject) {
-                                            router.push(`/edit/${latestProject.id}`);
-                                        } else {
-                                            router.push('/projects');
-                                        }
-                                    }}
-                                    className={`group flex flex-col items-center justify-center text-center p-8 bg-card border shadow-sm hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-500/5 rounded-3xl transition-all ${!latestProject && !isLoadingProject ? 'opacity-70' : ''}`}
-                                >
-                                    <div className="w-20 h-20 mb-6 rounded-2xl bg-blue-500/10 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
-                                        {isLoadingProject ? (
-                                            <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-                                        ) : (
-                                            <Clock className="w-10 h-10 text-blue-500" />
-                                        )}
-                                    </div>
-                                    <h3 className="text-xl font-bold mb-3 text-foreground">
-                                        {isLoadingProject ? "Memuat..." : latestProject ? "Proyek Terakhir" : "Proyek Kosong"}
-                                    </h3>
-                                    <p className="text-muted-foreground leading-relaxed text-sm">
-                                        {isLoadingProject ? "Sedang mengambil data proyek Anda..." : latestProject ? `Lanjutkan edit "${latestProject.title}" yang terakhir Anda kerjakan, tanpa perlu ke halaman Projects.` : "Anda belum memiliki proyek. Mulai dengan membuat desain baru."}
-                                    </p>
-                                </button>
-                            </div>
+                                    {/* Intent 2: Clean Photo */}
+                                    <button
+                                        onClick={async () => {
+                                            setUserIntent('clean_photo');
+                                            const toastId = toast.loading("Membuka Studio...");
+                                            try {
+                                                const newProject = await saveProject({
+                                                    title: "Rapikan Foto",
+                                                    status: "draft",
+                                                    aspect_ratio: "1:1",
+                                                    canvas_state: {
+                                                        elements: [],
+                                                        backgroundUrl: null,
+                                                        backgroundColor: "#ffffff"
+                                                    }
+                                                });
+                                                toast.dismiss(toastId);
+                                                posthog?.capture('intent_selected', { intent: 'clean_photo' });
+                                                router.push(`/edit/${newProject.id}?panel=bgremoval`);
+                                            } catch {
+                                                toast.error("Gagal membuka studio", { id: toastId });
+                                            }
+                                        }}
+                                        className="group flex flex-col items-center text-center p-8 bg-card border shadow-sm hover:border-indigo-500/50 hover:shadow-xl hover:shadow-indigo-500/5 rounded-3xl transition-all h-full"
+                                    >
+                                        <div className="w-20 h-20 mb-6 rounded-2xl bg-indigo-500/10 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
+                                            <Scissors className="w-10 h-10 text-indigo-500" />
+                                        </div>
+                                        <h3 className="text-xl font-bold mb-2 text-foreground">Rapikan Foto Produk</h3>
+                                        <p className="text-muted-foreground leading-relaxed text-sm">
+                                            Hapus background, perbaiki kualitas, lalu lanjut ke iklan.
+                                        </p>
+                                    </button>
+
+                                    {/* Intent 3: Content from Text */}
+                                    <button
+                                        onClick={() => {
+                                            setUserIntent('content_from_text');
+                                            setCreateMode('generate');
+                                            setSidebarOpen(true);
+                                            posthog?.capture('intent_selected', { intent: 'content_from_text' });
+                                        }}
+                                        className="group flex flex-col items-center text-center p-8 bg-card border shadow-sm hover:border-purple-500/50 hover:shadow-xl hover:shadow-purple-500/5 rounded-3xl transition-all h-full"
+                                    >
+                                        <div className="w-20 h-20 mb-6 rounded-2xl bg-purple-500/10 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
+                                            <Wand2 className="w-10 h-10 text-purple-500" />
+                                        </div>
+                                        <h3 className="text-xl font-bold mb-2 text-foreground">Buat Konten dari Teks</h3>
+                                        <p className="text-muted-foreground leading-relaxed text-sm">
+                                            Tulis promomu, lalu generate desain dalam beberapa klik.
+                                        </p>
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl">
+                                    <button
+                                        onClick={() => {
+                                            setCreateMode('generate');
+                                            setSidebarOpen(true);
+                                        }}
+                                        className="group flex flex-col items-center text-center p-8 bg-card border shadow-sm hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 rounded-3xl transition-all"
+                                    >
+                                        <div className="w-20 h-20 mb-6 rounded-2xl bg-primary/10 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
+                                            <Wand2 className="w-10 h-10 text-primary" />
+                                        </div>
+                                        <h3 className="text-xl font-bold mb-3 text-foreground">Generate dari Teks</h3>
+                                        <p className="text-muted-foreground leading-relaxed text-sm">
+                                            Deskripsikan ide visual Anda, dan AI akan meracik komposisi serta merender gambar kustom untuk produk.
+                                        </p>
+                                    </button>
+                                    
+                                    <button
+                                        onClick={() => {
+                                            setCreateMode('redesign');
+                                            setSidebarOpen(true);
+                                            setShowManualRef(true);
+                                        }}
+                                        className="group flex flex-col items-center text-center p-8 bg-card border shadow-sm hover:border-indigo-500/50 hover:shadow-xl hover:shadow-indigo-500/5 rounded-3xl transition-all"
+                                    >
+                                        <div className="w-20 h-20 mb-6 rounded-2xl bg-indigo-500/10 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
+                                            <ImagePlus className="w-10 h-10 text-indigo-500" />
+                                        </div>
+                                        <h3 className="text-xl font-bold mb-3 text-foreground">Redesign Gambar</h3>
+                                        <p className="text-muted-foreground leading-relaxed text-sm">
+                                            Unggah referensi foto layout, dan biarkan AI meniru gayanya untuk desain baru dengan kontrol penuh atas tingkat perubahan.
+                                        </p>
+                                    </button>
+                                    
+                                    {/* Smart Ad Card */}
+                                    <button
+                                        onClick={async () => {
+                                            const toastId = toast.loading("Menyiapkan Smart Ad...");
+                                            try {
+                                                const newProject = await saveProject({
+                                                    title: "Smart Ad",
+                                                    status: "draft",
+                                                    aspect_ratio: "1:1",
+                                                    canvas_state: {
+                                                        elements: [],
+                                                        backgroundUrl: null,
+                                                        backgroundColor: "#ffffff"
+                                                    }
+                                                });
+                                                toast.dismiss(toastId);
+                                                router.push(`/edit/${newProject.id}?panel=smart-ad`);
+                                            } catch {
+                                                toast.error("Gagal membuat canvas baru", { id: toastId });
+                                            }
+                                        }}
+                                        className="group flex flex-col items-center text-center p-8 bg-card border shadow-sm hover:border-purple-500/50 hover:shadow-xl hover:shadow-purple-500/5 rounded-3xl transition-all relative overflow-hidden"
+                                    >
+                                        <div className="absolute top-4 right-4 bg-purple-500 text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">
+                                            New
+                                        </div>
+                                        <div className="w-20 h-20 mb-6 rounded-2xl bg-purple-500/10 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
+                                            <Sparkles className="w-10 h-10 text-purple-500" />
+                                        </div>
+                                        <h3 className="text-xl font-bold mb-3 text-foreground">Smart Ad Creator</h3>
+                                        <p className="text-muted-foreground leading-relaxed text-sm">
+                                            Ubah foto produk biasa menjadi iklan profesional yang siap pakai untuk berbagai platform media sosial dalam sekejap.
+                                        </p>
+                                    </button>
+
+                                    {/* Proyek Terakhir Card */}
+                                    <button
+                                        onClick={() => {
+                                            if (latestProject) {
+                                                router.push(`/edit/${latestProject.id}`);
+                                            } else {
+                                                router.push('/projects');
+                                            }
+                                        }}
+                                        className={`group flex flex-col items-center justify-center text-center p-8 bg-card border shadow-sm hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-500/5 rounded-3xl transition-all ${!latestProject && !isLoadingProject ? 'opacity-70' : ''}`}
+                                    >
+                                        <div className="w-20 h-20 mb-6 rounded-2xl bg-blue-500/10 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
+                                            {isLoadingProject ? (
+                                                <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                                            ) : (
+                                                <Clock className="w-10 h-10 text-blue-500" />
+                                            )}
+                                        </div>
+                                        <h3 className="text-xl font-bold mb-3 text-foreground">
+                                            {isLoadingProject ? "Memuat..." : latestProject ? "Proyek Terakhir" : "Proyek Kosong"}
+                                        </h3>
+                                        <p className="text-muted-foreground leading-relaxed text-sm">
+                                            {isLoadingProject ? "Sedang mengambil data proyek Anda..." : latestProject ? `Lanjutkan edit "${latestProject.title}" yang terakhir Anda kerjakan, tanpa perlu ke halaman Projects.` : "Anda belum memiliki proyek. Mulai dengan membuat desain baru."}
+                                        </p>
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     )}
                     </div>

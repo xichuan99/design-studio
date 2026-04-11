@@ -2,6 +2,30 @@ import { useApiCore } from './coreApi';
 import * as Types from './types';
 import { useCallback } from 'react';
 
+type ApiErrorPayload = {
+    error?: {
+        error_code?: string;
+        detail?: string;
+    };
+    detail?: string;
+};
+
+class ApiRequestError extends Error {
+    errorCode?: string;
+
+    constructor(message: string, errorCode?: string) {
+        super(message);
+        this.name = 'ApiRequestError';
+        this.errorCode = errorCode;
+    }
+}
+
+function buildApiRequestError(payload: ApiErrorPayload, fallbackMessage: string) {
+    const errorCode = payload?.error?.error_code;
+    const detail = payload?.error?.detail || payload?.detail || fallbackMessage;
+    return new ApiRequestError(detail, errorCode);
+}
+
 async function fetchWithTimeout(resource: RequestInfo, options: RequestInit & { timeout?: number } = {}) {
     const { timeout = 120000, ...fetchOptions } = options; // Default 120 seconds
     const controller = new AbortController();
@@ -28,8 +52,8 @@ export function useAdCreatorEndpoints() {
             });
             
             if (!res.ok) {
-                const errBase = await res.json().catch(() => ({}));
-                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to generate Smart Ad');
+                const errBase = await res.json().catch(() => ({} as ApiErrorPayload));
+                throw buildApiRequestError(errBase, 'Failed to generate Smart Ad');
             }
             return res.json();
         } catch (error: unknown) {
@@ -54,8 +78,8 @@ export function useAdCreatorEndpoints() {
             });
             
             if (!res.ok) {
-                const errBase = await res.json().catch(() => ({}));
-                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to batch resize Ad');
+                const errBase = await res.json().catch(() => ({} as ApiErrorPayload));
+                throw buildApiRequestError(errBase, 'Failed to batch resize Ad');
             }
             return res.json();
         } catch (error: unknown) {

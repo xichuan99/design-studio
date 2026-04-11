@@ -91,3 +91,27 @@ class InternalServerError(AppException):
         super().__init__(
             status_code=500, detail=detail, error_code="INTERNAL_ERROR", headers=headers
         )
+
+
+class ExternalServiceError(AppException):
+    """Exception raised when an external service (Gemini, Fal.ai, etc) fails."""
+
+    def __init__(
+        self,
+        detail: str = "External service error",
+        error_code: str = "EXTERNAL_SERVICE_ERROR",
+        headers: Optional[Dict[str, str]] = None,
+    ):
+        super().__init__(
+            status_code=502, detail=detail, error_code=error_code, headers=headers
+        )
+
+
+class LLMGenerationError(ExternalServiceError):
+    def __init__(self, detail: str = "LLM failed to generate content"):
+        super().__init__(detail=detail, error_code="LLM_GENERATION_FAILED")
+
+
+class ImageGenerationError(ExternalServiceError):
+    def __init__(self, detail: str = "Image generation failed"):
+        super().__init__(detail=detail, error_code="IMAGE_GENERATION_FAILED")

@@ -13,7 +13,13 @@ from app.models.user import User
 from app.services import bg_removal_service, image_service, outpaint_service
 from app.services.storage_service import upload_image
 from app.services.ad_prompt_builder import build_ad_concepts
-from app.core.exceptions import InsufficientCreditsError, InternalServerError, ValidationError
+from app.core.exceptions import (
+    InsufficientCreditsError,
+    InternalServerError,
+    ValidationError,
+    LLMGenerationError,
+    ImageGenerationError
+)
 from app.core.credit_costs import COST_GENERATIVE_EXPAND
 
 router = APIRouter()
@@ -69,35 +75,47 @@ async def generate_smart_ad(
 
         # 3. Build Ad Concepts via Gemini
         logger.info("Building concepts via Gemini...")
-        llm_response = await build_ad_concepts(
-            image_bytes=image_bytes,
-            mime_type=mime_type,
-            brief=request.brief,
-            brand_kit_id=request.brand_kit_id,
-            db=db
-        )
+        try:
+            llm_response = await build_ad_concepts(
+                image_bytes=image_bytes,
+                mime_type=mime_type,
+                brief=request.brief,
+                brand_kit_id=request.brand_kit_id,
+                db=db
+            )
+        except Exception as e:
+            logger.error(f"LLM Concept building failed: {str(e)}")
+            raise LLMGenerationError(
+                detail="Gagal membuat konsep iklan. Coba ubah brief agar lebih ringkas dan jelas."
+            )
 
         concepts = llm_response.get("concepts", [])
         if not concepts:
-            raise RuntimeError("LLM returned no concepts.")
+            raise LLMGenerationError(detail="LLM tidak mengembalikan konsep iklan.")
 
         # 4. Generate 3 backgrounds concurrently using fal.ai
         async def generate_bg_for_concept(c: dict) -> AdConcept:
             visual_prompt = c.get("visual_prompt", "")
-            # Generate clean background without text integration
-            bg_result = await image_service.generate_background(
-                visual_prompt=visual_prompt,
-                style=c.get("id", "bold"), # map id to style if matching, else default
-                aspect_ratio="1:1"
-            )
-            return AdConcept(
-                id=c.get("id", str(uuid.uuid4())[:6]),
-                concept_name=c.get("concept_name", "Concept"),
-                image_url=bg_result["image_url"],
-                headline=c.get("headline", ""),
-                tagline=c.get("tagline", ""),
-                call_to_action=c.get("call_to_action", "")
-            )
+            try:
+                # Generate clean background without text integration
+                bg_result = await image_service.generate_background(
+                    visual_prompt=visual_prompt,
+                    style=c.get("id", "bold"), # map id to style if matching, else default
+                    aspect_ratio="1:1"
+                )
+                return AdConcept(
+                    id=c.get("id", str(uuid.uuid4())[:6]),
+                    concept_name=c.get("concept_name", "Concept"),
+                    image_url=bg_result["image_url"],
+                    headline=c.get("headline", ""),
+                    tagline=c.get("tagline", ""),
+                    call_to_action=c.get("call_to_action", "")
+                )
+            except Exception as e:
+                logger.error(f"Background generation failed for concept {c.get('concept_name')}: {str(e)}")
+                raise ImageGenerationError(
+                    detail="Gagal membuat visual background. Silakan coba lagi dalam beberapa saat."
+                )
 
         logger.info(f"Generating backgrounds for {len(concepts)} concepts...")
         tasks = [generate_bg_for_concept(c) for c in concepts]
@@ -112,7 +130,19 @@ async def generate_smart_ad(
             concepts=list(generated_ad_concepts)
         )
 
-    except Exception as e:
+    except (LLMGenerationError, ImageGenerationError) as e:
+        # Re-raise known AI errors so they retain their specialized error_code
+        logger.warning(f"AI Generation specialized error: {e.error_code}")
+        try:
+            await log_credit_change(
+                db, current_user, COST_SMART_AD, f"Refund: {e.error_code}"
+            )
+            await db.commit()
+        except Exception as refund_err:
+            logger.error(f"Failed to refund user {current_user.id}: {str(refund_err)}")
+        raise e
+
+    except Exception:
         logger.exception("Smart Ad Generation failed")
         try:
             await log_credit_change(
@@ -122,7 +152,7 @@ async def generate_smart_ad(
         except Exception as refund_err:
             logger.error(f"Failed to refund user {current_user.id}: {str(refund_err)}")
 
-        raise InternalServerError(detail=f"Failed to generate ad: {str(e)}")
+        raise InternalServerError(detail="Terjadi kesalahan sistem saat memproses permintaan Anda. Silakan coba beberapa saat lagi.")
 
 
 @router.post(

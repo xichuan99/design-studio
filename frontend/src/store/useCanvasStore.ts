@@ -68,6 +68,11 @@ export interface CanvasState {
     historyIndex: number;
     stageRef: Konva.Stage | null; // Ref to the Konva Stage for exports
     clipboard: CanvasElement[] | null;
+    activeSidebarTab: string;
+    handoffData: {
+        imageBase64?: string;
+        source?: string;
+    } | null;
 }
 
 interface CanvasActions {
@@ -112,6 +117,10 @@ interface CanvasActions {
     // History
     undo: () => void;
     redo: () => void;
+
+    // Navigation & Handoff
+    setActiveSidebarTab: (tab: string) => void;
+    setHandoffData: (data: { imageBase64?: string; source?: string } | null) => void;
 }
 
 // Helper to save history
@@ -141,6 +150,8 @@ export const useCanvasStore = create<CanvasState & CanvasActions>()((set, get) =
     historyIndex: 0,
     stageRef: null,
     clipboard: null,
+    activeSidebarTab: 'teks', // Default tab
+    handoffData: null,
 
     setCanvasDimensions: (width, height) => set({ canvasWidth: width, canvasHeight: height }),
 
@@ -485,5 +496,8 @@ export const useCanvasStore = create<CanvasState & CanvasActions>()((set, get) =
             };
         }
         return state;
-    })
+    }),
+
+    setActiveSidebarTab: (tab) => set({ activeSidebarTab: tab }),
+    setHandoffData: (data) => set({ handoffData: data }),
 }));

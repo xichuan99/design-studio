@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Sparkles, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { useCanvasStore } from '@/store/useCanvasStore';
 
 const AIPromptPanel = dynamic(
     () => import('./AIPromptPanel').then(mod => mod.AIPromptPanel),
@@ -30,12 +31,19 @@ const STUDIO_TABS: { id: StudioTab; label: string; icon: React.ElementType; desc
 
 export const AIStudioPanel: React.FC<{ autoOpenSmartAd?: boolean }> = ({ autoOpenSmartAd }) => {
     const [activeTab, setActiveTab] = useState<StudioTab>(autoOpenSmartAd ? 'ad_creator' : 'prompt');
+    const handoffData = useCanvasStore((state) => state.handoffData);
 
     React.useEffect(() => {
         if (autoOpenSmartAd) {
             setActiveTab('ad_creator');
         }
     }, [autoOpenSmartAd]);
+
+    React.useEffect(() => {
+        if (handoffData?.source === 'bgremoval') {
+            setActiveTab('ad_creator');
+        }
+    }, [handoffData?.source]);
 
 
     return (

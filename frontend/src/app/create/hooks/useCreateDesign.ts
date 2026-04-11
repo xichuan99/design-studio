@@ -7,7 +7,7 @@ import {
 import { generateCanvasElementsFromTemplate } from "@/lib/templateEngine";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ParsedDesignData, VisualPromptPart, BriefQuestion, MAX_FILE_SIZE } from "@/app/create/types";
+import { ParsedDesignData, VisualPromptPart, BriefQuestion, MAX_FILE_SIZE, UserIntent } from "@/app/create/types";
 import { usePostHog } from 'posthog-js/react';
 
 export type CreateStep = 'input' | 'brief' | 'results' | 'generating' | 'preview';
@@ -27,6 +27,7 @@ export interface SavedCreateState {
     briefAnswers: Record<string, string>;
     removeProductBg: boolean;
     copyVariations: CopywritingVariation[];
+    userIntent: UserIntent;
 }
 
 export function useCreateDesign() {
@@ -51,6 +52,7 @@ export function useCreateDesign() {
     const [briefQuestions, setBriefQuestions] = useState<BriefQuestion[]>([]);
     const [briefAnswers, setBriefAnswers] = useState<Record<string, string>>({});
     const [removeProductBg, setRemoveProductBg] = useState(false);
+    const [userIntent, setUserIntent] = useState<UserIntent>(null);
     
     // Brand Kit Opt-in State
     const [brandKitEnabled, setBrandKitEnabled] = useState(false);
@@ -130,6 +132,7 @@ export function useCreateDesign() {
                 setBriefAnswers(parsed.briefAnswers || {});
                 setRemoveProductBg(parsed.removeProductBg || false);
                 setCopyVariations(parsed.copyVariations || []);
+                setUserIntent(parsed.userIntent || null);
             } catch (e) {
                 console.error("Failed to parse saved state", e);
             }
@@ -154,13 +157,14 @@ export function useCreateDesign() {
             removeProductBg,
             briefQuestions,
             briefAnswers,
-            copyVariations
+            copyVariations,
+            userIntent
         };
         localStorage.setItem('smartdesign_create_state', JSON.stringify(stateToSave));
     }, [
         isInitialized, rawText, aspectRatio, currentStep, createMode, redesignStrength,
         parsedData, imageHistory, activeImageIndex, integratedText, removeProductBg,
-        briefQuestions, briefAnswers, copyVariations
+        briefQuestions, briefAnswers, copyVariations, userIntent
     ]);
 
     const handleTogglePromptPart = useCallback((index: number) => {
@@ -189,6 +193,7 @@ export function useCreateDesign() {
             setReferenceFile(null);
             setReferencePreview(null);
             setRemoveProductBg(false);
+            setUserIntent(null);
         }
     }, []);
 
@@ -673,6 +678,8 @@ export function useCreateDesign() {
         handleGenerateImage,
         handleProceedToEditor,
         brandKitEnabled,
-        setBrandKitEnabled
+        setBrandKitEnabled,
+        userIntent,
+        setUserIntent
     };
 }

@@ -1,19 +1,25 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAdCreatorEndpoints } from '@/lib/api/adCreatorApi';
 import { AdCreatorResponse } from '@/lib/api/types';
 import { useCanvasStore } from '@/store/useCanvasStore';
 import { useBrandKit } from '@/hooks/useBrandKit';
-import { Upload, AlertCircle, Loader2, Check, Zap } from 'lucide-react';
+import { Upload, Sparkles, Loader2, Check, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import Image from 'next/image';
+
+type ApiErrorLike = {
+    message?: string;
+    errorCode?: string;
+};
 
 export const SmartAdPanel: React.FC = () => {
     const { activeBrandProfile } = useBrandKit();
     const { generateSmartAd } = useAdCreatorEndpoints();
     const setBackgroundUrl = useCanvasStore((state) => state.setBackgroundUrl);
     const addElement = useCanvasStore((state) => state.addElement);
+    const { handoffData, setHandoffData } = useCanvasStore();
 
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [brief, setBrief] = useState('');
@@ -21,6 +27,19 @@ export const SmartAdPanel: React.FC = () => {
     
     const [isGenerating, setIsGenerating] = useState(false);
     const [result, setResult] = useState<AdCreatorResponse | null>(null);
+
+    // Sprint C: Handle Handoff from other panels (e.g., BG Removal)
+    useEffect(() => {
+        if (handoffData?.imageBase64) {
+            setImagePreview(handoffData.imageBase64);
+            // Clear handoff data after consumption
+            setHandoffData(null);
+            
+            toast.info("Gambar dari Hapus BG siap digunakan!", {
+                icon: <Zap className="w-4 h-4 text-primary fill-primary" />
+            });
+        }
+    }, [handoffData, setHandoffData]);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -65,8 +84,30 @@ export const SmartAdPanel: React.FC = () => {
             setResult(response);
             toast.success("Berhasil! 3 variasi konsep telah dibuat.");
         } catch (error: unknown) {
-            const err = error as Error;
-            toast.error(err.message || "Gagal menghasilkan iklan.");
+            console.error("Smart Ad Panel Error:", error);
+            
+            // Sprint D/E: Standardized Error Handling
+            const typedError = (error ?? {}) as ApiErrorLike;
+            const errorMessage = typedError.message || "";
+            const errorCode = typedError.errorCode || "";
+            
+            if (errorCode === "LLM_GENERATION_FAILED" || errorMessage.includes("konsep iklan")) {
+                toast.error("Gagal membuat konsep. Coba ubah brief Anda agar lebih mudah dipahami oleh AI.", {
+                    duration: 6000,
+                    action: {
+                        label: "Pahami Brief",
+                        onClick: () => console.log("Show help")
+                    }
+                });
+            } else if (errorCode === "IMAGE_GENERATION_FAILED" || errorMessage.includes("background")) {
+                toast.error("Gagal membuat gambar. Server gambar sedang sibuk, silakan coba beberapa saat lagi.", {
+                    duration: 6000
+                });
+            } else if (errorCode === "INSUFFICIENT_CREDITS" || errorMessage.includes("Insufficient credits")) {
+                toast.error("Kredit tidak cukup. Silakan top-up untuk melanjutkan.");
+            } else {
+                toast.error(errorMessage || "Gagal menghasilkan iklan. Silakan coba lagi.");
+            }
         } finally {
             setIsGenerating(false);
         }
@@ -227,8 +268,8 @@ export const SmartAdPanel: React.FC = () => {
                         )}
                     </button>
                     
-                    <div className="flex items-start gap-2 p-3 bg-blue-500/10 rounded-lg text-blue-500">
-                        <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                    <div className="flex items-start gap-2 p-3 bg-blue-500/10 rounded-lg text-blue-500 border border-blue-500/20">
+                        <Sparkles className="w-4 h-4 mt-0.5 shrink-0 animate-pulse text-blue-400" />
                         <p className="text-[11px] leading-relaxed">
                             Akan memotong background secara otomatis dan membuat teks copy iklan. Proses memakan waktu ~15-30 detik.
                         </p>

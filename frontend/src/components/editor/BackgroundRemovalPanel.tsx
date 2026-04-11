@@ -4,14 +4,15 @@ import React, { useState, useRef } from "react";
 import { useCanvasStore } from "@/store/useCanvasStore";
 import { useProjectApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Loader2, Scissors, Upload, Plus } from "lucide-react";
+import { Loader2, Scissors, Upload, Plus, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 import { MAX_FILE_SIZE } from "@/app/create/types";
 import { CreditCostBadge } from '@/components/credits/CreditCostBadge';
 import { CreditConfirmDialog } from '@/components/credits/CreditConfirmDialog';
 import Image from "next/image";
 
 export function BackgroundRemovalPanel() {
-    const { addElement, elements, canvasWidth, canvasHeight } = useCanvasStore();
+    const { addElement, elements, canvasWidth, canvasHeight, setActiveSidebarTab, setHandoffData } = useCanvasStore();
     const { removeBackground } = useProjectApi();
     const [originalImagePreview, setOriginalImagePreview] = useState<string | null>(null);
     const [processedImagePreview, setProcessedImagePreview] = useState<string | null>(null);
@@ -26,7 +27,7 @@ export function BackgroundRemovalPanel() {
             return;
         }
         if (file.size > MAX_FILE_SIZE) {
-            setErrorMsg("Ukuran file maksimal 10MB.");
+            setErrorMsg(`Ukuran file maksimal ${MAX_FILE_SIZE / (1024 * 1024)}MB.`);
             return;
         }
 
@@ -74,6 +75,34 @@ export function BackgroundRemovalPanel() {
         const baseY = canvasHeight ? canvasHeight / 2 - 100 : 300;
         const offset = (elements.length % 5) * 30;
         return { x: baseX + offset, y: baseY + offset };
+    };
+
+    const [isHandoffLoading, setIsHandoffLoading] = useState(false);
+
+    const handleJadikanIklan = async () => {
+        if (!processedImageUrl) return;
+        setIsHandoffLoading(true);
+        try {
+            const response = await fetch(processedImageUrl);
+            const blob = await response.blob();
+            const reader = new FileReader();
+            
+            await new Promise<void>((resolve, reject) => {
+                reader.onloadend = () => {
+                    const base64data = reader.result as string;
+                    setHandoffData({ imageBase64: base64data, source: 'bgremoval' });
+                    setActiveSidebarTab('aistudio');
+                    resolve();
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        } catch (err) {
+            console.error("Failed to convert image for handoff", err);
+            toast.error("Gagal menyiapkan gambar untuk iklan. Silakan coba lagi.");
+        } finally {
+            setIsHandoffLoading(false);
+        }
     };
 
     const handleAddToCanvas = () => {
@@ -180,13 +209,27 @@ export function BackgroundRemovalPanel() {
                             />
                         </div>
 
-                        <div className="flex flex-col gap-2">
-                            <Button onClick={handleAddToCanvas} className="w-full">
-                                <Plus className="w-4 h-4 mr-2" /> Taruh di Canvas
+                        <div className="flex flex-col gap-2 p-1 bg-muted/20 border rounded-xl overflow-hidden shadow-sm">
+                            <Button 
+                                onClick={handleJadikanIklan} 
+                                className="w-full h-12 text-md font-bold shadow-lg shadow-primary/20 bg-gradient-to-r from-primary to-primary/80 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                                disabled={isHandoffLoading}
+                            >
+                                {isHandoffLoading ? (
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                ) : (
+                                    <Sparkles className="w-5 h-5 mr-2" />
+                                )}
+                                Jadikan Iklan Sekarang
                             </Button>
-                            <Button onClick={resetPanel} variant="outline" className="w-full">
-                                Hapus BG Foto Lain
-                            </Button>
+                            <div className="grid grid-cols-2 gap-2">
+                                <Button onClick={handleAddToCanvas} variant="outline" size="sm" className="h-10 text-xs">
+                                    <Plus className="w-4 h-4 mr-2" /> Taruh di Canvas
+                                </Button>
+                                <Button onClick={resetPanel} variant="ghost" size="sm" className="h-10 text-xs">
+                                    Foto Lain
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 )}

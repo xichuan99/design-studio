@@ -4,3 +4,8 @@ const envFlag =
   "false";
 
 export const GOOGLE_OAUTH_ENABLED = envFlag.toLowerCase() === "true";
+
+export const INTENT_FIRST_ENTRY_ENABLED = (
+  process.env.NEXT_PUBLIC_INTENT_FIRST_V1 ?? 
+  "false"
+).toLowerCase() === "true";

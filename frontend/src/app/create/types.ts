@@ -29,5 +29,6 @@ export interface BriefQuestionsResponse {
     questions: BriefQuestion[];
 }
 
+export type UserIntent = 'ad_from_photo' | 'clean_photo' | 'content_from_text' | null;
 
 export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB

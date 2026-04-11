@@ -32,20 +32,34 @@ interface LeftSidebarProps {
 
 export const LeftSidebar: React.FC<LeftSidebarProps> = ({ mobileOpen, onMobileClose }) => {
     const isMobile = useIsMobile();
+    const { activeSidebarTab, setActiveSidebarTab } = useCanvasStore();
     const [isCollapsed, setIsCollapsed] = useState(false);
-    const [activeTab, setActiveTab] = useState<'teks' | 'tools' | 'aistudio' | 'assets' | 'bgremoval' | 'brandkit'>('aistudio');
     const [autoOpenSmartAd, setAutoOpenSmartAd] = useState(false);
 
     React.useEffect(() => {
         if (typeof window !== 'undefined') {
             const params = new URLSearchParams(window.location.search);
-            if (params.get('panel') === 'smart-ad') {
-                setActiveTab('aistudio');
+            const panel = params.get('panel');
+
+            if (panel === 'smart-ad') {
+                setActiveSidebarTab('aistudio');
                 setIsCollapsed(false);
                 setAutoOpenSmartAd(true);
             }
+
+            if (panel === 'bg-removal' || panel === 'bgremoval') {
+                setActiveSidebarTab('bgremoval');
+                setIsCollapsed(false);
+            }
         }
-    }, []);
+    }, [setActiveSidebarTab]);
+
+    // Expand sidebar when activeSidebarTab is set externally
+    React.useEffect(() => {
+        if (activeSidebarTab && isCollapsed) {
+            setIsCollapsed(false);
+        }
+    }, [activeSidebarTab, isCollapsed]);
 
     // Toolbar logic
     const { addElement, backgroundColor, setBackgroundColor, setBackgroundUrl } = useCanvasStore();
@@ -138,29 +152,29 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({ mobileOpen, onMobileCl
         }
     };
 
-    const NavButton = ({ id, icon: Icon, label }: { id: typeof activeTab, icon: LucideIcon, label: string }) => (
+    const NavButton = ({ id, icon: Icon, label }: { id: string, icon: LucideIcon, label: string }) => (
         <TooltipProvider delayDuration={0}>
             <Tooltip>
                 <TooltipTrigger asChild>
                     <button
                         onClick={() => {
-                            setActiveTab(id);
+                            setActiveSidebarTab(id);
                             if (isCollapsed) setIsCollapsed(false);
                         }}
                         className={cn(
                             "w-full aspect-square flex items-center justify-center rounded-xl transition-all duration-200 group relative",
-                            activeTab === id && !isCollapsed
+                            activeSidebarTab === id && !isCollapsed
                                 ? "bg-primary/10 text-primary shadow-sm"
                                 : "text-muted-foreground hover:bg-muted hover:text-foreground"
                         )}
                         aria-label={label}
                     >
-                        {activeTab === id && !isCollapsed && (
+                        {activeSidebarTab === id && !isCollapsed && (
                             <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-1/2 bg-primary rounded-r-md" />
                         )}
                         <Icon className={cn(
                             "h-6 w-6 transition-transform",
-                            activeTab === id && !isCollapsed ? "scale-110 drop-shadow-sm" : "group-hover:scale-110"
+                            activeSidebarTab === id && !isCollapsed ? "scale-110 drop-shadow-sm" : "group-hover:scale-110"
                         )} />
                     </button>
                 </TooltipTrigger>
@@ -183,10 +197,10 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({ mobileOpen, onMobileCl
 
     const closePanel = () => {
         setIsCollapsed(true);
-        setActiveTab('aistudio'); // Default to AI tab when closing
+        setActiveSidebarTab('aistudio'); // Default to AI tab when closing
     };
 
-    const navItems: { id: typeof activeTab; icon: LucideIcon; label: string }[] = [
+    const navItems: { id: string; icon: LucideIcon; label: string }[] = [
         { id: 'aistudio', icon: Sparkles, label: 'AI Studio' },
         { id: 'bgremoval', icon: Scissors, label: 'Hapus BG' },
         { id: 'teks', icon: Type, label: 'Teks' },
@@ -198,11 +212,11 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({ mobileOpen, onMobileCl
     
     const renderActivePanel = () => (
         <>
-            {activeTab === 'aistudio' && <AIStudioPanel autoOpenSmartAd={autoOpenSmartAd} />}
-            {activeTab === 'bgremoval' && (
+            {activeSidebarTab === 'aistudio' && <AIStudioPanel autoOpenSmartAd={autoOpenSmartAd} />}
+            {activeSidebarTab === 'bgremoval' && (
                 <BackgroundRemovalPanel />
             )}
-            {activeTab === 'brandkit' && (
+            {activeSidebarTab === 'brandkit' && (
                 <BrandKitPanel 
                     onClose={closePanel} 
                     onApplyColors={(hexes: string[]) => {
@@ -212,10 +226,10 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({ mobileOpen, onMobileCl
                     }}
                 />
             )}
-            {activeTab === 'teks' && <EditorTeksPanel />}
-            {activeTab === 'assets' && <AIAssetsPanel />}
+            {activeSidebarTab === 'teks' && <EditorTeksPanel />}
+            {activeSidebarTab === 'assets' && <AIAssetsPanel />}
             
-            {activeTab === 'tools' && (
+            {activeSidebarTab === 'tools' && (
                 <div className="p-4 h-full flex flex-col gap-4 overflow-y-auto w-full">
                     <div className="flex items-center gap-2 border-b pb-4 shrink-0">
                         <Wrench className="h-5 w-5 text-primary" />
@@ -301,7 +315,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({ mobileOpen, onMobileCl
             <BottomSheet
                 isOpen={!!mobileOpen}
                 onClose={() => onMobileClose?.()}
-                title={navItems.find(n => n.id === activeTab)?.label}
+                title={navItems.find(n => n.id === activeSidebarTab)?.label}
             >
                 {/* Render the tabs nav row natively inside the sheet */}
                 <div className="flex overflow-x-auto gap-2 pb-3 mb-4 border-b shrink-0 hide-scrollbar pt-1">
@@ -310,10 +324,10 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({ mobileOpen, onMobileCl
                         return (
                             <button
                                 key={item.id}
-                                onClick={() => setActiveTab(item.id)}
+                                onClick={() => setActiveSidebarTab(item.id)}
                                 className={cn(
                                     "flex flex-col items-center justify-center min-w-[72px] rounded-xl p-2 transition-colors",
-                                    activeTab === item.id 
+                                    activeSidebarTab === item.id 
                                         ? "bg-primary/10 text-primary border border-primary/20" 
                                         : "text-muted-foreground hover:bg-muted border border-transparent"
                                 )}
