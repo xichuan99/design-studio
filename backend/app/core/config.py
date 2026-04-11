@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     # LLM
     GEMINI_API_KEY: str = ""
     OPENROUTER_API_KEY: str = ""
+    XAI_API_KEY: str = ""
 
     # Email
     RESEND_API_KEY: str = ""

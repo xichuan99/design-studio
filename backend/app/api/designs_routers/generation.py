@@ -20,6 +20,7 @@ from app.core.exceptions import (
 )
 from uuid import UUID
 import re
+import httpx
 
 
 def sanitize_prompt_for_imagen(prompt: str) -> str:
@@ -440,7 +441,7 @@ async def generate_design(
 
         # Determine text instructions based on integration needs
         if request.integrated_text:
-            model_name = "gemini-3.1-flash-image-preview"
+            model_name = "grok-imagine-image-pro"
 
             # Build all text elements for integrated rendering
             text_parts = [f"'{parsed.headline}'"]
@@ -469,31 +470,28 @@ async def generate_design(
         client = genai.Client(api_key=app_settings.GEMINI_API_KEY)
 
         image_bytes = None
-        if model_name == "gemini-3.1-flash-image-preview":
-            # Nano Banana 2 uses generate_content for image generation
-            # Explicitly append aspect ratio to the prompt
-            gen_config = {}
-            if getattr(request, "seed", None):
-                try:
-                    gen_config["seed"] = int(request.seed)
-                except ValueError:
-                    pass
+        if model_name == "grok-imagine-image-pro":
+            # Use xAI Grok Imagine for integrated text
+            from app.services.llm_client import generate_image_xai
 
             response = await asyncio.to_thread(
-                client.models.generate_content,
-                model=model_name,
-                contents=enhanced_prompt,
-                config=types.GenerateContentConfig(**gen_config) if gen_config else None
+                generate_image_xai,
+                model_id=model_name,
+                prompt=enhanced_prompt,
+                aspect_ratio=request.aspect_ratio
             )
-            if response.candidates:
-                for candidate in response.candidates:
-                    if candidate.content and candidate.content.parts:
-                        for part in candidate.content.parts:
-                            if part.inline_data:
-                                image_bytes = part.inline_data.data
-                                break
-                    if image_bytes:
-                        break
+
+            if response:
+                img_obj = response.generated_images[0].image
+                if hasattr(img_obj, "image_bytes") and img_obj.image_bytes:
+                    image_bytes = img_obj.image_bytes
+                elif hasattr(img_obj, "url") and img_obj.url:
+                    # Download if it's a URL
+                    async with httpx.AsyncClient() as http_client:
+                        id_resp = await http_client.get(img_obj.url, timeout=30.0)
+                        id_resp.raise_for_status()
+                        image_bytes = id_resp.content
+                        image_bytes = id_resp.content
         else:
             # Traditional Imagen models use generate_images
             imagen_config = {
@@ -522,8 +520,6 @@ async def generate_design(
             ):
                 try:
                     # Download the product image locally
-                    import httpx
-
                     async with httpx.AsyncClient() as http_client:
                         product_resp = await http_client.get(request.product_image_url)
                         product_resp.raise_for_status()
@@ -585,7 +581,7 @@ async def generate_design(
         return {
             "job_id": str(job.id),
             "status": job.status,
-            "message": "Generated synchronously via Gemini Imagen.",
+            "message": f"Generated synchronously via {model_name}.",
         }
 
     except Exception as e:

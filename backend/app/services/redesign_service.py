@@ -66,17 +66,17 @@ async def analyze_reference_image(image_url: str) -> ReferenceAnalysis:
         )
 
     try:
-        # Call Gemini Vision synchronously in a thread
-        def call_gemini():
+        # Call xAI Vision via client utility
+        def call_llm():
             genai_client = get_genai_client()
             response = call_gemini_with_fallback(
                 client=genai_client,
-                primary_model="openrouter/qwen/qwen-vl-max",
-                fallback_model="qwen/qwen-vl-plus",
+                primary_model="xai/grok-2-vision-1212",
+                fallback_model="openrouter/qwen/qwen-vl-max",
                 contents=[
                     types.Part.from_bytes(
                         data=image_bytes, mime_type="image/jpeg"
-                    ),  # Assuming jpeg/png is fine, Gemini auto-detects
+                    ),
                     VISION_ANALYSIS_PROMPT,
                 ],
                 config=types.GenerateContentConfig(
@@ -87,7 +87,7 @@ async def analyze_reference_image(image_url: str) -> ReferenceAnalysis:
             )
             return json.loads(response.text)
 
-        result_dict = await asyncio.to_thread(call_gemini)
+        result_dict = await asyncio.to_thread(call_llm)
         return ReferenceAnalysis(**result_dict)
 
     except Exception as e:

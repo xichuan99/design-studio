@@ -5,12 +5,11 @@ import logging
 import httpx
 import uuid
 import fal_client
-from google.genai import types
 
 from app.core.config import settings
 from app.services.bg_removal_service import remove_background
 from app.services.storage_service import upload_image
-from app.services.llm_client import get_genai_client
+from app.services.llm_client import generate_image_xai
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +36,7 @@ async def generate_text_banner(
     Quality tiers:
     - draft:    fal-ai/flux/schnell (fast, cheap)
     - standard: fal-ai/flux/dev (good quality)
-    - premium:  gemini-3.1-flash-image-preview (best text rendering)
+    - premium:  grok-imagine-image-pro (best text rendering)
 
     Args:
         text (str): The text to display on the banner.
@@ -70,47 +69,41 @@ async def generate_text_banner(
 
         # 2. Generate Image based on quality
         if quality == "premium":
-            # Use Gemini API (Nano Banana 2)
-            if not settings.GEMINI_API_KEY:
+            # Use xAI (Grok) for high fidelity text rendering
+            if not settings.XAI_API_KEY:
                 raise ValueError(
-                    "GEMINI_API_KEY is not configured for premium generation"
+                    "XAI_API_KEY is not configured for premium generation"
                 )
 
-            client = get_genai_client()
-
-            # Use the synchronous call in a thread pool for async compatibility
             import asyncio
-
             loop = asyncio.get_running_loop()
 
-            def run_gemini():
-                return client.models.generate_images(
-                    model="gemini-3.1-flash-image-preview",
+            def run_xai():
+                return generate_image_xai(
+                    model_id="grok-imagine-image-pro",
                     prompt=prompt,
-                    config=types.GenerateImagesConfig(
-                        number_of_images=1,
-                        output_mime_type="image/jpeg",
-                        aspect_ratio="1:1",  # Standard size for banners
-                    ),
+                    aspect_ratio="1:1"
                 )
 
-            response = await loop.run_in_executor(None, run_gemini)
+            response = await loop.run_in_executor(None, run_xai)
 
-            if not response.generated_images:
-                raise RuntimeError("Gemini API returned no images")
+            if not response:
+                raise RuntimeError("xAI API returned no response")
 
-            # Gemini returns base64 bytes for generated_images when output_mime_type is set
-
-            # The SDK returns a GenerativeImage object. We need to get its bytes.
-            img = response.generated_images[0]
-
-            # Upload temp image for bg removal
-            temp_id = str(uuid.uuid4())[:8]
-            banner_url = await upload_image(
-                img.image.image_bytes,
-                content_type="image/jpeg",
-                prefix=f"temp_gemini_{temp_id}",
-            )
+            # Check if we got bytes or a URL
+            img_obj = response.generated_images[0].image
+            if hasattr(img_obj, "image_bytes") and img_obj.image_bytes:
+                image_bytes_data = img_obj.image_bytes
+                temp_id = str(uuid.uuid4())[:8]
+                banner_url = await upload_image(
+                    image_bytes_data,
+                    content_type="image/jpeg",
+                    prefix=f"temp_xai_{temp_id}",
+                )
+            elif hasattr(img_obj, "url") and img_obj.url:
+                banner_url = img_obj.url
+            else:
+                raise RuntimeError("xAI API returned no valid image data or URL")
 
         else:
             # Use Fal.ai (Flux)

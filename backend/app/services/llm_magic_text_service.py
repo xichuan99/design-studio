@@ -90,8 +90,8 @@ async def generate_magic_text_layout(
 
     response = call_gemini_with_fallback(
         client=client,
-        primary_model="openrouter/qwen/qwen-vl-max",
-        fallback_model="qwen/qwen-vl-plus",
+        primary_model="xai/grok-2-vision-1212",
+        fallback_model="openrouter/qwen/qwen-vl-max",
         contents=[
             types.Part.from_bytes(data=image_bytes, mime_type="image/png"),
             f"Here is the text I want to place on this image: {text}{context_string}",
