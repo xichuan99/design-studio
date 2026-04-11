@@ -2,6 +2,7 @@
   "packages": {
     ".": {
       "release-type": "simple",
+      "initial-version": "1.4.0",
       "extra-files": [
         "VERSION",
         {
@@ -11,5 +12,6 @@
         }
       ]
     }
-  }
+  },
+  "release-label": "autorelease: pending"
 }
