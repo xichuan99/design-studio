@@ -465,7 +465,9 @@ export function useCreateDesign() {
             const errorMessage = error instanceof Error ? error.message : "Gagal memproses desain.";
             posthog?.capture('create_generation_failed', { create_mode: createMode, error_message: errorMessage });
             
-            setCurrentStep('results');
+            // For redesign mode, parsedData is null so 'results' step would fall through
+            // to the home screen. Instead, go back to 'input' to keep the form visible.
+            setCurrentStep(createMode === 'redesign' || !parsedData ? 'input' : 'results');
             
             if (errorMessage.toLowerCase().includes("pelanggaran") || errorMessage.toLowerCase().includes("safety") || errorMessage.toLowerCase().includes("nsfw")) {
                 setErrorModalState({
