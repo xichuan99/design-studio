@@ -13,7 +13,7 @@
 | Canvas Editor | React Konva, Konva.js |
 | State Management | Zustand v5 |
 | Auth | next-auth v4 |
-| Monitoring | Sentry (@sentry/nextjs) |
+| Monitoring | - |
 | Backend | FastAPI 0.115+, SQLAlchemy, Alembic |
 | Database | PostgreSQL |
 | AI/Worker | Quantum Engine (FastAPI terpisah), Celery, fal_client |
@@ -96,10 +96,9 @@ _Source: [nextjs.instructions.md](https://github.com/github/awesome-copilot/blob
 - `NEXT_PUBLIC_*` di-inline saat build time — ubahan setelah build tidak berpengaruh.
 - `NEXT_PUBLIC_BUILD_ID` diset oleh GitHub Actions CI untuk cache consistency.
 
-### Monitoring — Sentry
-- Sentry sudah terintegrasi via `@sentry/nextjs` (config: `sentry.client.config.ts`, `sentry.server.config.ts`, `sentry.edge.config.ts`).
-- Jangan tambahkan `try/catch` yang hanya menelan error tanpa capture ke Sentry.
-- Gunakan `Sentry.captureException(error)` untuk error yang perlu dilacak.
+### Monitoring
+- Gunakan logging sistem yang terstruktur untuk melacak error.
+- Jangan tambahkan `try/catch` yang hanya menelan error tanpa logging.
 
 ### Auth — next-auth
 - Menggunakan **next-auth v4** — session diakses via `useSession()` (client) atau `getServerSession()` (server).

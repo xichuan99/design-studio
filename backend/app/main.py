@@ -1,5 +1,4 @@
 import os
-import sentry_sdk
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Request
@@ -32,14 +31,6 @@ from app.core.logging_config import setup_logging
 
 setup_logging()
 
-# Initialize Sentry if DSN is provided
-SENTRY_DSN = os.getenv("SENTRY_DSN")
-if SENTRY_DSN:
-    sentry_sdk.init(
-        dsn=SENTRY_DSN,
-        traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.2")),
-        profiles_sample_rate=float(os.getenv("SENTRY_PROFILES_SAMPLE_RATE", "0.1")),
-    )
 
 # Read version
 version_path = os.path.join(
@@ -191,7 +182,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     # Fallback for unhandled exceptions
     request_id = getattr(request.state, "request_id", None)
 
-    # Optional: Log the full traceback here or let structured logging/Sentry handle it.
+    # Optional: Log the full traceback here or let structured logging handle it.
 
     internal_exc = InternalServerError(detail="An unexpected error occurred.")
 
