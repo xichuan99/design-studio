@@ -13,6 +13,7 @@ from fastapi import status
 from app.services.llm_client import get_genai_client, call_gemini_with_fallback
 
 # System Prompt for Gemini Vision
+VISION_ANALYSIS_PROMPT = """
 Analyze the provided reference image and extract its core visual components.
 Return the result in JSON format with the following keys:
 - 'style_description': Analyze overall style & vibe (minimalist, bold, etc.) and composition/lighting.
