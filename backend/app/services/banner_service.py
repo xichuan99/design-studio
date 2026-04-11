@@ -36,7 +36,7 @@ async def generate_text_banner(
     Quality tiers:
     - draft:    fal-ai/flux/schnell (fast, cheap)
     - standard: fal-ai/flux/dev (good quality)
-    - premium:  grok-imagine-image-pro (best text rendering)
+    - premium:  grok-imagine-image (best text rendering)
 
     Args:
         text (str): The text to display on the banner.
@@ -80,7 +80,7 @@ async def generate_text_banner(
 
             def run_xai():
                 return generate_image_xai(
-                    model_id="grok-imagine-image-pro",
+                    model_id="grok-imagine-image",
                     prompt=prompt,
                     aspect_ratio="1:1"
                 )

@@ -441,7 +441,7 @@ async def generate_design(
 
         # Determine text instructions based on integration needs
         if request.integrated_text:
-            model_name = "grok-imagine-image-pro"
+            model_name = "grok-imagine-image"
 
             # Build all text elements for integrated rendering
             text_parts = [f"'{parsed.headline}'"]
@@ -470,7 +470,7 @@ async def generate_design(
         client = genai.Client(api_key=app_settings.GEMINI_API_KEY)
 
         image_bytes = None
-        if model_name == "grok-imagine-image-pro":
+        if model_name == "grok-imagine-image":
             # Use xAI Grok Imagine for integrated text
             from app.services.llm_client import generate_image_xai
 
