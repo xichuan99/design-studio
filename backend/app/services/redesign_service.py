@@ -116,7 +116,7 @@ async def run_flux_redesign(
 
     arguments = {
         "prompt": enriched_prompt,
-        "image_url": image_url,
+        "image_urls": [image_url],
         "strength": strength,
         "image_size": image_size,
         "num_inference_steps": 28,
@@ -126,7 +126,7 @@ async def run_flux_redesign(
     try:
         # Run fal client
         result = await fal_client.run_async(
-            "fal-ai/flux/dev/image-to-image", arguments=arguments
+            "fal-ai/flux-2/flash/edit", arguments=arguments
         )
 
         if "images" in result and len(result["images"]) > 0:
