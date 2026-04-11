@@ -126,7 +126,7 @@ async def run_flux_redesign(
     try:
         # Run fal client
         result = await fal_client.run_async(
-            "fal-ai/flux-2/dev/image-to-image", arguments=arguments
+            "fal-ai/flux/dev/image-to-image", arguments=arguments
         )
 
         if "images" in result and len(result["images"]) > 0:
