@@ -119,7 +119,7 @@ async def run_flux_redesign(
         "image_urls": [image_url],
         "strength": strength,
         "image_size": image_size,
-        "num_inference_steps": 8,
+        "num_inference_steps": 8,  # fal-ai/flux-2/flash/edit requires max 8
         "guidance_scale": 3.5,
     }
 

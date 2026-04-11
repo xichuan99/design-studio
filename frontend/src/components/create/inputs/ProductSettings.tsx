@@ -2,6 +2,7 @@ import React from "react";
 import { ReferenceImageUpload } from "@/components/create/ReferenceImageUpload";
 
 interface ProductSettingsProps {
+    createMode: 'generate' | 'redesign';
     referenceFile: File | null;
     referencePreview: string | null;
     isDragOver: boolean;
@@ -18,6 +19,7 @@ interface ProductSettingsProps {
 }
 
 export function ProductSettings({
+    createMode,
     referenceFile,
     referencePreview,
     isDragOver,
@@ -49,8 +51,8 @@ export function ProductSettings({
                 onHideManualRef={() => setShowManualRef(false)}
             />
             
-            {referencePreview && (
-                <div className="pt-3">
+            {referencePreview && createMode === 'generate' && (
+                <div className="pt-3 animate-in fade-in slide-in-from-top-2 duration-300">
                     <label className="flex items-start gap-3 cursor-pointer p-3 border rounded-xl hover:bg-muted/50 transition-colors bg-card">
                         <div className="flex items-center h-5 mt-0.5">
                             <input

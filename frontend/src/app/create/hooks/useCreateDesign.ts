@@ -514,6 +514,15 @@ export function useCreateDesign() {
                         handleGenerateImage();
                     }
                 });
+            } else if (errorMessage.toLowerCase().includes("validation error") || errorMessage.toLowerCase().includes("bad request")) {
+                setInlineError({
+                    message: "Terdapat ketidaksuaian parameter pada perintah AI. Kami sedang memperbaikinya secara otomatis. Silakan coba lagi sebentar lagi.",
+                    type: "error",
+                    onRetry: () => {
+                        setInlineError(null);
+                        handleGenerateImage();
+                    }
+                });
             } else {
                 setInlineError({
                     message: `Terjadi kesalahan saat memproses gambar: ${errorMessage}`,

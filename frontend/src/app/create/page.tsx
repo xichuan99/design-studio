@@ -242,6 +242,54 @@ export default function CreatePage() {
                                 </p>
                             </div>
                         </div>
+                    ) : createMode === 'redesign' ? (
+                        <div className="max-w-4xl w-full mx-auto h-full flex flex-col items-center justify-center animation-fade-in px-4">
+                            <div className="w-full max-w-2xl bg-card border rounded-3xl p-8 shadow-xl relative overflow-hidden group">
+                                <div className="absolute top-4 right-4 z-10 bg-indigo-500 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg">
+                                    Redesign Target
+                                </div>
+                                
+                                {referencePreview ? (
+                                    <div className="space-y-6">
+                                        <div className="aspect-square w-full max-w-[400px] mx-auto relative rounded-2xl overflow-hidden border shadow-inner bg-muted/30">
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img 
+                                                src={referencePreview} 
+                                                alt="Reference Preview" 
+                                                className="w-full h-full object-contain"
+                                            />
+                                        </div>
+                                        <div className="text-center space-y-2">
+                                            <h2 className="text-2xl font-bold tracking-tight">Siap untuk Redesign?</h2>
+                                            <p className="text-muted-foreground text-sm max-w-md mx-auto">
+                                                Gunakan panel di kiri untuk mengatur detail desain dan klik <span className="font-semibold text-foreground italic">&quot;Generate Redesign&quot;</span> untuk memulai keajaiban.
+                                            </p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-12 space-y-6">
+                                        <div className="w-24 h-24 bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-500">
+                                            <ImagePlus className="w-12 h-12 text-indigo-500" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <h2 className="text-2xl font-bold tracking-tight">Unggah Gambar Dulu</h2>
+                                            <p className="text-muted-foreground text-sm max-w-xs mx-auto">
+                                                Fitur redesign memerlukan gambar referensi untuk mulai bekerja. Klik tombol di sidebar kiri untuk mengunggah.
+                                            </p>
+                                        </div>
+                                        <button 
+                                            onClick={() => {
+                                                setShowManualRef(true);
+                                                setSidebarOpen(true);
+                                            }}
+                                            className="px-6 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl font-semibold transition-all shadow-md active:scale-95"
+                                        >
+                                            Unggah Sekarang
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     ) : (
                         <div className="max-w-4xl w-full mx-auto h-full flex flex-col items-center justify-center animation-fade-in px-4">
                             <h2 className="text-3xl font-bold mb-8 text-center text-foreground">Bagaimana Anda ingin memulai?</h2>

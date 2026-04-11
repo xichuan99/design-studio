@@ -127,6 +127,7 @@ export function SidebarInputForm({
 
             <div className={`${isInputLocked ? 'opacity-60 pointer-events-none' : ''}`}>
                 <ProductSettings
+                    createMode={createMode}
                     referenceFile={referenceFile}
                     referencePreview={referencePreview}
                     isDragOver={isDragOver}
