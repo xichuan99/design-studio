@@ -25,6 +25,7 @@ Pay close attention to:
 
 Provide a detailed 'suggested_prompt_suffix' that I can append to a text-to-image prompt to capture this exact style and mood.
 
+Return the result in JSON format.
 DO NOT describe the literal subject matter (e.g., "a cup of coffee"). ONLY describe the stylistic and execution elements.
 """
 

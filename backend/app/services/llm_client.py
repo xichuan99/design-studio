@@ -54,7 +54,10 @@ def _convert_to_openai_messages(contents, system_instruction=None):
             mime_type = content.inline_data.mime_type
             user_content_items.append({
                 "type": "image_url",
-                "image_url": {"url": f"data:{mime_type};base64,{b64_data}"}
+                "image_url": {
+                    "url": f"data:{mime_type};base64,{b64_data}",
+                    "detail": "auto"
+                }
             })
         elif hasattr(content, "role"):
             # It's a structured History object for multi-turn chats
@@ -306,8 +309,13 @@ def call_gemini_with_fallback(
     # Layer 2: OpenRouter (e.g. Qwen 3.5 9B) as last resort
     logger.warning(f"Attempting final fallback via OpenRouter ({fallback_model})")
     try:
+        # Ensure prefix is stripped for the final fallback as well
+        actual_fallback_model = fallback_model
+        if fallback_model.startswith("openrouter/"):
+            actual_fallback_model = fallback_model.replace("openrouter/", "", 1)
+
         return call_openrouter(
-            model_id=fallback_model,
+            model_id=actual_fallback_model,
             contents=contents,
             config=config
         )
