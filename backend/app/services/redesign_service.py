@@ -13,19 +13,13 @@ from fastapi import status
 from app.services.llm_client import get_genai_client, call_gemini_with_fallback
 
 # System Prompt for Gemini Vision
-VISION_ANALYSIS_PROMPT = """
-You are an expert graphic designer and art director.
-Analyze the provided reference image and extract its core visual components so they can be accurately replicated or inspired from by another Image AI.
+Analyze the provided reference image and extract its core visual components.
+Return the result in JSON format with the following keys:
+- 'style_description': Analyze overall style & vibe (minimalist, bold, etc.) and composition/lighting.
+- 'dominant_colors': List of main hex color codes.
+- 'mood': The feeling (energetic, calm, etc.).
+- 'suggested_prompt_suffix': A detailed style prompt I can append to a text-to-image prompt to capture this exact look and feel.
 
-Pay close attention to:
-1. OVERALL STYLE & VIBE: Is it minimalist, bold, cyberpunk, watercolor, 3D render, flat design, corporate, etc.?
-2. DOMINANT COLORS: Give me the main hex color codes.
-3. MOOD: What is the feeling? (e.g., energetic, calm, professional, playful).
-4. COMPOSITION & LIGHTING: How are things arranged? Is the lighting soft, dramatic, cinematic, studio?
-
-Provide a detailed 'suggested_prompt_suffix' that I can append to a text-to-image prompt to capture this exact style and mood.
-
-Return the result in JSON format.
 DO NOT describe the literal subject matter (e.g., "a cup of coffee"). ONLY describe the stylistic and execution elements.
 """
 
