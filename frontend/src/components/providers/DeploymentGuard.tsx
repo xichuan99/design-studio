@@ -106,9 +106,12 @@ export function DeploymentGuard() {
         
         // Immediate action for Server Action mismatch
         if (errorMsg.includes("Failed to find Server Action")) {
-          // Force immediate silent reload to "fix" the state
           console.log("Forcing immediate reload due to Server Action mismatch...");
-          reloadForSync();
+          toast.loading("Versi baru terdeteksi, memuat ulang...", {
+            id: "deployment-sync",
+            duration: 1200,
+          });
+          window.setTimeout(reloadForSync, 300);
           return;
         }
 
