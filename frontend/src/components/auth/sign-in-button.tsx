@@ -2,8 +2,13 @@
 
 import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
+import { GOOGLE_OAUTH_ENABLED } from "@/lib/feature-flags";
 
 export function SignInButton() {
+    if (!GOOGLE_OAUTH_ENABLED) {
+        return null;
+    }
+
     return (
         <Button onClick={() => signIn("google")} className="gap-2">
             <svg

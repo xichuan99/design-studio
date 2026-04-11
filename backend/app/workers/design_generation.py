@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from datetime import datetime, timezone
 
@@ -16,16 +15,8 @@ from app.services.image_service import generate_background
 from app.services.llm_service import parse_design_text
 from app.services.preprocess import prepare_reference
 from app.services.storage_service import download_image, upload_image
+from app.workers.ai_tool_jobs_common import run_async as _run_async
 from app.workers.celery_app import celery_app
-
-
-def _run_async(coro):
-    """Helper to run async code inside a sync Celery task."""
-    loop = asyncio.new_event_loop()
-    try:
-        return loop.run_until_complete(coro)
-    finally:
-        loop.close()
 
 
 async def _update_job_status(job_id, **fields):

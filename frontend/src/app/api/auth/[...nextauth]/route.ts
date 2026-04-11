@@ -3,6 +3,8 @@ import { JWT } from "next-auth/jwt";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 
+import { GOOGLE_OAUTH_ENABLED } from "@/lib/feature-flags";
+
 // Extend types to avoid 'any' casts
 interface ExtendedSession extends Session {
     user?: Session["user"] & {
@@ -54,13 +56,22 @@ async function refreshAccessToken(token: ExtendedJWT): Promise<ExtendedJWT> {
     }
 }
 
+const googleProviderEnabled =
+    GOOGLE_OAUTH_ENABLED &&
+    Boolean(process.env.GOOGLE_CLIENT_ID) &&
+    Boolean(process.env.GOOGLE_CLIENT_SECRET);
+
 export const authOptions: NextAuthOptions = {
     providers: [
-        GoogleProvider({
-            clientId: process.env.GOOGLE_CLIENT_ID || "",
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-            checks: ['pkce', 'state'],
-        }),
+        ...(googleProviderEnabled
+            ? [
+                GoogleProvider({
+                    clientId: process.env.GOOGLE_CLIENT_ID || "",
+                    clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+                    checks: ["pkce", "state"],
+                }),
+            ]
+            : []),
         CredentialsProvider({
             name: "Email/Password",
             credentials: {

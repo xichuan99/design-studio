@@ -7,13 +7,27 @@ import { RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const CHECK_INTERVAL_MS = 30 * 1000; // 30 seconds
+const RELOAD_MARKER_KEY = "deployment-guard-reloaded";
 
 export function DeploymentGuard() {
   const [hasNotified, setHasNotified] = useState(false);
-  const assignedBuildIdRef = useRef<string | null>(null);
+  const initialBuildId = process.env.NEXT_PUBLIC_BUILD_ID || "dev";
+  const assignedBuildIdRef = useRef<string>(initialBuildId);
+
+  const reloadForSync = useCallback(() => {
+    if (typeof window === "undefined") return;
+
+    const reloadMarker = `${RELOAD_MARKER_KEY}:${assignedBuildIdRef.current}`;
+    if (sessionStorage.getItem(reloadMarker) === "1") {
+      return;
+    }
+
+    sessionStorage.setItem(reloadMarker, "1");
+    window.location.reload();
+  }, []);
 
   const checkDeploymentVersion = useCallback(async () => {
-    if (hasNotified) return;
+    if (hasNotified || initialBuildId === "dev") return;
 
     try {
       const response = await fetch("/api/health", {
@@ -31,36 +45,30 @@ export function DeploymentGuard() {
       const data = await response.json();
       const serverBuildId = data.buildId;
 
-      if (serverBuildId && serverBuildId !== "dev") {
-        if (!assignedBuildIdRef.current) {
-          // First successful request sets the baseline for this client
-          assignedBuildIdRef.current = serverBuildId;
-        } else if (serverBuildId !== assignedBuildIdRef.current) {
-          // Version mismatch detected proactively!
-          setHasNotified(true);
-          
-          toast.info("Update Tersedia ✨", {
-            description: "Aplikasi telah diperbarui. Memuat ulang untuk sinkronisasi...",
-            duration: 3000, 
-            onAutoClose: () => window.location.reload(),
-            action: (
-              <Button 
-                onClick={() => window.location.reload()} 
-                size="sm" 
-                className="gap-2 shrink-0"
-                variant="default"
-              >
-                <RefreshCcw className="w-3.5 h-3.5" />
-                Refresh Sekarang
-              </Button>
-            ),
-          });
-        }
+      if (serverBuildId && serverBuildId !== "dev" && serverBuildId !== assignedBuildIdRef.current) {
+        setHasNotified(true);
+
+        toast.info("Update Tersedia ✨", {
+          description: "Aplikasi telah diperbarui. Memuat ulang untuk sinkronisasi...",
+          duration: 3000,
+          onAutoClose: reloadForSync,
+          action: (
+            <Button
+              onClick={reloadForSync}
+              size="sm"
+              className="gap-2 shrink-0"
+              variant="default"
+            >
+              <RefreshCcw className="w-3.5 h-3.5" />
+              Refresh Sekarang
+            </Button>
+          ),
+        });
       }
-    } catch (_error) {
+    } catch {
       // Silently ignore network errors to not bother the user
     }
-  }, [hasNotified]);
+  }, [hasNotified, initialBuildId, reloadForSync]);
 
   // Re-check version on every client-side navigation
   const pathname = usePathname();
@@ -100,7 +108,7 @@ export function DeploymentGuard() {
         if (errorMsg.includes("Failed to find Server Action")) {
           // Force immediate silent reload to "fix" the state
           console.log("Forcing immediate reload due to Server Action mismatch...");
-          window.location.reload();
+          reloadForSync();
           return;
         }
 
@@ -135,7 +143,7 @@ export function DeploymentGuard() {
       clearTimeout(initialTimer);
       clearInterval(intervalId);
     };
-  }, [hasNotified, checkDeploymentVersion]);
+  }, [hasNotified, checkDeploymentVersion, reloadForSync]);
 
   return null;
 }

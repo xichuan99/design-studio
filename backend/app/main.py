@@ -220,6 +220,7 @@ app.include_router(ai_tools_router, prefix="/api/tools", tags=["AI Tools"])
 app.include_router(ad_creator_router, prefix="/api/ad-creator", tags=["Ad Creator"])
 app.include_router(template_marketplace_router, prefix="/api", tags=["Template Marketplace"])
 app.include_router(folders_router, prefix="/api/folders", tags=["Folders"])
+@app.get("/api/health", include_in_schema=False)
 @app.get(
     "/health",
     tags=["Health"],

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import threading
 from datetime import datetime, timezone
 
 from sqlalchemy import update
@@ -13,14 +14,28 @@ from app.models.ai_tool_job import AiToolJob
 
 logger = logging.getLogger(__name__)
 
+_worker_runtime = threading.local()
+
+
+def _get_worker_loop() -> asyncio.AbstractEventLoop:
+    """Return a stable event loop for the current Celery worker thread."""
+    loop = getattr(_worker_runtime, "loop", None)
+    if loop is None or loop.is_closed():
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        _worker_runtime.loop = loop
+    return loop
+
 
 def run_async(coro):
-    """Helper to run async code inside a sync Celery task."""
-    loop = asyncio.new_event_loop()
-    try:
-        return loop.run_until_complete(coro)
-    finally:
-        loop.close()
+    """Run async code inside a sync Celery task using a reusable loop.
+
+    Reusing the event loop avoids cross-loop reuse of pooled async database
+    connections, which can trigger SQLAlchemy AsyncSession concurrency errors
+    under Celery workers.
+    """
+    loop = _get_worker_loop()
+    return loop.run_until_complete(coro)
 
 
 async def update_ai_tool_job(job_id: str, **fields):
