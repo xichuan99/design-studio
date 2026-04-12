@@ -1,6 +1,5 @@
-"""Design-related LLM services."""
-
 import json
+import re
 from typing import Optional
 from google.genai import types
 import asyncio
@@ -15,6 +14,23 @@ from app.services.llm_prompts import (
     REDESIGN_BRIEF_SYSTEM,
     MODIFY_PROMPT_SYSTEM,
 )
+
+
+def extract_json_from_text(text: str) -> str:
+    """Extracts a JSON block from a potentially chatty LLM response."""
+    # Try finding the first '{' or '[' and the last '}' or ']'
+    start_match = re.search(r"[\{\[]", text)
+    end_match = re.findall(r"[\}\]]", text)
+
+    if not start_match or not end_match:
+        return text.strip()
+
+    start_index = start_match.start()
+    # Find the last closing bracket/brace
+    last_char = end_match[-1]
+    last_index = text.rfind(last_char)
+
+    return text[start_index : last_index + 1].strip()
 
 
 async def generate_design_brief_questions(raw_text: str) -> dict:
@@ -77,8 +93,8 @@ async def generate_design_brief_questions(raw_text: str) -> dict:
     response = await asyncio.to_thread(
         call_gemini_with_fallback,
         client=client,
-        primary_model="openrouter/minimax/minimax-m2.7",
-        fallback_model="qwen/qwen3.5-9b",
+        primary_model="openrouter/minimax/minimax-01",
+        fallback_model="openrouter/qwen/qwen-2.5-72b-instruct",
         contents=[
             f"Buatkan pertanyaan klarifikasi desain untuk deskripsi ini:\n{raw_text}"
         ],
@@ -89,7 +105,16 @@ async def generate_design_brief_questions(raw_text: str) -> dict:
             temperature=0.7,
         ),
     )
-    return json.loads(response.text)
+
+    try:
+        clean_json = extract_json_from_text(response.text)
+        return json.loads(clean_json)
+    except Exception as e:
+        import logging
+
+        snippet = response.text[:200] + "..." if len(response.text) > 200 else response.text
+        logging.exception(f"Error extracting design questions via LLM. Snippet: {snippet}")
+        raise e
 
 
 async def generate_unified_brief_questions(
@@ -203,8 +228,8 @@ async def generate_unified_brief_questions(
     response = await asyncio.to_thread(
         call_gemini_with_fallback,
         client=client,
-        primary_model="openrouter/minimax/minimax-m2.7",
-        fallback_model="qwen/qwen3.5-9b",
+        primary_model="openrouter/minimax/minimax-01",
+        fallback_model="openrouter/qwen/qwen-2.5-72b-instruct",
         contents=[
             f"Buatkan pertanyaan klarifikasi desain & copywriting untuk deskripsi ini:\n{raw_text}"
         ],
@@ -217,16 +242,8 @@ async def generate_unified_brief_questions(
     )
 
     try:
-        import json
-        result_text = response.text.strip()
-        if result_text.startswith("```json"):
-            result_text = result_text[7:]
-        if result_text.startswith("```"):
-            result_text = result_text[3:]
-        if result_text.endswith("```"):
-            result_text = result_text[:-3]
-
-        data = json.loads(result_text.strip())
+        result_text = extract_json_from_text(response.text)
+        data = json.loads(result_text)
         # Fallback heuristic: some LLMs return "clarification_questions" instead of "questions"
         if "clarification_questions" in data and "questions" not in data:
             data["questions"] = data.pop("clarification_questions")
@@ -236,7 +253,8 @@ async def generate_unified_brief_questions(
     except Exception as e:
         import logging
 
-        logging.exception(f"Error extracting unified questions via LLM: {response.text}")
+        snippet = response.text[:200] + "..." if len(response.text) > 200 else response.text
+        logging.exception(f"Error extracting unified questions via LLM. Snippet: {snippet}")
         raise e
 
 
@@ -412,8 +430,8 @@ async def parse_design_text(
     response = await asyncio.to_thread(
         call_gemini_with_fallback,
         client=client,
-        primary_model="openrouter/minimax/minimax-m2.7",
-        fallback_model="qwen/qwen3.5-9b",
+        primary_model="openrouter/minimax/minimax-01",
+        fallback_model="openrouter/qwen/qwen-2.5-72b-instruct",
         contents=[raw_text],
         config=types.GenerateContentConfig(
             system_instruction=final_prompt,
@@ -423,8 +441,15 @@ async def parse_design_text(
     )
 
     # We parse the response text instead of using dynamic decoding structure, though the types are standard JSON
-    data = json.loads(response.text)
-    return ParsedTextElements(**data)
+    try:
+        clean_json = extract_json_from_text(response.text)
+        data = json.loads(clean_json)
+        return ParsedTextElements(**data)
+    except Exception as e:
+        import logging
+        snippet = response.text[:200] + "..." if len(response.text) > 200 else response.text
+        logging.exception(f"Error parsing design text via LLM. Snippet: {snippet}")
+        raise e
 
 
 async def modify_visual_prompt(
@@ -479,8 +504,8 @@ async def modify_visual_prompt(
     response = await asyncio.to_thread(
         call_gemini_with_fallback,
         client=client,
-        primary_model="openrouter/minimax/minimax-m2.7",
-        fallback_model="qwen/qwen3.5-9b",
+        primary_model="openrouter/minimax/minimax-01",
+        fallback_model="openrouter/qwen/qwen-2.5-72b-instruct",
         contents=[input_text],
         config=types.GenerateContentConfig(
             system_instruction=MODIFY_PROMPT_SYSTEM,
@@ -489,7 +514,14 @@ async def modify_visual_prompt(
         ),
     )
 
-    data = json.loads(response.text)
+    try:
+        clean_json = extract_json_from_text(response.text)
+        data = json.loads(clean_json)
+    except Exception as e:
+        import logging
+        snippet = response.text[:200] + "..." if len(response.text) > 200 else response.text
+        logging.exception(f"Error parsing modified prompt via LLM. Snippet: {snippet}")
+        raise e
 
     # SAFETY NET: Reconstruct the combined prompt from the parts to guarantee No Shortening
     assembled_prompt = ", ".join(
@@ -536,8 +568,8 @@ async def generate_project_title(prompt: str) -> str:
         response = await asyncio.to_thread(
             call_gemini_with_fallback,
             client=client,
-            primary_model="openrouter/minimax/minimax-m2.7",
-            fallback_model="qwen/qwen3.5-9b",
+            primary_model="openrouter/minimax/minimax-01",
+            fallback_model="openrouter/qwen/qwen-2.5-72b-instruct",
             contents=[f"Create a short title for this design prompt: {prompt}"],
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,

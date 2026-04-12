@@ -10,6 +10,7 @@ from app.services.llm_prompts import (
     COPYWRITING_SYSTEM_PROMPT,
 )
 from app.services.llm_client import get_genai_client, call_gemini_with_fallback
+from app.services.llm_design_service import extract_json_from_text
 
 
 async def generate_copywriting_questions(raw_text: str) -> dict:
@@ -69,13 +70,11 @@ async def generate_copywriting_questions(raw_text: str) -> dict:
             ]
         }
 
-    client = get_genai_client()
-
     response = await asyncio.to_thread(
         call_gemini_with_fallback,
         client=client,
-        primary_model="openrouter/minimax/minimax-m2.7",
-        fallback_model="qwen/qwen3.5-9b",
+        primary_model="openrouter/minimax/minimax-01",
+        fallback_model="openrouter/qwen/qwen-2.5-72b-instruct",
         contents=[
             f"Buatkan pertanyaan klarifikasi copywriting untuk deskripsi ini:\n{raw_text}"
         ],
@@ -89,15 +88,7 @@ async def generate_copywriting_questions(raw_text: str) -> dict:
 
     try:
         import json
-        result_text = response.text.strip()
-        if result_text.startswith("```json"):
-            result_text = result_text[7:]
-        if result_text.startswith("```"):
-            result_text = result_text[3:]
-        if result_text.endswith("```"):
-            result_text = result_text[:-3]
-
-        data = json.loads(result_text.strip())
+        result_text = extract_json_from_text(response.text)
         if "clarification_questions" in data and "questions" not in data:
             data["questions"] = data.pop("clarification_questions")
 
@@ -105,8 +96,8 @@ async def generate_copywriting_questions(raw_text: str) -> dict:
         return parsed.model_dump()
     except Exception as e:
         import logging
-
-        logging.exception("Error extracting copywriting questions via LLM")
+        snippet = response.text[:200] + "..." if len(response.text) > 200 else response.text
+        logging.exception(f"Error extracting copywriting questions via LLM. Snippet: {snippet}")
         raise e
 
 
@@ -190,13 +181,11 @@ async def generate_ai_copywriting(
             ]
         }
 
-    client = get_genai_client()
-
     response = await asyncio.to_thread(
         call_gemini_with_fallback,
         client=client,
-        primary_model="openrouter/minimax/minimax-m2.7",
-        fallback_model="qwen/qwen3.5-9b",
+        primary_model="openrouter/minimax/minimax-01",
+        fallback_model="openrouter/qwen/qwen-2.5-72b-instruct",
         contents=[prompt_payload],
         config=types.GenerateContentConfig(
             system_instruction=system_prompt_formatted,
@@ -207,11 +196,12 @@ async def generate_ai_copywriting(
     )
 
     try:
-        parsed = CopywritingResponse.model_validate_json(response.text)
+        clean_json = extract_json_from_text(response.text)
+        parsed = CopywritingResponse.model_validate_json(clean_json)
         return parsed.model_dump()
     except Exception as e:
         import logging
-
-        logging.exception("Error extracting copywriting via LLM")
+        snippet = response.text[:200] + "..." if len(response.text) > 200 else response.text
+        logging.exception(f"Error extracting copywriting via LLM. Snippet: {snippet}")
         raise e
 

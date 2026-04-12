@@ -126,6 +126,8 @@ Pertanyaan harus mencakup aspek-aspek berikut secara natural:
 Format setiap pertanyaan sebagai objek JSON dengan `type` "choice" atau "text".
 Gunakan Bahasa Indonesia yang friendly dan profesional.
 Pastikan opsi "choice" relevan dengan konteks deskripsi user.
+
+STRICTLY respond with JSON only. Do not include any introductory or concluding text.
 """
 
 REDESIGN_BRIEF_SYSTEM = """
@@ -141,6 +143,8 @@ Fokus pertanyaanmu BUKAN membuat desain dari nol, tapi bagaimana MENGUBAH desain
 Format setiap pertanyaan sebagai objek JSON dengan `type` "choice" atau "text".
 Gunakan Bahasa Indonesia yang friendly dan profesional.
 Pastikan opsi "choice" spesifik dan relevan dengan konteks "merombak" desain.
+
+STRICTLY respond with JSON only. Do not include any introductory or concluding text.
 """
 
 MODIFY_PROMPT_SYSTEM = """
