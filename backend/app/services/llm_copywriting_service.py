@@ -88,7 +88,7 @@ async def generate_copywriting_questions(raw_text: str) -> dict:
 
     try:
         import json
-        result_text = extract_json_from_text(response.text)
+        data = extract_json_from_text(response.text)
         if "clarification_questions" in data and "questions" not in data:
             data["questions"] = data.pop("clarification_questions")
 
