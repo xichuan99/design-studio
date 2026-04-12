@@ -271,8 +271,36 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: write
+      issues: write
       pull-requests: write
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate release version sync
+        run: |
+          set -euo pipefail
+
+          version_file="$(tr -d '[:space:]' < VERSION)"
+          manifest_version="$(node -e "const m=require('./.release-please-manifest.json'); process.stdout.write(String(m['.'] || ''));")"
+          frontend_version="$(node -e "const p=require('./frontend/package.json'); process.stdout.write(String(p.version || ''));")"
+
+          echo "VERSION=$version_file"
+          echo "MANIFEST=$manifest_version"
+          echo "FRONTEND=$frontend_version"
+
+          if [ -z "$version_file" ] || [ -z "$manifest_version" ] || [ -z "$frontend_version" ]; then
+            echo "Error: one or more version sources are empty"
+            exit 1
+          fi
+
+          if [ "$version_file" != "$manifest_version" ] || [ "$version_file" != "$frontend_version" ]; then
+            echo "Error: version files are out of sync"
+            echo "Expected all equal, but got: VERSION=$version_file, MANIFEST=$manifest_version, FRONTEND=$frontend_version"
+            exit 1
+          fi
+
+          echo "Version files are synchronized"
+
       - uses: googleapis/release-please-action@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
