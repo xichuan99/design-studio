@@ -20,6 +20,7 @@ from app.schemas.brand_kit import (
     BrandKitExtractUrlRequest,
 )
 from app.services.brand_kit_service import extract_colors_from_image
+from app.core.http_client import create_async_client
 
 router = APIRouter(tags=["Brand Kits"])
 
@@ -82,6 +83,7 @@ async def generate_brand_kit(
             colors=colors_data,
             typography=typography_data,
             brand_strategy=brand_strategy_data,
+            folder_id=request.folder_id,
         )
     except Exception as e:
         logging.exception(f"Exception generating brand kit: {e}")
@@ -105,7 +107,6 @@ async def extract_brand_from_url(
     from app.services.brand_kit_service import extract_colors_from_image
     from app.services.storage_service import upload_image_tracked
     from app.core.exceptions import InternalServerError
-    import httpx
     import logging
 
     try:
@@ -118,7 +119,7 @@ async def extract_brand_from_url(
 
         if logo_url:
             try:
-                async with httpx.AsyncClient(timeout=10.0) as client:
+                async with create_async_client(timeout=10.0) as client:
                     resp = await client.get(logo_url)
                     if resp.status_code == 200:
                         image_bytes = resp.content
@@ -149,6 +150,7 @@ async def extract_brand_from_url(
             logos=[result_url] if result_url else [],
             colors=colors,
             typography={"primaryFont": "Inter", "secondaryFont": "Roboto"},
+            folder_id=request.folder_id,
         )
 
     except Exception as e:
@@ -200,6 +202,8 @@ async def create_brand_kit(
     Saves a new Brand Kit for the current user. Enforces limits on free tier.
     """
     try:
+        brand_kit_folder_id = getattr(brand_kit_in, "folder_id", None)
+
         # Check limit for free tier
         result = await db.execute(
             select(BrandKit).where(BrandKit.user_id == current_user.id)
@@ -232,7 +236,7 @@ async def create_brand_kit(
             typography=typography_json,
             brand_strategy=brand_strategy_json,
             is_active=True,
-            folder_id=brand_kit_in.folder_id,
+            folder_id=brand_kit_folder_id,
         )
 
         db.add(new_kit)

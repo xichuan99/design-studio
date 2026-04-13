@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     # Backend public base URL (used for local-storage fallback URLs)
     BACKEND_BASE_URL: str = "http://localhost:8000"
 
+    # Optional extra CA bundle for internal HTTPS assets/services.
+    INTERNAL_CA_BUNDLE_PATH: str = ""
+
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )

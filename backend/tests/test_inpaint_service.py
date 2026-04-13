@@ -44,6 +44,34 @@ async def test_inpaint_image_fallback_structure(mock_fal_run):
             "mask_url": "http://mask.url",
             "sync_mode": True,
             "output_format": "jpeg",
+            "prompt": "Improve visual quality",
+        },
+    )
+
+
+@pytest.mark.asyncio
+@patch("app.services.inpaint_service.fal_client.run_async")
+async def test_inpaint_image_magic_eraser_uses_default_prompt(mock_fal_run):
+    mock_fal_run.return_value = {
+        "image": {"url": "http://fal.url/result3.jpg", "width": 400, "height": 300}
+    }
+
+    result = await inpaint_image(
+        "http://image.url",
+        "http://mask.url",
+        prompt="   ",
+        magic_eraser_mode=True,
+    )
+
+    assert result == {"url": "http://fal.url/result3.jpg", "width": 400, "height": 300}
+    mock_fal_run.assert_called_once_with(
+        "fal-ai/flux-pro/v1/fill",
+        arguments={
+            "image_url": "http://image.url",
+            "mask_url": "http://mask.url",
+            "sync_mode": True,
+            "output_format": "jpeg",
+            "prompt": "Remove the masked object and reconstruct the background naturally",
         },
     )
 

@@ -4,6 +4,8 @@ import logging
 from urllib.parse import urljoin
 from typing import Dict, Any
 
+from app.core.http_client import create_async_client
+
 
 async def scrape_brand_info(url: str) -> Dict[str, Any]:
     """
@@ -17,7 +19,7 @@ async def scrape_brand_info(url: str) -> Dict[str, Any]:
     }
 
     try:
-        async with httpx.AsyncClient(
+        async with create_async_client(
             headers=headers, follow_redirects=True, timeout=15.0
         ) as client:
             resp = await client.get(url)

@@ -8,9 +8,16 @@ logger = logging.getLogger(__name__)
 from app.core.exceptions import AppException
 import fal_client
 
+DEFAULT_INPAINT_PROMPT = "Improve visual quality"
+DEFAULT_MAGIC_ERASER_PROMPT = "Remove the masked object and reconstruct the background naturally"
+
 
 async def inpaint_image(
-    image_url: str, mask_url: str, prompt: Optional[str] = None
+    image_url: str,
+    mask_url: str,
+    prompt: Optional[str] = None,
+    *,
+    magic_eraser_mode: bool = False,
 ) -> dict:
     """
     Inpaints an image using the fal-ai/flux-pro/v1/fill model.
@@ -19,8 +26,7 @@ async def inpaint_image(
         image_url (str): URL of the base image.
         mask_url (str): URL of the mask image (white=fill, black=keep).
         prompt (Optional[str]): Optional prompt to describe the desired fill content.
-                                For "magic eraser" object removal, this can be empty or something like "background".
-                                Defaults to None.
+        magic_eraser_mode (bool): Enables prompt fallback optimized for object removal.
 
     Returns:
         dict: A dictionary containing the 'url', 'width', and 'height' of the processed image.
@@ -29,15 +35,21 @@ async def inpaint_image(
         HTTPException: If the inpainting service fails to return a valid output or encounters an error.
     """
     try:
+        resolved_prompt = (prompt or "").strip()
+        if not resolved_prompt:
+            resolved_prompt = (
+                DEFAULT_MAGIC_ERASER_PROMPT
+                if magic_eraser_mode
+                else DEFAULT_INPAINT_PROMPT
+            )
+
         arguments = {
             "image_url": image_url,
             "mask_url": mask_url,
             "sync_mode": True,
             "output_format": "jpeg",
+            "prompt": resolved_prompt,
         }
-
-        if prompt:
-            arguments["prompt"] = prompt
 
         # We use fal-ai/flux-pro/v1/fill as it offers excellent inpainting capabilities
         result = await fal_client.run_async(

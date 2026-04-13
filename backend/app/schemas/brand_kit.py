@@ -229,6 +229,10 @@ class BrandKitGenerateRequest(BaseModel):
     target_audience: str = Field("", description="Target audience description")
     design_style: str = Field("", description="Preferred visual design style")
     emotional_tone: str = Field("", description="Primary emotion the brand should trigger")
+    folder_id: Optional[UUID] = Field(
+        None,
+        description="Optional folder ID to associate with the generated brand kit",
+    )
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -248,6 +252,10 @@ class BrandKitExtractUrlRequest(BaseModel):
         ...,
         description="URL of the website to extract brand kit from",
         json_schema_extra={"example": "https://stripe.com"},
+    )
+    folder_id: Optional[UUID] = Field(
+        None,
+        description="Optional folder ID to associate with the extracted brand kit",
     )
 
     model_config = ConfigDict(

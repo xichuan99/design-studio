@@ -384,6 +384,42 @@ def test_magic_eraser_success():
             image_url="http://storage.com/input.jpg",
             mask_url="http://storage.com/mask.jpg",
             prompt="remove object",
+            magic_eraser_mode=True,
+        )
+
+
+def test_magic_eraser_without_prompt_uses_magic_eraser_mode():
+    files = {
+        "file": ("test.png", b"fake_image", "image/png"),
+        "mask": ("mask.png", b"fake_mask", "image/png"),
+    }
+
+    with (
+        patch(
+            "app.services.inpaint_service.inpaint_image", new_callable=AsyncMock
+        ) as mock_inpaint,
+        patch(
+            "app.api.ai_tools_routers.background.upload_image", new_callable=AsyncMock
+        ) as mock_upload,
+    ):
+        mock_upload.side_effect = [
+            "http://storage.com/input.jpg",
+            "http://storage.com/mask.jpg",
+        ]
+        mock_inpaint.return_value = {
+            "url": "http://storage.com/result.jpg",
+            "width": 1024,
+            "height": 1024,
+        }
+
+        res = client.post("/api/tools/magic-eraser", files=files)
+
+        assert res.status_code == 200
+        mock_inpaint.assert_called_once_with(
+            image_url="http://storage.com/input.jpg",
+            mask_url="http://storage.com/mask.jpg",
+            prompt=None,
+            magic_eraser_mode=True,
         )
 
 

@@ -207,7 +207,10 @@ async def magic_eraser(
 
         # 2. Call Fal Service
         result_data = await inpaint_service.inpaint_image(
-            image_url=image_url, mask_url=mask_url, prompt=prompt
+            image_url=image_url,
+            mask_url=mask_url,
+            prompt=prompt,
+            magic_eraser_mode=True,
         )
 
         # If Fal returns a URL directly, we can either return it or download+upload to our storage.

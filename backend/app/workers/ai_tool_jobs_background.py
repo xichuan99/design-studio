@@ -331,6 +331,7 @@ async def execute_magic_eraser_tool_job(job_id: str):
         image_url=str(image_url),
         mask_url=str(mask_url),
         prompt=str(prompt) if prompt else None,
+        magic_eraser_mode=True,
     )
 
     inpainted_url = result_data.get("url")
