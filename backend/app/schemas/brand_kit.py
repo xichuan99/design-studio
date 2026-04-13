@@ -91,6 +91,10 @@ class BrandKitBase(BaseModel):
     )
     typography: Optional[Typography] = Field(None, description="Typography settings")
     brand_strategy: Optional[dict] = Field(None, description="Brand strategy details")
+    folder_id: Optional[UUID] = Field(
+        None,
+        description="ID of the folder this brand kit belongs to",
+    )
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -180,10 +184,6 @@ class BrandKitResponse(BrandKitBase):
         ...,
         description="Brand kit creation timestamp",
         json_schema_extra={"example": "2024-03-15T12:00:00Z"},
-    )
-    folder_id: Optional[UUID] = Field(
-        None,
-        description="ID of the folder this brand kit belongs to",
     )
 
     model_config = ConfigDict(
