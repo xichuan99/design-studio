@@ -7,8 +7,35 @@ from google.genai import types
 from app.core.config import settings
 import logging
 import httpx
+from typing import Optional
 
 logger = logging.getLogger(__name__)
+
+MAX_ERROR_BODY_LOG_CHARS = 4000
+
+
+def _truncate_for_log(text: Optional[str], max_chars: int = MAX_ERROR_BODY_LOG_CHARS) -> str:
+    if not text:
+        return "<empty>"
+    if len(text) <= max_chars:
+        return text
+    return f"{text[:max_chars]}...[truncated {len(text) - max_chars} chars]"
+
+
+def _log_failed_provider_response(provider: str, model_id: str, response: httpx.Response, reason: str) -> None:
+    try:
+        response_text = response.text
+    except Exception as read_err:
+        response_text = f"<unable to read response text: {read_err}>"
+
+    logger.error(
+        "%s call failed (%s): %s | status=%s | body=%s",
+        provider,
+        model_id,
+        reason,
+        response.status_code,
+        _truncate_for_log(response_text),
+    )
 
 def get_genai_client() -> genai.Client:
     """
@@ -91,6 +118,8 @@ def call_openrouter(model_id: str, contents: list, config: types.GenerateContent
     if config and getattr(config, "response_mime_type", None) == "application/json":
         payload["response_format"] = {"type": "json_object"}
 
+    response = None
+    response_failure_logged = False
     try:
         logger.info(f"🧠 [DEV INFO] Resolving prompt via FALLBACK LLM: {model_id} (OpenRouter)")
         with httpx.Client(timeout=60.0) as client:
@@ -103,12 +132,34 @@ def call_openrouter(model_id: str, contents: list, config: types.GenerateContent
                 },
                 json=payload
             )
+
+            if response.status_code != 200:
+                _log_failed_provider_response("OpenRouter", model_id, response, "non-200 response")
+                response_failure_logged = True
+
             response.raise_for_status()
-            res_data = response.json()
+            try:
+                res_data = response.json()
+            except ValueError:
+                _log_failed_provider_response("OpenRouter", model_id, response, "invalid JSON response")
+                response_failure_logged = True
+                raise
+
+            choices = res_data.get("choices")
+            if not isinstance(choices, list) or not choices:
+                _log_failed_provider_response("OpenRouter", model_id, response, "missing or empty 'choices' in response")
+                response_failure_logged = True
+                raise KeyError("choices")
+
+            first_choice = choices[0]
+            if not isinstance(first_choice, dict) or "message" not in first_choice:
+                _log_failed_provider_response("OpenRouter", model_id, response, "missing 'message' in first choice")
+                response_failure_logged = True
+                raise KeyError("message")
 
             # Mocking a Gemini-like response object so we don't have to rewrite every caller
             from types import SimpleNamespace
-            content_text = res_data["choices"][0]["message"]["content"]
+            content_text = first_choice["message"].get("content", "")
 
             # Log token usage
             usage = res_data.get("usage", {})
@@ -123,8 +174,11 @@ def call_openrouter(model_id: str, contents: list, config: types.GenerateContent
             )
             return mock_res
     except Exception as e:
-        logger.error(f"OpenRouter call failed ({model_id}): {str(e)}")
-        raise e
+        if response is not None and not response_failure_logged:
+            _log_failed_provider_response("OpenRouter", model_id, response, f"exception: {type(e).__name__}")
+        elif response is None:
+            logger.error(f"OpenRouter call failed ({model_id}) before receiving response: {str(e)}")
+        raise
 
 def call_xai(model_id: str, contents: list, config: types.GenerateContentConfig = None):
     """Calls xAI (Grok) API with an OpenAI-compatible interface."""
@@ -145,6 +199,8 @@ def call_xai(model_id: str, contents: list, config: types.GenerateContentConfig 
     if config and getattr(config, "response_mime_type", None) == "application/json":
         payload["response_format"] = {"type": "json_object"}
 
+    response = None
+    response_failure_logged = False
     try:
         logger.info(f"🧠 [DEV INFO] Resolving prompt via xAI (Grok): {model_id}")
         with httpx.Client(timeout=120.0) as client: # Longer timeout for image generation
@@ -156,8 +212,30 @@ def call_xai(model_id: str, contents: list, config: types.GenerateContentConfig 
                 },
                 json=payload
             )
+
+            if response.status_code != 200:
+                _log_failed_provider_response("xAI", model_id, response, "non-200 response")
+                response_failure_logged = True
+
             response.raise_for_status()
-            res_data = response.json()
+            try:
+                res_data = response.json()
+            except ValueError:
+                _log_failed_provider_response("xAI", model_id, response, "invalid JSON response")
+                response_failure_logged = True
+                raise
+
+            choices = res_data.get("choices")
+            if not isinstance(choices, list) or not choices:
+                _log_failed_provider_response("xAI", model_id, response, "missing or empty 'choices' in response")
+                response_failure_logged = True
+                raise KeyError("choices")
+
+            first_choice = choices[0]
+            if not isinstance(first_choice, dict) or "message" not in first_choice:
+                _log_failed_provider_response("xAI", model_id, response, "missing 'message' in first choice")
+                response_failure_logged = True
+                raise KeyError("message")
 
             from types import SimpleNamespace
 
@@ -166,7 +244,7 @@ def call_xai(model_id: str, contents: list, config: types.GenerateContentConfig 
             # If it returns an image, it might be different, but xAI docs usually say it's compatible.
             # Let's assume standard for now, and check if content is image data.
 
-            content_text = res_data["choices"][0]["message"].get("content", "")
+            content_text = first_choice["message"].get("content", "")
 
             # Log token usage
             usage = res_data.get("usage", {})
@@ -179,8 +257,11 @@ def call_xai(model_id: str, contents: list, config: types.GenerateContentConfig 
             )
             return mock_res
     except Exception as e:
-        logger.error(f"xAI call failed ({model_id}): {str(e)}")
-        raise e
+        if response is not None and not response_failure_logged:
+            _log_failed_provider_response("xAI", model_id, response, f"exception: {type(e).__name__}")
+        elif response is None:
+            logger.error(f"xAI call failed ({model_id}) before receiving response: {str(e)}")
+        raise
 
 def generate_image_xai(model_id: str, prompt: str, aspect_ratio: str = "1:1"):
     """Calls xAI (Grok) Image Generation API."""
@@ -202,6 +283,8 @@ def generate_image_xai(model_id: str, prompt: str, aspect_ratio: str = "1:1"):
     elif aspect_ratio == "9:16":
         payload["size"] = "576x1024"
 
+    response = None
+    response_failure_logged = False
     try:
         logger.info(f"🎨 [DEV INFO] Generating image via xAI: {model_id}")
         with httpx.Client(timeout=120.0) as client:
@@ -213,13 +296,29 @@ def generate_image_xai(model_id: str, prompt: str, aspect_ratio: str = "1:1"):
                 },
                 json=payload
             )
+
+            if response.status_code != 200:
+                _log_failed_provider_response("xAI image", model_id, response, "non-200 response")
+                response_failure_logged = True
+
             response.raise_for_status()
-            res_data = response.json()
+            try:
+                res_data = response.json()
+            except ValueError:
+                _log_failed_provider_response("xAI image", model_id, response, "invalid JSON response")
+                response_failure_logged = True
+                raise
 
             # xAI returns URL or b64. Let's assume standard OpenAI format: data[0].url or data[0].b64_json
             from types import SimpleNamespace
 
-            image_data = res_data.get("data", [{}])[0]
+            image_list = res_data.get("data")
+            if not isinstance(image_list, list) or not image_list:
+                _log_failed_provider_response("xAI image", model_id, response, "missing or empty 'data' in response")
+                response_failure_logged = True
+                raise KeyError("data")
+
+            image_data = image_list[0]
             url = image_data.get("url")
             b64 = image_data.get("b64_json")
 
@@ -244,8 +343,11 @@ def generate_image_xai(model_id: str, prompt: str, aspect_ratio: str = "1:1"):
             return mock_res
 
     except Exception as e:
-        logger.error(f"xAI image generation failed ({model_id}): {str(e)}")
-        raise e
+        if response is not None and not response_failure_logged:
+            _log_failed_provider_response("xAI image", model_id, response, f"exception: {type(e).__name__}")
+        elif response is None:
+            logger.error(f"xAI image generation failed ({model_id}) before receiving response: {str(e)}")
+        raise
 
 def call_gemini_with_fallback(
     client: genai.Client,

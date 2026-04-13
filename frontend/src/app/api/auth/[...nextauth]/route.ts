@@ -96,12 +96,12 @@ export const authOptions: NextAuthOptions = {
 
                     const data = await res.json();
 
-                    if (res.ok && data?.user) {
+                    if (res.ok && data?.id) {
                         return {
-                            id: data.user.id,
-                            email: data.user.email,
-                            name: data.user.name,
-                            avatar_url: data.user.avatar_url,
+                            id: data.id,
+                            email: data.email,
+                            name: data.name,
+                            avatar_url: data.avatar_url,
                             accessToken: data.access_token,
                             refreshToken: data.refresh_token
                         };
