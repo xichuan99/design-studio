@@ -301,6 +301,78 @@ jobs:
 
           echo "Version files are synchronized"
 
+      - name: Self-heal stale release-please state
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const releaseLabel = 'autorelease: pending';
+
+            // 1) Remove duplicate draft releases for tags that already have a published release.
+            const releases = await github.paginate(github.rest.repos.listReleases, {
+              owner,
+              repo,
+              per_page: 100,
+            });
+
+            const releasesByTag = new Map();
+            for (const rel of releases) {
+              if (!rel.tag_name) continue;
+              const list = releasesByTag.get(rel.tag_name) || [];
+              list.push(rel);
+              releasesByTag.set(rel.tag_name, list);
+            }
+
+            for (const [tag, list] of releasesByTag.entries()) {
+              if (list.length < 2) continue;
+              const published = list.find((r) => !r.draft);
+              const deletable = published ? list.filter((r) => r.draft) : [];
+              for (const rel of deletable) {
+                core.info(`Deleting duplicate draft release id=${rel.id} tag=${tag}`);
+                await github.rest.repos.deleteRelease({ owner, repo, release_id: rel.id });
+              }
+            }
+
+            // Build a fast lookup set of existing release tags after cleanup.
+            const releaseTags = new Set(
+              releases
+                .filter((r) => !!r.tag_name)
+                .map((r) => r.tag_name)
+            );
+
+            // 2) Remove stale pending labels from merged release PRs whose tag already exists.
+            const prs = await github.paginate(github.rest.pulls.list, {
+              owner,
+              repo,
+              state: 'closed',
+              per_page: 100,
+            });
+
+            const releaseTitleRegex = /^chore\(main\): release (\d+\.\d+\.\d+)$/i;
+
+            for (const pr of prs) {
+              if (!pr.merged_at) continue;
+              const title = pr.title || '';
+              const match = title.match(releaseTitleRegex);
+              if (!match) continue;
+
+              const version = match[1];
+              const tag = `v${version}`;
+              if (!releaseTags.has(tag)) continue;
+
+              const labels = (pr.labels || []).map((l) => (typeof l === 'string' ? l : l.name));
+              if (!labels.includes(releaseLabel)) continue;
+
+              core.info(`Removing stale '${releaseLabel}' label from merged PR #${pr.number} (${title})`);
+              await github.rest.issues.removeLabel({
+                owner,
+                repo,
+                issue_number: pr.number,
+                name: releaseLabel,
+              });
+            }
+
       - uses: googleapis/release-please-action@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
