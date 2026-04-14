@@ -146,7 +146,8 @@ def call_openrouter(model_id: str, contents: list, config: types.GenerateContent
     _apply_openrouter_generation_defaults(model_id, payload, config)
 
     # Try to map response_mime_type to response_format if possible
-    if config and getattr(config, "response_mime_type", None) == "application/json":
+    # Minimax does not support response_format param, skip for minimax
+    if config and getattr(config, "response_mime_type", None) == "application/json" and not model_id.startswith("minimax/"):
         payload["response_format"] = {"type": "json_object"}
 
     response = None
@@ -185,6 +186,13 @@ def call_openrouter(model_id: str, contents: list, config: types.GenerateContent
                     _log_failed_provider_response("OpenRouter", model_id, response, f"invalid JSON response and cleaning failed: {e2}")
                     response_failure_logged = True
                     raise
+
+            # Defensive: if error field present, treat as error even if status 200
+            if "error" in res_data:
+                error_msg = res_data["error"].get("message") or str(res_data["error"])
+                _log_failed_provider_response("OpenRouter", model_id, response, f"error payload: {error_msg}")
+                response_failure_logged = True
+                raise RuntimeError(f"OpenRouter error: {error_msg}")
 
             choices = res_data.get("choices")
             if not isinstance(choices, list) or not choices:
