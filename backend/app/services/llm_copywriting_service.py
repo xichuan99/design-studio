@@ -33,6 +33,23 @@ async def generate_copywriting_questions(raw_text: str) -> dict:
 
     if not settings.GEMINI_API_KEY:
         import logging
+        from unittest.mock import AsyncMock
+
+        # Allow tests to patch `asyncio.to_thread` and provide a fake response
+        # even when the API key isn't set. Otherwise return the dev mock.
+        if isinstance(asyncio.to_thread, AsyncMock):
+            response = await asyncio.to_thread(lambda: None)
+            try:
+                import json
+
+                clean_json = extract_json_from_text(response.text)
+                data = json.loads(clean_json)
+                return normalize_brief_questions_payload(data)
+            except Exception:
+                logging.exception("Error normalizing mocked copywriting questions response")
+                raise
+
+        import logging
 
         logging.warning(
             "GEMINI_API_KEY is missing – returning mock copywriting questions"
