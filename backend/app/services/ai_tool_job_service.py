@@ -47,7 +47,7 @@ async def create_job(
                 AiToolJob.idempotency_key == idempotency_key,
             )
         )
-        existing_job = existing_result.scalar_one_or_none()
+        existing_job = existing_result.scalars().first()
         if existing_job:
             return existing_job, False
 
@@ -76,7 +76,7 @@ async def get_job_for_user(
     result = await db.execute(
         select(AiToolJob).where(AiToolJob.id == job_id, AiToolJob.user_id == user_id)
     )
-    return result.scalar_one_or_none()
+    return result.scalars().first()
 
 
 async def list_jobs_for_user(
@@ -124,7 +124,7 @@ async def fail_ai_tool_job(
     """Sets a job status to failed with an error message."""
     query = select(AiToolJob).where(AiToolJob.id == job_id)
     result = await db.execute(query)
-    job = result.scalar_one_or_none()
+    job = result.scalars().first()
 
     if not job:
         return

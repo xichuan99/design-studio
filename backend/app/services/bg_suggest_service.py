@@ -115,8 +115,8 @@ async def suggest_backgrounds(
 
         response = call_gemini_with_fallback(
             client=client,
-            primary_model="openrouter/minimax/minimax-m2.7",
-            fallback_model="qwen/qwen-2.5-72b-instruct",
+            primary_model="openrouter/qwen/qwen3.5-flash-02-23",
+            fallback_model="minimax/minimax-m2.5",
             contents=[user_message],
             config=genai_types.GenerateContentConfig(
                 system_instruction=SUGGESTION_SYSTEM_PROMPT,
@@ -125,22 +125,30 @@ async def suggest_backgrounds(
         )
 
         result_text = response.text.strip()
-        # Strip possible markdown fences
-        if result_text.startswith("```json"):
-            result_text = result_text[7:]
-        if result_text.startswith("```"):
-            result_text = result_text[3:]
-        if result_text.endswith("```"):
-            result_text = result_text[:-3]
+        # Clean up possible markdown fences and whitespace
+        def _clean_json_response(text: str) -> str:
+            text = text.strip()
+            if text.startswith("```json"):
+                text = text[7:]
+            if text.startswith("```"):
+                text = text[3:]
+            if text.endswith("```"):
+                text = text[:-3]
+            return text.strip()
 
-        parsed = json.loads(result_text.strip())
+        cleaned = _clean_json_response(result_text)
+        try:
+            parsed = json.loads(cleaned)
+        except Exception as e:
+            logger.error(f"Failed to parse LLM JSON response: {e}\nRaw: {cleaned}")
+            raise
         suggestions = parsed.get("suggestions", [])
 
         # Guarantee at most 3 items
         return {"suggestions": suggestions[:3]}
     except Exception:
         logger.warning(
-            "Gemini suggestion generation failed, using fallback suggestions", exc_info=True
+            "LLM suggestion generation failed, using fallback suggestions", exc_info=True
         )
         return {
             "suggestions": [

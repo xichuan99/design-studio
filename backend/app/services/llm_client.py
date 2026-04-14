@@ -1,3 +1,16 @@
+def clean_llm_json_response(text: str) -> str:
+    """
+    Cleans LLM JSON output by removing markdown fences and extra whitespace.
+    Handles ```json, ``` and stray whitespace.
+    """
+    text = text.strip()
+    if text.startswith("```json"):
+        text = text[7:]
+    if text.startswith("```"):
+        text = text[3:]
+    if text.endswith("```"):
+        text = text[:-3]
+    return text.strip()
 """Base client module for interacting with Gemini API.
 Extracted to prevent circular imports.
 """
@@ -156,12 +169,22 @@ def call_openrouter(model_id: str, contents: list, config: types.GenerateContent
                 response_failure_logged = True
 
             response.raise_for_status()
+
+            # Try to clean up LLM output if response is not valid JSON
             try:
                 res_data = response.json()
             except ValueError:
-                _log_failed_provider_response("OpenRouter", model_id, response, "invalid JSON response")
-                response_failure_logged = True
-                raise
+                # Try to extract and clean the text, then parse
+                try:
+                    raw = response.text
+                    cleaned = clean_llm_json_response(raw)
+                    import json
+                    res_data = json.loads(cleaned)
+                    logger.warning("OpenRouter returned non-standard JSON, cleaned and parsed successfully.")
+                except Exception as e2:
+                    _log_failed_provider_response("OpenRouter", model_id, response, f"invalid JSON response and cleaning failed: {e2}")
+                    response_failure_logged = True
+                    raise
 
             choices = res_data.get("choices")
             if not isinstance(choices, list) or not choices:
@@ -290,16 +313,10 @@ def generate_image_xai(model_id: str, prompt: str, aspect_ratio: str = "1:1"):
     payload = {
         "model": model_id,
         "prompt": prompt,
+        "aspect_ratio": aspect_ratio,
     }
-
-    # Optional aspect ratio if supported by xAI (mapping to their format if needed)
-    # Most OpenAI-compatible image APIs use 'size' e.g. '1024x1024'
-    if aspect_ratio == "1:1":
-        payload["size"] = "1024x1024"
-    elif aspect_ratio == "16:9":
-        payload["size"] = "1024x576"
-    elif aspect_ratio == "9:16":
-        payload["size"] = "576x1024"
+    # xAI grok-imagine-image expects aspect_ratio (e.g., "1:1", "16:9", "9:16")
+    # Remove any 'size' parameter, only send aspect_ratio
 
     response = None
     response_failure_logged = False
