@@ -218,8 +218,24 @@ async def download_image(url: str) -> bytes:
     Raises:
         httpx.HTTPError: If the HTTP request fails.
     """
-    import httpx
 
+    # Deteksi Data URI (base64)
+    if url.startswith("data:image/"):
+        import re
+        import base64
+        # Format: data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ...
+        match = re.match(r"data:(image/[^;]+);base64,(.+)", url)
+        if not match:
+            raise ValueError("Invalid data URI format")
+        # mime_type = match.group(1)  # Not used, but available
+        b64_data = match.group(2)
+        try:
+            return base64.b64decode(b64_data)
+        except Exception as e:
+            raise ValueError(f"Failed to decode base64 image: {e}")
+
+    # Jika bukan data URI, proses seperti biasa
+    import httpx
     async with httpx.AsyncClient() as client:
         response = await client.get(url, follow_redirects=True)
         response.raise_for_status()
