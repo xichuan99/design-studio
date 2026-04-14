@@ -9,6 +9,9 @@ from app.core.exceptions import AppException
 import fal_client
 
 
+MAX_DIRECTIONAL_EXPAND_PIXELS = 700
+
+
 async def outpaint_image(
     image_url: str,
     direction: str = None,
@@ -44,14 +47,21 @@ async def outpaint_image(
 
         # Support either discrete directions OR target dimensions (e.g., from resize tool)
         if direction and pixels:
+            normalized_pixels = max(1, min(int(pixels), MAX_DIRECTIONAL_EXPAND_PIXELS))
+            if normalized_pixels != pixels:
+                logger.warning(
+                    "Clamping outpaint pixels from %s to %s for provider compatibility",
+                    pixels,
+                    normalized_pixels,
+                )
             if direction == "left":
-                arguments["expand_left"] = pixels
+                arguments["expand_left"] = normalized_pixels
             elif direction == "right":
-                arguments["expand_right"] = pixels
+                arguments["expand_right"] = normalized_pixels
             elif direction == "top":
-                arguments["expand_top"] = pixels
+                arguments["expand_top"] = normalized_pixels
             elif direction == "bottom":
-                arguments["expand_bottom"] = pixels
+                arguments["expand_bottom"] = normalized_pixels
             else:
                 raise ValueError(f"Invalid direction: {direction}")
         elif target_width and target_height:
