@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 // Reuse the same authorization logic as the previous middleware but expose
 // it as a `proxy` as recommended by Next.js newer releases.
 const proxyHandler = withAuth(
-  function proxy(request: any) {
+  function proxy() {
     return NextResponse.next();
   },
   {
