@@ -27,6 +27,12 @@ logger = logging.getLogger(__name__)
 MAX_ERROR_BODY_LOG_CHARS = 4000
 
 
+def _extract_error_message(error_val) -> str:
+    if isinstance(error_val, dict):
+        return error_val.get("message") or str(error_val)
+    return str(error_val)
+
+
 def _truncate_for_log(text: Optional[str], max_chars: int = MAX_ERROR_BODY_LOG_CHARS) -> str:
     if not text:
         return "<empty>"
@@ -187,16 +193,14 @@ def call_openrouter(model_id: str, contents: list, config: types.GenerateContent
                     response_failure_logged = True
                     raise
 
-            # Defensive: if error field present, treat as error even if status 200
-            if "error" in res_data:
-                error_msg = res_data["error"].get("message") or str(res_data["error"])
-                _log_failed_provider_response("OpenRouter", model_id, response, f"error payload: {error_msg}")
-                response_failure_logged = True
-                raise RuntimeError(f"OpenRouter error: {error_msg}")
-
             choices = res_data.get("choices")
             if not isinstance(choices, list) or not choices:
-                _log_failed_provider_response("OpenRouter", model_id, response, "missing or empty 'choices' in response")
+                error_val = res_data.get("error")
+                error_msg = _extract_error_message(error_val) if error_val is not None else None
+                log_reason = "missing or empty 'choices' in response"
+                if error_msg:
+                    log_reason += f" | error: {error_msg}"
+                _log_failed_provider_response("OpenRouter", model_id, response, log_reason)
                 response_failure_logged = True
                 raise KeyError("choices")
 
@@ -224,7 +228,16 @@ def call_openrouter(model_id: str, contents: list, config: types.GenerateContent
             return mock_res
     except Exception as e:
         if response is not None and not response_failure_logged:
-            _log_failed_provider_response("OpenRouter", model_id, response, f"exception: {type(e).__name__}")
+            try:
+                res_data = response.json()
+                error_val = res_data.get("error")
+                error_msg = _extract_error_message(error_val) if error_val is not None else None
+            except Exception:
+                error_msg = None
+            log_reason = f"exception: {type(e).__name__}"
+            if error_msg:
+                log_reason += f" | error: {error_msg}"
+            _log_failed_provider_response("OpenRouter", model_id, response, log_reason)
         elif response is None:
             logger.error(f"OpenRouter call failed ({model_id}) before receiving response: {str(e)}")
         raise
