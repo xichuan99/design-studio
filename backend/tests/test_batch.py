@@ -115,3 +115,20 @@ async def test_process_batch_partial_success(mock_remove_bg):
         assert len(names) == 1
         assert "success_nobg.png" in names
         assert zf.read("success_nobg.png") == b"nobg_1"
+
+
+@pytest.mark.asyncio
+@patch("app.services.batch_service.bg_removal_service.remove_background")
+async def test_process_batch_makes_duplicate_output_names_unique(mock_remove_bg):
+    mock_remove_bg.side_effect = [b"nobg_1", b"nobg_2"]
+
+    files = [("image.jpg", b"1"), ("image.jpg", b"2")]
+    zip_bytes, errors = await process_batch(files, "remove_bg")
+
+    assert errors == []
+
+    with zipfile.ZipFile(io.BytesIO(zip_bytes), "r") as zf:
+        names = zf.namelist()
+        assert names == ["image_nobg.png", "image_nobg_2.png"]
+        assert zf.read("image_nobg.png") == b"nobg_1"
+        assert zf.read("image_nobg_2.png") == b"nobg_2"

@@ -2,6 +2,7 @@
 
 import asyncio
 import io
+import os
 import zipfile
 import logging
 from typing import List, Tuple, Dict, Any, Optional
@@ -11,6 +12,22 @@ from app.services import watermark_service
 from app.services import product_scene_service
 
 logger = logging.getLogger(__name__)
+
+
+def _make_unique_filename(filename: str, used_filenames: set[str]) -> str:
+    """Ensure each ZIP entry name is unique to avoid overwriting duplicates on extract."""
+    if filename not in used_filenames:
+        used_filenames.add(filename)
+        return filename
+
+    stem, extension = os.path.splitext(filename)
+    suffix = 2
+    while True:
+        candidate = f"{stem}_{suffix}{extension}"
+        if candidate not in used_filenames:
+            used_filenames.add(candidate)
+            return candidate
+        suffix += 1
 
 
 async def process_single_image(
@@ -117,6 +134,7 @@ async def process_batch(
     # Prepare ZIP in memory
     zip_buffer = io.BytesIO()
     errors = []
+    used_filenames = set()
 
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
         for original_filename, result in zip([f[0] for f in files], results):
@@ -134,7 +152,8 @@ async def process_batch(
             if error_msg:
                 errors.append({"filename": original_filename, "error": error_msg})
             elif processed_bytes and new_filename:
-                zip_file.writestr(new_filename, processed_bytes)
+                unique_filename = _make_unique_filename(new_filename, used_filenames)
+                zip_file.writestr(unique_filename, processed_bytes)
 
     # Reset buffer pointer
     zip_buffer.seek(0)
