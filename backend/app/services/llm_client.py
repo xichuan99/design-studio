@@ -37,6 +37,22 @@ def _log_failed_provider_response(provider: str, model_id: str, response: httpx.
         _truncate_for_log(response_text),
     )
 
+
+def _apply_openrouter_generation_defaults(
+    model_id: str,
+    payload: dict,
+    config: Optional[types.GenerateContentConfig],
+) -> None:
+    max_output_tokens = getattr(config, "max_output_tokens", None) if config else None
+    if max_output_tokens is not None:
+        payload["max_tokens"] = max_output_tokens
+        return
+
+    # OpenRouter may forward an oversized default to MiniMax.
+    # Keep structured JSON tasks on a safe ceiling unless a caller overrides it.
+    if model_id.startswith("minimax/"):
+        payload["max_tokens"] = 4000
+
 def get_genai_client() -> genai.Client:
     """
     Returns a configured Gemini client with finite retry settings.
@@ -113,6 +129,8 @@ def call_openrouter(model_id: str, contents: list, config: types.GenerateContent
         "model": model_id,
         "messages": messages,
     }
+
+    _apply_openrouter_generation_defaults(model_id, payload, config)
 
     # Try to map response_mime_type to response_format if possible
     if config and getattr(config, "response_mime_type", None) == "application/json":

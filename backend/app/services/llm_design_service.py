@@ -33,6 +33,24 @@ def extract_json_from_text(text: str) -> str:
     return text[start_index : last_index + 1].strip()
 
 
+def normalize_brief_questions_payload(payload: object) -> dict:
+    from app.schemas.design import BriefQuestionsResponse
+
+    if isinstance(payload, list):
+        normalized = {"questions": payload}
+    elif isinstance(payload, dict):
+        normalized = dict(payload)
+        if "clarification_questions" in normalized and "questions" not in normalized:
+            normalized["questions"] = normalized.pop("clarification_questions")
+    else:
+        raise TypeError(
+            "Brief questions response must be a JSON object or list of questions"
+        )
+
+    parsed = BriefQuestionsResponse.model_validate(normalized)
+    return parsed.model_dump()
+
+
 async def generate_design_brief_questions(raw_text: str) -> dict:
     """
     Generates clarifying questions based on the user's initial raw text.
@@ -108,7 +126,8 @@ async def generate_design_brief_questions(raw_text: str) -> dict:
 
     try:
         clean_json = extract_json_from_text(response.text)
-        return json.loads(clean_json)
+        data = json.loads(clean_json)
+        return normalize_brief_questions_payload(data)
     except Exception as e:
         import logging
 
@@ -244,12 +263,7 @@ async def generate_unified_brief_questions(
     try:
         result_text = extract_json_from_text(response.text)
         data = json.loads(result_text)
-        # Fallback heuristic: some LLMs return "clarification_questions" instead of "questions"
-        if "clarification_questions" in data and "questions" not in data:
-            data["questions"] = data.pop("clarification_questions")
-
-        parsed = BriefQuestionsResponse.model_validate(data)
-        return parsed.model_dump()
+        return normalize_brief_questions_payload(data)
     except Exception as e:
         import logging
 

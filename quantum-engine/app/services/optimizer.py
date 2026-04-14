@@ -1,14 +1,29 @@
 import time
 import numpy as np
-from pyqpanda import CPUQVM, PauliOperator, init_quantum_machine
+from typing import List, Dict, Tuple, Any
 
 try:
-    from pyqpanda import OptimizerFactory, QAOA
+    from pyqpanda import (
+        CPUQVM,
+        OptimizerFactory,
+        PauliOperator,
+        QAOA,
+        init_quantum_machine,
+    )
+    HAS_PYQPANDA = True
     HAS_QAOA = True
 except ImportError:
+    CPUQVM = None
+    OptimizerFactory = None
+    QAOA = None
+    init_quantum_machine = None
+    HAS_PYQPANDA = False
     HAS_QAOA = False
+
+    class PauliOperator(dict):
+        def __iadd__(self, other: Any):
+            return self
     
-from typing import List, Dict, Tuple
 from app.services.qubo_builder import QUBOBuilder
 from app.schemas.layout import LayoutRequest, OptimizedPosition
 
@@ -49,7 +64,7 @@ class QuantumOptimizer:
         num_qubits = self.builder.num_vars
         
         # Fallback if qubits > 25 OR QAOA module is unavailable in this PyQPanda installation
-        if num_qubits > 25 or not HAS_QAOA:
+        if num_qubits > 25 or not HAS_PYQPANDA or not HAS_QAOA:
             # Fake/Simulated solver for large N (mocking result for demonstration)
             return self._classical_fallback(positions), 0.0, int((time.time() - start_time) * 1000)
 

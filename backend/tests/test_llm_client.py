@@ -38,6 +38,27 @@ def test_call_openrouter_logs_full_body_when_choices_missing(caplog, monkeypatch
     assert '"error":"unexpected payload"' in caplog.text
 
 
+def test_call_openrouter_caps_default_max_tokens_for_minimax(monkeypatch):
+    monkeypatch.setattr(settings, "OPENROUTER_API_KEY", "test-openrouter-key")
+
+    response = httpx.Response(
+        200,
+        json={"choices": [{"message": {"content": "{}"}}]},
+        request=httpx.Request("POST", "https://openrouter.ai/api/v1/chat/completions"),
+    )
+
+    with patch(
+        "app.services.llm_client.httpx.Client",
+        return_value=_mock_httpx_client_with_response(response),
+    ) as client_factory:
+        call_openrouter(model_id="minimax/minimax-01", contents=["hello"])
+
+    posted_payload = client_factory.return_value.__enter__.return_value.post.call_args.kwargs[
+        "json"
+    ]
+    assert posted_payload["max_tokens"] == 4000
+
+
 def test_call_xai_logs_body_on_non_200_response(caplog, monkeypatch):
     monkeypatch.setattr(settings, "XAI_API_KEY", "test-xai-key")
 

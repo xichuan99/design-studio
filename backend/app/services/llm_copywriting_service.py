@@ -10,7 +10,10 @@ from app.services.llm_prompts import (
     COPYWRITING_SYSTEM_PROMPT,
 )
 from app.services.llm_client import get_genai_client, call_gemini_with_fallback
-from app.services.llm_design_service import extract_json_from_text
+from app.services.llm_design_service import (
+    extract_json_from_text,
+    normalize_brief_questions_payload,
+)
 
 
 async def generate_copywriting_questions(raw_text: str) -> dict:
@@ -70,6 +73,8 @@ async def generate_copywriting_questions(raw_text: str) -> dict:
             ]
         }
 
+    client = get_genai_client()
+
     response = await asyncio.to_thread(
         call_gemini_with_fallback,
         client=client,
@@ -88,12 +93,10 @@ async def generate_copywriting_questions(raw_text: str) -> dict:
 
     try:
         import json
-        data = extract_json_from_text(response.text)
-        if "clarification_questions" in data and "questions" not in data:
-            data["questions"] = data.pop("clarification_questions")
 
-        parsed = BriefQuestionsResponse.model_validate(data)
-        return parsed.model_dump()
+        clean_json = extract_json_from_text(response.text)
+        data = json.loads(clean_json)
+        return normalize_brief_questions_payload(data)
     except Exception as e:
         import logging
         snippet = response.text[:200] + "..." if len(response.text) > 200 else response.text
@@ -180,6 +183,8 @@ async def generate_ai_copywriting(
                 },
             ]
         }
+
+    client = get_genai_client()
 
     response = await asyncio.to_thread(
         call_gemini_with_fallback,

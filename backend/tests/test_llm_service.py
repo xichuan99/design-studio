@@ -7,7 +7,12 @@ This makes tests CI-safe (no GOOGLE_API_KEY needed, no 503 flakiness).
 import json
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from app.services.llm_service import parse_design_text, modify_visual_prompt
+from app.services.llm_service import (
+    generate_copywriting_questions,
+    generate_unified_brief_questions,
+    modify_visual_prompt,
+    parse_design_text,
+)
 from app.schemas.design import ParsedTextElements
 
 
@@ -124,6 +129,52 @@ async def test_parse_english_text():
     assert isinstance(result, ParsedTextElements)
     assert result.headline
     assert result.visual_prompt
+
+
+@pytest.mark.asyncio
+async def test_generate_unified_brief_questions_accepts_list_payload():
+    payload = [
+        {
+            "id": "audience",
+            "question": "Siapa target audiens utama?",
+            "type": "choice",
+            "options": ["Remaja", "Dewasa"],
+            "default": "Dewasa",
+        }
+    ]
+
+    with patch(
+        "asyncio.to_thread", new=AsyncMock(return_value=_fake_response(payload))
+    ):
+        result = await generate_unified_brief_questions("Promo kopi susu")
+
+    assert "questions" in result
+    assert isinstance(result["questions"], list)
+    assert result["questions"][0]["id"] == "audience"
+
+
+@pytest.mark.asyncio
+async def test_generate_copywriting_questions_accepts_clarification_questions_key(monkeypatch):
+    payload = {
+        "clarification_questions": [
+            {
+                "id": "promo_detail",
+                "question": "Promo apa yang mau ditonjolkan?",
+                "type": "text",
+                "options": [],
+                "default": "",
+            }
+        ]
+    }
+
+    with patch(
+        "app.services.llm_copywriting_service.get_genai_client",
+        return_value=MagicMock(),
+    ), patch("asyncio.to_thread", new=AsyncMock(return_value=_fake_response(payload))):
+        result = await generate_copywriting_questions("Diskon kopi 30%")
+
+    assert "questions" in result
+    assert result["questions"][0]["id"] == "promo_detail"
 
 
 # ---------------------------------------------------------------------------

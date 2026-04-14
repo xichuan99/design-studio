@@ -54,8 +54,8 @@ async def extract_colors_from_image(
     try:
         response = call_gemini_with_fallback(
             client=client,
-            primary_model="openrouter/minimax/minimax-m2.7",
-            fallback_model="qwen/qwen-2-vl-72b-instruct",
+            primary_model="xai/grok-2-vision-1212",
+            fallback_model="openrouter/qwen/qwen-vl-max",
             contents=[
                 "Extract the 5 dominant brand colors from this logo/image. Respond with pure JSON only.",
                 genai.types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
