@@ -6,7 +6,12 @@ from google.genai import types
 from app.core.config import settings
 
 from app.services.llm_prompts import MAGIC_TEXT_SYSTEM
-from app.services.llm_client import get_genai_client, call_gemini_with_fallback
+from app.services.llm_client import (
+    DEFAULT_OPENROUTER_VISION_MODEL,
+    DEFAULT_XAI_VISION_MODEL,
+    call_gemini_with_fallback,
+    get_genai_client,
+)
 
 
 async def generate_magic_text_layout(
@@ -90,8 +95,8 @@ async def generate_magic_text_layout(
 
     response = call_gemini_with_fallback(
         client=client,
-        primary_model="xai/grok-2-vision-1212",
-        fallback_model="openrouter/qwen/qwen-vl-max",
+        primary_model=DEFAULT_XAI_VISION_MODEL,
+        fallback_model=DEFAULT_OPENROUTER_VISION_MODEL,
         contents=[
             types.Part.from_bytes(data=image_bytes, mime_type="image/png"),
             f"Here is the text I want to place on this image: {text}{context_string}",

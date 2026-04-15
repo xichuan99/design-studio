@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { useBrandKit } from '@/hooks/useBrandKit';
 import { useProjectApi, BrandKitProfile, ColorRole, ColorSwatch } from '@/lib/api';

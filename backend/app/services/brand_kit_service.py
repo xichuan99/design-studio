@@ -6,7 +6,12 @@ import logging
 logger = logging.getLogger(__name__)
 from google import genai
 from typing import List, Dict, Any
-from app.services.llm_client import get_genai_client, call_gemini_with_fallback
+from app.services.llm_client import (
+    DEFAULT_OPENROUTER_VISION_MODEL,
+    DEFAULT_XAI_VISION_MODEL,
+    call_gemini_with_fallback,
+    get_genai_client,
+)
 
 BRAND_COLORS_SYSTEM_PROMPT = """
 You are a professional graphic designer and brand identity expert.
@@ -54,8 +59,8 @@ async def extract_colors_from_image(
     try:
         response = call_gemini_with_fallback(
             client=client,
-            primary_model="xai/grok-2-vision-1212",
-            fallback_model="openrouter/qwen/qwen-vl-max",
+            primary_model=DEFAULT_XAI_VISION_MODEL,
+            fallback_model=DEFAULT_OPENROUTER_VISION_MODEL,
             contents=[
                 "Extract the 5 dominant brand colors from this logo/image. Respond with pure JSON only.",
                 genai.types.Part.from_bytes(data=image_bytes, mime_type=mime_type),

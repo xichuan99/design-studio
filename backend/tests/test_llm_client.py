@@ -1,12 +1,20 @@
 """Unit tests for LLM client provider error handling and logging."""
 
+from io import BytesIO
 from unittest.mock import MagicMock, patch
 
 import httpx
 import pytest
+from google.genai import types
+from PIL import Image
 
 from app.core.config import settings
-from app.services.llm_client import call_openrouter, call_xai, generate_image_xai
+from app.services.llm_client import (
+    _convert_to_openai_messages,
+    call_openrouter,
+    call_xai,
+    generate_image_xai,
+)
 
 
 def _mock_httpx_client_with_response(response: httpx.Response) -> MagicMock:
@@ -98,3 +106,31 @@ def test_generate_image_xai_logs_body_when_data_missing(caplog, monkeypatch):
 
     assert "missing or empty 'data' in response" in caplog.text
     assert '"result":"ok"' in caplog.text
+
+
+def test_convert_to_openai_messages_keeps_png_untouched():
+    png_bytes = (
+        b"\x89PNG\r\n\x1a\n"
+        b"\x00\x00\x00\rIHDR"
+        b"\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00"
+        b"\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc``\x00\x00\x00\x02\x00\x01"
+        b"\xe2!\xbc3\x00\x00\x00\x00IEND\xaeB`\x82"
+    )
+
+    messages = _convert_to_openai_messages(
+        [types.Part.from_bytes(data=png_bytes, mime_type="image/png")]
+    )
+
+    assert messages[0]["content"][0]["image_url"]["url"].startswith("data:image/png;base64,")
+
+
+def test_convert_to_openai_messages_converts_webp_to_png():
+    image = Image.new("RGBA", (1, 1), (255, 0, 0, 255))
+    buffer = BytesIO()
+    image.save(buffer, format="WEBP")
+
+    messages = _convert_to_openai_messages(
+        [types.Part.from_bytes(data=buffer.getvalue(), mime_type="image/webp")]
+    )
+
+    assert messages[0]["content"][0]["image_url"]["url"].startswith("data:image/png;base64,")

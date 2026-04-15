@@ -10,7 +10,12 @@ from app.core.config import settings
 from app.schemas.design import ReferenceAnalysis, AspectRatio
 from app.core.exceptions import AppException
 from fastapi import status
-from app.services.llm_client import get_genai_client, call_gemini_with_fallback
+from app.services.llm_client import (
+    DEFAULT_OPENROUTER_VISION_MODEL,
+    DEFAULT_XAI_VISION_MODEL,
+    call_gemini_with_fallback,
+    get_genai_client,
+)
 
 # System Prompt for Gemini Vision
 VISION_ANALYSIS_PROMPT = """
@@ -67,8 +72,8 @@ async def analyze_reference_image(image_url: str) -> ReferenceAnalysis:
             genai_client = get_genai_client()
             response = call_gemini_with_fallback(
                 client=genai_client,
-                primary_model="xai/grok-2-vision-1212",
-                fallback_model="openrouter/qwen/qwen-vl-max",
+                primary_model=DEFAULT_XAI_VISION_MODEL,
+                fallback_model=DEFAULT_OPENROUTER_VISION_MODEL,
                 contents=[
                     types.Part.from_bytes(
                         data=image_bytes, mime_type="image/jpeg"

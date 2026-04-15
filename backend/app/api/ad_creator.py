@@ -12,6 +12,7 @@ from app.models.user import User
 
 from app.services import bg_removal_service, image_service, outpaint_service
 from app.services.storage_service import upload_image
+from app.services.file_validation import validate_uploaded_image
 from app.services.ad_prompt_builder import build_ad_concepts
 from app.core.exceptions import (
     InsufficientCreditsError,
@@ -54,11 +55,18 @@ async def generate_smart_ad(
     try:
         # Decode image
         base64_data = request.image_base64
+        mime_type = None
+        if request.image_base64.startswith("data:") and ";base64," in request.image_base64:
+            mime_type = request.image_base64.split(";base64,", 1)[0].replace("data:", "", 1)
         if "," in base64_data:
             base64_data = base64_data.split(",")[1]
 
         image_bytes = base64.b64decode(base64_data)
-        mime_type = "image/png" # Default assumption
+        detected_mime_type = await validate_uploaded_image(image_bytes, max_size_mb=10)
+        if mime_type not in {"image/jpeg", "image/png", "image/webp"}:
+            mime_type = detected_mime_type
+        else:
+            mime_type = detected_mime_type
 
         # 1. Remove background directly
         logger.info("Removing background for Ad Creator...")

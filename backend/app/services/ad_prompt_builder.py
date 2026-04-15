@@ -9,7 +9,12 @@ from sqlalchemy.future import select
 
 from app.core.exceptions import AppException
 from fastapi import status
-from app.services.llm_client import get_genai_client, call_gemini_with_fallback
+from app.services.llm_client import (
+    DEFAULT_OPENROUTER_VISION_MODEL,
+    DEFAULT_XAI_VISION_MODEL,
+    call_gemini_with_fallback,
+    get_genai_client,
+)
 from app.models.brand_kit import BrandKit
 
 logger = logging.getLogger(__name__)
@@ -107,8 +112,8 @@ async def build_ad_concepts(
 
             response = call_gemini_with_fallback(
                 client=client,
-                primary_model="xai/grok-2-vision-1212",
-                fallback_model="openrouter/qwen/qwen-vl-max",
+                primary_model=DEFAULT_XAI_VISION_MODEL,
+                fallback_model=DEFAULT_OPENROUTER_VISION_MODEL,
                 contents=contents,
                 config=types.GenerateContentConfig(
                     system_instruction=AD_CREATOR_SYSTEM_PROMPT,

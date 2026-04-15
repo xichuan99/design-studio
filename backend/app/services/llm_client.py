@@ -15,16 +15,23 @@ def clean_llm_json_response(text: str) -> str:
 Extracted to prevent circular imports.
 """
 
+import logging
+from io import BytesIO
+
+import httpx
+from PIL import Image
 from google import genai
 from google.genai import types
-from app.core.config import settings
-import logging
-import httpx
 from typing import Optional
+
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
 MAX_ERROR_BODY_LOG_CHARS = 4000
+DEFAULT_XAI_VISION_MODEL = "xai/grok-4"
+DEFAULT_OPENROUTER_VISION_MODEL = "openrouter/qwen/qwen-vl-max"
+_VISION_PROVIDER_SUPPORTED_MIME_TYPES = {"image/jpeg", "image/png"}
 
 
 def _extract_error_message(error_val) -> str:
@@ -72,6 +79,27 @@ def _apply_openrouter_generation_defaults(
     if model_id.startswith("minimax/"):
         payload["max_tokens"] = 4000
 
+
+def _normalize_inline_image(data: bytes, mime_type: Optional[str]) -> tuple[bytes, str]:
+    normalized_mime_type = (mime_type or "").lower()
+    if normalized_mime_type in _VISION_PROVIDER_SUPPORTED_MIME_TYPES:
+        return data, normalized_mime_type
+
+    with Image.open(BytesIO(data)) as image:
+        if image.mode not in ("RGB", "RGBA"):
+            image = image.convert("RGBA")
+
+        if image.mode == "RGBA":
+            background = Image.new("RGB", image.size, (255, 255, 255))
+            background.paste(image, mask=image.getchannel("A"))
+            image = background
+        else:
+            image = image.convert("RGB")
+
+        output = BytesIO()
+        image.save(output, format="PNG")
+        return output.getvalue(), "image/png"
+
 def get_genai_client() -> genai.Client:
     """
     Returns a configured Gemini client with finite retry settings.
@@ -97,6 +125,7 @@ def get_genai_client() -> genai.Client:
 
 def _convert_to_openai_messages(contents, system_instruction=None):
     import base64
+
     messages = []
     if system_instruction:
         # Check if system_instruction is a string or a more complex object
@@ -111,9 +140,11 @@ def _convert_to_openai_messages(contents, system_instruction=None):
         if isinstance(content, str):
             user_content_items.append({"type": "text", "text": content})
         elif hasattr(content, "inline_data") and content.inline_data:
-            # Handle image data part
-            b64_data = base64.b64encode(content.inline_data.data).decode("utf-8")
-            mime_type = content.inline_data.mime_type
+            image_bytes, mime_type = _normalize_inline_image(
+                content.inline_data.data,
+                getattr(content.inline_data, "mime_type", None),
+            )
+            b64_data = base64.b64encode(image_bytes).decode("utf-8")
             user_content_items.append({
                 "type": "image_url",
                 "image_url": {
