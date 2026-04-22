@@ -265,7 +265,9 @@ export function useCreateDesign() {
             ]);
 
             if (parsed.status === 'rejected') {
-                throw new Error("Failed to parse visual design text");
+                throw parsed.reason instanceof Error
+                    ? parsed.reason
+                    : new Error("Failed to parse visual design text");
             }
             setParsedData(parsed.value);
             posthog?.capture('create_prompt_parsed', { create_mode: createMode });
@@ -477,10 +479,10 @@ export function useCreateDesign() {
             if (errorMessage.toLowerCase().includes("pelanggaran") || errorMessage.toLowerCase().includes("safety") || errorMessage.toLowerCase().includes("nsfw")) {
                 setErrorModalState({
                     isOpen: true,
-                    title: "Deskripsi Tidak Diizinkan",
+                    title: "Brief Perlu Disesuaikan",
                     description: errorMessage,
                     type: "safety",
-                    actionLabel: "Ubah Deskripsi",
+                    actionLabel: "Ubah Brief",
                     onAction: () => {
                         setErrorModalState(prev => ({ ...prev, isOpen: false }));
                         setCurrentStep('input');
@@ -501,10 +503,10 @@ export function useCreateDesign() {
             } else if (errorMessage.toLowerCase().includes("kredit") || errorMessage.toLowerCase().includes("credit")) {
                 setErrorModalState({
                     isOpen: true,
-                    title: "Kredit Habis",
-                    description: errorMessage.includes("kredit") ? errorMessage : "Kredit Anda tidak mencukupi untuk melakukan generasi AI ini. Silakan top up kredit Anda.",
+                    title: "Kredit Belum Cukup",
+                    description: errorMessage.includes("kredit") ? errorMessage : "Kredit Anda belum cukup untuk membuat hasil AI ini. Tambahkan kredit lalu coba lagi.",
                     type: "credits",
-                    actionLabel: "Beli Kredit",
+                    actionLabel: "Tambah Kredit",
                     onAction: () => {
                         setErrorModalState(prev => ({ ...prev, isOpen: false }));
                         router.push('/settings');
@@ -512,7 +514,7 @@ export function useCreateDesign() {
                 });
             } else if (errorMessage.toLowerCase().includes("timed out") || errorMessage.toLowerCase().includes("timeout")) {
                 setInlineError({
-                    message: "Generasi gambar memakan waktu terlalu lama (timeout). Jangan khawatir, kredit Anda tidak terpotong.",
+                    message: "Pembuatan hasil pertama memakan waktu terlalu lama. Jangan khawatir, kredit Anda tidak terpotong.",
                     type: "warning",
                     onRetry: () => {
                         setInlineError(null);
@@ -521,7 +523,7 @@ export function useCreateDesign() {
                 });
             } else if (errorMessage.toLowerCase().includes("validation error") || errorMessage.toLowerCase().includes("bad request")) {
                 setInlineError({
-                    message: "Terdapat ketidaksuaian parameter pada perintah AI. Kami sedang memperbaikinya secara otomatis. Silakan coba lagi sebentar lagi.",
+                    message: "Ada ketidaksesuaian pada detail permintaan AI. Periksa brief Anda lalu coba langkah ini lagi.",
                     type: "error",
                     onRetry: () => {
                         setInlineError(null);
@@ -530,7 +532,7 @@ export function useCreateDesign() {
                 });
             } else {
                 setInlineError({
-                    message: `Terjadi kesalahan saat memproses gambar: ${errorMessage}`,
+                    message: `Kami belum berhasil menyiapkan hasil Anda: ${errorMessage}`,
                     type: "error",
                     onRetry: () => {
                         setInlineError(null);

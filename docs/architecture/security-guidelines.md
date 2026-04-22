@@ -51,7 +51,7 @@ Jika fungsi spesifik *tidak memakan memori/storage* (misalnya proses inferensi y
 **Solusi & Aturan:**
 Seluruh fungsi lapisan _Services_ (`app.services.*`) wajib menangkap _exception_ pihak ketiga, lalu segera mengonversinya ke dalam `AppException`, `ValidationError`, atau `InternalServerError` kustom.
 - Pesan di level Frontend harus dilokalkan ke bahasa Indonesia dan spesifik pada aksi, misal: "Ukuran file terlalu besar." alih-alih menampilkan log server "psycopg2.OperationalError..."
-- Gunakan `logger.exception("Context error..")` sebelum mengeksekusi *throw custom error* agar detail error bisa diinvestigasi di log server/Sentry oleh tim *engineer*.
+- Gunakan `logger.exception("Context error..")` sebelum mengeksekusi *throw custom error* agar detail error bisa diinvestigasi di structured log server dan dikorelasikan lewat request ID oleh tim *engineer*.
 
 ## 4. Referensi Pelaksanaan (Router Checks)
 

@@ -32,7 +32,7 @@ export default function LandingPage() {
       "price": "10000",
       "priceCurrency": "IDR",
     },
-    "description": "Platform AI untuk otomatisasi desain dan foto produk spesifik untuk UMKM Indonesia."
+    "description": "Platform AI untuk workflow desain UMKM, dari brief hingga hasil siap ekspor."
   };
 
   return (
@@ -94,23 +94,23 @@ export default function LandingPage() {
             <div className="flex flex-col gap-8 flex-1 lg:pr-10 z-10">
               <div className="inline-flex items-center gap-2 bg-white/5 backdrop-blur-md rounded-full px-4 py-1.5 w-max border border-purple-500/30">
                 <Sparkles className="text-purple-400 h-4 w-4" />
-                <span className="text-xs font-semibold uppercase tracking-wider text-purple-400">Desain Berbasis AI v2.0</span>
+                <span className="text-xs font-semibold uppercase tracking-wider text-purple-400">Workflow Desain AI untuk UMKM</span>
               </div>
               <div className="flex flex-col gap-4 text-left">
                 <h1 className="text-4xl md:text-5xl xl:text-6xl font-bold leading-tight tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-purple-300">
-                  Dari Cerita Produk Jadi Visual yang Lebih Yakin Diposting
+                  Dari Brief Singkat ke Desain yang Siap Dipakai
                 </h1>
                 <h2 className="text-slate-400 text-lg lg:text-xl font-normal leading-relaxed max-w-xl">
-                  Untuk UMKM yang sering bingung mulai dari mana, SmartDesign membantu mengubah foto produk HP jadi materi katalog dan konten promo yang lebih rapi, konsisten, dan tetap bisa Anda kontrol editnya.
+                  Untuk UMKM yang sering bingung mulai dari mana, SmartDesign membantu memulai dari tujuan, foto, atau teks lalu membawa hasilnya ke preview, editor, dan ekspor tanpa memutus alur.
                 </h2>
               </div>
               <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
                 <div className="flex flex-col gap-2 w-full sm:w-auto">
                   <button onClick={handleLogin} className="flex items-center justify-center gap-2 rounded-xl h-14 px-8 w-full sm:w-auto bg-purple-600 text-white text-lg font-bold shadow-[0_0_20px_rgba(108,43,238,0.5)] hover:bg-purple-500 hover:scale-105 transition-all duration-300">
-                    <span className="whitespace-nowrap">Gabung Waitlist VIP</span>
+                    <span className="whitespace-nowrap">Masuk ke Studio</span>
                     <ArrowRight className="h-5 w-5 shrink-0" />
                   </button>
-                  <p className="text-slate-400 text-xs text-center font-medium">Hanya butuh email. Tidak ada spam.</p>
+                  <p className="text-slate-400 text-xs text-center font-medium">Login untuk mulai dari foto, teks, atau proyek yang sudah ada.</p>
                 </div>
                 <a href="#showcase" className="flex items-center justify-center w-full sm:w-auto gap-2 rounded-xl h-14 px-8 bg-white/5 border border-white/10 text-white text-lg font-medium hover:bg-white/10 transition-colors">
                   <MonitorPlay className="h-5 w-5 shrink-0" />
@@ -185,8 +185,8 @@ export default function LandingPage() {
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/3 h-[1px] bg-gradient-to-r from-transparent via-purple-500/50 to-transparent"></div>
               <div className="flex flex-col items-center gap-4 text-center">
                 <span className="text-purple-400 font-semibold tracking-wider uppercase text-sm">Sangat Mudah</span>
-                <h2 className="text-4xl md:text-5xl font-bold leading-tight tracking-tight text-white">3 Langkah yang Bikin Produksi Konten Lebih Ringan</h2>
-                <p className="text-slate-400 text-lg max-w-[600px]">Tidak perlu jago desain untuk bikin foto katalog dan konten promo harian.</p>
+                <h2 className="text-4xl md:text-5xl font-bold leading-tight tracking-tight text-white">3 Langkah yang Menjaga Alur Tetap Ringkas</h2>
+                <p className="text-slate-400 text-lg max-w-[600px]">Tidak perlu pindah-pindah alat untuk menyelesaikan satu desain yang siap dipakai.</p>
               </div>
               
               <div className="relative grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10 px-4 md:px-0">
@@ -196,9 +196,9 @@ export default function LandingPage() {
                   <div className="w-20 h-20 rounded-full bg-purple-500/20 flex items-center justify-center mb-6 border-4 border-slate-900 shadow-[0_0_15px_rgba(168,85,247,0.3)] hover:scale-105 transition-transform cursor-default">
                     <Upload className="w-8 h-8 text-purple-400" />
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-3">1. Upload Foto</h3>
+                  <h3 className="text-xl font-bold text-white mb-3">1. Mulai dari Brief</h3>
                   <p className="text-slate-400 leading-relaxed text-sm">
-                    Ambil foto produk dari HP Anda dengan background seadanya. Tidak perlu pencahayaan studio.
+                    Tuliskan tujuan konten atau unggah foto produk dari HP Anda. Tidak perlu menyiapkan studio dulu.
                   </p>
                 </div>
 
@@ -206,9 +206,9 @@ export default function LandingPage() {
                   <div className="w-20 h-20 rounded-full bg-blue-500/20 flex items-center justify-center mb-6 border-4 border-slate-900 shadow-[0_0_15px_rgba(59,130,246,0.3)] hover:scale-105 transition-transform cursor-default">
                     <Wand2 className="w-8 h-8 text-blue-400" />
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-3">2. Pilih Alat AI</h3>
+                  <h3 className="text-xl font-bold text-white mb-3">2. AI Menyusun Arah</h3>
                   <p className="text-slate-400 leading-relaxed text-sm">
-                    Pilih alat yang Anda butuhkan — AI kami menghapus background, memperbaiki kualitas foto produk, atau membuat scene baru untuk katalog marketplace.
+                    Pilih jalur yang paling pas — rapikan foto, buat konsep iklan, atau siapkan konten katalog tanpa kehilangan konteks bisnis.
                   </p>
                 </div>
 
@@ -216,9 +216,9 @@ export default function LandingPage() {
                   <div className="w-20 h-20 rounded-full bg-pink-500/20 flex items-center justify-center mb-6 border-4 border-slate-900 shadow-[0_0_15px_rgba(236,72,153,0.3)] hover:scale-105 transition-transform cursor-default">
                     <Download className="w-8 h-8 text-pink-400" />
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-3">3. Unduh Hasilnya</h3>
+                  <h3 className="text-xl font-bold text-white mb-3">3. Lanjut Edit atau Export</h3>
                   <p className="text-slate-400 leading-relaxed text-sm">
-                    Simpan hasil edit dalam kualitas tinggi, lalu lanjutkan revisi kecil bila diperlukan sebelum dipakai untuk materi jualan.
+                    Simpan hasilnya, lakukan revisi kecil bila perlu, lalu lanjutkan ke editor atau unduhan akhir.
                   </p>
                 </div>
               </div>
@@ -381,7 +381,7 @@ export default function LandingPage() {
                     onClick={handleLogin}
                     className="flex items-center justify-center gap-2 rounded-xl h-12 px-7 bg-purple-600 text-white font-bold shadow-[0_0_20px_rgba(108,43,238,0.5)] hover:bg-purple-500 transition-all"
                   >
-                    <span>Gabung Waitlist VIP</span>
+                    <span>Masuk ke Studio</span>
                     <ArrowRight className="h-4 w-4" />
                   </button>
                   <a

@@ -27,29 +27,29 @@ export function ErrorModal({
     const config = {
         safety: {
             icon: <ShieldAlert className="w-10 h-10 text-amber-500" />,
-            defaultTitle: "Prompt Tidak Dapat Diproses",
-            defaultDesc: "Desain ditolak oleh sistem keamanan AI karena berpotensi mengandung unsur yang dilindungi hak cipta atau konten sensitif lainnya. Mohon ubah deskripsi Anda menggunakan kata-kata yang lebih umum.",
-            defaultAction: "Ubah Deskripsi",
+            defaultTitle: "Brief Perlu Diubah",
+            defaultDesc: "Permintaan ini belum bisa diproses karena terdeteksi mengandung unsur sensitif atau terlalu dekat dengan materi yang dilindungi. Ubah brief Anda dengan kata yang lebih umum lalu coba lagi.",
+            defaultAction: "Ubah Brief",
             iconBg: "bg-amber-100 dark:bg-amber-900/30",
         },
         credits: {
             icon: <Coins className="w-10 h-10 text-indigo-500" />,
-            defaultTitle: "Kredit Tidak Mencukupi",
-            defaultDesc: "Kredit Anda telah habis. Anda memerlukan kredit untuk melakukan generasi AI.",
-            defaultAction: "Lihat Paket Kredit",
+            defaultTitle: "Kredit Belum Cukup",
+            defaultDesc: "Kredit Anda belum cukup untuk melanjutkan proses AI ini. Tambahkan kredit lalu lanjutkan dari langkah yang sama.",
+            defaultAction: "Lihat Opsi Kredit",
             iconBg: "bg-indigo-100 dark:bg-indigo-900/30",
         },
         system: {
             icon: <AlertTriangle className="w-10 h-10 text-destructive" />,
-            defaultTitle: "Terjadi Kesalahan Sistem",
-            defaultDesc: "Kami mengalami kendala saat memproses permintaan Anda. Silakan coba beberapa saat lagi.",
+            defaultTitle: "Hasil Belum Bisa Diproses",
+            defaultDesc: "Ada kendala saat menyiapkan hasil Anda. Coba lagi beberapa saat lagi atau revisi brief jika diperlukan.",
             defaultAction: "Coba Lagi",
             iconBg: "bg-destructive/10",
         },
         storage: {
             icon: <HardDrive className="w-10 h-10 text-teal-500" />,
-            defaultTitle: "Penyimpanan Penuh",
-            defaultDesc: "Kuota penyimpanan Anda sudah penuh. Hapus file lama atau upgrade plan untuk menambah ruang.",
+            defaultTitle: "Ruang Penyimpanan Habis",
+            defaultDesc: "Kuota penyimpanan Anda sudah penuh. Hapus file lama atau upgrade paket untuk menambah ruang kerja.",
             defaultAction: "Kelola Penyimpanan",
             iconBg: "bg-teal-100 dark:bg-teal-900/30",
         }
@@ -80,14 +80,14 @@ export function ErrorModal({
                     <div className="w-full bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20 rounded-lg p-3 mt-4 flex items-center justify-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-500" />
                         <span className="text-sm font-medium leading-none text-green-700 dark:text-green-400">
-                            Kredit Anda telah dikembalikan otomatis.
+                            Kredit untuk percobaan ini sudah dikembalikan otomatis.
                         </span>
                     </div>
                 )}
 
                 <DialogFooter className="w-full sm:justify-center mt-6 flex-col sm:flex-row gap-2">
                     <Button variant="outline" className="w-full sm:w-auto" onClick={onClose}>
-                        Kembali
+                        Tutup
                     </Button>
                     {onAction && (
                         <Button 

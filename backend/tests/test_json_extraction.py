@@ -1,39 +1,35 @@
-
-import sys
-import os
-
-# Add app to path
-sys.path.append(os.path.join(os.getcwd(), 'app'))
+import pytest
 
 from app.services.llm_design_service import extract_json_from_text
+from app.services.llm_json_utils import parse_llm_json
 
-def test_extraction():
-    test_cases = [
-        {
-            "input": "Baik, berikut JSON-nya: {\"key\": \"value\"} Semoga membantu!",
-            "expected": "{\"key\": \"value\"}"
-        },
-        {
-            "input": "```json\n[{\"id\": 1}]\n```",
-            "expected": "[{\"id\": 1}]"
-        },
-        {
-            "input": "Plain text without json fallback",
-            "expected": "Plain text without json fallback"
-        },
-        {
-            "input": "Multiple blocks: {\"a\": 1} and {\"b\": 2}",
-            "expected": "{\"a\": 1} and {\"b\": 2}" # Our regex finds FIRST { and LAST }
-        }
-    ]
 
-    for i, case in enumerate(test_cases):
-        result = extract_json_from_text(case['input'])
-        print(f"Test {i+1}:")
-        print(f"  Input: {case['input']}")
-        print(f"  Result: {result}")
-        print(f"  Passed: {result == case['expected']}")
-        print("-" * 20)
+@pytest.mark.parametrize(
+    ("raw_text", "expected"),
+    [
+        (
+            "Baik, berikut JSON-nya: {\"key\": \"value\"} Semoga membantu!",
+            "{\"key\": \"value\"}",
+        ),
+        ("```json\n[{\"id\": 1}]\n```", "[{\"id\": 1}]"),
+        ("Plain text without json fallback", "Plain text without json fallback"),
+        (
+            "Multiple blocks: {\"a\": 1} and {\"b\": 2}",
+            "{\"a\": 1}",
+        ),
+        (
+            "{\"first\": true}\n\n{\"second\": false}",
+            "{\"first\": true}",
+        ),
+    ],
+)
+def test_extract_json_from_text(raw_text: str, expected: str):
+    assert extract_json_from_text(raw_text) == expected
 
-if __name__ == "__main__":
-    test_extraction()
+
+def test_parse_llm_json_handles_markdown_and_trailing_text():
+    result = parse_llm_json(
+        "```json\n{\"headline\": \"Promo\", \"cta\": \"Beli\"}\n```\nCatatan tambahan"
+    )
+
+    assert result == {"headline": "Promo", "cta": "Beli"}

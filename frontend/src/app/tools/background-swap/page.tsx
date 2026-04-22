@@ -7,7 +7,8 @@ import { BeforeAfterSlider } from "@/components/tools/BeforeAfterSlider";
 import { ToolProcessingState } from "@/components/tools/ToolProcessingState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, ArrowLeft, Download, PenSquare, Sparkles, PencilLine } from "lucide-react";
+import { ResultActionCard } from "@/components/tools/ResultActionCard";
+import { Loader2, ArrowLeft, Sparkles, PencilLine } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { toast } from "sonner";
@@ -288,7 +289,7 @@ export default function BackgroundSwapPage() {
               >
                 {loading
                   ? <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> {activeJob?.phase_message || "Sedang Memproses AI..."}</>
-                  : "✨ Generate AI Background"
+                  : "✨ Buat Background Baru"
                 }
               </Button>
 
@@ -304,20 +305,18 @@ export default function BackgroundSwapPage() {
 
         {step === 3 && (
           <div className="space-y-8 max-w-2xl mx-auto">
-            <h3 className="text-xl font-bold text-center">Hasil Akhir</h3>
+            <h3 className="text-xl font-bold text-center">Background baru siap dipakai</h3>
             <BeforeAfterSlider beforeImage={previewOriginal} afterImage={resultUrl} className="shadow-2xl ring-1 ring-border" />
 
-            <div className="flex flex-wrap gap-4 justify-center">
-              <Button size="lg" variant="outline" onClick={() => setStep(2)}>
-                <span className="mr-2">♻️</span> Generate Ulang
-              </Button>
-              <Button size="lg" className="gap-2 font-bold shadow-md" onClick={() => window.open(resultUrl, "_blank")}>
-                <Download className="w-5 h-5" /> Download HD
-              </Button>
-              <Button size="lg" variant="secondary" className="gap-2" onClick={() => router.push(`/create?imageUrl=${encodeURIComponent(resultUrl)}`)}>
-                <PenSquare className="w-5 h-5" /> Lanjut ke Editor
-              </Button>
-            </div>
+            <ResultActionCard
+              title="Pilih langkah berikutnya"
+              description="Lanjutkan background ini ke editor, simpan hasilnya, ganti prompt, atau kembali ke tools lain."
+              onContinue={() => router.push(`/create?imageUrl=${encodeURIComponent(resultUrl)}`)}
+              onDownload={() => window.open(resultUrl, "_blank")}
+              onRetry={() => setStep(2)}
+              onBack={() => router.push("/tools")}
+              retryLabel="Ganti Prompt"
+            />
           </div>
         )}
       </div>

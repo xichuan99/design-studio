@@ -220,7 +220,7 @@ export function BackgroundRemovalPanel() {
                                 ) : (
                                     <Sparkles className="w-5 h-5 mr-2" />
                                 )}
-                                Jadikan Iklan Sekarang
+                                Lanjutkan ke Konsep Visual
                             </Button>
                             <div className="grid grid-cols-2 gap-2">
                                 <Button onClick={handleAddToCanvas} variant="outline" size="sm" className="h-10 text-xs">

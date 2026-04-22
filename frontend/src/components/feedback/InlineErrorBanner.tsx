@@ -15,6 +15,7 @@ export function InlineErrorBanner({
     onRetry
 }: InlineErrorBannerProps) {
     const isError = type === 'error';
+    const title = isError ? "Ada kendala di langkah ini" : "Perlu perhatian sebelum lanjut";
     
     return (
         <div className={`relative w-full rounded-xl border-l-[4px] p-4 flex items-start gap-4 shadow-sm transition-all
@@ -32,9 +33,14 @@ export function InlineErrorBanner({
             </div>
             
             <div className="flex-1 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <p className={`text-sm font-medium leading-relaxed ${isError ? 'text-destructive/90' : 'text-amber-700 dark:text-amber-500'}`}>
-                    {message}
-                </p>
+                <div className="space-y-1">
+                    <p className={`text-sm font-semibold leading-none ${isError ? 'text-destructive/90' : 'text-amber-700 dark:text-amber-500'}`}>
+                        {title}
+                    </p>
+                    <p className={`text-sm font-medium leading-relaxed ${isError ? 'text-destructive/90' : 'text-amber-700 dark:text-amber-500'}`}>
+                        {message}
+                    </p>
+                </div>
                 
                 {onRetry && (
                     <Button 
@@ -48,7 +54,7 @@ export function InlineErrorBanner({
                         onClick={onRetry}
                     >
                         <RefreshCcw className="w-3.5 h-3.5" />
-                        Coba Lagi
+                        Coba Langkah Ini Lagi
                     </Button>
                 )}
             </div>

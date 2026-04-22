@@ -34,7 +34,7 @@ tags: [feature, refactor, infrastructure, migration]
 |------|-------------|---------|-----------|
 | TASK-001 | Add structured timing logs per step (`upload`, `infer`, `download`, `save`) in tool routers | `backend/app/api/ai_tools_routers/enhancement.py`, `backend/app/api/ai_tools_routers/background.py`, `backend/app/api/ai_tools_routers/creative.py` | |
 | TASK-002 | Define shared frontend loading state type and copy dictionary | `frontend/src/lib/api/types.ts`, `frontend/src/lib/api/aiToolsApi.ts` | |
-| TASK-003 | Add Sentry breadcrumbs/tags for tool name + phase + duration | `frontend/sentry.client.config.ts`, `backend/app/main.py` | |
+| TASK-003 | Add request correlation IDs, structured timing logs, and PostHog client events for tool name + phase + duration | `frontend/src/providers/PostHogProvider.tsx`, `backend/app/main.py` | |
 | TASK-004 | Publish latency SLO targets (P50/P95) and timeout policy | `docs/features/ai-tools-async-loading/implementation-plan.md` (section update) | |
 
 ### Phase 2: Async Job Backend for Heavy Tools
@@ -83,7 +83,7 @@ tags: [feature, refactor, infrastructure, migration]
 |------|-------------|---------|-----------|
 | TASK-022 | Add feature flag per tool for async mode | `backend/app/core/config.py`, `frontend/src/lib/api/aiToolsApi.ts` | |
 | TASK-023 | Canary rollout: 10% → 50% → 100% traffic | deployment config + runtime env | |
-| TASK-024 | Compare baseline vs post-rollout metrics | dashboards / logs / Sentry | |
+| TASK-024 | Compare baseline vs post-rollout metrics | dashboards / structured logs / PostHog | |
 | TASK-025 | Remove legacy sync implementation after stabilization | `backend/app/api/ai_tools_routers/*.py`, `frontend/src/lib/api/aiToolsApi.ts` | |
 
 ## 3. Architecture Diagram
@@ -192,7 +192,7 @@ graph TD
 - **DEP-001**: Celery + Redis (already present) for async orchestration.
 - **DEP-002**: FastAPI + SQLAlchemy + Alembic for job persistence.
 - **DEP-003**: Existing `app.services.storage_service` for intermediate and final artifacts.
-- **DEP-004**: Sentry for latency/error observability.
+- **DEP-004**: Structured logging, request IDs, and PostHog events for latency/error observability.
 
 ## 10. Success Criteria (Definition of Done)
 
@@ -215,7 +215,7 @@ graph TD
 | S1-002 | Backend | 1d | S1-001 | `ai_tool_jobs` model + migration |
 | S1-003 | Backend | 1.5d | S1-002 | Job lifecycle service + status transitions |
 | S1-004 | Backend | 1d | S1-003 | `POST /api/tools/jobs` + `GET /api/tools/jobs/{id}` |
-| S1-005 | FE + Backend | 0.5d | S1-001 | Sentry tags + correlation IDs for tool phases |
+| S1-005 | FE + Backend | 0.5d | S1-001 | Correlation IDs + PostHog events for tool phases |
 
 - **Sprint 1 Exit Criteria**:
   - Job record created and queryable end-to-end.

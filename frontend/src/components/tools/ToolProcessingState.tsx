@@ -9,6 +9,7 @@ interface ToolProcessingStateProps {
   job: AiToolJob | null;
   defaultMessage?: string;
   description?: string;
+  nextStepHint?: string;
   onCancel?: () => void;
   variant?: "card" | "centered";
 }
@@ -18,6 +19,7 @@ export function ToolProcessingState({
   job,
   defaultMessage = "AI sedang memproses",
   description,
+  nextStepHint = "Setelah selesai, Anda bisa meninjau hasil lalu lanjutkan ke editor atau simpan hasilnya.",
   onCancel,
   variant = "card",
 }: ToolProcessingStateProps) {
@@ -43,6 +45,7 @@ export function ToolProcessingState({
             <p className="text-sm text-muted-foreground">{progressPercent}%</p>
           </>
         )}
+        <p className="max-w-md text-sm text-muted-foreground/80">{nextStepHint}</p>
         {onCancel && (
           <Button type="button" variant="outline" size="sm" onClick={onCancel}>
             Batalkan Proses
@@ -65,6 +68,7 @@ export function ToolProcessingState({
         />
       </div>
       <p className="text-sm text-muted-foreground">{phaseMessage}</p>
+      <p className="text-xs leading-relaxed text-muted-foreground/80">{nextStepHint}</p>
       {onCancel && (
         <Button type="button" variant="outline" size="sm" onClick={onCancel}>
           Batalkan Proses

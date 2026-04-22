@@ -11,6 +11,7 @@ from app.schemas.design import ReferenceAnalysis, AspectRatio
 from app.core.exceptions import AppException
 from fastapi import status
 from app.services.llm_client import get_genai_client, call_gemini_with_fallback
+from app.services.llm_json_utils import parse_llm_json
 
 # System Prompt for Gemini Vision
 VISION_ANALYSIS_PROMPT = """
@@ -81,7 +82,7 @@ async def analyze_reference_image(image_url: str) -> ReferenceAnalysis:
                     temperature=0.2,  # Low temp for consistent analysis
                 ),
             )
-            return json.loads(response.text)
+            return parse_llm_json(response.text)
 
         result_dict = await asyncio.to_thread(call_llm)
         return ReferenceAnalysis(**result_dict)

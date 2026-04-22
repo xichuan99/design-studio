@@ -25,9 +25,18 @@ export function EditorToolbar({
     onReset,
     onProceedToEditor,
 }: EditorToolbarProps) {
+    const variationCount = imageHistory.length;
+
     return (
         <div className="shrink-0 border-t border-border/30 bg-background/80 backdrop-blur-sm px-4 py-3 flex gap-4 items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div className="min-w-0 flex items-center gap-4">
+                {variationCount > 1 && (
+                    <div className="hidden md:block shrink-0">
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Variasi Hasil</p>
+                        <p className="mt-1 text-xs text-muted-foreground">Pilih hasil {activeImageIndex + 1} dari {variationCount}</p>
+                    </div>
+                )}
+
                 <GenerationHistoryList 
                     imageHistory={imageHistory}
                     activeImageIndex={activeImageIndex}
@@ -58,14 +67,14 @@ export function EditorToolbar({
                 </Button>
                 <Button
                     size="sm"
-                    className="font-bold shadow-lg h-10 px-6 shrink-0"
+                    className="font-bold shadow-lg h-10 px-4 sm:px-6 shrink-0"
                     onClick={onProceedToEditor}
                     disabled={isSaving || isGeneratingImage}
                 >
                     {isSaving ? (
-                        <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Masuk Editor...</>
+                        <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Membuka Editor...</>
                     ) : (
-                        <>Lanjut ke Editor <ArrowRight className="w-4 h-4 ml-2" /></>
+                        <><span className="hidden sm:inline">Lanjut Rapikan di Editor</span><span className="sm:hidden">Ke Editor</span> <ArrowRight className="w-4 h-4 ml-2" /></>
                     )}
                 </Button>
             </div>

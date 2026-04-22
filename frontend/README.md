@@ -75,4 +75,4 @@ State yang di-persist ke `localStorage`:
 - **Auth:** NextAuth.js (Google OAuth)
 - **Export:** jsPDF, canvas toDataURL
 - **Onboarding:** react-joyride
-- **Monitoring:** @sentry/nextjs, posthog-js
+- **Monitoring:** posthog-js, backend structured logging

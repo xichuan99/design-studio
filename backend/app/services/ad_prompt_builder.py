@@ -1,4 +1,3 @@
-import json
 import logging
 import asyncio
 from typing import Dict, Any, Optional
@@ -10,6 +9,7 @@ from sqlalchemy.future import select
 from app.core.exceptions import AppException
 from fastapi import status
 from app.services.llm_client import get_genai_client, call_gemini_with_fallback
+from app.services.llm_json_utils import parse_llm_json
 from app.models.brand_kit import BrandKit
 
 logger = logging.getLogger(__name__)
@@ -119,18 +119,7 @@ async def build_ad_concepts(
             return response.text
 
         result_text = await asyncio.to_thread(call_ai)
-
-        # Strip markdown fences if any
-        result_text = result_text.strip()
-        if result_text.startswith("```json"):
-            result_text = result_text[7:]
-        if result_text.startswith("```"):
-            result_text = result_text[3:]
-        if result_text.endswith("```"):
-            result_text = result_text[:-3]
-
-        parsed = json.loads(result_text.strip())
-        return parsed
+        return parse_llm_json(result_text)
 
     except Exception as e:
         logger.error(f"Failed to build ad concepts: {e}", exc_info=True)

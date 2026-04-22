@@ -100,7 +100,7 @@ export function AssetCard({ result, onDelete }: AssetCardProps) {
             {/* Meta */}
             <div className="p-3 border-t border-border/50">
                 <p className="text-xs text-muted-foreground truncate" title={result.input_summary ?? undefined}>
-                    {result.input_summary || "AI Generated"}
+                    {result.input_summary || "Hasil AI tanpa deskripsi"}
                 </p>
                 <p className="text-[10px] text-muted-foreground/60 mt-0.5">{date}</p>
             </div>

@@ -26,7 +26,7 @@ type StudioTab = 'prompt' | 'ad_creator';
 
 const STUDIO_TABS: { id: StudioTab; label: string; icon: React.ElementType; desc: string }[] = [
     { id: 'prompt', label: 'Prompt', icon: Sparkles, desc: 'Teks ke Gambar' },
-    { id: 'ad_creator', label: 'Foto Produk', icon: ImageIcon, desc: 'Ubah foto jadi Ads' },
+    { id: 'ad_creator', label: 'Foto Produk', icon: ImageIcon, desc: 'Foto ke konsep visual' },
 ];
 
 export const AIStudioPanel: React.FC<{ autoOpenSmartAd?: boolean }> = ({ autoOpenSmartAd }) => {

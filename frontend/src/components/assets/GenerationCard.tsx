@@ -39,7 +39,7 @@ export function GenerationCard({ generation, onDelete }: GenerationCardProps) {
 
     const label = generation.raw_text
         ? generation.raw_text.slice(0, 40) + (generation.raw_text.length > 40 ? "…" : "")
-        : "Generate Desain";
+        : "Hasil Visual";
 
     const date = new Date(generation.created_at).toLocaleDateString("id-ID", {
         day: "numeric",
@@ -90,7 +90,7 @@ export function GenerationCard({ generation, onDelete }: GenerationCardProps) {
                 {/* Badge */}
                 <div className="absolute top-2 right-2 flex flex-col gap-1 items-end pointer-events-none">
                     <span className="text-[10px] bg-black/70 text-white px-2 py-0.5 rounded-full font-medium border border-white/10 shadow-sm">
-                        AI Generate
+                        Visual AI
                     </span>
                     {isLinkedToProject && (
                         <span className="flex items-center gap-1 text-[10px] bg-emerald-500/90 text-white px-2 py-0.5 rounded-full font-medium shadow-sm backdrop-blur-sm">
@@ -113,10 +113,10 @@ export function GenerationCard({ generation, onDelete }: GenerationCardProps) {
             <AlertDialog open={showDeleteConform} onOpenChange={setShowDeleteConfirm}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Hapus hasil generasi ini?</AlertDialogTitle>
+                        <AlertDialogTitle>Hapus hasil visual ini?</AlertDialogTitle>
                         <AlertDialogDescription>
                             {isLinkedToProject 
-                                ? "Generasi ini tampaknya sudah Anda jadikan Proyek di editor. Menghapus file aslinya akan mengosongkan storage, namun Anda tidak bisa mengunduh file mentahnya lagi dari sini. Proyek Anda tetap aman."
+                                ? "Hasil ini tampaknya sudah Anda jadikan proyek di editor. Menghapus file aslinya akan mengosongkan storage, tetapi Anda tidak bisa mengunduh file mentahnya lagi dari sini. Proyek Anda tetap aman."
                                 : "Aset ini akan dihapus permanen dan membebaskan kuota storage Anda. Tindakan ini tidak dapat dibatalkan."}
                         </AlertDialogDescription>
                     </AlertDialogHeader>

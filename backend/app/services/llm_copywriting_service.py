@@ -11,9 +11,9 @@ from app.services.llm_prompts import (
 )
 from app.services.llm_client import get_genai_client, call_gemini_with_fallback
 from app.services.llm_design_service import (
-    extract_json_from_text,
     normalize_brief_questions_payload,
 )
+from app.services.llm_json_utils import parse_llm_json
 
 
 async def generate_copywriting_questions(raw_text: str) -> dict:
@@ -40,10 +40,7 @@ async def generate_copywriting_questions(raw_text: str) -> dict:
         if isinstance(asyncio.to_thread, AsyncMock):
             response = await asyncio.to_thread(lambda: None)
             try:
-                import json
-
-                clean_json = extract_json_from_text(response.text)
-                data = json.loads(clean_json)
+                data = parse_llm_json(response.text)
                 return normalize_brief_questions_payload(data)
             except Exception:
                 logging.exception("Error normalizing mocked copywriting questions response")
@@ -109,10 +106,7 @@ async def generate_copywriting_questions(raw_text: str) -> dict:
     )
 
     try:
-        import json
-
-        clean_json = extract_json_from_text(response.text)
-        data = json.loads(clean_json)
+        data = parse_llm_json(response.text)
         return normalize_brief_questions_payload(data)
     except Exception as e:
         import logging

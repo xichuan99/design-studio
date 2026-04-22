@@ -35,7 +35,7 @@ export default function BrandStrategyReport({ brandData, onSave, onEdit, onCance
                             </div>
                         )}
                         <div>
-                            <Badge className="mb-2 bg-primary/20 text-primary hover:bg-primary/20 border-0">AI Generated Brand Identity</Badge>
+                            <Badge className="mb-2 bg-primary/20 text-primary hover:bg-primary/20 border-0">Brand Identity Draft dari AI</Badge>
                             <h2 className="text-3xl font-bold mb-1 tracking-tight">{name || 'Unnamed Brand'}</h2>
                             {brand_strategy?.differentiator && (
                                 <p className="text-muted-foreground text-sm max-w-md italic">&quot;{brand_strategy.differentiator}&quot;</p>
@@ -56,7 +56,7 @@ export default function BrandStrategyReport({ brandData, onSave, onEdit, onCance
                                     <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500">
                                         <Target className="w-4 h-4" />
                                     </div>
-                                    <h3 className="text-xl font-semibold">Brand Strategy</h3>
+                                    <h3 className="text-xl font-semibold">Arah Brand</h3>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="bg-muted/30 p-4 rounded-xl border">
@@ -86,7 +86,7 @@ export default function BrandStrategyReport({ brandData, onSave, onEdit, onCance
                                     <div className="w-8 h-8 rounded-full bg-violet-500/10 flex items-center justify-center text-violet-500">
                                         <Type className="w-4 h-4" />
                                     </div>
-                                    <h3 className="text-xl font-semibold">Typography System</h3>
+                                    <h3 className="text-xl font-semibold">Sistem Tipografi</h3>
                                 </div>
                                 
                                 <div className="space-y-6">
@@ -150,7 +150,7 @@ export default function BrandStrategyReport({ brandData, onSave, onEdit, onCance
                              <div className="w-8 h-8 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-500">
                                 <Palette className="w-4 h-4" />
                             </div>
-                            <h3 className="text-xl font-semibold">Color Palette</h3>
+                            <h3 className="text-xl font-semibold">Palet Warna</h3>
                         </div>
                         
                         <div className="space-y-4">

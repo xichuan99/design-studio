@@ -248,7 +248,7 @@ export const AIPromptPanel: React.FC = () => {
             height: originalHeight * scale,
             url: generatedUrl,
             rotation: 0,
-            label: 'AI Generated',
+            label: 'Visual AI',
         });
         setGeneratedUrl(null);
         setPrompt('');
@@ -342,12 +342,12 @@ export const AIPromptPanel: React.FC = () => {
         <div className="flex flex-col h-full bg-card p-4 gap-3">
             <div className="flex items-center gap-2 border-b pb-4">
                 <Sparkles className="h-5 w-5 text-primary" />
-                <h2 className="font-semibold text-sm">AI Image Generator</h2>
+                <h2 className="font-semibold text-sm">AI Image Studio</h2>
             </div>
 
             <Tabs value={activeTab} onValueChange={handleTabChange} className="flex-1 flex flex-col min-h-0">
                 <TabsList className="grid w-full grid-cols-2 mb-2">
-                    <TabsTrigger value="generate">Generate</TabsTrigger>
+                    <TabsTrigger value="generate">Buat Visual</TabsTrigger>
                     <TabsTrigger value="history" className="gap-2"><History className="w-4 h-4" /> Riwayat</TabsTrigger>
                 </TabsList>
 
@@ -355,9 +355,9 @@ export const AIPromptPanel: React.FC = () => {
                     <div className="flex-1 overflow-y-auto space-y-3 pr-1 pb-4">
                 {/* Prompt Input */}
                 <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Prompt</label>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Brief Visual</label>
                     <Textarea
-                        placeholder="Contoh: Latar belakang minimalis dengan cahaya alami..."
+                        placeholder="Contoh: Latar belakang minimalis dengan cahaya alami untuk produk skincare premium..."
                         className="h-20 resize-none text-sm rounded-xl bg-card/80 border-border/60 focus-visible:ring-indigo-500/50"
                         value={prompt}
                         onChange={(e) => setPrompt(e.target.value)}
@@ -374,7 +374,7 @@ export const AIPromptPanel: React.FC = () => {
 
                 {/* Aspect Ratio Selector */}
                 <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Aspect Ratio</label>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Format Output</label>
                     <div className="grid grid-cols-4 gap-2">
                         {ASPECT_RATIOS.map((ratio) => {
                             const Icon = ratio.icon;
@@ -572,7 +572,7 @@ export const AIPromptPanel: React.FC = () => {
                     <div className="space-y-3 animate-in fade-in zoom-in duration-300">
                         <label className="text-xs font-semibold text-primary uppercase flex items-center gap-2">
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            Sedang Membuat Gambar...
+                            Sedang Menyiapkan Visual...
                         </label>
                         <div className={cn("relative rounded-xl overflow-hidden border border-primary/20 bg-muted/20 shadow-sm w-full", getAspectRatioClass(aspectRatio))}>
                             <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
@@ -593,11 +593,11 @@ export const AIPromptPanel: React.FC = () => {
                 {/* Preview Card */}
                 {generatedUrl && previewUrl && !isGenerating && (
                     <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                        <label className="text-xs font-semibold text-muted-foreground uppercase">Hasil Generate</label>
+                        <label className="text-xs font-semibold text-muted-foreground uppercase">Hasil Terbaru</label>
                         <div className={cn("relative rounded-xl overflow-hidden border bg-muted/30 shadow-sm w-full", getAspectRatioClass(aspectRatio))}>
                             <Image
                                 src={previewUrl}
-                                alt="AI Generated"
+                                alt="Hasil visual AI"
                                 fill
                                 className="object-cover rounded shadow-sm"
                                 crossOrigin="anonymous"
@@ -633,7 +633,7 @@ export const AIPromptPanel: React.FC = () => {
                                 onClick={handleSetAsBackground}
                             >
                                 <Wallpaper className="h-4 w-4" />
-                                Jadikan Background
+                                Pakai Jadi Background
                             </Button>
                             <Button
                                 variant="outline"
@@ -641,7 +641,7 @@ export const AIPromptPanel: React.FC = () => {
                                 onClick={handleAddAsElement}
                             >
                                 <ImagePlus className="h-4 w-4" />
-                                Tambah ke Canvas
+                                Masukkan ke Canvas
                             </Button>
                             <div className="flex gap-2">
                                 <Button
@@ -651,7 +651,7 @@ export const AIPromptPanel: React.FC = () => {
                                     onClick={handleRegenerate}
                                 >
                                     <RefreshCw className="h-3.5 w-3.5" />
-                                    Ulang
+                                    Buat Ulang
                                 </Button>
                                 <Button
                                     variant="ghost"
@@ -672,8 +672,8 @@ export const AIPromptPanel: React.FC = () => {
             {!generatedUrl && (
                 <div className="pt-4 border-t mt-auto">
                     <CreditConfirmDialog
-                        title="Generate Foto AI"
-                        description="Pastikan prompt dan pengaturan sudah sesuai sebelum men-generate gambar baru."
+                        title="Buat Visual AI"
+                        description="Pastikan brief dan pengaturan sudah sesuai sebelum membuat hasil baru."
                         cost={40}
                         onConfirm={() => handleGenerate()}
                         disabled={isGenerating || (!prompt.trim() && !productImageUrl)}
@@ -685,13 +685,13 @@ export const AIPromptPanel: React.FC = () => {
                             {isGenerating ? (
                                 <>
                                     <Loader2 className="h-4 w-4 animate-spin" />
-                                    Generating...
+                                    Menyiapkan Visual...
                                 </>
                             ) : (
                                 <div className="flex items-center justify-between w-full">
                                     <span className="flex items-center gap-2">
                                         <Sparkles className="h-4 w-4" />
-                                        Generate Gambar AI
+                                        Buat Visual AI
                                     </span>
                                     <CreditCostBadge cost={40} className="bg-white/20 text-white border-white/20" showTooltip={false} />
                                 </div>

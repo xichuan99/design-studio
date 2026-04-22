@@ -5,8 +5,9 @@ import { AppHeader } from "@/components/layout/AppHeader";
 import { ImageDropzone } from "@/components/tools/ImageDropzone";
 import { BeforeAfterSlider } from "@/components/tools/BeforeAfterSlider";
 import { ToolProcessingState } from "@/components/tools/ToolProcessingState";
+import { ResultActionCard } from "@/components/tools/ResultActionCard";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Download, PenSquare, Sparkles } from "lucide-react";
+import { ArrowLeft, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useProjectApi } from "@/lib/api";
@@ -176,33 +177,22 @@ export default function RetouchPage() {
 
         {step === 3 && (
           <div className="space-y-8 max-w-2xl mx-auto">
-            <h3 className="text-xl font-bold text-center">Hasil Akhir</h3>
+            <h3 className="text-xl font-bold text-center">Foto yang sudah dirapikan siap dipakai</h3>
             <BeforeAfterSlider
               beforeImage={beforeUrl}
               afterImage={resultUrl}
               className="shadow-2xl ring-1 ring-border"
             />
 
-            <div className="flex flex-wrap gap-4 justify-center mt-8">
-              <Button size="lg" variant="outline" onClick={() => setStep(1)}>
-                <span className="mr-2">♻️</span> Foto Lain
-              </Button>
-              <Button
-                size="lg"
-                className="gap-2 font-bold shadow-md"
-                onClick={() => window.open(resultUrl, "_blank")}
-              >
-                <Download className="w-5 h-5" /> Download HD
-              </Button>
-              <Button
-                size="lg"
-                variant="secondary"
-                className="gap-2"
-                onClick={() => router.push(`/create?imageUrl=${encodeURIComponent(resultUrl)}`)}
-              >
-                <PenSquare className="w-5 h-5" /> Lanjut ke Editor
-              </Button>
-            </div>
+            <ResultActionCard
+              title="Lanjutkan foto ini"
+              description="Buka di editor untuk menambah layout dan teks, simpan hasilnya, proses foto lain, atau kembali ke daftar tools."
+              onContinue={() => router.push(`/create?imageUrl=${encodeURIComponent(resultUrl)}`)}
+              onDownload={() => window.open(resultUrl, "_blank")}
+              onRetry={() => setStep(1)}
+              onBack={() => router.push("/tools")}
+              retryLabel="Proses Foto Lain"
+            />
           </div>
         )}
       </div>

@@ -6,16 +6,16 @@ import Joyride, { CallBackProps, STATUS } from "react-joyride";
 const TOUR_STEPS = [
     {
         target: ".tour-step-1",
-        content: "Selamat datang! Masukkan deskripsi desain atau teks pengumuman Anda di sini (misal: Banner Kopi Susu Diskon 50%).",
+        content: "Mulai dari tujuan desain Anda. Tulis brief singkat, headline promo, atau hasil yang ingin Anda capai.",
         disableBeacon: true,
     },
     {
         target: ".tour-step-2",
-        content: "Pilih rasio gambar dan gaya desain yang sesuai untuk brand Anda.",
+        content: "Tentukan format hasil dan bagaimana teks akan dipakai, agar output pertama lebih dekat ke kebutuhan Anda.",
     },
     {
         target: ".tour-step-3",
-        content: "Tekan tombol ini untuk menghasilkan template desain otomatis dari AI!",
+        content: "Tekan tombol ini untuk lanjut ke arahan visual atau langsung membuat hasil pertama Anda.",
     },
 ];
 
@@ -23,6 +23,13 @@ export const OnboardingTour = () => {
     const [run, setRun] = useState(false);
 
     useEffect(() => {
+        if (typeof window === "undefined") return;
+
+        const isAutomatedBrowser = window.navigator.webdriver;
+        if (isAutomatedBrowser) {
+            return;
+        }
+
         // Only run once per device/browser setup
         const hasSeenTour = localStorage.getItem("has_seen_tour");
         if (!hasSeenTour) {

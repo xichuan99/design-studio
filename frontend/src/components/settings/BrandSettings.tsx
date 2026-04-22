@@ -219,7 +219,7 @@ export default function BrandSettings({ selectedFolderId }: { selectedFolderId?:
             });
         } catch (error) {
             console.error("Error generating brand kit", error);
-            const errorMessage = error instanceof Error ? error.message : "Gagal generate AI Brand Kit";
+            const errorMessage = error instanceof Error ? error.message : "Gagal menyusun Brand Kit dengan AI";
             toast.error(errorMessage);
         } finally {
             setIsGeneratingAI(false);
@@ -519,7 +519,7 @@ export default function BrandSettings({ selectedFolderId }: { selectedFolderId?:
         <Card className="shadow-sm border-border/60 overflow-hidden bg-card/50 backdrop-blur-sm">
             <CardHeader className="flex flex-row items-center justify-between bg-muted/20 border-b border-border/40 px-6 sm:px-8 py-5">
                 <CardTitle className="text-base font-semibold">
-                    Daftar Smart Brand Kit
+                    Daftar Brand Kit
                 </CardTitle>
                 <div className="flex gap-2">
                     <Button size="sm" variant="outline" className="gap-1.5 h-8 font-medium hidden sm:flex" onClick={() => setIsUrlModalOpen(true)}>
@@ -528,7 +528,7 @@ export default function BrandSettings({ selectedFolderId }: { selectedFolderId?:
                     </Button>
                     <Button size="sm" variant="outline" className="gap-1.5 h-8 font-medium border-primary/20 text-primary hover:bg-primary/5" onClick={() => setIsAiModalOpen(true)}>
                         <Sparkles className="h-4 w-4" />
-                        Generate AI
+                        Buat dengan AI
                     </Button>
                     <Button size="sm" className="gap-1.5 h-8 font-medium" onClick={handleCreateNew}>
                         <Plus className="h-4 w-4" />
@@ -604,9 +604,9 @@ export default function BrandSettings({ selectedFolderId }: { selectedFolderId?:
             <AlertDialog open={isAiModalOpen} onOpenChange={(open) => !open && !isGeneratingAI && setIsAiModalOpen(false)}>
                 <AlertDialogContent className="sm:max-w-[600px]">
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Generate Brand Kit dengan AI</AlertDialogTitle>
+                        <AlertDialogTitle>Buat Brand Kit dengan AI</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Isi beberapa detail spesifik tentang brand Anda. AI akan merancang strategi, palet warna, tipografi, dan logo minimalis.
+                            Isi beberapa detail penting tentang brand Anda. AI akan membantu menyusun strategi, palet warna, tipografi, dan arah logo awal.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
@@ -670,7 +670,7 @@ export default function BrandSettings({ selectedFolderId }: { selectedFolderId?:
                         <AlertDialogCancel disabled={isGeneratingAI}>Batal</AlertDialogCancel>
                         <Button onClick={handleAiGenerate} disabled={isGeneratingAI || !aiForm.prompt.trim()}>
                             {isGeneratingAI ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
-                            {isGeneratingAI ? "Sedang Generate..." : "Generate AI"}
+                            {isGeneratingAI ? "Sedang Menyusun..." : "Buat dengan AI"}
                         </Button>
                     </AlertDialogFooter>
                 </AlertDialogContent>

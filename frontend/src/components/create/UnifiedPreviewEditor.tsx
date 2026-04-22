@@ -45,6 +45,15 @@ export function UnifiedPreviewEditor({
         <div className="flex flex-col md:flex-row w-full h-full overflow-hidden bg-background">
             {/* LEFT: Image Preview & Toolbar Controls (60%) */}
             <div className="flex-1 flex flex-col min-w-0 border-r md:h-full h-[60vh]">
+                <div className="shrink-0 border-b border-border/40 bg-background px-4 py-4 md:px-6">
+                    <div className="max-w-3xl">
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Hasil Pertama Siap Ditinjau</p>
+                        <h2 className="mt-1 text-xl font-bold text-foreground md:text-2xl">Pilih hasil terbaik lalu lanjutkan ke editor</h2>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            Bandingkan variasi yang sudah dibuat, pilih yang paling dekat dengan target, lalu masuk ke editor untuk sentuhan akhir.
+                        </p>
+                    </div>
+                </div>
                 <CanvasContainer imageUrl={currentImageUrl} />
                 <EditorToolbar 
                     imageHistory={imageHistory}

@@ -149,7 +149,7 @@ flowchart TB
 
     S3[(S3-compatible Storage)]
     AI[External AI Providers\nGemini / Fal.ai]
-    Mon[Monitoring\nSentry / PostHog]
+   Mon[Monitoring\nPostHog / Structured Logs]
 
     User --> CDN
     CDN --> RP

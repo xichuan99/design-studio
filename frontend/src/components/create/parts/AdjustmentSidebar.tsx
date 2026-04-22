@@ -24,7 +24,12 @@ export function AdjustmentSidebar({
     return (
         <div className="w-full md:w-[400px] shrink-0 flex flex-col bg-card/50 overflow-y-auto">
             <div className="p-5 flex-1">
-                <h3 className="font-semibold text-lg mb-4 text-foreground">Sempurnakan Prompt AI</h3>
+                <div className="mb-4">
+                    <h3 className="font-semibold text-lg text-foreground">Sesuaikan Hasil Berikutnya</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                        Gunakan panel ini untuk memperbaiki arahan visual lalu generate ulang jika hasilnya belum pas.
+                    </p>
+                </div>
                 <VisualPromptEditor
                     parsedData={parsedData}
                     onTogglePromptPart={onTogglePromptPart}

@@ -21,7 +21,7 @@ const TOOL_FILTERS = [
 
 const TABS = [
     { id: "tools", label: "AI Tools" },
-    { id: "generations", label: "Generate Desain" },
+    { id: "generations", label: "Hasil Visual" },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];

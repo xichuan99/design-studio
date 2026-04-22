@@ -1,11 +1,11 @@
 import json
-import re
 from typing import Optional
 from google.genai import types
 import asyncio
 from app.core.config import settings
 from app.schemas.design import ParsedTextElements
 from app.services.llm_client import get_genai_client, call_gemini_with_fallback
+from app.services.llm_json_utils import extract_json_from_text, parse_llm_json
 
 from app.services.llm_prompts import (
     SYSTEM_PROMPT,
@@ -14,25 +14,6 @@ from app.services.llm_prompts import (
     REDESIGN_BRIEF_SYSTEM,
     MODIFY_PROMPT_SYSTEM,
 )
-
-
-def extract_json_from_text(text: str) -> str:
-    """Extracts a JSON block from a potentially chatty LLM response."""
-    # Try finding the first '{' or '[' and the last '}' or ']'
-    start_match = re.search(r"[\{\[]", text)
-    end_match = re.findall(r"[\}\]]", text)
-
-    if not start_match or not end_match:
-        return text.strip()
-
-    start_index = start_match.start()
-    # Find the last closing bracket/brace
-    last_char = end_match[-1]
-    last_index = text.rfind(last_char)
-
-    return text[start_index : last_index + 1].strip()
-
-
 def normalize_brief_questions_payload(payload: object) -> dict:
     from app.schemas.design import BriefQuestionsResponse
 
@@ -76,8 +57,7 @@ async def generate_design_brief_questions(raw_text: str) -> dict:
         if isinstance(asyncio.to_thread, AsyncMock):
             response = await asyncio.to_thread(lambda: None)
             try:
-                clean_json = extract_json_from_text(response.text)
-                data = json.loads(clean_json)
+                data = parse_llm_json(response.text)
                 return normalize_brief_questions_payload(data)
             except Exception:
                 logging.exception("Error normalizing mocked brief questions response")
@@ -141,8 +121,7 @@ async def generate_design_brief_questions(raw_text: str) -> dict:
     )
 
     try:
-        clean_json = extract_json_from_text(response.text)
-        data = json.loads(clean_json)
+        data = parse_llm_json(response.text)
         return normalize_brief_questions_payload(data)
     except Exception as e:
         import logging
@@ -179,8 +158,7 @@ async def generate_unified_brief_questions(
         if isinstance(asyncio.to_thread, AsyncMock):
             response = await asyncio.to_thread(lambda: None)
             try:
-                result_text = extract_json_from_text(response.text)
-                data = json.loads(result_text)
+                data = parse_llm_json(response.text)
                 return normalize_brief_questions_payload(data)
             except Exception:
                 logging.exception("Error normalizing mocked unified questions response")
@@ -292,8 +270,7 @@ async def generate_unified_brief_questions(
     )
 
     try:
-        result_text = extract_json_from_text(response.text)
-        data = json.loads(result_text)
+        data = parse_llm_json(response.text)
         return normalize_brief_questions_payload(data)
     except Exception as e:
         import logging
@@ -487,8 +464,7 @@ async def parse_design_text(
 
     # We parse the response text instead of using dynamic decoding structure, though the types are standard JSON
     try:
-        clean_json = extract_json_from_text(response.text)
-        data = json.loads(clean_json)
+        data = parse_llm_json(response.text)
         return ParsedTextElements(**data)
     except Exception as e:
         import logging
@@ -560,8 +536,7 @@ async def modify_visual_prompt(
     )
 
     try:
-        clean_json = extract_json_from_text(response.text)
-        data = json.loads(clean_json)
+        data = parse_llm_json(response.text)
     except Exception as e:
         import logging
         snippet = response.text[:200] + "..." if len(response.text) > 200 else response.text

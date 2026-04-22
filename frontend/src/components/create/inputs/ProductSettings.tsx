@@ -36,6 +36,16 @@ export function ProductSettings({
 }: ProductSettingsProps) {
     return (
         <div className="space-y-2 pb-4 border-b">
+            <div className="space-y-1">
+                <p className="text-sm font-semibold text-foreground">
+                    {createMode === 'redesign' ? 'Foto Acuan' : 'Foto Produk atau Referensi'}
+                </p>
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                    {createMode === 'redesign'
+                        ? 'Unggah gambar utama yang ingin diubah. Ini menjadi dasar hasil redesign pertama.'
+                        : 'Opsional. Tambahkan foto jika Anda ingin AI memakai produk atau gaya visual tertentu sebagai acuan.'}
+                </p>
+            </div>
             <ReferenceImageUpload
                 referenceFile={referenceFile}
                 referencePreview={referencePreview}
@@ -63,8 +73,8 @@ export function ProductSettings({
                             />
                         </div>
                         <div className="flex flex-col gap-0.5">
-                            <span className="text-sm font-semibold text-foreground">Ini foto produk saya</span>
-                            <span className="text-xs text-muted-foreground">Otomatis hapus background & taruh di atas desain AI yang baru.</span>
+                            <span className="text-sm font-semibold text-foreground">Gunakan sebagai produk utama</span>
+                            <span className="text-xs text-muted-foreground">Background akan dibersihkan lalu produk dipasang ke desain baru secara otomatis.</span>
                         </div>
                     </label>
                 </div>

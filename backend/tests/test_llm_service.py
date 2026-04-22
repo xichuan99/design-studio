@@ -132,6 +132,23 @@ async def test_parse_english_text():
 
 
 @pytest.mark.asyncio
+async def test_parse_design_text_accepts_chattery_json_response():
+    payload = {**_BASE, "headline": "Weekend Sale"}
+    response = MagicMock()
+    response.text = (
+        "Baik, berikut hasil terstrukturnya.\n"
+        f"{json.dumps(payload)}\n"
+        "{\"ignored_debug\": true}"
+    )
+
+    with patch("asyncio.to_thread", new=AsyncMock(return_value=response)):
+        result = await parse_design_text("Weekend sale 40% off")
+
+    assert isinstance(result, ParsedTextElements)
+    assert result.headline == "Weekend Sale"
+
+
+@pytest.mark.asyncio
 async def test_generate_unified_brief_questions_accepts_list_payload():
     payload = [
         {

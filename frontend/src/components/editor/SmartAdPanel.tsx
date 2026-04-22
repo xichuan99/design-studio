@@ -35,7 +35,7 @@ export const SmartAdPanel: React.FC = () => {
             // Clear handoff data after consumption
             setHandoffData(null);
             
-            toast.info("Gambar dari Hapus BG siap digunakan!", {
+            toast.info("Gambar dari Hapus BG siap dilanjutkan!", {
                 icon: <Zap className="w-4 h-4 text-primary fill-primary" />
             });
         }
@@ -82,7 +82,7 @@ export const SmartAdPanel: React.FC = () => {
 
             const response = await generateSmartAd(payload);
             setResult(response);
-            toast.success("Berhasil! 3 variasi konsep telah dibuat.");
+            toast.success("Berhasil! Tiga konsep visual siap ditinjau.");
         } catch (error: unknown) {
             console.error("Smart Ad Panel Error:", error);
             
@@ -92,10 +92,10 @@ export const SmartAdPanel: React.FC = () => {
             const errorCode = typedError.errorCode || "";
             
             if (errorCode === "LLM_GENERATION_FAILED" || errorMessage.includes("konsep iklan")) {
-                toast.error("Gagal membuat konsep. Coba ubah brief Anda agar lebih mudah dipahami oleh AI.", {
+                toast.error("Gagal menyusun konsep visual. Coba sederhanakan brief Anda agar lebih mudah dipahami AI.", {
                     duration: 6000,
                     action: {
-                        label: "Pahami Brief",
+                        label: "Lihat Brief",
                         onClick: () => console.log("Show help")
                     }
                 });
@@ -155,7 +155,7 @@ export const SmartAdPanel: React.FC = () => {
             rotation: 0
         });
 
-        toast.success(`Konsep ${concept.concept_name} diterapkan ke canvas`);
+        toast.success(`Konsep ${concept.concept_name} masuk ke canvas`);
     };
 
     return (
@@ -163,6 +163,13 @@ export const SmartAdPanel: React.FC = () => {
             
             {!result ? (
                 <div className="space-y-6">
+                    <div className="space-y-1 rounded-xl border border-border/60 bg-background/70 p-4">
+                        <h3 className="text-sm font-semibold text-foreground">Foto Produk ke Konsep Visual</h3>
+                        <p className="text-xs leading-relaxed text-muted-foreground">
+                            Gunakan foto produk sebagai bahan awal, lalu biarkan AI menyiapkan beberapa arah iklan yang bisa langsung Anda rapikan di canvas.
+                        </p>
+                    </div>
+
                     {/* Upload Section */}
                     <div className="space-y-2">
                         <label className="text-xs font-medium text-foreground">1. Foto Produk</label>
@@ -200,11 +207,11 @@ export const SmartAdPanel: React.FC = () => {
 
                     {/* Brief Section */}
                     <div className="space-y-2">
-                        <label className="text-xs font-medium text-foreground">2. Brief Iklan (Opsional)</label>
+                        <label className="text-xs font-medium text-foreground">2. Brief Visual (Opsional)</label>
                         <textarea
                             value={brief}
                             onChange={(e) => setBrief(e.target.value)}
-                            placeholder="Contoh: Promo akhir tahun diskon 30%, target ibu muda..."
+                            placeholder="Contoh: Promo akhir tahun, nuansa hangat, fokus ke produk dan headline diskon 30%"
                             className="w-full h-20 px-3 py-2 text-sm bg-background border border-border rounded-lg placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none"
                         />
                     </div>
@@ -226,8 +233,8 @@ export const SmartAdPanel: React.FC = () => {
                                     onChange={() => setShouldUseBrandKit(false)}
                                 />
                                 <div>
-                                    <p className="text-sm font-medium">Creative Freedom</p>
-                                    <p className="text-xs text-muted-foreground">AI bebas memilih warna dan gaya visual terbaik.</p>
+                                    <p className="text-sm font-medium">Biarkan AI memilih arah visual</p>
+                                    <p className="text-xs text-muted-foreground">AI bebas memilih warna dan komposisi terbaik untuk konsep pertama.</p>
                                 </div>
                             </label>
                             
@@ -258,12 +265,12 @@ export const SmartAdPanel: React.FC = () => {
                         {isGenerating ? (
                             <>
                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                Sedang Memproses...
+                                Menyusun konsep...
                             </>
                         ) : (
                             <>
                                 <Zap className="w-4 h-4 fill-current" />
-                                Generate 3 Variasi (-5 Kredit)
+                                Buat 3 Konsep Visual (-5 Kredit)
                             </>
                         )}
                     </button>
@@ -271,19 +278,22 @@ export const SmartAdPanel: React.FC = () => {
                     <div className="flex items-start gap-2 p-3 bg-blue-500/10 rounded-lg text-blue-500 border border-blue-500/20">
                         <Sparkles className="w-4 h-4 mt-0.5 shrink-0 animate-pulse text-blue-400" />
                         <p className="text-[11px] leading-relaxed">
-                            Akan memotong background secara otomatis dan membuat teks copy iklan. Proses memakan waktu ~15-30 detik.
+                            AI akan membersihkan background produk dan menyiapkan tiga konsep visual awal. Proses memakan waktu sekitar 15-30 detik.
                         </p>
                     </div>
                 </div>
             ) : (
                 <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <div className="flex items-center justify-between pb-2 border-b">
-                        <h3 className="text-sm font-semibold">Hasil Generate</h3>
+                        <div>
+                            <h3 className="text-sm font-semibold">Pilih Konsep yang Paling Dekat</h3>
+                            <p className="text-xs text-muted-foreground mt-1">Setelah dipilih, konsep akan dimasukkan ke canvas agar bisa Anda rapikan lebih lanjut.</p>
+                        </div>
                         <button 
                             onClick={() => setResult(null)}
                             className="text-xs text-muted-foreground hover:text-foreground"
                         >
-                            Buat Baru
+                            Mulai Lagi
                         </button>
                     </div>
                     

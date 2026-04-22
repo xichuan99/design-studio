@@ -7,6 +7,7 @@ logger = logging.getLogger(__name__)
 from google import genai
 from typing import List, Dict, Any
 from app.services.llm_client import get_genai_client, call_gemini_with_fallback
+from app.services.llm_json_utils import parse_llm_json
 
 BRAND_COLORS_SYSTEM_PROMPT = """
 You are a professional graphic designer and brand identity expert.
@@ -66,14 +67,7 @@ async def extract_colors_from_image(
             ),
         )
 
-        result_text = response.text.strip()
-        # Gemini might still wrap JSON in markdown block despite response_mime_type
-        if result_text.startswith("```json"):
-            result_text = result_text[7:-3]
-        elif result_text.startswith("```"):
-            result_text = result_text[3:-3]
-
-        parsed = json.loads(result_text)
+        parsed = parse_llm_json(response.text)
         return parsed.get("colors", [])
 
     except Exception:

@@ -358,7 +358,7 @@ export default function BrandKitPanel({ onClose, onApplyColors }: BrandKitPanelP
                         Terapkan ke Canvas
                     </button>
                     <p className="text-[10px] text-muted-foreground text-center mt-2 leading-tight">
-                        Mengaplikasikan warna brand aktif ke background. Generate desain AI selanjutnya akan mengikuti warna ini.
+                        Mengaplikasikan warna brand aktif ke background. Hasil visual AI berikutnya akan mengikuti arah warna ini.
                     </p>
                 </div>
             )}

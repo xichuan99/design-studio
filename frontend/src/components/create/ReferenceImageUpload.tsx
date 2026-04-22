@@ -37,7 +37,7 @@ export function ReferenceImageUpload({
                     <div className="flex items-center justify-between">
                         <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
                             <span className="flex items-center justify-center w-6 h-6 rounded-full bg-violet-500 text-white text-xs font-bold">3</span>
-                            Gambar Referensi (Opsional)
+                            {referencePreview ? "Foto Terpilih" : "Tambahkan Foto"}
                         </label>
                         {showManualRef && !referencePreview && (
                             <button
@@ -91,9 +91,9 @@ export function ReferenceImageUpload({
                         >
                             <ImagePlus className="w-8 h-8 text-muted-foreground mb-2" />
                             <p className="text-sm font-medium">
-                                {isDragOver ? "Lepaskan gambar di sini" : "Unggah Gambar"}
+                                {isDragOver ? "Lepaskan gambar di sini" : "Unggah atau tarik foto ke sini"}
                             </p>
-                            <p className="text-xs text-muted-foreground mt-1">PNG, JPG up to 5MB</p>
+                            <p className="text-xs text-muted-foreground mt-1">PNG, JPG, atau WEBP hingga 5MB</p>
                         </div>
                     )}
                 </>
@@ -102,7 +102,7 @@ export function ReferenceImageUpload({
                     onClick={onShowManualRef}
                     className="w-full text-left text-xs font-medium text-muted-foreground hover:text-primary transition-colors py-2 px-1 flex items-center gap-1.5"
                 >
-                    <Plus className="w-3.5 h-3.5" /> Tambah foto produk / referensi
+                    <Plus className="w-3.5 h-3.5" /> Tambah foto produk atau referensi
                 </button>
             )}
         </div>

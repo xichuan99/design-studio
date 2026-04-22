@@ -104,7 +104,7 @@ export function PricingSection() {
                  <div className="group relative">
                     <Info className="w-4 h-4 text-slate-400 cursor-help" />
                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-slate-800 text-xs text-slate-300 rounded shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none text-center">
-                      Asumsi 1 desain butuh 40 kredit (contoh: Generate AI)
+                      Asumsi 1 hasil visual butuh 40 kredit untuk sekali proses AI.
                     </div>
                  </div>
               </h3>
@@ -125,7 +125,7 @@ export function PricingSection() {
                 <div className="bg-purple-900/20 border border-purple-500/20 rounded-xl p-4 flex flex-col items-center justify-center text-center gap-2">
                   <span className="text-sm text-slate-300">Cukup untuk membuat sekitar:</span>
                   <div className="text-3xl font-black text-white">
-                    {Math.floor(creditsSelected / 40)} <span className="text-xl font-bold text-slate-400">Desain (Full AI)</span>
+                    {Math.floor(creditsSelected / 40)} <span className="text-xl font-bold text-slate-400">Hasil Visual</span>
                   </div>
                 </div>
 

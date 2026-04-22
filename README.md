@@ -10,12 +10,13 @@
 
 - **AI Design Brief Interview** — Sebelum generate, AI mengajukan 3–4 pertanyaan klarifikasi (mood, warna, objek utama) sehingga prompt yang dihasilkan jauh lebih akurat
 - **5-Step Create Flow** — Flow UI intuitif: 1) Input Teks, 2) **AI Interview** (pilihan ganda/teks), 3) Visual Prompt Review, 4) Generating, 5) Split-view Preview & Editor
-- **AI Text Parsing** — Gemini Flash menghasilkan headline, tagline, CTA, rekomendasi warna, dan layout JSON dari deskripsi teks
-- **AI Image Generation** — Generate background visual profesional via Fal.ai (SDXL/Flux) atau Gemini Imagen sebagai fallback
+- **AI Text Parsing & Copy Orchestration** — Backend menyiapkan headline, CTA, prompt visual, dan struktur output berbasis LLM sebelum hasil gambar dibuat
+- **AI Image Generation** — Generate visual promosi dari brief teks dengan pipeline backend async dan integrasi AI image tooling terpisah
 - **AI Photo Tools (Stand Alone)** — Hapus background foto produk, integrasikan ke latar profesional baru, Text Banner, Retouch & hapus noda/objek, Expand (Outpaint), Watermark, ID Photo, Batch Processing, serta Fitur Image Upscaler untuk menjernihkan & memperbesar foto hingga 4x resolusi. Dilengkapi fitur *Continue to Editor* untuk lanjut mengedit di Canvas utama.
 - **AI Background Removal** — Hapus latar belakang foto produk secara instan menggunakan model U<sup>2</sup>-Net (rembg)
-- **Brand Kit (AI Color Palette)** — Upload logo UMKM, Gemini Vision otomatis mengekstrak 5 warna dominan. Simpan sebagai palet warna utama yang akan otomatis dipakai di setiap desain berikutnya.
+- **Brand Kit** — Buat brand kit dari brief, file, atau URL website; simpan beberapa profil brand, aktifkan yang dipakai, lalu injeksikan konteks brand ke flow create/copywriting
 - **AI Copywriting / Headline Generator** — Generate 3 variasi teks promosi (FOMO, Benefit, Social Proof) dari deskripsi produk. Dilengkapi mini-interview klarifikasi, pilihan tone (Persuasif/Kasual/Profesional/Lucu), integrasi Brand Kit, dan re-generate.
+- **Projects, Folders, and History** — Simpan hasil ke project, kelompokkan dalam folder, dan lacak snapshot riwayat edit/generasi.
 - **Canvas Editor** — Editor drag-and-drop berbasis Konva.js dengan:
   - Text & image elements, resize, rotate, drag
   - Fit-to-screen auto-zoom (otomatis menyesuaikan ukuran layar)
@@ -26,10 +27,19 @@
   - Undo/Redo history
   - Delete element (`⌫`)
 - **Export Multi-Format** — Download hasil ke PNG, JPG, atau PDF dengan kualitas tinggi
-- **Credit System** — 10 kredit gratis untuk generasi AI, dengan rate limiting (10 req/menit)
+- **Credit System** — Bonus awal 100 kredit dengan biaya per tool/generation dan rate limiting per user untuk endpoint berat
 - **Responsive** — Optimized untuk desktop dan mobile
 - **Onboarding Tour** — Panduan interaktif untuk pengguna baru
-- **Monitoring** — Sentry (error tracking) + PostHog (product analytics)
+- **Observability** — Structured logging + request ID di backend, health endpoint ganda (`/health` dan `/api/health`), serta PostHog frontend yang aktif bila env tersedia
+
+---
+
+## 📌 Current Status
+
+- **Live in repo sekarang**: create flow intent-first, preview → editor handoff, project/folder/history management, brand kit page, dan standalone AI photo tools utama.
+- **Sudah tervalidasi**: lint frontend, build frontend, serta batch Playwright Chromium untuk flow inti dan 13 spec E2E baru/per-tool.
+- **Masih planned / parsial**: Instagram Carousel Generator (Path C), reintroduksi Sentry, dan penyempurnaan marketplace/community template workflow.
+- **PRD mapping + backlog prioritas**: lihat `docs/business/prd-gap-backlog-2026-04.md`.
 
 ---
 
@@ -76,9 +86,9 @@
 | **AI/ML** | Google Gemini Flash (text), Fal.ai SDXL/Flux (image), scikit-learn (color extraction) |
 | **Storage** | Backblaze B2 (S3-compatible) |
 | **Auth** | NextAuth.js + Google OAuth |
-| **Monitoring** | Sentry, PostHog |
+| **Monitoring** | Structured logging, Request ID middleware, optional PostHog |
 | **Infra** | Docker Compose, Nginx (reverse proxy + SSL), Let's Encrypt |
-| **CI/CD** | GitHub Actions (Unified Lint, Build, Deploy, Semantic Auto-Tag) |
+| **CI/CD** | GitHub Actions (Unified Lint, Build, Deploy, Release Please) |
 
 ---
 
@@ -115,7 +125,15 @@ nano frontend/.env.local   # Fill in API keys & URLs
 docker compose up -d --build
 ```
 
-This starts **5 containers**: PostgreSQL, Redis, Backend API, Celery Worker, Frontend.
+This starts **6 containers**: PostgreSQL, Redis, Backend API, Celery Worker, Quantum Engine, and Frontend.
+
+Untuk development yang lebih ringan, workflow lokal yang paling umum adalah:
+
+```bash
+docker compose up -d postgres redis
+```
+
+Lalu jalankan backend dan frontend dari folder masing-masing dengan environment lokal Anda.
 
 ### 4. Run Database Migrations
 
@@ -160,8 +178,6 @@ Copy `.env.example` to `.env` and fill in the required values:
 | `S3_ACCESS_KEY` | ✅ | Storage access key |
 | `S3_SECRET_KEY` | ✅ | Storage secret key |
 | `S3_PUBLIC_URL` | ✅ | Public URL for stored files |
-| `SENTRY_DSN` | ❌ | Sentry DSN (optional) |
-| `NEXT_PUBLIC_SENTRY_DSN` | ❌ | Frontend Sentry DSN (optional) |
 | `NEXT_PUBLIC_POSTHOG_KEY` | ❌ | PostHog project key (optional) |
 | `NEXT_PUBLIC_POSTHOG_HOST` | ❌ | PostHog host (optional) |
 
@@ -172,70 +188,20 @@ Copy `.env.example` to `.env` and fill in the required values:
 Base URL: `https://desain.nugrohopramono.my.id` (production) or `http://localhost:8000` (local)
 
 ### Auth
-All endpoints except `/health`, `/docs`, and `/api/templates` require authentication via `X-User-Email` header (dev mode).
+Frontend menggunakan NextAuth untuk session management. Backend mengekspos endpoint register/login/refresh/reset password dan memproteksi endpoint utama melalui dependency auth + rate limiting.
 
-### Endpoints
+### Route Groups
 
-| Method | Endpoint | Request | Response | Description | Auth Req |
-|--------|----------|---------|----------|-------------|----------|
-| `GET` | `/health` | None | JSON `{"status": "ok"}` | Health check | No |
-| `GET` | `/docs` | None | HTML | Swagger UI documentation | No |
-| **Designs** | | | | | |
-| `POST` | `/api/designs/clarify` | JSON `{"text": "..."}` | JSON `BriefQuestionsResponse` | Generate AI clarification questions dari teks singkat | Yes |
-| `POST` | `/api/designs/clarify-unified` | JSON `{"text": "..."}` | JSON `BriefQuestionsResponse` | Generate AI combined clarification questions for design and copywriting | Yes |
-| `POST` | `/api/designs/parse` | JSON `ParseRequest` | JSON `ParsedTextElements` | Parse teks + jawaban interview → prompt & layout JSON | Yes |
-| `POST` | `/api/designs/modify-prompt` | JSON `ModifyPromptRequest` | JSON `ModifyPromptResponse` | Modifikasi prompt via instruksi bahasa Indonesia | Yes |
-| `POST` | `/api/designs/magic-text` | JSON `MagicTextRequest` | JSON `MagicTextResponse` | Generates a layout for text overlaid on a specific image | Yes |
-| `POST` | `/api/designs/generate-title` | JSON `{"prompt": "..."}` | JSON `GenerateTitleResponse` | Generate short, catchy project title | Yes |
-| `POST` | `/api/designs/upload` | Multipart form data (file) | JSON `{"url": "..."}` | Upload gambar referensi | Yes |
-| `POST` | `/api/designs/remove-background` | Multipart form data (file) | Image file | Hapus background foto via rembg | Yes |
-| `POST` | `/api/designs/clarify-copywriting` | JSON `{"text": "..."}` | JSON `BriefQuestionsResponse` | Generate pertanyaan klarifikasi untuk copywriting | Yes |
-| `POST` | `/api/designs/generate-copywriting` | JSON `CopywritingRequest` | JSON `CopywritingResponse` | Generate 3 variasi teks promosi (FOMO/Benefit/Social Proof) | Yes |
-| `POST` | `/api/designs/generate` | JSON `GenerateDesignRequest` | JSON `{"job_id": "..."}` | Generate full design/gambar (credit + rate-limited) | Yes |
-| `GET` | `/api/designs/my-generations` | None | JSON `List[dict]` | Riwayat generasi user | Yes |
-| `GET` | `/api/designs/jobs/{job_id}` | None | JSON `{"status": "..."}` | Poll job status | Yes |
-| **AI Tools** | | | | | |
-| `POST` | `/api/ai-tools/background-swap` | Multipart form data | JSON `{"image_url": "..."}` | Swap background of an image using Fal.ai | Yes |
-| `POST` | `/api/ai-tools/upscale` | JSON `UpscaleRequest` | JSON `{"image_url": "..."}` | Upscale an image using Fal.ai | Yes |
-| `POST` | `/api/ai-tools/text-banner` | JSON `TextBannerRequest` | JSON `{"image_url": "..."}` | Generate a decorative text banner | Yes |
-| `POST` | `/api/ai-tools/retouch` | Multipart form data | JSON `{"image_url": "..."}` | Retouch an image (auto-enhance or remove blemishes) | Yes |
-| `POST` | `/api/ai-tools/id-photo` | Multipart form data | JSON `{"image_url": "..."}` | Generate print-ready ID photo (pasfoto) | Yes |
-| `POST` | `/api/ai-tools/magic-eraser` | JSON `InpaintRequest` | JSON `{"image_url": "..."}` | Remove objects using inpainting | Yes |
-| `POST` | `/api/ai-tools/generative-expand`| JSON `OutpaintRequest` | JSON `{"image_url": "..."}` | Expand image boundaries using outpainting | Yes |
-| `POST` | `/api/ai-tools/watermark` | Multipart form data | JSON `{"image_url": "..."}` | Apply a watermark to an image | Yes |
-| `POST` | `/api/ai-tools/product-scene` | Multipart form data | JSON `{"image_url": "..."}` | Generate a professional product scene | Yes |
-| `POST` | `/api/ai-tools/batch` | Multipart form data | ZIP file | Process a batch of images | Yes |
-| **Brand Kits** | | | | | |
-| `POST` | `/api/brand-kits/extract` | Multipart form data | JSON `ColorExtractionResponse` | Upload logo/foto → ekstrak 5 warna via Gemini Vision | Yes |
-| `POST` | `/api/brand-kits/` | JSON `BrandKitCreate` | JSON `BrandKitResponse` | Simpan Brand Kit ke DB | Yes |
-| `GET` | `/api/brand-kits/` | None | JSON `List[BrandKitResponse]` | List semua Brand Kit | Yes |
-| `GET` | `/api/brand-kits/active` | None | JSON `Optional[BrandKitResponse]` | Get profil Brand Kit yang sedang aktif | Yes |
-| `PUT` | `/api/brand-kits/{id}` | JSON `BrandKitUpdate` | JSON `BrandKitResponse` | Update (termasuk Set Active) | Yes |
-| `DELETE` | `/api/brand-kits/{id}` | None | Status 204 | Hapus Brand Kit | Yes |
-| **Templates** | | | | | |
-| `GET` | `/api/templates/` | None | JSON `List[dict]` | List all templates | No |
-| `GET` | `/api/templates/{id}` | None | JSON `dict` | Get template details | No |
-| **Projects** | | | | | |
-| `GET` | `/api/projects/` | None | JSON `List[ProjectResponse]` | List user's projects | Yes |
-| `POST` | `/api/projects/` | JSON `ProjectCreate` | JSON `ProjectResponse` | Create a new project | Yes |
-| `GET` | `/api/projects/{id}` | None | JSON `ProjectResponse` | Get project details | Yes |
-| `PUT` | `/api/projects/{id}` | JSON `ProjectUpdate` | JSON `ProjectResponse` | Update project | Yes |
-| `DELETE` | `/api/projects/{id}` | None | Status 204 | Delete project | Yes |
-| **History** | | | | | |
-| `POST` | `/api/history/` | JSON `HistoryCreate` | JSON `HistoryResponse` | Save a project history state | Yes |
-| `GET` | `/api/history/{project_id}` | None | JSON `List[HistoryResponse]` | Get edit history for a project | Yes |
-| **Users** | | | | | |
-| `GET` | `/api/users/me` | None | JSON `UserResponse` | Get current user profile + credits | Yes |
-| `PUT` | `/api/users/me` | JSON `UserUpdate` | JSON `UserResponse` | Update current user profile | Yes |
-| `DELETE` | `/api/users/me` | None | Status 204 | Delete current user | Yes |
-| `GET` | `/api/users/me/credits/history` | None | JSON `CreditHistoryResponse` | Get user credit transaction history | Yes |
-| `GET` | `/api/users/me/storage` | None | JSON `{"used": int, "quota": int, "percentage": float, "used_mb": float, "quota_mb": float}` | Get user storage usage and quota | Yes |
-| **Auth** | | | | | |
-| `POST` | `/api/auth/register` | JSON `RegisterRequest` | JSON `AuthResponse` | Register new account with email/password | No |
-| `POST` | `/api/auth/login` | JSON `LoginRequest` | JSON `AuthResponse` | Authenticate and get JWT token pair | No |
-| `POST` | `/api/auth/refresh` | JSON `RefreshTokenRequest` | JSON `AuthResponse` | Issue new access/refresh token pair | No |
-| `POST` | `/api/auth/forgot-password` | JSON `{"email": "..."}` | JSON `{"message": "..."}` | Send password reset email (rate-limited) | No |
-| `POST` | `/api/auth/reset-password` | JSON `{"token": "...", "new_password": "..."}` | JSON `{"message": "..."}` | Reset password using valid reset token | No |
+- `GET /health` dan `GET /api/health` untuk health check aplikasi + koneksi database.
+- `POST /api/auth/*` untuk register, login, refresh token, forgot password, dan reset password.
+- `POST /api/designs/*` untuk clarify, parse, generate, upload media, copywriting, dan polling job hasil generasi.
+- `POST /api/tools/*` untuk AI photo tools seperti background swap, retouch, magic eraser, generative expand, text banner, watermark, ID photo, product scene, upscale, batch process, jobs, dan result gallery.
+- `GET|POST|PUT|DELETE /api/projects/*`, `/api/folders/*`, dan `/api/history/*` untuk project management, foldering, dan snapshot history.
+- `GET|POST|PUT|DELETE /api/brand-kits/*` untuk ekstraksi warna, manajemen brand kit, dan brand context.
+- `GET /api/templates/*` dan route marketplace terkait untuk template browsing, submission, dan listing template komunitas yang sudah dipublikasikan.
+- `GET|PUT|DELETE /api/users/me*` untuk profil pengguna, credit history, dan storage usage.
+
+Untuk daftar endpoint yang paling akurat, gunakan Swagger/OpenAPI dari backend yang sedang berjalan.
 
 > 💡 Full interactive API docs available at `http://localhost:8000/docs` when the server is running.
 
@@ -247,14 +213,11 @@ All endpoints except `/health`, `/docs`, and `/api/templates` require authentica
 
 ```bash
 cd backend
-source venv/bin/activate
+source .venv310/bin/activate   # atau aktifkan virtualenv backend Anda sendiri
 pytest tests/ -v
 ```
 
-**Test Coverage:** 20 tests covering:
-- LLM text parsing (5 tests)
-- Image pipeline — resize, color extraction (8 tests)
-- Template API — CRUD, seeding (7 tests)
+Backend juga diuji di CI bersama linting Ruff dan test suite quantum-engine.
 
 ### Frontend
 
@@ -263,6 +226,7 @@ cd frontend
 npm run lint          # ESLint check
 npx tsc --noEmit     # TypeScript type check
 npm run build         # Production build verification
+npm run test:e2e      # Playwright E2E
 ```
 
 **Canvas Editor Keyboard Shortcuts:**
@@ -283,10 +247,11 @@ npm run build         # Production build verification
 GitHub Actions automatically runs on every push/PR to `main` using the unified `.github/workflows/cicd.yml` workflow.
 
 **Stages:**
-1. **Lint & Test**: ✅ Backend (`ruff`, `pytest tests/ -v`) & ✅ Frontend (`npm run build`, `npm run lint`)
-2. **Build & Push**: Builds Docker images for the backend and frontend and pushes them to GitHub Container Registry (GHCR). (Runs only on Push to `main`).
-3. **Deploy**: Triggers an SSH deployment to the production VPS if the Build & Push stage succeeds.
-4. **Auto Tag Release**: Parses commit messages (Semantic Versioning) and automatically bumps the version and pushes a new git tag.
+1. **Backend Test & Lint**: `ruff`, `pytest`, migrasi Alembic, dan seed template.
+2. **Frontend Lint & Build**: `npm run lint` dan `npm run build`.
+3. **Quantum Test**: test suite untuk service quantum-engine.
+4. **Build & Push Images**: backend, frontend, dan quantum-engine ke GHCR pada push ke `main`.
+5. **Deploy**: deploy ke VPS via SSH, pull image GHCR, `docker compose up -d`, lalu jalankan migrasi.
 
 ---
 
@@ -295,28 +260,26 @@ GitHub Actions automatically runs on every push/PR to `main` using the unified `
 ```
 design-studio/
 ├── .env.example                    # Environment template
-├── .github/workflows/cicd.yml      # Unified CI/CD pipeline (Test, Build, Deploy, Auto-Tag)
-├── docker-compose.yml              # All services (Postgres, Redis, Backend, Celery, Frontend)
+├── .github/workflows/cicd.yml      # Unified CI/CD pipeline (Test, Build, Deploy, Release Please)
+├── docker-compose.yml              # Local stack (Postgres, Redis, Backend, Celery, Quantum, Frontend)
 │
 ├── backend/
 │   ├── alembic/                    # Database migrations
 │   ├── app/
 │   │   ├── api/                    # FastAPI routers
-│   │   │   ├── deps.py             # Auth dependency injection
-│   │   │   ├── designs.py          # AI generation endpoints
-│   │   │   ├── projects.py         # CRUD endpoints
-│   │   │   ├── rate_limit.py       # Redis rate limiter
-│   │   │   ├── templates.py        # Template endpoints
-│   │   │   └── users.py            # User profile endpoint
+│   │   │   ├── auth.py             # Auth endpoints
+│   │   │   ├── designs.py          # Design + copywriting orchestration
+│   │   │   ├── ai_tools.py         # AI tools aggregator
+│   │   │   ├── projects.py         # Project CRUD
+│   │   │   ├── folders.py          # Folder management
+│   │   │   ├── history.py          # Design history snapshots
+│   │   │   ├── brand_kits.py       # Brand kit management
+│   │   │   └── rate_limit.py       # Redis rate limiting
 │   │   ├── core/                   # Config, DB, security
 │   │   ├── models/                 # SQLAlchemy models
 │   │   ├── schemas/                # Pydantic schemas
 │   │   ├── services/               # Business logic
-│   │   │   ├── image_service.py    # Resize, color extraction
-│   │   │   ├── llm_service.py      # Gemini Flash integration
-│   │   │   ├── preprocess.py       # Image preprocessing
-│   │   │   └── storage_service.py  # S3/B2 uploads
-│   │   ├── workers/                # Celery tasks
+│   │   ├── workers/                # Celery workers and async jobs
 │   │   └── main.py                 # FastAPI app entry
 │   ├── scripts/seed_templates.py   # Template seeder
 │   ├── tests/                      # pytest test suite
@@ -327,28 +290,27 @@ design-studio/
 │   │   ├── app/                    # Next.js App Router pages
 │   │   │   ├── page.tsx            # Landing page
 │   │   │   ├── create/
-│   │   │   │   ├── page.tsx        # AI generation page (5-step flow)
-│   │   │   │   └── types.ts        # Shared types (BriefQuestion, dll)
-│   │   │   ├── edit/[id]/page.tsx  # Canvas editor
+│   │   │   │   └── page.tsx        # AI generation page (5-step flow)
+│   │   │   ├── edit/[projectId]/page.tsx  # Canvas editor
 │   │   │   ├── projects/page.tsx   # Project list
-│   │   │   └── providers.tsx       # PostHog provider
+│   │   │   ├── tools/              # Standalone AI tools pages
+│   │   │   └── api/auth/[...nextauth]/route.ts  # NextAuth route
 │   │   ├── components/
-│   │   │   ├── create/             # Komponen halaman Create
-│   │   │   │   ├── DesignBriefInterview.tsx  # AI interview form
-│   │   │   │   ├── CopywritingPanel.tsx     # AI Copywriting panel (Sprint 3)
-│   │   │   │   ├── SidebarInputForm.tsx      # Form teks + referensi
-│   │   │   │   ├── SidebarActionBar.tsx      # Tombol aksi sidebar
-│   │   │   │   ├── VisualPromptEditor.tsx    # Prompt review editor
-│   │   │   │   └── GenerationProgress.tsx   # Loading state
-│   │   │   ├── editor/             # Canvas + Toolbar + StylePanel
-│   │   │   ├── credits/            # CreditBadge
-│   │   │   ├── onboarding/         # OnboardingTour
+│   │   │   ├── create/             # Create flow components
+│   │   │   ├── editor/             # Canvas + Toolbar + panels
+│   │   │   ├── landing/            # Landing page sections
+│   │   │   ├── onboarding/         # Guided tours
 │   │   │   ├── providers/          # AuthProvider
 │   │   │   └── ui/                 # shadcn/ui primitives
 │   │   ├── lib/                    # API client, utils
+│   │   ├── proxy.ts                # Route protection via NextAuth middleware proxy
 │   │   └── store/                  # Zustand state management
-│   ├── sentry.*.config.ts          # Sentry configs
-│   └── next.config.ts              # Next.js + Sentry config
+│   ├── tests/e2e/                  # Playwright end-to-end tests
+│   └── next.config.ts              # Next.js config
+│
+├── quantum-engine/
+│   ├── app/                        # Separate FastAPI service
+│   └── tests/                      # Quantum engine tests
 ```
 
 ---
@@ -365,6 +327,7 @@ design-studio/
 | Redis 7 | `design-studio-redis-1` | 6380 | 6379 |
 | Backend (FastAPI) | `design-studio-backend-1` | 8000 | 8000 |
 | Celery Worker | `design-studio-celery-1` | — | — |
+| Quantum Engine | `design-studio-quantum-engine-1` | 8001 | 8001 |
 | Frontend (Next.js) | `design-studio-frontend-1` | 3000 | 3000 |
 
 ### Nginx Reverse Proxy

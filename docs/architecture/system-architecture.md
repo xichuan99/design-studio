@@ -51,7 +51,7 @@ flowchart LR
     Q[Quantum Engine\nFastAPI microservice]
     S[(S3-compatible Storage\nBackblaze B2 / R2 / S3)]
     A[External AI Providers\nGemini / Fal.ai]
-    M[Monitoring\nSentry / PostHog]
+   M[Monitoring\nPostHog / Structured Logs]
 
     U --> F
     F -->|HTTP / JSON| B
@@ -108,7 +108,7 @@ Frontend dibangun dengan **Next.js 16 App Router**, **React 19**, **TypeScript**
 - canvas editor interaktif,
 - preview hasil generasi,
 - interaksi dengan backend via HTTP API,
-- monitoring client-side via Sentry dan PostHog.
+- monitoring client-side via PostHog, dengan backend memakai request ID dan structured logging.
 
 ### Catatan arsitektural
 
@@ -152,7 +152,7 @@ Backend utama dibangun dengan **FastAPI** dan berperan sebagai pusat domain logi
 - **request ID middleware** untuk traceability,
 - **structured logging middleware** untuk observability,
 - **global exception handler** untuk response error yang konsisten,
-- **Sentry** untuk error tracking ketika DSN tersedia.
+- **Structured logging + request ID** untuk traceability backend, dengan Sentry tersisa sebagai opsi reintroduksi jika dibutuhkan.
 
 ---
 
@@ -267,7 +267,8 @@ Ini memberi dua keuntungan:
 | Fal.ai | image generation dan beberapa AI image workflows |
 | S3-compatible storage | penyimpanan asset publik |
 | Google OAuth | login user via NextAuth |
-| Sentry | error tracking frontend/backend |
+| PostHog | product analytics dan event telemetry frontend |
+| Structured logging + request ID | observability dan traceability backend |
 | PostHog | analytics produk di frontend |
 
 ### Prinsip integrasi

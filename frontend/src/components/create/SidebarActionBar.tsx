@@ -30,6 +30,9 @@ export function SidebarActionBar({
 
     const isRedesign = createMode === 'redesign';
     const isReadyToRedesign = isRedesign && referenceFile !== null;
+    const inputLabel = isRedesign ? "Mulai Redesign" : "Lanjutkan ke Arahan Visual";
+    const inputLoadingLabel = isRedesign ? "Menyiapkan redesign..." : "Menyusun arahan visual...";
+    const backLabel = currentStep === 'brief' ? "Kembali ke Brief" : "Kembali Ubah Brief";
 
     return (
         <div className="p-4 border-t bg-card sticky bottom-0 tour-step-3">
@@ -44,11 +47,10 @@ export function SidebarActionBar({
                 disabled={isParsing || (!isRedesign && !rawText.trim() && currentStep === 'input') || (isRedesign && !isReadyToRedesign && currentStep === 'input')}
                 variant={(isInputLocked && currentStep !== 'brief') ? "outline" : currentStep === 'brief' ? "ghost" : "default"}
             >
-                {isParsing ? <><Loader2 className="w-4 h-4 animate-spin" /> Menganalisis...</> :
+                {isParsing ? <><Loader2 className="w-4 h-4 animate-spin" /> {inputLoadingLabel}</> :
                         currentStep === 'input' ? 
-                            (isRedesign ? <><Sparkles className="w-4 h-4" /> Mulai Redesign</> : <><Sparkles className="w-4 h-4" /> Bantu Saya Perjelas</>) :
-                            currentStep === 'brief' ? <><ArrowLeft className="w-4 h-4 mr-2" /> Kembali ke Deskripsi</> :
-                                    <><ArrowLeft className="w-4 h-4 mr-2" /> Kembali Edit Teks</>}
+                            <><Sparkles className="w-4 h-4" /> {inputLabel}</> :
+                            <><ArrowLeft className="w-4 h-4 mr-2" /> {backLabel}</>}
             </Button>
         </div>
     );

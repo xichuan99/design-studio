@@ -85,7 +85,7 @@ export const AIAssetsPanel: React.FC = () => {
             height: originalHeight * scale,
             url: url,
             rotation: 0,
-            label: 'AI Generated',
+            label: 'Visual AI',
         });
     };
 
@@ -133,7 +133,7 @@ export const AIAssetsPanel: React.FC = () => {
                     <Sparkles className="h-6 w-6 text-primary/50" />
                 </div>
                 <p className="text-sm font-medium">Belum ada hasil AI</p>
-                <p className="text-xs px-4">Gambar yang Anda generate melalui tab AI akan muncul dan tersimpan secara otomatis di sini.</p>
+                <p className="text-xs px-4">Visual yang Anda buat melalui panel AI akan muncul dan tersimpan otomatis di sini.</p>
             </div>
         );
     }
@@ -156,7 +156,7 @@ export const AIAssetsPanel: React.FC = () => {
                             <div key={asset.id} className="group relative rounded-xl border bg-muted/30 overflow-hidden aspect-square">
                                 <Image 
                                     src={previewUrl || ''} 
-                                    alt="AI Gen" 
+                                    alt="Visual AI" 
                                     fill
                                     sizes="(max-width: 768px) 50vw, 33vw"
                                     className="object-cover transition-transform duration-300 group-hover:scale-105"
@@ -181,7 +181,7 @@ export const AIAssetsPanel: React.FC = () => {
                                             variant="secondary" 
                                             className="h-7 text-[10px] w-full gap-1.5"
                                             onClick={() => handleSetAsBackground(asset.result_url)}
-                                            title="Jadikan Background Canvas"
+                                            title="Pakai jadi background"
                                         >
                                             <Wallpaper className="w-3 h-3" /> Bg
                                         </Button>

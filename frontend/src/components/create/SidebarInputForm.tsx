@@ -50,6 +50,7 @@ export function SidebarInputForm({
     activeBrandKit, brandKitEnabled, setBrandKitEnabled
 }: SidebarInputFormProps) {
     const formatStepNumber = showManualRef ? 3 : 2;
+    const isGenerateMode = createMode === 'generate';
 
     return (
         <div className="space-y-6 pt-4">
@@ -57,22 +58,27 @@ export function SidebarInputForm({
                 <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="generate" disabled={isInputLocked} className="font-medium">
                         <Wand2 className="w-4 h-4 mr-2" />
-                        Mulai dari Teks
+                        Buat dari Brief
                     </TabsTrigger>
                     <TabsTrigger value="redesign" disabled={isInputLocked} className="font-medium">
                         <ImagePlus className="w-4 h-4 mr-2" />
-                        Redesign
+                        Ubah dari Foto
                     </TabsTrigger>
                 </TabsList>
             </Tabs>
 
-            <div className={`space-y-2 ${createMode === 'generate' ? 'tour-step-1' : ''}`}>
+            <div className={`space-y-2 ${isGenerateMode ? 'tour-step-1' : ''}`}>
                 <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
                     <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">1</span>
-                    {createMode === 'generate' ? "Deskripsi Desain & Teks" : "Deskripsi Opsional"}
+                    {isGenerateMode ? "Tujuan Desain Anda" : "Arah Redesign"}
                 </label>
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                    {isGenerateMode
+                        ? "Tulis hasil yang ingin Anda capai. Detail visual dan copy promosi bisa digabung dalam satu brief."
+                        : "Jelaskan perubahan yang Anda inginkan agar foto referensi diarahkan ke tampilan baru."}
+                </p>
                 <Textarea
-                    placeholder={createMode === 'generate' ? "Contoh: Banner promo teh manis panas dengan gaya ceria warna merah muda, ada tulisan 'Diskon 50%'" : "Contoh: Ubah suasananya jadi nuansa minimalis modern (Opsional)"}
+                    placeholder={isGenerateMode ? "Contoh: Buat poster promo teh manis untuk Instagram, nuansa ceria merah muda, ada headline 'Diskon 50%' dan ruang harga yang jelas" : "Contoh: Ubah fotonya jadi lebih premium, background lebih bersih, dan pencahayaan lebih hangat"}
                     className={`resize-none h-32 focus-visible:ring-primary ${isInputLocked ? 'opacity-60 cursor-not-allowed bg-muted/50' : ''}`}
                     value={rawText}
                     onChange={(e) => setRawText(e.target.value)}
@@ -147,7 +153,7 @@ export function SidebarInputForm({
             {createMode === 'redesign' && (
                 <div className={`space-y-4 pt-2 border-t ${isInputLocked ? 'opacity-60 pointer-events-none' : ''}`}>
                     <label className="flex items-center justify-between text-sm font-semibold text-foreground">
-                        Kekuatan Redesign
+                        Tingkat Perubahan
                         <span className="text-muted-foreground font-normal">{Math.round(redesignStrength * 100)}%</span>
                     </label>
                     <Slider
@@ -158,15 +164,18 @@ export function SidebarInputForm({
                         onValueChange={([val]) => setRedesignStrength(val)}
                         disabled={isInputLocked}
                     />
-                    <p className="text-xs text-muted-foreground leading-relaxed">Nilai lebih tinggi akan membuat AI lebih bebas berkreasi dari gambar asli. Default: 65%.</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">Semakin tinggi nilainya, semakin jauh hasil akhir bergerak dari foto asli. Default: 65%.</p>
                 </div>
             )}
 
             <div className={`space-y-4 tour-step-2 pt-2 ${isInputLocked ? 'opacity-60 pointer-events-none' : ''}`}>
                 <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
                     <span className="flex items-center justify-center w-6 h-6 rounded-full bg-amber-500 text-white text-xs font-bold">{formatStepNumber}</span>
-                    Format & Output
+                    Format Hasil
                 </label>
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                    Tentukan ukuran desain dan cara teks akan dipakai di hasil akhir.
+                </p>
                 
                 <DimensionPresets 
                     aspectRatio={aspectRatio}

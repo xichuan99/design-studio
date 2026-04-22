@@ -7,6 +7,7 @@ from app.core.config import settings
 
 from app.services.llm_prompts import MAGIC_TEXT_SYSTEM
 from app.services.llm_client import get_genai_client, call_gemini_with_fallback
+from app.services.llm_json_utils import parse_llm_json
 
 
 async def generate_magic_text_layout(
@@ -103,5 +104,5 @@ async def generate_magic_text_layout(
         ),
     )
 
-    return json.loads(response.text)
+    return parse_llm_json(response.text)
 

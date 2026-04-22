@@ -91,7 +91,7 @@ export const CopywritingPanel: React.FC = () => {
                     <LayoutList className="h-10 w-10 text-muted-foreground mb-2" />
                     <p className="text-sm font-medium text-foreground">Belum ada teks tersimpan</p>
                     <p className="text-xs text-muted-foreground">
-                        Variasi teks akan muncul di sini jika Anda membuat desain dari teks (Generate dari Teks).
+                        Variasi teks akan muncul di sini jika Anda membuat desain dari teks (Buat dari Teks).
                     </p>
                 </div>
             </div>

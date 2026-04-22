@@ -18,6 +18,7 @@ export function DesignBriefInterview({
     isGeneratingPrompt
 }: DesignBriefInterviewProps) {
     const [answers, setAnswers] = useState<Record<string, string>>({});
+    const answeredCount = questions.filter((question) => Boolean(answers[question.id]?.trim())).length;
 
     // Set default answers on mount
     React.useEffect(() => {
@@ -48,6 +49,9 @@ export function DesignBriefInterview({
                 </h2>
                 <p className="text-sm text-muted-foreground max-w-lg mx-auto">
                     Bantu AI memahami gaya desain yang Anda inginkan dengan menjawab beberapa pertanyaan singkat ini.
+                </p>
+                <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary/80">
+                    {answeredCount}/{questions.length} pertanyaan terisi
                 </p>
             </div>
 
@@ -106,9 +110,9 @@ export function DesignBriefInterview({
                     disabled={isGeneratingPrompt}
                 >
                     {isGeneratingPrompt ? (
-                        <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Sedang Meracik Prompt...</>
+                        <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Menyusun Arahan Visual...</>
                     ) : (
-                        <><Send className="w-4 h-4 mr-2" /> Buat Prompt AI</>
+                        <><Send className="w-4 h-4 mr-2" /> Lanjutkan ke Arahan Visual</>
                     )}
                 </Button>
                 
@@ -118,7 +122,7 @@ export function DesignBriefInterview({
                     onClick={onSkip}
                     disabled={isGeneratingPrompt}
                 >
-                    atau lewati →
+                    atau lanjut tanpa menjawab semuanya →
                 </button>
             </div>
         </div>

@@ -11,6 +11,8 @@ def clean_llm_json_response(text: str) -> str:
     if text.endswith("```"):
         text = text[:-3]
     return text.strip()
+
+
 """Base client module for interacting with Gemini API.
 Extracted to prevent circular imports.
 """
@@ -18,6 +20,7 @@ Extracted to prevent circular imports.
 from google import genai
 from google.genai import types
 from app.core.config import settings
+from app.services.llm_json_utils import parse_llm_json
 import logging
 import httpx
 from typing import Optional
@@ -185,8 +188,7 @@ def call_openrouter(model_id: str, contents: list, config: types.GenerateContent
                 try:
                     raw = response.text
                     cleaned = clean_llm_json_response(raw)
-                    import json
-                    res_data = json.loads(cleaned)
+                    res_data = parse_llm_json(cleaned)
                     logger.warning("OpenRouter returned non-standard JSON, cleaned and parsed successfully.")
                 except Exception as e2:
                     _log_failed_provider_response("OpenRouter", model_id, response, f"invalid JSON response and cleaning failed: {e2}")

@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     "bikin konten shopee tiktok otomatis",
     "background remover ai",
     "foto promosi umkm",
-    "ai image generator indonesia",
+    "studio visual ai indonesia",
     "studio foto online umkm"
   ],
   alternates: {

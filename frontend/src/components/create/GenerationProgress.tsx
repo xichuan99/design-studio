@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Sparkles } from "lucide-react";
+import { CheckCircle2, Sparkles } from "lucide-react";
 
 const PHASES = [
     { text: "Menyiapkan prompt visual...", duration: 2500 },
@@ -12,6 +12,9 @@ const PHASES = [
 export function GenerationProgress() {
     const [progress, setProgress] = useState(0);
     const [phaseIndex, setPhaseIndex] = useState(0);
+
+    const completedPhases = PHASES.filter((_, index) => index < phaseIndex);
+    const currentPhase = PHASES[phaseIndex]?.text || PHASES[PHASES.length - 1].text;
 
     // Simulate smooth progress up to 98%
     useEffect(() => {
@@ -54,7 +57,10 @@ export function GenerationProgress() {
                 </div>
                 <h2 className="text-3xl font-bold tracking-tight text-foreground">AI Sedang Menggambar ✨</h2>
                 <p className="text-muted-foreground animate-pulse text-lg">
-                    {PHASES[phaseIndex].text}
+                    {currentPhase}
+                </p>
+                <p className="text-sm text-muted-foreground/80">
+                    Setelah langkah ini selesai, Anda akan masuk ke tahap review untuk memilih hasil terbaik.
                 </p>
             </div>
 
@@ -73,6 +79,22 @@ export function GenerationProgress() {
                         Generasi Gambar Flux
                     </span>
                     <span className="text-muted-foreground font-mono font-bold tracking-widest">{Math.floor(progress)}%</span>
+                </div>
+
+                <div className="rounded-2xl border border-border/50 bg-background/60 p-4 text-left shadow-sm">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Progress Saat Ini</p>
+                    <ul className="mt-3 space-y-2">
+                        {completedPhases.map((phase) => (
+                            <li key={phase.text} className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <CheckCircle2 className="h-4 w-4 text-primary" />
+                                <span>{phase.text}</span>
+                            </li>
+                        ))}
+                        <li className="flex items-center gap-2 text-sm font-medium text-foreground">
+                            <Sparkles className="h-4 w-4 text-primary" />
+                            <span>{currentPhase}</span>
+                        </li>
+                    </ul>
                 </div>
             </div>
         </div>

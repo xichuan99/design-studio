@@ -263,6 +263,57 @@ export interface ParsedTextElements {
     cta_layout?: AITextLayout;
 }
 
+// --- Carousel Types ---
+export interface CarouselBrandTokens {
+    primary: string;
+    light: string;
+    dark: string;
+    light_bg: string;
+    dark_bg: string;
+    border: string;
+    heading_font: string;
+    body_font: string;
+}
+
+export interface CarouselSlide {
+    index: number;
+    type: string;
+    headline: string;
+    body: string;
+    cta?: string | null;
+}
+
+export interface CarouselGenerateRequest {
+    topic: string;
+    brand_name: string;
+    ig_handle?: string;
+    primary_color: string;
+    font_style: string;
+    tone: string;
+    num_slides: number;
+}
+
+export interface CarouselGenerateResponse {
+    carousel_id: string;
+    brand_tokens: CarouselBrandTokens;
+    slides: CarouselSlide[];
+}
+
+export interface CarouselRegenerateSlideRequest extends CarouselGenerateRequest {
+    carousel_id: string;
+    slide_index: number;
+    instruction?: string;
+    slides: CarouselSlide[];
+}
+
+export interface CarouselExportRequest {
+    carousel_id: string;
+    brand_name: string;
+    ig_handle?: string;
+    brand_tokens: CarouselBrandTokens;
+    slides: CarouselSlide[];
+}
+
 export interface ParseDesignTextRequest {
     raw_text: string;
     aspect_ratio?: string;

@@ -8,6 +8,7 @@ from app.core.config import settings
 from app.core.exceptions import AppException
 from fastapi import status
 from app.services.llm_client import get_genai_client
+from app.services.llm_json_utils import parse_llm_json
 
 BRAND_KIT_SYSTEM_PROMPT = """
 You are an expert Brand Identity Designer, Color Psychologist, and Master Typographer.
@@ -87,13 +88,7 @@ Desired Emotional Tone: {emotional_tone}
             ),
         )
 
-        result_text = response.text.strip()
-        if result_text.startswith("```json"):
-            result_text = result_text[7:-3].strip()
-        elif result_text.startswith("```"):
-            result_text = result_text[3:-3].strip()
-
-        return json.loads(result_text)
+        return parse_llm_json(response.text)
 
     try:
         return await asyncio.to_thread(call_gemini)

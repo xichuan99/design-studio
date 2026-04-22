@@ -84,7 +84,7 @@ export default function ToolsHubPage() {
         <div className="mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-jakarta font-bold text-foreground">AI Photo Tools</h1>
           <p className="text-muted-foreground mt-2 text-base sm:text-lg">
-            Sulap foto produk sederhana Anda menjadi aset visual profesional.
+            Alat cepat untuk membersihkan, memperbaiki, dan menyiapkan aset sebelum lanjut ke editor.
           </p>
         </div>
 
@@ -123,7 +123,7 @@ export default function ToolsHubPage() {
         {/* CTA to My Assets */}
           <div className="mt-10 mb-2 flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
-              Semua hasil AI Tools Anda tersimpan otomatis.
+              Semua hasil AI Tools Anda tersimpan otomatis dan siap dibuka lagi dari editor.
             </p>
             <Link
               href="/my-assets"

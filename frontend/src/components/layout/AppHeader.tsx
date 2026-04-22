@@ -32,11 +32,11 @@ export const AppHeader = ({ renderActions }: AppHeaderProps = {}) => {
                 <nav className="hidden md:flex items-center gap-4 text-sm font-medium">
                     <Link href="/create" className={`flex items-center gap-1.5 transition-colors ${isActive('/create')}`}>
                         <PlusCircle className="w-4 h-4" />
-                        <span>Buat Desain</span>
+                        <span>Buat</span>
                     </Link>
                     <Link href="/projects" className={`flex items-center gap-1.5 transition-colors ${isActive('/projects')}`}>
                         <LayoutDashboard className="w-4 h-4" />
-                        <span>Desain Saya</span>
+                        <span>Proyek</span>
                     </Link>
                     <Link href="/brand" className={`flex items-center gap-1.5 transition-colors ${isActive('/brand')}`}>
                         <Palette className="w-4 h-4" />
@@ -44,11 +44,11 @@ export const AppHeader = ({ renderActions }: AppHeaderProps = {}) => {
                     </Link>
                     <Link href="/tools" className={`flex items-center gap-1.5 transition-colors ${isActive('/tools')}`}>
                         <Wand2 className="w-4 h-4" />
-                        <span>AI Tools</span>
+                        <span>Tools</span>
                     </Link>
                     <Link href="/my-assets" className={`flex items-center gap-1.5 transition-colors ${isActive('/my-assets')}`}>
                         <Images className="w-4 h-4" />
-                        <span>Aset Saya</span>
+                        <span>Aset</span>
                     </Link>
                 </nav>
             </div>
@@ -80,7 +80,7 @@ export const AppHeader = ({ renderActions }: AppHeaderProps = {}) => {
                             onClick={() => setMobileMenuOpen(false)}
                         >
                             <PlusCircle className="w-4 h-4" />
-                            Buat Desain
+                            Buat
                         </Link>
                         <Link
                             href="/projects"
@@ -88,7 +88,7 @@ export const AppHeader = ({ renderActions }: AppHeaderProps = {}) => {
                             onClick={() => setMobileMenuOpen(false)}
                         >
                             <LayoutDashboard className="w-4 h-4" />
-                            Desain Saya
+                            Proyek
                         </Link>
                         <Link
                             href="/brand"
@@ -104,7 +104,7 @@ export const AppHeader = ({ renderActions }: AppHeaderProps = {}) => {
                             onClick={() => setMobileMenuOpen(false)}
                         >
                             <Wand2 className="w-4 h-4" />
-                            AI Tools
+                            Tools
                         </Link>
                         <Link
                             href="/my-assets"
@@ -112,7 +112,7 @@ export const AppHeader = ({ renderActions }: AppHeaderProps = {}) => {
                             onClick={() => setMobileMenuOpen(false)}
                         >
                             <Images className="w-4 h-4" />
-                            Aset Saya
+                            Aset
                         </Link>
                     </nav>
                 </div>

@@ -133,8 +133,8 @@ export function AiToolsGallery() {
             </div>
             
             <div className="p-3 bg-card border-t border-border/50">
-              <p className="text-xs text-muted-foreground truncate" title={result.input_summary || "No description"}>
-                {result.input_summary || "AI Generated"}
+              <p className="text-xs text-muted-foreground truncate" title={result.input_summary || "Tanpa deskripsi"}>
+                {result.input_summary || "Hasil AI tanpa deskripsi"}
               </p>
               <p className="text-[10px] text-muted-foreground/70 mt-1">
                 {new Date(result.created_at).toLocaleDateString('id-ID', {

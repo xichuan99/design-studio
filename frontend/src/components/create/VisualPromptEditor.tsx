@@ -325,7 +325,7 @@ export function VisualPromptEditor({
                         {isGeneratingImage ? (
                             <><Loader2 className="w-5 h-5 animate-spin" /> Sedang Menggambar...</>
                         ) : (
-                            <><Sparkles className="w-5 h-5" /> Generate Gambar AI</>
+                            <><Sparkles className="w-5 h-5" /> Buat Hasil Pertama</>
                         )}
                     </Button>
                 </div>

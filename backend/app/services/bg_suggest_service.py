@@ -18,6 +18,7 @@ import fal_client
 from google.genai import types as genai_types
 
 from app.core.config import settings
+from app.services.llm_json_utils import parse_llm_json
 from app.services.storage_service import upload_image
 from app.services.llm_client import get_genai_client
 
@@ -124,23 +125,10 @@ async def suggest_backgrounds(
             ),
         )
 
-        result_text = response.text.strip()
-        # Clean up possible markdown fences and whitespace
-        def _clean_json_response(text: str) -> str:
-            text = text.strip()
-            if text.startswith("```json"):
-                text = text[7:]
-            if text.startswith("```"):
-                text = text[3:]
-            if text.endswith("```"):
-                text = text[:-3]
-            return text.strip()
-
-        cleaned = _clean_json_response(result_text)
         try:
-            parsed = json.loads(cleaned)
+            parsed = parse_llm_json(response.text)
         except Exception as e:
-            logger.error(f"Failed to parse LLM JSON response: {e}\nRaw: {cleaned}")
+            logger.error(f"Failed to parse LLM JSON response: {e}\nRaw: {response.text}")
             raise
         suggestions = parsed.get("suggestions", [])
 

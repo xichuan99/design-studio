@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { redirect, useRouter } from "next/navigation";
-import { Loader2, PanelLeftOpen, PanelLeftClose, ImagePlus, Wand2, Sparkles, Clock, Scissors } from "lucide-react";
+import { Loader2, PanelLeftOpen, PanelLeftClose, ImagePlus, Wand2, Sparkles, Clock, Scissors, X, PanelsTopLeft } from "lucide-react";
 import { usePostHog } from 'posthog-js/react';
 import { toast } from "sonner";
 import { useProjectApi, ProjectPayload } from "@/lib/api";
@@ -88,6 +88,26 @@ export default function CreatePage() {
         setUserIntent
     } = useCreateDesign();
 
+    const mobileStepLabel = currentStep === 'brief'
+        ? 'Lengkapi brief'
+        : currentStep === 'results'
+            ? 'Review arahan visual'
+            : currentStep === 'generating'
+                ? 'AI sedang menyiapkan hasil'
+                : currentStep === 'preview'
+                    ? 'Pilih hasil terbaik'
+                    : createMode === 'redesign'
+                        ? 'Atur redesign dari foto'
+                        : 'Mulai dari brief';
+
+    const mobileStepHint = currentStep === 'preview'
+        ? 'Buka panel kiri jika ingin mengubah brief atau pengaturan hasil.'
+        : currentStep === 'results'
+            ? 'Periksa arahan visual dulu sebelum membuat hasil pertama.'
+            : currentStep === 'generating'
+                ? 'Tunggu sampai hasil pertama siap ditinjau.'
+                : 'Buka panel kiri untuk mengatur brief, foto, dan format hasil.';
+
     if (status === "loading") {
         return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin w-8 h-8 text-primary" /></div>;
     }
@@ -109,6 +129,22 @@ export default function CreatePage() {
                 )}
             />
 
+            <div className="border-b bg-background/90 px-4 py-3 backdrop-blur-sm md:hidden">
+                <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">{mobileStepLabel}</p>
+                        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{mobileStepHint}</p>
+                    </div>
+                    <button
+                        type="button"
+                        className="shrink-0 rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-muted"
+                        onClick={() => setSidebarOpen(true)}
+                    >
+                        Buka Panel
+                    </button>
+                </div>
+            </div>
+
             <div className="flex flex-1 overflow-hidden relative">
                 {/* Mobile sidebar toggle */}
                 <button
@@ -129,6 +165,20 @@ export default function CreatePage() {
 
                 {/* Sidebar Inputs */}
                 <aside className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 absolute md:relative w-full max-w-[420px] md:w-[420px] border-r flex flex-col bg-card shrink-0 z-20 shadow-xl h-full transition-transform duration-200`}>
+                    <div className="md:hidden flex items-start justify-between gap-3 border-b px-4 py-3 bg-background/90 backdrop-blur-sm">
+                        <div>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Panel Brief</p>
+                            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Atur tujuan desain, foto acuan, dan format hasil di sini.</p>
+                        </div>
+                        <button
+                            type="button"
+                            className="rounded-lg border border-border bg-card p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                            onClick={() => setSidebarOpen(false)}
+                            aria-label="Tutup panel"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+                    </div>
                     <div className="p-4 space-y-6 flex-1 overflow-y-auto relative">
                         <SidebarInputForm
                             createMode={createMode}
@@ -264,9 +314,9 @@ export default function CreatePage() {
                                             />
                                         </div>
                                         <div className="text-center space-y-2">
-                                            <h2 className="text-2xl font-bold tracking-tight">Siap untuk Redesign?</h2>
+                                            <h2 className="text-2xl font-bold tracking-tight">Foto acuan sudah siap</h2>
                                             <p className="text-muted-foreground text-sm max-w-md mx-auto">
-                                                Gunakan panel di kiri untuk mengatur detail desain dan klik <span className="font-semibold text-foreground italic">&quot;Generate Redesign&quot;</span> untuk memulai keajaiban.
+                                                Lengkapi arah perubahan di panel kiri, lalu mulai redesign untuk melihat hasil pertama yang siap Anda rapikan di editor.
                                             </p>
                                         </div>
                                     </div>
@@ -276,9 +326,9 @@ export default function CreatePage() {
                                             <ImagePlus className="w-12 h-12 text-indigo-500" />
                                         </div>
                                         <div className="space-y-2">
-                                            <h2 className="text-2xl font-bold tracking-tight">Unggah Gambar Dulu</h2>
+                                            <h2 className="text-2xl font-bold tracking-tight">Mulai dari foto yang ingin diubah</h2>
                                             <p className="text-muted-foreground text-sm max-w-xs mx-auto">
-                                                Fitur redesign memerlukan gambar referensi untuk mulai bekerja. Klik tombol di sidebar kiri untuk mengunggah.
+                                                Redesign bekerja dari gambar acuan. Unggah satu foto dulu, lalu tentukan hasil akhir yang Anda inginkan.
                                             </p>
                                         </div>
                                         <button 
@@ -297,7 +347,7 @@ export default function CreatePage() {
                     ) : ( 
                         <div className="max-w-4xl w-full mx-auto h-full flex flex-col items-center justify-center animation-fade-in px-4">
                             <h2 className="text-3xl font-bold mb-8 text-center text-foreground">
-                                {INTENT_FIRST_ENTRY_ENABLED ? "Apa yang ingin Anda buat hari ini?" : "Bagaimana Anda ingin memulai?"}
+                                {INTENT_FIRST_ENTRY_ENABLED ? "Apa tujuan desain Anda hari ini?" : "Apa tujuan desain Anda?"}
                             </h2>
                             
                             {INTENT_FIRST_ENTRY_ENABLED ? (
@@ -318,7 +368,7 @@ export default function CreatePage() {
                                         </div>
                                         <h3 className="text-xl font-bold mb-2 text-foreground">Buat Iklan dari Foto</h3>
                                         <p className="text-muted-foreground leading-relaxed text-sm">
-                                            Upload foto produk, kami bantu jadi iklan siap posting.
+                                            Upload foto produk, kami bantu menyiapkan konsep iklan yang siap posting.
                                         </p>
                                     </button>
 
@@ -352,7 +402,7 @@ export default function CreatePage() {
                                         </div>
                                         <h3 className="text-xl font-bold mb-2 text-foreground">Rapikan Foto Produk</h3>
                                         <p className="text-muted-foreground leading-relaxed text-sm">
-                                            Hapus background, perbaiki kualitas, lalu lanjut ke iklan.
+                                            Hapus background, rapikan kualitas, lalu lanjut ke editor.
                                         </p>
                                     </button>
 
@@ -371,7 +421,23 @@ export default function CreatePage() {
                                         </div>
                                         <h3 className="text-xl font-bold mb-2 text-foreground">Buat Konten dari Teks</h3>
                                         <p className="text-muted-foreground leading-relaxed text-sm">
-                                            Tulis promomu, lalu generate desain dalam beberapa klik.
+                                            Tulis promomu, lalu kami bantu susun desain yang siap lanjut ke editor.
+                                        </p>
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            posthog?.capture('intent_selected', { intent: 'carousel_instagram' });
+                                            router.push('/create/carousel');
+                                        }}
+                                        className="group flex flex-col items-center text-center p-8 bg-card border shadow-sm hover:border-emerald-500/50 hover:shadow-xl hover:shadow-emerald-500/5 rounded-3xl transition-all h-full md:col-span-3"
+                                    >
+                                        <div className="w-20 h-20 mb-6 rounded-2xl bg-emerald-500/10 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
+                                            <PanelsTopLeft className="w-10 h-10 text-emerald-500" />
+                                        </div>
+                                        <h3 className="text-xl font-bold mb-2 text-foreground">Carousel Instagram</h3>
+                                        <p className="text-muted-foreground leading-relaxed text-sm max-w-xl">
+                                            Susun 5 sampai 10 slide dari satu topik, edit per slide, lalu export ZIP PNG untuk posting carousel tanpa memecah alur ke tool lain.
                                         </p>
                                     </button>
                                 </div>
@@ -387,9 +453,9 @@ export default function CreatePage() {
                                         <div className="w-20 h-20 mb-6 rounded-2xl bg-primary/10 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
                                             <Wand2 className="w-10 h-10 text-primary" />
                                         </div>
-                                        <h3 className="text-xl font-bold mb-3 text-foreground">Generate dari Teks</h3>
+                                        <h3 className="text-xl font-bold mb-3 text-foreground">Buat dari Teks</h3>
                                         <p className="text-muted-foreground leading-relaxed text-sm">
-                                            Deskripsikan ide visual Anda, dan AI akan meracik komposisi serta merender gambar kustom untuk produk.
+                                            Deskripsikan ide visual Anda, lalu AI meracik komposisi yang bisa Anda lanjutkan di editor.
                                         </p>
                                     </button>
                                     
@@ -404,19 +470,19 @@ export default function CreatePage() {
                                         <div className="w-20 h-20 mb-6 rounded-2xl bg-indigo-500/10 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
                                             <ImagePlus className="w-10 h-10 text-indigo-500" />
                                         </div>
-                                        <h3 className="text-xl font-bold mb-3 text-foreground">Redesign Gambar</h3>
+                                        <h3 className="text-xl font-bold mb-3 text-foreground">Redesign dari Foto</h3>
                                         <p className="text-muted-foreground leading-relaxed text-sm">
-                                            Unggah referensi foto layout, dan biarkan AI meniru gayanya untuk desain baru dengan kontrol penuh atas tingkat perubahan.
+                                            Unggah referensi foto layout, lalu AI meniru gaya visualnya dengan kontrol perubahan yang jelas.
                                         </p>
                                     </button>
                                     
-                                    {/* Smart Ad Card */}
+                                    {/* Fast ad concept card */}
                                     <button
                                         onClick={async () => {
-                                            const toastId = toast.loading("Menyiapkan Smart Ad...");
+                                            const toastId = toast.loading("Menyiapkan Studio Iklan...");
                                             try {
                                                 const newProject = await saveProject({
-                                                    title: "Smart Ad",
+                                                    title: "Iklan Cepat",
                                                     status: "draft",
                                                     aspect_ratio: "1:1",
                                                     canvas_state: {
@@ -434,14 +500,14 @@ export default function CreatePage() {
                                         className="group flex flex-col items-center text-center p-8 bg-card border shadow-sm hover:border-purple-500/50 hover:shadow-xl hover:shadow-purple-500/5 rounded-3xl transition-all relative overflow-hidden"
                                     >
                                         <div className="absolute top-4 right-4 bg-purple-500 text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">
-                                            New
+                                            Cepat
                                         </div>
                                         <div className="w-20 h-20 mb-6 rounded-2xl bg-purple-500/10 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
                                             <Sparkles className="w-10 h-10 text-purple-500" />
                                         </div>
-                                        <h3 className="text-xl font-bold mb-3 text-foreground">Smart Ad Creator</h3>
+                                        <h3 className="text-xl font-bold mb-3 text-foreground">Buat Iklan Cepat</h3>
                                         <p className="text-muted-foreground leading-relaxed text-sm">
-                                            Ubah foto produk biasa menjadi iklan profesional yang siap pakai untuk berbagai platform media sosial dalam sekejap.
+                                            Ubah foto produk biasa menjadi konsep iklan yang bisa langsung diteruskan ke editor.
                                         </p>
                                     </button>
 
