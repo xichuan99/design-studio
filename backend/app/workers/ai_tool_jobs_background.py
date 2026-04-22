@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import logging
 
 from app.core.database import AsyncSessionLocal
 from app.models.ai_tool_job import AiToolJob
@@ -14,6 +15,8 @@ from app.workers.ai_tool_jobs_common import (
     set_ai_tool_job_canceled,
     update_ai_tool_job,
 )
+
+logger = logging.getLogger(__name__)
 
 
 async def execute_background_swap_tool_job(job_id: str):
@@ -48,20 +51,42 @@ async def execute_background_swap_tool_job(job_id: str):
         session.add(job)
         await session.commit()
 
-    original_bytes = await download_image(image_url)
+    source_image_url = str(image_url)
 
     await update_ai_tool_job(
         job_id,
         status="processing",
-        phase_message="AI sedang mengganti background",
-        progress_percent=70,
+        phase_message="Menghapus background lama",
+        progress_percent=45,
     )
 
-    no_bg_bytes = await bg_removal_service.remove_background(original_bytes)
+    original_bytes = None
+    original_url_for_inpaint = source_image_url
+
+    try:
+        no_bg_bytes = await bg_removal_service.remove_background_from_url(source_image_url)
+    except Exception:
+        # Fallback to legacy byte-based path if source URL is temporarily inaccessible.
+        logger.warning(
+            "Background swap URL-based remove failed for job %s, falling back to byte flow",
+            job_id,
+        )
+        original_bytes = await download_image(source_image_url)
+        no_bg_bytes = await bg_removal_service.remove_background(original_bytes)
+        original_url_for_inpaint = None
+
+    await update_ai_tool_job(
+        job_id,
+        status="processing",
+        phase_message="AI sedang membuat background baru",
+        progress_percent=72,
+    )
+
     final_bytes = await bg_removal_service.inpaint_background(
         original_bytes=original_bytes,
         transparent_png_bytes=no_bg_bytes,
         prompt=prompt,
+        original_url=original_url_for_inpaint,
     )
 
     await update_ai_tool_job(

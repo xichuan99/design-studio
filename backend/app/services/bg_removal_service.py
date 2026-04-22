@@ -1,10 +1,12 @@
 """Service for background removal and image compositing operations."""
 
+import asyncio
 import os
 import io
 import logging
 import httpx
 import uuid
+from typing import Optional
 import fal_client
 from PIL import Image, ImageFilter
 
@@ -12,6 +14,48 @@ from app.core.config import settings
 from app.services.storage_service import upload_image
 
 logger = logging.getLogger(__name__)
+
+
+def _ensure_fal_key() -> None:
+    if not settings.FAL_KEY:
+        raise ValueError("FAL_KEY is missing from environment")
+    os.environ["FAL_KEY"] = settings.FAL_KEY
+
+
+async def _download_result_bytes(output_url: str, timeout: float) -> bytes:
+    if output_url.startswith("data:"):
+        import base64
+
+        base64_data = output_url.split(",", 1)[1]
+        return base64.b64decode(base64_data)
+
+    async with httpx.AsyncClient() as http_client:
+        resp = await http_client.get(output_url, timeout=timeout)
+        resp.raise_for_status()
+        return resp.content
+
+
+async def _remove_background_from_source_url(image_url: str) -> bytes:
+    # Using BRIA RMBG v2 — significantly more accurate than birefnet for
+    # fine-detail objects (watch straps, product edges, transparent materials)
+    result = await fal_client.run_async(
+        "fal-ai/rmbg-v2",
+        arguments={"image_url": image_url},
+    )
+
+    output_url = result.get("image", {}).get("url")
+    if not output_url:
+        # Fallback to birefnet if bria returns unexpected format
+        logger.warning("BRIA RMBG-v2 returned no URL, falling back to birefnet")
+        result = await fal_client.run_async(
+            "fal-ai/birefnet",
+            arguments={"image_url": image_url},
+        )
+        output_url = result.get("image", {}).get("url")
+        if not output_url:
+            raise RuntimeError("Both BRIA and birefnet returned no image URL")
+
+    return await _download_result_bytes(output_url, timeout=60.0)
 
 
 async def remove_background(image_bytes: bytes) -> bytes:
@@ -31,10 +75,7 @@ async def remove_background(image_bytes: bytes) -> bytes:
         httpx.HTTPError: If downloading the result from Fal.ai fails.
         Exception: For any other unexpected errors during the process.
     """
-    if not settings.FAL_KEY:
-        raise ValueError("FAL_KEY is missing from environment")
-
-    os.environ["FAL_KEY"] = settings.FAL_KEY
+    _ensure_fal_key()
 
     try:
         # 1. Upload the image temporarily to get a public URL for Fal.ai
@@ -45,43 +86,27 @@ async def remove_background(image_bytes: bytes) -> bytes:
             prefix=f"temp_bgrm_{temp_id}",
         )
 
-        # 2. Call Fal.ai background removal model
-        # Using BRIA RMBG v2 — significantly more accurate than birefnet for
-        # fine-detail objects (watch straps, product edges, transparent materials)
-        # Correct endpoint: fal-ai/rmbg-v2
-        result = await fal_client.run_async(
-            "fal-ai/rmbg-v2",
-            arguments={"image_url": temp_url},
-        )
-
-        output_url = result.get("image", {}).get("url")
-        if not output_url:
-            # Fallback to birefnet if bria returns unexpected format
-            logger.warning("BRIA RMBG-v2 returned no URL, falling back to birefnet")
-            result = await fal_client.run_async(
-                "fal-ai/birefnet",
-                arguments={"image_url": temp_url},
-            )
-            output_url = result.get("image", {}).get("url")
-            if not output_url:
-                raise RuntimeError("Both BRIA and birefnet returned no image URL")
-
-        # 3. Download the resulting transparent PNG
-        if output_url.startswith("data:"):
-            import base64
-
-            base64_data = output_url.split(",", 1)[1]
-            final_bytes = base64.b64decode(base64_data)
-        else:
-            async with httpx.AsyncClient() as http_client:
-                resp = await http_client.get(output_url, timeout=60.0)
-                resp.raise_for_status()
-                final_bytes = resp.content
-
-        return final_bytes
+        # 2. Call Fal.ai background removal model and download transparent PNG
+        return await _remove_background_from_source_url(temp_url)
 
     except Exception as e:
         logger.exception(f"Failed to remove background via Fal.ai: {str(e)}")
+        raise
+
+
+async def remove_background_from_url(image_url: str) -> bytes:
+    """
+    Removes the background from a publicly accessible image URL.
+
+    This path avoids re-uploading the original image when a storage URL already
+    exists (for example in async job flows).
+    """
+    _ensure_fal_key()
+
+    try:
+        return await _remove_background_from_source_url(image_url)
+    except Exception as e:
+        logger.exception(f"Failed to remove background from URL via Fal.ai: {str(e)}")
         raise
 
 
@@ -121,9 +146,11 @@ def _extract_inpaint_mask(transparent_png_bytes: bytes) -> bytes:
 
 
 async def inpaint_background(
-    original_bytes: bytes,
+    original_bytes: Optional[bytes],
     transparent_png_bytes: bytes,
     prompt: str,
+    *,
+    original_url: Optional[str] = None,
 ) -> bytes:
     """
     Generates a new background by inpainting directly onto the original image.
@@ -141,8 +168,11 @@ async def inpaint_background(
 
     Args:
         original_bytes: Raw bytes of the *original* (non-removed) image.
+            Optional when `original_url` is provided.
         transparent_png_bytes: Transparent PNG returned by remove_background().
         prompt: User-supplied description of the desired new background.
+        original_url: Public URL to the original image. If provided, skips
+            re-uploading original bytes and only uploads the inpaint mask.
 
     Returns:
         bytes: Final JPEG image with the new background baked in.
@@ -154,17 +184,31 @@ async def inpaint_background(
     # 1. Build mask
     mask_bytes = _extract_inpaint_mask(transparent_png_bytes)
 
-    # 2. Upload original image and mask to get public URLs
-    original_url = await upload_image(
-        original_bytes,
-        content_type="image/jpeg",
-        prefix=f"bgswap_orig_{base_id}",
-    )
-    mask_url = await upload_image(
-        mask_bytes,
-        content_type="image/png",
-        prefix=f"bgswap_mask_{base_id}",
-    )
+    # 2. Upload assets to get public URLs.
+    #    If original URL already exists, only upload the mask.
+    resolved_original_url = original_url
+    if resolved_original_url:
+        mask_url = await upload_image(
+            mask_bytes,
+            content_type="image/png",
+            prefix=f"bgswap_mask_{base_id}",
+        )
+    else:
+        if original_bytes is None:
+            raise ValueError("Either original_bytes or original_url must be provided")
+
+        resolved_original_url, mask_url = await asyncio.gather(
+            upload_image(
+                original_bytes,
+                content_type="image/jpeg",
+                prefix=f"bgswap_orig_{base_id}",
+            ),
+            upload_image(
+                mask_bytes,
+                content_type="image/png",
+                prefix=f"bgswap_mask_{base_id}",
+            ),
+        )
 
     # 3. Enhance prompt for professional product photography
     enhanced_prompt = (
@@ -178,7 +222,7 @@ async def inpaint_background(
     result = await fal_client.run_async(
         "fal-ai/flux-pro/v1/fill",
         arguments={
-            "image_url": original_url,
+            "image_url": resolved_original_url,
             "mask_url": mask_url,
             "prompt": enhanced_prompt,
             "sync_mode": True,
@@ -198,16 +242,7 @@ async def inpaint_background(
         raise RuntimeError("flux-pro/v1/fill returned no image URL")
 
     # 5. Download and return result
-    if output_url.startswith("data:"):
-        import base64
-
-        base64_data = output_url.split(",", 1)[1]
-        return base64.b64decode(base64_data)
-    else:
-        async with httpx.AsyncClient() as http_client:
-            resp = await http_client.get(output_url, timeout=90.0)
-            resp.raise_for_status()
-            return resp.content
+    return await _download_result_bytes(output_url, timeout=90.0)
 
 
 async def composite_product_on_background(
