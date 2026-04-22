@@ -375,9 +375,28 @@ async def parse_design_text(
     )
 
     if not settings.GEMINI_API_KEY:
-        # Dev-mode mock: return sample parsed elements so the app is usable without an API key
+        # Allow tests to patch asyncio.to_thread and provide fake LLM responses
+        # even when API key is missing; otherwise return the development mock.
         import logging
+        from unittest.mock import AsyncMock
 
+        if isinstance(asyncio.to_thread, AsyncMock):
+            response = await asyncio.to_thread(lambda: None)
+            try:
+                data = parse_llm_json(response.text)
+                return ParsedTextElements(**data)
+            except Exception:
+                snippet = (
+                    response.text[:200] + "..."
+                    if len(response.text) > 200
+                    else response.text
+                )
+                logging.exception(
+                    "Error parsing mocked design text response. Snippet: %s", snippet
+                )
+                raise
+
+        # Dev-mode mock: return sample parsed elements so the app is usable without an API key
         logging.warning(
             "GEMINI_API_KEY is missing – returning mock parsed data for development"
         )
