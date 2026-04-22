@@ -198,9 +198,9 @@ export default function TextBannerPage() {
                             <label className="text-sm font-semibold text-foreground">Kualitas Generasi</label>
                             <div className="grid grid-cols-3 gap-3">
                                 {[
-                                    { id: 'draft', label: 'Draft', cost: '1 Credit' },
-                                    { id: 'standard', label: 'Standard', cost: '1 Credit' },
-                                    { id: 'premium', label: 'Premium', cost: '2 Credits' },
+                                    { id: 'draft', label: 'Draft', cost: '10 Credits' },
+                                    { id: 'standard', label: 'Standard', cost: '10 Credits' },
+                                    { id: 'premium', label: 'Premium', cost: '40 Credits' },
                                 ].map((q) => (
                                     <button
                                         key={q.id}

@@ -12,8 +12,8 @@ import { useProjectApi } from "@/lib/api";
 import { useToolJobProgress } from "@/hooks/useToolJobProgress";
 
 const OPERATIONS = [
-  { id: "remove_bg", name: "Hapus Latar Belakang", cost: 1, desc: "Hapus background foto produk secara otomatis" },
-  { id: "product_scene", name: "AI Product Scene", cost: 1, desc: "Ganti dengan background studio/alam" },
+  { id: "remove_bg", name: "Hapus Latar Belakang", cost: 10, desc: "Hapus background foto produk secara otomatis" },
+  { id: "product_scene", name: "AI Product Scene", cost: 40, desc: "Ganti dengan background studio/alam" },
   { id: "watermark", name: "Watermark (Logo)", cost: 0, desc: "Tambahkan logo Anda ke semua foto" },
 ];
 

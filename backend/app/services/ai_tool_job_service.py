@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
@@ -13,6 +14,18 @@ from app.models.ai_tool_job import AiToolJob
 
 
 TERMINAL_STATUSES = {"completed", "failed", "canceled"}
+MAX_IDEMPOTENCY_KEY_LENGTH = 255
+
+
+def normalize_idempotency_key(idempotency_key: str | None) -> str | None:
+    if not idempotency_key:
+        return None
+
+    if len(idempotency_key) <= MAX_IDEMPOTENCY_KEY_LENGTH:
+        return idempotency_key
+
+    digest = hashlib.sha256(idempotency_key.encode("utf-8")).hexdigest()
+    return f"sha256:{digest}"
 
 
 def serialize_job(job: AiToolJob) -> dict[str, Any]:
@@ -40,11 +53,13 @@ async def create_job(
     payload: dict[str, Any],
     idempotency_key: str | None = None,
 ) -> tuple[AiToolJob, bool]:
-    if idempotency_key:
+    normalized_idempotency_key = normalize_idempotency_key(idempotency_key)
+
+    if normalized_idempotency_key:
         existing_result = await db.execute(
             select(AiToolJob).where(
                 AiToolJob.user_id == user_id,
-                AiToolJob.idempotency_key == idempotency_key,
+                AiToolJob.idempotency_key == normalized_idempotency_key,
             )
         )
         existing_job = existing_result.scalars().first()
@@ -58,7 +73,7 @@ async def create_job(
         payload_json=payload,
         progress_percent=0,
         phase_message="Menunggu antrean proses AI",
-        idempotency_key=idempotency_key,
+        idempotency_key=normalized_idempotency_key,
         cancel_requested=False,
     )
     db.add(job)

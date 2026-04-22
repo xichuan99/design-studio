@@ -101,7 +101,7 @@ export default function UpscalerPage() {
             <h1 className="text-3xl font-jakarta font-bold text-foreground">AI Image Upscaler</h1>
             <p className="text-muted-foreground mt-2">Foto dari HP buram atau kecil? Perbesar hingga 4x lipat supaya layak pajang di toko online.</p>
           </div>
-          <CreditCostBadge cost={scale === 2 ? 20 : 40} className="mt-2" />
+          <CreditCostBadge cost={10} className="mt-2" />
         </div>
 
         {step === 1 && (
@@ -145,8 +145,8 @@ export default function UpscalerPage() {
 
               <CreditConfirmDialog
                 title="AI Image Upscaler"
-                description={`AI akan meningkatkan resolusi gambar sebanyak ${scale}x lipat. Ini akan memotong ${scale === 2 ? 20 : 40} kredit.`}
-                cost={scale === 2 ? 20 : 40}
+                description={`AI akan meningkatkan resolusi gambar sebanyak ${scale}x lipat. Ini akan memotong 10 kredit.`}
+                cost={10}
                 onConfirm={handleGenerate}
                 disabled={loading || !originalFile}
               >

@@ -27,6 +27,25 @@ type PollJobOptions = Omit<StartToolJobArgs, "toolName" | "payload" | "idempoten
 
 type PollJobStatusFn = (jobId: string, options: PollJobOptions) => Promise<void>;
 
+const MAX_IDEMPOTENCY_KEY_LENGTH = 255;
+
+function normalizeIdempotencyKey(idempotencyKey?: string): string | undefined {
+  if (!idempotencyKey) {
+    return undefined;
+  }
+
+  if (idempotencyKey.length <= MAX_IDEMPOTENCY_KEY_LENGTH) {
+    return idempotencyKey;
+  }
+
+  let hash = 0;
+  for (let index = 0; index < idempotencyKey.length; index += 1) {
+    hash = (hash * 31 + idempotencyKey.charCodeAt(index)) >>> 0;
+  }
+
+  return `hash31:${hash.toString(16)}:${idempotencyKey.length}`;
+}
+
 export function useToolJobProgress() {
   const api = useProjectApi();
   const [loading, setLoading] = useState(false);
@@ -113,10 +132,12 @@ export function useToolJobProgress() {
       setLoading(true);
       setActiveJob(null);
 
+      const normalizedIdempotencyKey = normalizeIdempotencyKey(idempotencyKey);
+
       const createdJob = await api.createToolJob({
         tool_name: toolName,
         payload,
-        idempotency_key: idempotencyKey,
+        idempotency_key: normalizedIdempotencyKey,
       });
       setActiveJob(createdJob);
 

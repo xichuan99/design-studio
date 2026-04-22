@@ -75,7 +75,7 @@ class CreateToolJobRequest(BaseModel):
         "watermark",
     ]
     payload: dict[str, Any] = Field(default_factory=dict)
-    idempotency_key: str | None = Field(default=None, max_length=255)
+    idempotency_key: str | None = Field(default=None)
 
 
 @router.post(
