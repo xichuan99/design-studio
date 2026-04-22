@@ -8,7 +8,41 @@ import os
 import logging
 from typing import Optional
 
+from PIL import Image
+
 logger = logging.getLogger(__name__)
+
+
+def _blend_retouch_with_original(
+    original_bytes: bytes,
+    retouched_bytes: bytes,
+    fidelity: float,
+    output_format: str,
+) -> bytes:
+    """Blend a fraction of original details back to reduce facial artifact risk."""
+    try:
+        # High fidelity should preserve more original details.
+        original_weight = max(0.0, min(1.0, float(fidelity))) * 0.35
+        if original_weight <= 0:
+            return retouched_bytes
+
+        original_img = Image.open(io.BytesIO(original_bytes)).convert("RGB")
+        retouched_img = Image.open(io.BytesIO(retouched_bytes)).convert("RGB")
+        if original_img.size != retouched_img.size:
+            original_img = original_img.resize(
+                retouched_img.size, Image.Resampling.LANCZOS
+            )
+
+        blended = Image.blend(retouched_img, original_img, alpha=original_weight)
+
+        out = io.BytesIO()
+        if output_format.lower() == "png":
+            blended.save(out, format="PNG")
+        else:
+            blended.save(out, format="JPEG", quality=95)
+        return out.getvalue()
+    except Exception:
+        return retouched_bytes
 
 
 async def retouch_with_codeformer(
@@ -87,12 +121,18 @@ async def retouch_with_codeformer(
 
     # Convert to requested format if needed
     if output_format.lower() == "jpeg":
-        from PIL import Image
-
         img = Image.open(io.BytesIO(result_bytes)).convert("RGB")
         buf = io.BytesIO()
         img.save(buf, format="JPEG", quality=95)
         result_bytes = buf.getvalue()
+
+    # Blend with original to reduce aggressive artifacting around eyes/skin.
+    result_bytes = _blend_retouch_with_original(
+        original_bytes=image_bytes,
+        retouched_bytes=result_bytes,
+        fidelity=fidelity,
+        output_format=output_format,
+    )
 
     return result_bytes
 

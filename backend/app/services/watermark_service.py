@@ -7,6 +7,20 @@ from PIL import Image, ImageEnhance
 POSITIONS = ["bottom-right", "bottom-left", "top-right", "top-left", "center", "tiled"]
 
 
+def _normalize_watermark_settings(position: str, opacity: float, scale: float) -> tuple[str, float, float]:
+    normalized_position = position if position in POSITIONS else "bottom-right"
+
+    normalized_opacity = max(0.0, min(1.0, float(opacity)))
+    normalized_scale = max(0.05, min(1.0, float(scale)))
+
+    # Keep watermark legible for single-placement mode.
+    if normalized_position != "tiled":
+        normalized_opacity = max(0.25, normalized_opacity)
+        normalized_scale = max(0.12, normalized_scale)
+
+    return normalized_position, normalized_opacity, normalized_scale
+
+
 async def apply_watermark(
     base_image_bytes: bytes,
     watermark_bytes: bytes,
@@ -32,14 +46,7 @@ async def apply_watermark(
     Raises:
         Exception: If opening, resizing, pasting, or saving the images fails.
     """
-    if position not in POSITIONS:
-        position = "bottom-right"
-
-    # Ensure opacity is within bounds
-    opacity = max(0.0, min(1.0, float(opacity)))
-
-    # Ensure scale is reasonable (0.05 to 1.0)
-    scale = max(0.05, min(1.0, float(scale)))
+    position, opacity, scale = _normalize_watermark_settings(position, opacity, scale)
 
     try:
         # Load images
@@ -58,17 +65,21 @@ async def apply_watermark(
         base_w, base_h = base_img.size
         wm_w, wm_h = watermark_img.size
 
-        # Calculate target size (bound by scale * base_dimension)
+        # Calculate target size from base width so typical logos remain visible.
         target_wm_w = int(base_w * scale)
-        target_wm_h = int(base_h * scale)
-
-        # Maintain aspect ratio for watermark
-        ratio = min(target_wm_w / wm_w, target_wm_h / wm_h)
+        ratio = target_wm_w / max(wm_w, 1)
         new_wm_w = int(wm_w * ratio)
         new_wm_h = int(wm_h * ratio)
 
+        # Prevent watermark from being overly tall.
+        max_wm_h = int(base_h * 0.35)
+        if new_wm_h > max_wm_h:
+            height_ratio = max_wm_h / max(new_wm_h, 1)
+            new_wm_w = int(new_wm_w * height_ratio)
+            new_wm_h = max_wm_h
+
         watermark_img = watermark_img.resize(
-            (new_wm_w, new_wm_h), Image.Resampling.LANCZOS
+            (max(new_wm_w, 1), max(new_wm_h, 1)), Image.Resampling.LANCZOS
         )
 
         # 2. Apply Opacity

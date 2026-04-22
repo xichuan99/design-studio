@@ -2,7 +2,7 @@ import pytest
 import io
 from PIL import Image
 
-from app.services.watermark_service import apply_watermark
+from app.services.watermark_service import apply_watermark, _normalize_watermark_settings
 
 
 @pytest.fixture
@@ -92,6 +92,22 @@ async def test_apply_watermark_scale_limits(base_image_bytes, watermark_image_by
     # Test under 0.05
     res_low = await apply_watermark(base_image_bytes, watermark_image_bytes, scale=0.01)
     assert isinstance(res_low, bytes)
+
+
+def test_normalize_watermark_settings_enforces_visibility_for_single_position():
+    position, opacity, scale = _normalize_watermark_settings("bottom-right", 0.05, 0.02)
+
+    assert position == "bottom-right"
+    assert opacity == 0.25
+    assert scale == 0.12
+
+
+def test_normalize_watermark_settings_allows_lower_values_for_tiled_mode():
+    position, opacity, scale = _normalize_watermark_settings("tiled", 0.05, 0.02)
+
+    assert position == "tiled"
+    assert opacity == 0.05
+    assert scale == 0.05
 
 
 @pytest.mark.asyncio

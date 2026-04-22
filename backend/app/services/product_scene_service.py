@@ -103,7 +103,7 @@ async def generate_product_scene(
     try:
         img = Image.open(io.BytesIO(no_bg_bytes))
         bbox = img.getbbox()
-        scale_factor = 0.65
+        scale_factor = 0.58
 
         if bbox:
             obj_w = bbox[2] - bbox[0]
@@ -113,13 +113,13 @@ async def generate_product_scene(
             area_ratio = (obj_w * obj_h) / (img_w * img_h)
 
             if area_ratio > 0.6 or (obj_w / img_w) > 0.8 or (obj_h / img_h) > 0.8:
-                scale_factor = 0.85
+                scale_factor = 0.72
                 logger.info(
                     f"Detected closeup product (area_ratio: {area_ratio:.2f}), increasing scale_factor to {scale_factor}"
                 )
     except Exception as e:
         logger.warning(f"Error analyzing image bounding box: {e}")
-        scale_factor = 0.65
+        scale_factor = 0.58
 
     # 2. Map theme to prompt
     theme_config = SCENE_THEMES.get(theme, SCENE_THEMES["studio"])
@@ -154,7 +154,7 @@ async def generate_product_scene(
             background_bytes=bg_bytes,
             scale_factor=scale_factor,  # Dynamically set based on closeup detection
             offset_x_ratio=0.5,  # Center X
-            offset_y_ratio=0.55,  # Slightly lower Y
+            offset_y_ratio=0.62,  # Lower placement to improve contact with scene surface
             add_shadow=True,
         )
     except Exception as e:

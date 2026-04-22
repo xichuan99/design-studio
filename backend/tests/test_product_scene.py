@@ -65,9 +65,9 @@ async def test_generate_product_scene_success(
     mock_composite.assert_called_once_with(
         product_png_bytes=b"fake_no_bg_bytes",
         background_bytes=mock_bg_bytes,
-        scale_factor=0.65,
+        scale_factor=0.58,
         offset_x_ratio=0.5,
-        offset_y_ratio=0.55,
+        offset_y_ratio=0.62,
         add_shadow=True,
     )
 

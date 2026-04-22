@@ -1,7 +1,10 @@
 """Service for inpainting (filling) specific areas of an image."""
 
+import io
 import logging
 from typing import Optional
+
+from PIL import Image, ImageFilter
 
 logger = logging.getLogger(__name__)
 
@@ -9,7 +12,26 @@ from app.core.exceptions import AppException
 import fal_client
 
 DEFAULT_INPAINT_PROMPT = "Improve visual quality"
-DEFAULT_MAGIC_ERASER_PROMPT = "Remove the masked object and reconstruct the background naturally"
+DEFAULT_MAGIC_ERASER_PROMPT = "Remove the masked object and reconstruct the original background naturally"
+MAGIC_ERASER_GUARDRAILS = (
+    "Preserve original scene, lighting, and perspective. "
+    "Do not add new objects, people, masks, text, logos, labels, or extra decorations."
+)
+
+
+def prepare_magic_eraser_mask(mask_bytes: bytes) -> bytes:
+    """Improve mask usability by thresholding, slight dilation, and soft edge blending."""
+    try:
+        mask = Image.open(io.BytesIO(mask_bytes)).convert("L")
+        mask = mask.point(lambda px: 255 if px > 10 else 0)
+        mask = mask.filter(ImageFilter.MaxFilter(5))
+        mask = mask.filter(ImageFilter.GaussianBlur(radius=1.2))
+
+        out = io.BytesIO()
+        mask.save(out, format="PNG")
+        return out.getvalue()
+    except Exception:
+        return mask_bytes
 
 
 async def inpaint_image(
@@ -42,6 +64,8 @@ async def inpaint_image(
                 if magic_eraser_mode
                 else DEFAULT_INPAINT_PROMPT
             )
+        if magic_eraser_mode:
+            resolved_prompt = f"{resolved_prompt}. {MAGIC_ERASER_GUARDRAILS}"
 
         arguments = {
             "image_url": image_url,

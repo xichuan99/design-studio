@@ -63,7 +63,13 @@ async def generate_text_banner(
             )
 
         # Add text instructions
-        prompt = f'{base_prompt}. The graphic MUST contain the exact text: "{text}" written on it boldly and legibly. Clean solid white background behind the object for easy extraction.'
+        prompt = (
+            f'{base_prompt}. '
+            f'The graphic MUST contain the exact text: "{text}" written boldly and legibly. '
+            "Do not paraphrase, translate, summarize, or add extra promotional words that are not present in the provided text. "
+            "If the provided text is non-promotional, keep it non-promotional. "
+            "Clean solid white background behind the object for easy extraction."
+        )
 
         banner_url = None
 

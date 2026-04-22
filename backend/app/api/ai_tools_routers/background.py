@@ -184,6 +184,8 @@ async def magic_eraser(
     if len(content) > 10 * 1024 * 1024 or len(mask_content) > 10 * 1024 * 1024:
         raise ValidationError(detail="Image or mask size exceeds 10MB limit")
 
+    mask_content = inpaint_service.prepare_magic_eraser_mask(mask_content)
+
     from app.services.file_validation import validate_uploaded_image
     await validate_uploaded_image(content, user_id=current_user.id, db=db)
     await validate_uploaded_image(mask_content, user_id=current_user.id, db=db)

@@ -25,7 +25,7 @@ async def test_outpaint_image_direction_success(mock_fal_run):
         arguments={
             "image_url": "http://image.url",
             "output_format": "jpeg",
-            "prompt": "beautiful scenery",
+            "prompt": "beautiful scenery. Keep the original subject identity and scene perspective consistent. Do not add new people, extra limbs, extra hands, duplicated faces, text, logos, or unrelated objects.",
             "expand_left": 100,
         },
     )
@@ -48,6 +48,7 @@ async def test_outpaint_image_target_dims_success(mock_fal_run):
         arguments={
             "image_url": "http://image.url",
             "output_format": "jpeg",
+            "prompt": "Extend the existing background naturally. Keep the original subject identity and scene perspective consistent. Do not add new people, extra limbs, extra hands, duplicated faces, text, logos, or unrelated objects.",
             "target_width": 1000,
             "target_height": 1000,
         },
@@ -71,7 +72,7 @@ async def test_outpaint_image_clamps_pixels_to_provider_limit(mock_fal_run):
         arguments={
             "image_url": "http://image.url",
             "output_format": "jpeg",
-            "prompt": "beautiful scenery",
+            "prompt": "beautiful scenery. Keep the original subject identity and scene perspective consistent. Do not add new people, extra limbs, extra hands, duplicated faces, text, logos, or unrelated objects.",
             "expand_left": MAX_DIRECTIONAL_EXPAND_PIXELS,
         },
     )

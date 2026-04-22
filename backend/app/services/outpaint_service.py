@@ -10,6 +10,11 @@ import fal_client
 
 
 MAX_DIRECTIONAL_EXPAND_PIXELS = 700
+DEFAULT_OUTPAINT_PROMPT = "Extend the existing background naturally"
+OUTPAINT_GUARDRAILS = (
+    "Keep the original subject identity and scene perspective consistent. "
+    "Do not add new people, extra limbs, extra hands, duplicated faces, text, logos, or unrelated objects."
+)
 
 
 async def outpaint_image(
@@ -42,8 +47,8 @@ async def outpaint_image(
     try:
         arguments = {"image_url": image_url, "output_format": "jpeg"}
 
-        if prompt:
-            arguments["prompt"] = prompt
+        resolved_prompt = (prompt or "").strip() or DEFAULT_OUTPAINT_PROMPT
+        arguments["prompt"] = f"{resolved_prompt}. {OUTPAINT_GUARDRAILS}"
 
         # Support either discrete directions OR target dimensions (e.g., from resize tool)
         if direction and pixels:
