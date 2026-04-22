@@ -21,9 +21,79 @@ env:
 # Job 1a: Backend Tests + Lint (Python)
 # ─────────────────────────────────────────────
 jobs:
+  changes:
+    name: "🧭 Detect Changed Areas"
+    runs-on: ubuntu-latest
+    outputs:
+      backend_changed: ${{ steps.detect.outputs.backend_changed }}
+      frontend_changed: ${{ steps.detect.outputs.frontend_changed }}
+      quantum_changed: ${{ steps.detect.outputs.quantum_changed }}
+      any_changed: ${{ steps.detect.outputs.any_changed }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          fetch-depth: 0
+
+      - name: Detect file changes
+        id: detect
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          backend_changed=false
+          frontend_changed=false
+          quantum_changed=false
+          infra_changed=false
+
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            base_ref="${{ github.base_ref }}"
+            git fetch --no-tags origin "$base_ref"
+            changed_files="$(git diff --name-only "origin/$base_ref...${{ github.sha }}")"
+          else
+            before_sha="${{ github.event.before }}"
+            if [[ -n "$before_sha" && "$before_sha" != "0000000000000000000000000000000000000000" ]]; then
+              changed_files="$(git diff --name-only "$before_sha...${{ github.sha }}")"
+            else
+              changed_files="$(git show --pretty='' --name-only "${{ github.sha }}")"
+            fi
+          fi
+
+          echo "Changed files:"
+          echo "$changed_files"
+
+          while IFS= read -r file; do
+            [[ -z "$file" ]] && continue
+            case "$file" in
+              backend/*) backend_changed=true ;;
+              frontend/*) frontend_changed=true ;;
+              quantum-engine/*) quantum_changed=true ;;
+              .github/workflows/*|docker-compose.yml|release-please-config.json|.release-please-manifest.json|VERSION)
+                infra_changed=true
+                ;;
+            esac
+          done <<< "$changed_files"
+
+          if [[ "$infra_changed" == "true" ]]; then
+            backend_changed=true
+            frontend_changed=true
+            quantum_changed=true
+          fi
+
+          any_changed=false
+          if [[ "$backend_changed" == "true" || "$frontend_changed" == "true" || "$quantum_changed" == "true" ]]; then
+            any_changed=true
+          fi
+
+          echo "backend_changed=$backend_changed" >> "$GITHUB_OUTPUT"
+          echo "frontend_changed=$frontend_changed" >> "$GITHUB_OUTPUT"
+          echo "quantum_changed=$quantum_changed" >> "$GITHUB_OUTPUT"
+          echo "any_changed=$any_changed" >> "$GITHUB_OUTPUT"
+
   test-backend:
     name: "🐍 Backend Tests & Lint"
     runs-on: ubuntu-latest
+    needs: [changes]
+    if: needs.changes.outputs.backend_changed == 'true' || needs.changes.outputs.quantum_changed == 'true'
 
     services:
       postgres:
@@ -101,6 +171,8 @@ jobs:
   test-frontend:
     name: "⚛️ Frontend Lint & Build"
     runs-on: ubuntu-latest
+    needs: [changes]
+    if: needs.changes.outputs.frontend_changed == 'true'
 
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
@@ -132,8 +204,8 @@ jobs:
   build-backend:
     name: "🐳 Build Backend"
     runs-on: ubuntu-latest
-    needs: [test-backend, test-frontend]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [changes, test-backend]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.backend_changed == 'true'
     permissions:
       contents: read
       packages: write
@@ -159,8 +231,8 @@ jobs:
   build-quantum:
     name: "⚛️ Build Quantum Engine"
     runs-on: ubuntu-latest
-    needs: [test-backend, test-frontend]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [changes, test-backend]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.quantum_changed == 'true'
     permissions:
       contents: read
       packages: write
@@ -186,8 +258,8 @@ jobs:
   build-frontend:
     name: "🎨 Build Frontend"
     runs-on: ubuntu-latest
-    needs: [test-backend, test-frontend]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [changes, test-frontend]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.frontend_changed == 'true'
     permissions:
       contents: read
       packages: write
@@ -219,14 +291,24 @@ jobs:
   deploy:
     name: "🚀 Deploy ke VPS"
     runs-on: ubuntu-latest
-    needs: [build-backend, build-quantum, build-frontend]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [changes, build-backend, build-quantum, build-frontend]
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      needs.changes.outputs.any_changed == 'true' &&
+      (needs.build-backend.result == 'success' || needs.build-backend.result == 'skipped') &&
+      (needs.build-quantum.result == 'success' || needs.build-quantum.result == 'skipped') &&
+      (needs.build-frontend.result == 'success' || needs.build-frontend.result == 'skipped')
 
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262
+        env:
+          BACKEND_CHANGED: ${{ needs.changes.outputs.backend_changed }}
+          FRONTEND_CHANGED: ${{ needs.changes.outputs.frontend_changed }}
+          QUANTUM_CHANGED: ${{ needs.changes.outputs.quantum_changed }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
@@ -234,6 +316,24 @@ jobs:
           script: |
             set -e
             cd ~/design-studio
+
+            BACKEND_TAG="latest"
+            FRONTEND_TAG="latest"
+            QUANTUM_TAG="latest"
+
+            if [ "${BACKEND_CHANGED}" = "true" ]; then
+              BACKEND_TAG="${{ github.sha }}"
+            fi
+            if [ "${FRONTEND_CHANGED}" = "true" ]; then
+              FRONTEND_TAG="${{ github.sha }}"
+            fi
+            if [ "${QUANTUM_CHANGED}" = "true" ]; then
+              QUANTUM_TAG="${{ github.sha }}"
+            fi
+
+            BACKEND_IMAGE_REF="${{ env.BACKEND_IMAGE }}:${BACKEND_TAG}"
+            FRONTEND_IMAGE_REF="${{ env.FRONTEND_IMAGE }}:${FRONTEND_TAG}"
+            QUANTUM_IMAGE_REF="${{ env.QUANTUM_IMAGE }}:${QUANTUM_TAG}"
             
             # Reset perubahan lokal apapun termasuk docker-compose.yml
             git reset --hard HEAD
@@ -243,18 +343,18 @@ jobs:
 
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin 2>/dev/null
 
-            BACKEND_IMAGE=${{ env.BACKEND_IMAGE }}:${{ github.sha }} \
-            FRONTEND_IMAGE=${{ env.FRONTEND_IMAGE }}:${{ github.sha }} \
-            QUANTUM_IMAGE=${{ env.QUANTUM_IMAGE }}:${{ github.sha }} \
+            BACKEND_IMAGE="$BACKEND_IMAGE_REF" \
+            FRONTEND_IMAGE="$FRONTEND_IMAGE_REF" \
+            QUANTUM_IMAGE="$QUANTUM_IMAGE_REF" \
               docker compose pull backend frontend celery quantum-engine
 
             NEXTAUTH_SECRET="${{ secrets.NEXTAUTH_SECRET }}" \
             NEXTAUTH_URL="${{ secrets.NEXTAUTH_URL }}" \
             GOOGLE_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID }}" \
             GOOGLE_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET }}" \
-            BACKEND_IMAGE=${{ env.BACKEND_IMAGE }}:${{ github.sha }} \
-            FRONTEND_IMAGE=${{ env.FRONTEND_IMAGE }}:${{ github.sha }} \
-            QUANTUM_IMAGE=${{ env.QUANTUM_IMAGE }}:${{ github.sha }} \
+            BACKEND_IMAGE="$BACKEND_IMAGE_REF" \
+            FRONTEND_IMAGE="$FRONTEND_IMAGE_REF" \
+            QUANTUM_IMAGE="$QUANTUM_IMAGE_REF" \
               docker compose up -d --remove-orphans
 
             docker compose exec -T backend alembic upgrade head
@@ -268,7 +368,10 @@ jobs:
     name: "📦 Release Please"
     runs-on: ubuntu-latest
     needs: [deploy]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      (needs.deploy.result == 'success' || needs.deploy.result == 'skipped')
     permissions:
       contents: write
       issues: write
