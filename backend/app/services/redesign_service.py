@@ -5,6 +5,7 @@ import logging
 import asyncio
 from google.genai import types
 
+from app.core.ai_models import LLM_VISION_FALLBACK, LLM_VISION_PRIMARY, FAL_REDESIGN_EDIT
 from app.core.config import settings
 from app.schemas.design import ReferenceAnalysis, AspectRatio
 from app.core.exceptions import AppException
@@ -67,8 +68,8 @@ async def analyze_reference_image(image_url: str) -> ReferenceAnalysis:
             genai_client = get_genai_client()
             response = call_gemini_with_fallback(
                 client=genai_client,
-                primary_model="xai/grok-2-vision-1212",
-                fallback_model="openrouter/qwen/qwen-vl-max",
+                primary_model=LLM_VISION_PRIMARY,
+                fallback_model=LLM_VISION_FALLBACK,
                 contents=[
                     types.Part.from_bytes(
                         data=image_bytes, mime_type="image/jpeg"
@@ -126,7 +127,7 @@ async def run_flux_redesign(
     try:
         # Run fal client
         result = await fal_client.run_async(
-            "fal-ai/flux-2/flash/edit", arguments=arguments
+            FAL_REDESIGN_EDIT, arguments=arguments
         )
 
         if "images" in result and len(result["images"]) > 0:

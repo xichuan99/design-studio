@@ -3,6 +3,7 @@ import asyncio
 import httpx
 from typing import Dict, Any
 from google.genai import types
+from app.core.ai_models import FAL_BRAND_LOGO, LLM_BRAND_KIT_FALLBACK, LLM_BRAND_KIT_PRIMARY
 from app.core.config import settings
 from app.core.exceptions import AppException
 from fastapi import status
@@ -78,8 +79,8 @@ Desired Emotional Tone: {emotional_tone}
         client = get_genai_client()
         response = call_gemini_with_fallback(
             client=client,
-            primary_model="openrouter/minimax/minimax-m2.7",
-            fallback_model="qwen/qwen-2.5-72b-instruct",
+            primary_model=LLM_BRAND_KIT_PRIMARY,
+            fallback_model=LLM_BRAND_KIT_FALLBACK,
             contents=[BRAND_KIT_SYSTEM_PROMPT, context],
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
@@ -120,7 +121,7 @@ async def generate_logo_from_prompt(prompt: str) -> bytes:
 
     try:
         # fal-ai/flux/dev text to image.
-        result = await fal_client.run_async("fal-ai/flux/dev", arguments=arguments)
+        result = await fal_client.run_async(FAL_BRAND_LOGO, arguments=arguments)
 
         if "images" in result and len(result["images"]) > 0:
             result_url = result["images"][0]["url"]

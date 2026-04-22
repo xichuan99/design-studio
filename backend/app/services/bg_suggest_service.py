@@ -16,6 +16,11 @@ import uuid
 import fal_client
 from google.genai import types as genai_types
 
+from app.core.ai_models import (
+    FAL_BG_SUGGEST_CAPTION,
+    LLM_BG_SUGGEST_FALLBACK,
+    LLM_BG_SUGGEST_PRIMARY,
+)
 from app.core.config import settings
 from app.services.llm_json_utils import parse_llm_json
 from app.services.storage_service import upload_image
@@ -86,7 +91,7 @@ async def suggest_backgrounds(
     product_description = "a product"  # safe fallback
     try:
         florence_result = await fal_client.run_async(
-            "fal-ai/florence-2-large/caption",
+            FAL_BG_SUGGEST_CAPTION,
             arguments={"image_url": temp_url},
         )
         # Florence-2 returns {"results": "A watch placed on..."}
@@ -115,8 +120,8 @@ async def suggest_backgrounds(
 
         response = call_gemini_with_fallback(
             client=client,
-            primary_model="openrouter/qwen/qwen3.5-flash-02-23",
-            fallback_model="minimax/minimax-m2.5",
+            primary_model=LLM_BG_SUGGEST_PRIMARY,
+            fallback_model=LLM_BG_SUGGEST_FALLBACK,
             contents=[user_message],
             config=genai_types.GenerateContentConfig(
                 system_instruction=SUGGESTION_SYSTEM_PROMPT,

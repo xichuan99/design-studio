@@ -6,6 +6,11 @@ import httpx
 import uuid
 import fal_client
 
+from app.core.ai_models import (
+    FAL_BANNER_DRAFT,
+    FAL_BANNER_STANDARD,
+    XAI_IMAGE_GENERATION,
+)
 from app.core.config import settings
 from app.services.bg_removal_service import remove_background
 from app.services.storage_service import upload_image
@@ -86,7 +91,7 @@ async def generate_text_banner(
 
             def run_xai():
                 return generate_image_xai(
-                    model_id="grok-imagine-image",
+                    model_id=XAI_IMAGE_GENERATION,
                     prompt=prompt,
                     aspect_ratio="1:1"
                 )
@@ -119,7 +124,7 @@ async def generate_text_banner(
             os.environ["FAL_KEY"] = settings.FAL_KEY
 
             model_id = (
-                "fal-ai/flux/schnell" if quality == "draft" else "fal-ai/flux/dev"
+                FAL_BANNER_DRAFT if quality == "draft" else FAL_BANNER_STANDARD
             )
 
             result = await fal_client.run_async(

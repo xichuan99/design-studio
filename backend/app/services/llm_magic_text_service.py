@@ -3,6 +3,7 @@
 import json
 from typing import Optional
 from google.genai import types
+from app.core.ai_models import LLM_VISION_FALLBACK, LLM_VISION_PRIMARY
 from app.core.config import settings
 
 from app.services.llm_prompts import MAGIC_TEXT_SYSTEM
@@ -91,8 +92,8 @@ async def generate_magic_text_layout(
 
     response = call_gemini_with_fallback(
         client=client,
-        primary_model="xai/grok-2-vision-1212",
-        fallback_model="openrouter/qwen/qwen-vl-max",
+        primary_model=LLM_VISION_PRIMARY,
+        fallback_model=LLM_VISION_FALLBACK,
         contents=[
             types.Part.from_bytes(data=image_bytes, mime_type="image/png"),
             f"Here is the text I want to place on this image: {text}{context_string}",

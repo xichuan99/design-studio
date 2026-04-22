@@ -5,6 +5,7 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
+from app.core.ai_models import FAL_OUTPAINT
 from app.core.exceptions import AppException
 import fal_client
 
@@ -79,7 +80,7 @@ async def outpaint_image(
 
         # We use fal-ai/image-apps-v2/outpaint for Generative Expand
         result = await fal_client.run_async(
-            "fal-ai/image-apps-v2/outpaint", arguments=arguments
+            FAL_OUTPAINT, arguments=arguments
         )
 
         # Result structure usually contains 'images' or 'image'

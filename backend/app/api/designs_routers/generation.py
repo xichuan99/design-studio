@@ -18,6 +18,7 @@ from app.core.exceptions import (
     InsufficientCreditsError,
     AppException,
 )
+from app.core.ai_models import GOOGLE_IMAGE_GENERATION, XAI_IMAGE_GENERATION
 from uuid import UUID
 import re
 import httpx
@@ -441,7 +442,7 @@ async def generate_design(
 
         # Determine text instructions based on integration needs
         if request.integrated_text:
-            model_name = "grok-imagine-image"
+            model_name = XAI_IMAGE_GENERATION
 
             # Build all text elements for integrated rendering
             text_parts = [f"'{parsed.headline}'"]
@@ -455,7 +456,7 @@ async def generate_design(
                 "with proper visual hierarchy, stylized to perfectly integrate organically into the scene"
             )
         else:
-            model_name = "imagen-4.0-fast-generate-001"
+            model_name = GOOGLE_IMAGE_GENERATION
             text_instruction = "professional graphic design background, copy space area for text overlay, no text, no letters, no words"
 
         enhanced_prompt = sanitize_prompt_for_imagen(
@@ -470,7 +471,7 @@ async def generate_design(
         client = genai.Client(api_key=app_settings.GEMINI_API_KEY)
 
         image_bytes = None
-        if model_name == "grok-imagine-image":
+        if model_name == XAI_IMAGE_GENERATION:
             # Use xAI Grok Imagine for integrated text
             from app.services.llm_client import generate_image_xai
 

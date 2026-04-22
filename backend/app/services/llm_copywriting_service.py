@@ -2,6 +2,7 @@
 
 from typing import Optional
 import asyncio
+from app.core.ai_models import LLM_REASONING_FALLBACK, LLM_REASONING_PRIMARY
 from app.core.config import settings
 from google.genai import types
 
@@ -92,8 +93,8 @@ async def generate_copywriting_questions(raw_text: str) -> dict:
     response = await asyncio.to_thread(
         call_gemini_with_fallback,
         client=client,
-        primary_model="openrouter/minimax/minimax-01",
-        fallback_model="openrouter/qwen/qwen-2.5-72b-instruct",
+        primary_model=LLM_REASONING_PRIMARY,
+        fallback_model=LLM_REASONING_FALLBACK,
         contents=[
             f"Buatkan pertanyaan klarifikasi copywriting untuk deskripsi ini:\n{raw_text}"
         ],
@@ -200,8 +201,8 @@ async def generate_ai_copywriting(
     response = await asyncio.to_thread(
         call_gemini_with_fallback,
         client=client,
-        primary_model="openrouter/minimax/minimax-01",
-        fallback_model="openrouter/qwen/qwen-2.5-72b-instruct",
+        primary_model=LLM_REASONING_PRIMARY,
+        fallback_model=LLM_REASONING_FALLBACK,
         contents=[prompt_payload],
         config=types.GenerateContentConfig(
             system_instruction=system_prompt_formatted,

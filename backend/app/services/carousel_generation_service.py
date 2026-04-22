@@ -6,6 +6,7 @@ from typing import Optional
 import asyncio
 from google.genai import types
 
+from app.core.ai_models import LLM_REASONING_FALLBACK, LLM_REASONING_PRIMARY
 from app.core.config import settings
 from app.schemas.carousel import (
     CarouselGenerateRequest,
@@ -178,8 +179,8 @@ Rules:
             response = await asyncio.to_thread(
                 call_gemini_with_fallback,
                 client=client,
-                primary_model="openrouter/minimax/minimax-01",
-                fallback_model="openrouter/qwen/qwen-2.5-72b-instruct",
+                primary_model=LLM_REASONING_PRIMARY,
+                fallback_model=LLM_REASONING_FALLBACK,
                 contents=[prompt],
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",
@@ -229,8 +230,8 @@ async def regenerate_carousel_slide(
         response = await asyncio.to_thread(
             call_gemini_with_fallback,
             client=client,
-            primary_model="openrouter/minimax/minimax-01",
-            fallback_model="openrouter/qwen/qwen-2.5-72b-instruct",
+            primary_model=LLM_REASONING_PRIMARY,
+            fallback_model=LLM_REASONING_FALLBACK,
             contents=[json.dumps(prompt)],
             config=types.GenerateContentConfig(
                 system_instruction=(

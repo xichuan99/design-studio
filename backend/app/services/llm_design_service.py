@@ -2,6 +2,7 @@ import json
 from typing import Optional
 from google.genai import types
 import asyncio
+from app.core.ai_models import LLM_REASONING_FALLBACK, LLM_REASONING_PRIMARY
 from app.core.config import settings
 from app.schemas.design import ParsedTextElements
 from app.services.llm_client import get_genai_client, call_gemini_with_fallback
@@ -115,8 +116,8 @@ async def generate_design_brief_questions(raw_text: str) -> dict:
     response = await asyncio.to_thread(
         call_gemini_with_fallback,
         client=client,
-        primary_model="openrouter/minimax/minimax-01",
-        fallback_model="openrouter/qwen/qwen-2.5-72b-instruct",
+        primary_model=LLM_REASONING_PRIMARY,
+        fallback_model=LLM_REASONING_FALLBACK,
         contents=[
             f"Buatkan pertanyaan klarifikasi desain untuk deskripsi ini:\n{raw_text}"
         ],
@@ -264,8 +265,8 @@ async def generate_unified_brief_questions(
     response = await asyncio.to_thread(
         call_gemini_with_fallback,
         client=client,
-        primary_model="openrouter/minimax/minimax-01",
-        fallback_model="openrouter/qwen/qwen-2.5-72b-instruct",
+        primary_model=LLM_REASONING_PRIMARY,
+        fallback_model=LLM_REASONING_FALLBACK,
         contents=[
             f"Buatkan pertanyaan klarifikasi desain & copywriting untuk deskripsi ini:\n{raw_text}"
         ],
@@ -479,8 +480,8 @@ async def parse_design_text(
     response = await asyncio.to_thread(
         call_gemini_with_fallback,
         client=client,
-        primary_model="openrouter/minimax/minimax-01",
-        fallback_model="openrouter/qwen/qwen-2.5-72b-instruct",
+        primary_model=LLM_REASONING_PRIMARY,
+        fallback_model=LLM_REASONING_FALLBACK,
         contents=[raw_text],
         config=types.GenerateContentConfig(
             system_instruction=final_prompt,
@@ -552,8 +553,8 @@ async def modify_visual_prompt(
     response = await asyncio.to_thread(
         call_gemini_with_fallback,
         client=client,
-        primary_model="openrouter/minimax/minimax-01",
-        fallback_model="openrouter/qwen/qwen-2.5-72b-instruct",
+        primary_model=LLM_REASONING_PRIMARY,
+        fallback_model=LLM_REASONING_FALLBACK,
         contents=[input_text],
         config=types.GenerateContentConfig(
             system_instruction=MODIFY_PROMPT_SYSTEM,
@@ -615,8 +616,8 @@ async def generate_project_title(prompt: str) -> str:
         response = await asyncio.to_thread(
             call_gemini_with_fallback,
             client=client,
-            primary_model="openrouter/minimax/minimax-01",
-            fallback_model="openrouter/qwen/qwen-2.5-72b-instruct",
+            primary_model=LLM_REASONING_PRIMARY,
+            fallback_model=LLM_REASONING_FALLBACK,
             contents=[f"Create a short title for this design prompt: {prompt}"],
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,

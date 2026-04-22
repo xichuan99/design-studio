@@ -7,6 +7,11 @@ from __future__ import annotations
 import os
 import fal_client
 import logging
+from app.core.ai_models import (
+    FAL_IMAGE_IMAGE_TO_IMAGE_PRIMARY,
+    FAL_IMAGE_TEXT_TO_IMAGE_FALLBACK,
+    FAL_IMAGE_TEXT_TO_IMAGE_PRIMARY,
+)
 from app.core.config import settings
 from app.services.prompt_builder import PromptBuilder, STYLE_PRESETS, STYLE_SUFFIXES  # noqa: F401 – re-exported for backward compat
 
@@ -85,9 +90,9 @@ async def generate_background(
 
     # Choose model based on whether we have a reference image (image-to-image vs text-to-image)
     if reference_image_url:
-        primary_model_id = "fal-ai/flux/dev/image-to-image"
+        primary_model_id = FAL_IMAGE_IMAGE_TO_IMAGE_PRIMARY
     else:
-        primary_model_id = "fal-ai/flux-pro/v1.1"
+        primary_model_id = FAL_IMAGE_TEXT_TO_IMAGE_PRIMARY
 
     max_retries = 3
     base_delay = 2.0
@@ -120,7 +125,7 @@ async def generate_background(
             if attempt == max_retries - 1:
                 # Fallback to faster, more robust model if pro fails completely
                 if not reference_image_url:
-                    fallback_model = "fal-ai/flux/schnell"
+                    fallback_model = FAL_IMAGE_TEXT_TO_IMAGE_FALLBACK
                     logger.warning(f"Attempting final fallback to {fallback_model}")
                     try:
                         result = await fal_client.run_async(

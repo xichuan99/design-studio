@@ -10,6 +10,8 @@ from typing import Optional
 
 from PIL import Image
 
+from app.core.ai_models import FAL_RETOUCH
+
 logger = logging.getLogger(__name__)
 
 
@@ -89,7 +91,7 @@ async def retouch_with_codeformer(
 
     # Call CodeFormer on fal.ai
     result = await fal_client.run_async(
-        "fal-ai/codeformer",
+        FAL_RETOUCH,
         arguments={
             "image_url": temp_url,
             "fidelity": float(fidelity),

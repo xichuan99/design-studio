@@ -10,6 +10,11 @@ from typing import Optional
 import fal_client
 from PIL import Image, ImageFilter
 
+from app.core.ai_models import (
+    FAL_BG_INPAINT_FILL,
+    FAL_BG_REMOVE_FALLBACK,
+    FAL_BG_REMOVE_PRIMARY,
+)
 from app.core.config import settings
 from app.services.storage_service import upload_image
 
@@ -39,7 +44,7 @@ async def _remove_background_from_source_url(image_url: str) -> bytes:
     # Using BRIA RMBG v2 — significantly more accurate than birefnet for
     # fine-detail objects (watch straps, product edges, transparent materials)
     result = await fal_client.run_async(
-        "fal-ai/rmbg-v2",
+        FAL_BG_REMOVE_PRIMARY,
         arguments={"image_url": image_url},
     )
 
@@ -48,7 +53,7 @@ async def _remove_background_from_source_url(image_url: str) -> bytes:
         # Fallback to birefnet if bria returns unexpected format
         logger.warning("BRIA RMBG-v2 returned no URL, falling back to birefnet")
         result = await fal_client.run_async(
-            "fal-ai/birefnet",
+            FAL_BG_REMOVE_FALLBACK,
             arguments={"image_url": image_url},
         )
         output_url = result.get("image", {}).get("url")
@@ -220,7 +225,7 @@ async def inpaint_background(
     # 4. Inpaint via flux-pro/v1/fill
     #    white mask = generate new background, black mask = preserve subject
     result = await fal_client.run_async(
-        "fal-ai/flux-pro/v1/fill",
+        FAL_BG_INPAINT_FILL,
         arguments={
             "image_url": resolved_original_url,
             "mask_url": mask_url,

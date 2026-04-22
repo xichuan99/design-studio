@@ -6,6 +6,7 @@ from google.genai import types
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
+from app.core.ai_models import LLM_VISION_FALLBACK, LLM_VISION_PRIMARY
 from app.core.exceptions import AppException
 from fastapi import status
 from app.services.llm_client import get_genai_client, call_gemini_with_fallback
@@ -107,8 +108,8 @@ async def build_ad_concepts(
 
             response = call_gemini_with_fallback(
                 client=client,
-                primary_model="xai/grok-2-vision-1212",
-                fallback_model="openrouter/qwen/qwen-vl-max",
+                primary_model=LLM_VISION_PRIMARY,
+                fallback_model=LLM_VISION_FALLBACK,
                 contents=contents,
                 config=types.GenerateContentConfig(
                     system_instruction=AD_CREATOR_SYSTEM_PROMPT,

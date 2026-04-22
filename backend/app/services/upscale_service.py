@@ -3,6 +3,7 @@
 import os
 import fal_client
 from typing import Dict, Any
+from app.core.ai_models import FAL_UPSCALE
 from app.core.config import settings
 
 
@@ -38,7 +39,7 @@ async def upscale_image(image_url: str, scale: int = 2) -> Dict[str, Any]:
     # For now, let's use fal-ai/aura-sr which is generally available.
 
     # If using fal-ai/esrgan:
-    model_id = "fal-ai/esrgan"
+    model_id = FAL_UPSCALE
 
     scale_param = scale if scale in [2, 4, 8] else 4
 

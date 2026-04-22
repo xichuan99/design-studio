@@ -8,6 +8,7 @@ from PIL import Image, ImageFilter
 
 logger = logging.getLogger(__name__)
 
+from app.core.ai_models import FAL_BG_INPAINT_FILL
 from app.core.exceptions import AppException
 import fal_client
 
@@ -77,7 +78,7 @@ async def inpaint_image(
 
         # We use fal-ai/flux-pro/v1/fill as it offers excellent inpainting capabilities
         result = await fal_client.run_async(
-            "fal-ai/flux-pro/v1/fill", arguments=arguments
+            FAL_BG_INPAINT_FILL, arguments=arguments
         )
 
         # Result structure usually contains 'images' or 'image'

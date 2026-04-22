@@ -5,6 +5,7 @@ import PyPDF2
 from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from app.core.ai_models import EMBEDDING_TEXT_MODEL
 from app.services.llm_client import get_genai_client
 from app.models.brand_memory import BrandMemory
 
@@ -30,7 +31,7 @@ async def get_embedding_for_text(text: str) -> List[float]:
     try:
         # Use gemini-embedding model
         result = client.models.embed_content(
-            model='text-embedding-004',
+            model=EMBEDDING_TEXT_MODEL,
             contents=text,
         )
         return result.embeddings[0].values

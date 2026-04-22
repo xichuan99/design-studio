@@ -5,6 +5,7 @@ import logging
 logger = logging.getLogger(__name__)
 from google import genai
 from typing import List, Dict, Any
+from app.core.ai_models import LLM_VISION_FALLBACK, LLM_VISION_PRIMARY
 from app.services.llm_client import get_genai_client, call_gemini_with_fallback
 from app.services.llm_json_utils import parse_llm_json
 
@@ -54,8 +55,8 @@ async def extract_colors_from_image(
     try:
         response = call_gemini_with_fallback(
             client=client,
-            primary_model="xai/grok-2-vision-1212",
-            fallback_model="openrouter/qwen/qwen-vl-max",
+            primary_model=LLM_VISION_PRIMARY,
+            fallback_model=LLM_VISION_FALLBACK,
             contents=[
                 "Extract the 5 dominant brand colors from this logo/image. Respond with pure JSON only.",
                 genai.types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
