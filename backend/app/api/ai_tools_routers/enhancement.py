@@ -138,7 +138,7 @@ async def retouch(
         raise ValidationError(detail="Image size exceeds 10MB limit")
 
     from app.services.file_validation import validate_uploaded_image
-    await validate_uploaded_image(content, user_id=current_user.id, db=db)
+    await validate_uploaded_image(content, max_size_mb=10, user_id=current_user.id, db=db)
 
     from app.services.credit_service import log_credit_change
 
@@ -246,7 +246,7 @@ async def create_id_photo(
         raise ValidationError(detail="Image size exceeds 10MB limit")
 
     from app.services.file_validation import validate_uploaded_image
-    await validate_uploaded_image(content, user_id=current_user.id, db=db)
+    await validate_uploaded_image(content, max_size_mb=10, user_id=current_user.id, db=db)
 
     from app.services.credit_service import log_credit_change
 

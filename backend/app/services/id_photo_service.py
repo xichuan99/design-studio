@@ -93,8 +93,9 @@ async def generate_id_photo(
             # Get largest face (most likely the subject)
             (x, y, w, h) = max(faces, key=lambda f: f[2] * f[3])
 
-            # Standard Pasfoto: Face height is ~50-60% of total image height
-            desired_face_h = int(target_h * 0.55)
+            # Standard pasfoto framing is safer around ~50% face height.
+            # This leaves extra room for hair/head top and reduces top clipping.
+            desired_face_h = int(target_h * 0.50)
             scale = desired_face_h / max(h, 1)  # prevent div by zero
 
             new_w = int(img_w * scale)
@@ -104,15 +105,23 @@ async def generate_id_photo(
             )
 
             # Recalculate face box relative to new scaled dimensions
-            scaled_x, scaled_y, scaled_w, _ = (
+            scaled_x, scaled_y, scaled_w, scaled_h = (
                 int(x * scale),
                 int(y * scale),
                 int(w * scale),
                 int(h * scale),
             )
 
-            # Position face: horizontally centered, vertically with ~12% clearance at the top
-            crop_top = scaled_y - int(target_h * 0.12)
+            # Estimate head top from face box and preserve explicit top headroom.
+            estimated_head_top = scaled_y - int(scaled_h * 0.45)
+            desired_top_headroom = int(target_h * 0.08)
+            crop_top = estimated_head_top - desired_top_headroom
+
+            # Keep enough room for chin/neck so lower face is not cut.
+            face_bottom = scaled_y + scaled_h
+            max_crop_top_for_chin = face_bottom + int(scaled_h * 0.60) - target_h
+            crop_top = min(crop_top, max_crop_top_for_chin)
+
             crop_bottom = crop_top + target_h
 
             crop_left = scaled_x + (scaled_w // 2) - (target_w // 2)

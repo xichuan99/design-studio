@@ -28,7 +28,7 @@ async def upload_user_image(
 
     content = await file.read()
     from app.services.file_validation import validate_uploaded_image
-    mime_type = await validate_uploaded_image(content, max_size_mb=5, user_id=current_user.id, db=db)
+    mime_type = await validate_uploaded_image(content, max_size_mb=10, user_id=current_user.id, db=db)
     try:
         url = await upload_image_tracked(
             image_bytes=content,
