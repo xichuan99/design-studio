@@ -5,7 +5,10 @@ import asyncio
 from app.core.config import settings
 from app.schemas.design import ParsedTextElements
 from app.services.llm_client import get_genai_client, call_gemini_with_fallback
-from app.services.llm_json_utils import parse_llm_json
+from app.services.llm_json_utils import (
+    extract_json_from_text as _extract_json_from_text,
+    parse_llm_json,
+)
 
 from app.services.llm_prompts import (
     SYSTEM_PROMPT,
@@ -30,6 +33,11 @@ def normalize_brief_questions_payload(payload: object) -> dict:
 
     parsed = BriefQuestionsResponse.model_validate(normalized)
     return parsed.model_dump()
+
+
+def extract_json_from_text(raw_text: str) -> str:
+    """Backward-compatible wrapper for legacy imports in tests/services."""
+    return _extract_json_from_text(raw_text)
 
 
 async def generate_design_brief_questions(raw_text: str) -> dict:
