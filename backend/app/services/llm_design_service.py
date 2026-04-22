@@ -5,7 +5,7 @@ import asyncio
 from app.core.config import settings
 from app.schemas.design import ParsedTextElements
 from app.services.llm_client import get_genai_client, call_gemini_with_fallback
-from app.services.llm_json_utils import extract_json_from_text, parse_llm_json
+from app.services.llm_json_utils import parse_llm_json
 
 from app.services.llm_prompts import (
     SYSTEM_PROMPT,

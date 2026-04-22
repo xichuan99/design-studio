@@ -1,6 +1,5 @@
 import html
 import io
-import textwrap
 import zipfile
 
 from PIL import Image, ImageDraw, ImageFont

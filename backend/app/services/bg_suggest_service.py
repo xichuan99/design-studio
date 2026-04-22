@@ -10,7 +10,6 @@ This hybrid approach is cost-effective: Florence-2 on fal.ai handles vision (~$0
 and Gemini only processes text (no image), which is far cheaper than Gemini Vision.
 """
 
-import json
 import logging
 import uuid
 

@@ -212,8 +212,8 @@ async def generate_ai_copywriting(
     )
 
     try:
-        clean_json = extract_json_from_text(response.text)
-        parsed = CopywritingResponse.model_validate_json(clean_json)
+        data = parse_llm_json(response.text)
+        parsed = CopywritingResponse.model_validate(data)
         return parsed.model_dump()
     except Exception as e:
         import logging

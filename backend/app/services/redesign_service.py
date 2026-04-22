@@ -1,7 +1,6 @@
 """Redesign Service."""
 
 import httpx
-import json
 import logging
 import asyncio
 from google.genai import types

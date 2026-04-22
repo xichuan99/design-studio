@@ -1,6 +1,5 @@
 """Service for extracting and managing brand colors."""
 
-import json
 import logging
 
 logger = logging.getLogger(__name__)
