@@ -1,6 +1,6 @@
 import { AppHeader } from "@/components/layout/AppHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Wand2, ImagePlus, Eraser, MoveDiagonal, Sparkles, Camera, ShieldCheck, Layers, Images, Type } from "lucide-react";
+import { Wand2, Eraser, MoveDiagonal, Sparkles, Camera, ShieldCheck, Layers, Images, Type } from "lucide-react";
 import Link from "next/link";
 
 export default function ToolsHubPage() {
@@ -10,13 +10,6 @@ export default function ToolsHubPage() {
       description: "Ganti background foto produk Anda jadi studio profesional \u2014 cocok untuk Shopee & Tokopedia.",
       icon: <Wand2 className="w-8 h-8 text-blue-500" />,
       href: "/tools/background-swap",
-      isReady: true,
-    },
-    {
-      title: "AI Image Upscaler",
-      description: "Foto HP buram atau kecil? Perbesar dan pertajam otomatis supaya layak upload ke marketplace.",
-      icon: <ImagePlus className="w-8 h-8 text-green-500" />,
-      href: "/tools/upscaler",
       isReady: true,
     },
     {

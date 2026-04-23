@@ -12,7 +12,6 @@ import httpx
 from fastapi import APIRouter, Depends, UploadFile, File, Form, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.services import (
-    upscale_service,
     retouch_service,
     id_photo_service,
     watermark_service,
@@ -31,7 +30,7 @@ logger = logging.getLogger(__name__)
     response_model=dict,
     status_code=status.HTTP_200_OK,
     summary="Upscale Image",
-    description="Upscales an image using AI (Fal.ai). Cost: 1 credit.",
+    description="Upscale feature has been disabled.",
     responses=ERROR_RESPONSES,
 )
 async def upscale_image(
@@ -40,72 +39,7 @@ async def upscale_image(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(rate_limit_dependency),
 ):
-    try:
-        from app.core.credit_costs import COST_UPSCALE
-
-        if current_user.credits_remaining < COST_UPSCALE:
-            raise InsufficientCreditsError(detail="Insufficient credits")
-
-        start_time = time.time()
-
-        # 1. Upload original to S3
-        temp_id = str(uuid.uuid4())[:8]
-        image_bytes = await file.read()
-
-        from app.services.file_validation import validate_uploaded_image
-        mime_type = await validate_uploaded_image(image_bytes, user_id=current_user.id, db=db)
-
-        temp_url = await upload_image(
-            image_bytes, content_type=mime_type, prefix=f"temp_upscale_{temp_id}"
-        )
-
-        # 2. Call Fal.ai for upscaling
-        result = await upscale_service.upscale_image(temp_url, scale)
-        upscaled_url = result.get("url")
-
-        if not upscaled_url:
-            raise InternalServerError(detail="Upscale failed to return URL")
-
-        # 3. Download the result and upload to our S3
-        async with httpx.AsyncClient() as http_client:
-            resp = await http_client.get(upscaled_url, timeout=60.0)
-            resp.raise_for_status()
-            final_bytes = resp.content
-
-        # Determine content type of the result (Fal upscale docs say it preserves format usually, default jpeg)
-        final_mime = "image/png" if ".png" in upscaled_url.lower() else "image/jpeg"
-
-        final_id = str(uuid.uuid4())[:12]
-        stored_url = await upload_image(
-            final_bytes, content_type=final_mime, prefix=f"upscaled/{final_id}"
-        )
-
-        from app.services.credit_service import log_credit_change
-
-        await log_credit_change(db, current_user, -COST_UPSCALE, "Upscale gambar")
-        await db.commit()
-
-        # Save to AI tool results gallery
-        from app.api.ai_tools_routers.results import save_tool_result
-
-        result_id = await save_tool_result(
-            db,
-            current_user.id,
-            "upscale",
-            stored_url,
-            len(final_bytes),
-            f"{scale}x upscale",
-        )
-        await db.commit()
-
-        logger.info(f"Upscale logic took {time.time() - start_time:.2f}s")
-        return {"url": stored_url, "result_id": result_id}
-
-    except AppException:
-        raise
-    except Exception as e:
-        logger.exception(f"Failed to process upscale request: {str(e)}")
-        raise InternalServerError(detail="Failed to process image upscaling")
+    raise ValidationError(detail="Fitur Upscaler sudah dinonaktifkan")
 
 
 @router.post(

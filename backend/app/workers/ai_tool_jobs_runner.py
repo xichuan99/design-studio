@@ -22,14 +22,12 @@ from app.workers.ai_tool_jobs_creative import (
 )
 from app.workers.ai_tool_jobs_enhancement import (
     execute_retouch_tool_job,
-    execute_upscale_tool_job,
 )
 
 AiToolExecutor = Callable[[str], Awaitable[None]]
 
 
 AI_TOOL_EXECUTORS: dict[str, AiToolExecutor] = {
-    "upscale": execute_upscale_tool_job,
     "retouch": execute_retouch_tool_job,
     "background_swap": execute_background_swap_tool_job,
     "generative_expand": execute_generative_expand_tool_job,

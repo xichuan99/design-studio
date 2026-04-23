@@ -10,7 +10,6 @@ import { Loader2, FolderOpen } from "lucide-react";
 const TOOL_FILTERS = [
     { label: "Semua", value: "" },
     { label: "BG Swap", value: "background_swap" },
-    { label: "Upscale", value: "upscale" },
     { label: "Retouch", value: "retouch" },
     { label: "Pasfoto", value: "id_photo" },
     { label: "Magic Eraser", value: "magic_eraser" },

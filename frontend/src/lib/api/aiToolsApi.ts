@@ -269,21 +269,10 @@ export function useAiToolsEndpoints() {
         }, [API_BASE_URL, getHeaders]);
 
     const upscaleImage = useCallback(async (file: File, scale: number = 2.0): Promise<{ url: string }> => {
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('scale', scale.toString());
-    
-            const response = await fetch(`${API_BASE_URL}/tools/upscale`, {
-                method: 'POST',
-                headers: getHeaders(true), // true implies skipContentType
-                body: formData,
-            });
-            if (!response.ok) {
-                const errBase = await response.json().catch(() => ({}));
-                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to upscale image');
-            }
-            return response.json();
-        }, [API_BASE_URL, getHeaders]);
+            void file;
+            void scale;
+            throw new Error('Fitur Upscaler sudah dinonaktifkan');
+        }, []);
 
     const generateTextBanner = useCallback(async (payload: {
             text: string;

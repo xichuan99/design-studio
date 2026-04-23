@@ -1,6 +1,6 @@
 export const metadata = {
     title: "Aset AI Saya — SmartDesign",
-    description: "Kelola semua hasil AI Tools Anda: background swap, upscale, retouch, dan lainnya.",
+    description: "Kelola semua hasil AI Tools Anda: background swap, retouch, dan lainnya.",
 };
 
 export default function MyAssetsLayout({

@@ -38,13 +38,11 @@ from app.core.credit_costs import (
     COST_TEXT_BANNER_PREMIUM,
     COST_TEXT_BANNER_PREMIUM_ULTRA,
     COST_TEXT_BANNER_STD,
-    COST_UPSCALE,
 )
 
 router = APIRouter(tags=["AI Tools"])
 
 SUPPORTED_TOOL_NAMES = {
-    "upscale",
     "retouch",
     "background_swap",
     "product_scene",
@@ -57,10 +55,9 @@ SUPPORTED_TOOL_NAMES = {
 }
 
 # Tools that do NOT support ultra quality (non-generative models)
-_ULTRA_UNSUPPORTED_TOOLS = {"upscale", "retouch", "id_photo", "watermark"}
+_ULTRA_UNSUPPORTED_TOOLS = {"retouch", "id_photo", "watermark"}
 
 _TOOL_CREDIT_COST_STANDARD = {
-    "upscale": COST_UPSCALE,
     "retouch": COST_RETOUCH,
     "background_swap": COST_BG_SWAP,
     "product_scene": COST_PRODUCT_SCENE,
@@ -104,7 +101,6 @@ def get_credit_cost(
 
 class CreateToolJobRequest(BaseModel):
     tool_name: Literal[
-        "upscale",
         "retouch",
         "background_swap",
         "product_scene",

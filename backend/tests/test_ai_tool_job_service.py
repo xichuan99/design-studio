@@ -35,7 +35,7 @@ async def test_create_job_normalizes_long_idempotency_key() -> None:
     job, is_new_job = await create_job(
         db=db,
         user_id=uuid4(),
-        tool_name="upscale",
+        tool_name="retouch",
         payload={"image_url": "https://example.com/image.jpg"},
         idempotency_key="y" * 300,
     )

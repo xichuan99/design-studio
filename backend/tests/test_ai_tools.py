@@ -115,46 +115,20 @@ def test_background_suggest_endpoint_success():
         mock_suggest.assert_called_once()
 
 
-def test_upscale_endpoint_success():
-    """Test upscaling an image."""
+def test_upscale_endpoint_disabled():
+    """Upscale endpoint should return validation error because feature is disabled."""
     mock_file_content = b"fake_image_bytes"
     files = {"file": ("test.png", mock_file_content, "image/png")}
     data = {"scale": "2"}
 
-    with (
-        patch(
-            "app.api.ai_tools_routers.enhancement.upload_image", new_callable=AsyncMock
-        ) as mock_upload,
-        patch(
-            "app.services.upscale_service.upscale_image", new_callable=AsyncMock
-        ) as mock_upscale,
-        patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_http_get,
-    ):
-        # Let upload_image return different URLs for temp vs final
-        mock_upload.side_effect = [
-            "http://storage.com/temp.jpg",
-            "http://storage.com/final.png",
-        ]
-        mock_upscale.return_value = {"url": "http://fal.com/upscaled.png"}
+    res = client.post(
+        "/api/tools/upscale",
+        data=data,
+        files=files,
+    )
 
-        # Mock httpx response
-        mock_response = MagicMock()
-        mock_response.content = b"hd_bytes"
-        mock_response.raise_for_status = lambda: None
-        mock_http_get.return_value = mock_response
-
-        res = client.post(
-            "/api/tools/upscale",
-            data=data,
-            files=files,
-        )
-
-        assert res.status_code == 200
-        data = res.json()
-        assert data["url"] == "http://storage.com/final.png"
-        assert "result_id" in data
-        assert mock_upload.call_count == 2
-        mock_upscale.assert_called_once_with("http://storage.com/temp.jpg", 2.0)
+    assert res.status_code == 422
+    assert "dinonaktifkan" in str(res.json()).lower()
 
 
 def test_text_banner_endpoint_success():
