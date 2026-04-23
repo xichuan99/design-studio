@@ -6,6 +6,8 @@ import { AiToolResult, AiGeneration } from "@/lib/api/types";
 import { AssetCard } from "@/components/assets/AssetCard";
 import { GenerationCard } from "@/components/assets/GenerationCard";
 import { Loader2, FolderOpen } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 const TOOL_FILTERS = [
     { label: "Semua", value: "" },
@@ -56,6 +58,10 @@ export function AssetGrid({ selectedFolderId }: { selectedFolderId?: string | nu
     const [loadingTools, setLoadingTools] = useState(true);
     const [loadingGenerations, setLoadingGenerations] = useState(true);
     const [activeFilter, setActiveFilter] = useState("");
+    const [isSelectionMode, setIsSelectionMode] = useState(false);
+    const [selectedToolIds, setSelectedToolIds] = useState<Set<string>>(new Set());
+    const [selectedGenerationIds, setSelectedGenerationIds] = useState<Set<string>>(new Set());
+    const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
     // Stable refs to avoid infinite loops
     const getMyToolResultsRef = useRef(getMyToolResults);
@@ -99,6 +105,12 @@ export function AssetGrid({ selectedFolderId }: { selectedFolderId?: string | nu
         loadGenerations();
     }, [loadGenerations]);
 
+    useEffect(() => {
+        setIsSelectionMode(false);
+        setSelectedToolIds(new Set());
+        setSelectedGenerationIds(new Set());
+    }, [activeTab, activeFilter, selectedFolderId]);
+
     const handleDeleteTool = async (id: string) => {
         await deleteToolResultRef.current(id);
         setToolResults((prev) => prev.filter((r) => r.id !== id));
@@ -107,6 +119,98 @@ export function AssetGrid({ selectedFolderId }: { selectedFolderId?: string | nu
     const handleDeleteGeneration = async (id: string) => {
         await deleteGenerationRef.current(id);
         setGenerations((prev) => prev.filter((g) => g.id !== id));
+    };
+
+    const toggleToolSelection = (id: string) => {
+        setSelectedToolIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) {
+                next.delete(id);
+            } else {
+                next.add(id);
+            }
+            return next;
+        });
+    };
+
+    const toggleGenerationSelection = (id: string) => {
+        setSelectedGenerationIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) {
+                next.delete(id);
+            } else {
+                next.add(id);
+            }
+            return next;
+        });
+    };
+
+    const visibleToolIds = toolResults.map((item) => item.id);
+    const visibleGenerationIds = generations.map((item) => item.id);
+    const selectedCount = activeTab === "tools" ? selectedToolIds.size : selectedGenerationIds.size;
+
+    const clearSelection = () => {
+        setSelectedToolIds(new Set());
+        setSelectedGenerationIds(new Set());
+    };
+
+    const handleSelectAllVisible = () => {
+        if (activeTab === "tools") {
+            setSelectedToolIds(new Set(visibleToolIds));
+            return;
+        }
+        setSelectedGenerationIds(new Set(visibleGenerationIds));
+    };
+
+    const handleBulkDelete = async () => {
+        const selectedIds = activeTab === "tools" ? Array.from(selectedToolIds) : Array.from(selectedGenerationIds);
+        if (selectedIds.length === 0 || isBulkDeleting) return;
+
+        const confirmDelete = window.confirm(
+            `Hapus ${selectedIds.length} aset terpilih? Kuota storage dari file yang berhasil dihapus akan dikembalikan.`
+        );
+        if (!confirmDelete) return;
+
+        setIsBulkDeleting(true);
+        try {
+            const results = await Promise.allSettled(
+                selectedIds.map((id) =>
+                    activeTab === "tools" ? deleteToolResultRef.current(id) : deleteGenerationRef.current(id)
+                )
+            );
+
+            const successIds = results
+                .map((result, index) => ({ result, id: selectedIds[index] }))
+                .filter((item) => item.result.status === "fulfilled")
+                .map((item) => item.id);
+
+            const failedIds = results
+                .map((result, index) => ({ result, id: selectedIds[index] }))
+                .filter((item) => item.result.status === "rejected")
+                .map((item) => item.id);
+
+            if (activeTab === "tools") {
+                setToolResults((prev) => prev.filter((item) => !successIds.includes(item.id)));
+                setSelectedToolIds(new Set(failedIds));
+            } else {
+                setGenerations((prev) => prev.filter((item) => !successIds.includes(item.id)));
+                setSelectedGenerationIds(new Set(failedIds));
+            }
+
+            if (failedIds.length === 0) {
+                toast.success(`${successIds.length} aset berhasil dihapus.`);
+                setIsSelectionMode(false);
+            } else if (successIds.length > 0) {
+                toast.warning(`${successIds.length} aset terhapus, ${failedIds.length} aset gagal dihapus.`);
+            } else {
+                toast.error("Gagal menghapus aset terpilih. Silakan coba lagi.");
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error("Terjadi kesalahan saat menghapus aset terpilih.");
+        } finally {
+            setIsBulkDeleting(false);
+        }
     };
 
     return (
@@ -142,21 +246,57 @@ export function AssetGrid({ selectedFolderId }: { selectedFolderId?: string | nu
             {activeTab === "tools" && (
                 <div className="space-y-5">
                     {/* Filter chips */}
-                    <div className="flex flex-wrap gap-2">
-                        {TOOL_FILTERS.map((f) => (
-                            <button
-                                key={f.value}
-                                onClick={() => setActiveFilter(f.value)}
-                                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                                    activeFilter === f.value
-                                        ? "bg-primary text-primary-foreground border-primary"
-                                        : "bg-muted/50 text-muted-foreground border-border/50 hover:border-primary/40 hover:text-foreground"
-                                }`}
-                            >
-                                {f.label}
-                            </button>
-                        ))}
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                        <div className="flex flex-wrap gap-2">
+                            {TOOL_FILTERS.map((f) => (
+                                <button
+                                    key={f.value}
+                                    onClick={() => setActiveFilter(f.value)}
+                                    className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                                        activeFilter === f.value
+                                            ? "bg-primary text-primary-foreground border-primary"
+                                            : "bg-muted/50 text-muted-foreground border-border/50 hover:border-primary/40 hover:text-foreground"
+                                    }`}
+                                >
+                                    {f.label}
+                                </button>
+                            ))}
+                        </div>
+                        <Button
+                            variant={isSelectionMode ? "secondary" : "outline"}
+                            size="sm"
+                            onClick={() => {
+                                if (isSelectionMode) {
+                                    setIsSelectionMode(false);
+                                    clearSelection();
+                                    return;
+                                }
+                                setIsSelectionMode(true);
+                            }}
+                        >
+                            {isSelectionMode ? "Selesai Pilih" : "Pilih"}
+                        </Button>
                     </div>
+
+                    {isSelectionMode && (
+                        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/60 bg-muted/40 p-3">
+                            <span className="text-xs text-muted-foreground">{selectedCount} terpilih</span>
+                            <Button variant="outline" size="sm" onClick={handleSelectAllVisible}>
+                                Pilih Semua Terlihat
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={clearSelection}>
+                                Bersihkan
+                            </Button>
+                            <Button
+                                variant="destructive"
+                                size="sm"
+                                disabled={selectedCount === 0 || isBulkDeleting}
+                                onClick={handleBulkDelete}
+                            >
+                                {isBulkDeleting ? "Menghapus..." : "Hapus Terpilih"}
+                            </Button>
+                        </div>
+                    )}
 
                     {loadingTools ? (
                         <LoadingState />
@@ -171,7 +311,14 @@ export function AssetGrid({ selectedFolderId }: { selectedFolderId?: string | nu
                     ) : (
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                             {toolResults.map((r) => (
-                                <AssetCard key={r.id} result={r} onDelete={handleDeleteTool} />
+                                <AssetCard
+                                    key={r.id}
+                                    result={r}
+                                    onDelete={handleDeleteTool}
+                                    isSelectionMode={isSelectionMode}
+                                    isSelected={selectedToolIds.has(r.id)}
+                                    onToggleSelect={toggleToolSelection}
+                                />
                             ))}
                         </div>
                     )}
@@ -181,6 +328,43 @@ export function AssetGrid({ selectedFolderId }: { selectedFolderId?: string | nu
             {/* Design generations tab */}
             {activeTab === "generations" && (
                 <div className="space-y-5">
+                    <div className="flex items-center justify-end">
+                        <Button
+                            variant={isSelectionMode ? "secondary" : "outline"}
+                            size="sm"
+                            onClick={() => {
+                                if (isSelectionMode) {
+                                    setIsSelectionMode(false);
+                                    clearSelection();
+                                    return;
+                                }
+                                setIsSelectionMode(true);
+                            }}
+                        >
+                            {isSelectionMode ? "Selesai Pilih" : "Pilih"}
+                        </Button>
+                    </div>
+
+                    {isSelectionMode && (
+                        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/60 bg-muted/40 p-3">
+                            <span className="text-xs text-muted-foreground">{selectedCount} terpilih</span>
+                            <Button variant="outline" size="sm" onClick={handleSelectAllVisible}>
+                                Pilih Semua Terlihat
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={clearSelection}>
+                                Bersihkan
+                            </Button>
+                            <Button
+                                variant="destructive"
+                                size="sm"
+                                disabled={selectedCount === 0 || isBulkDeleting}
+                                onClick={handleBulkDelete}
+                            >
+                                {isBulkDeleting ? "Menghapus..." : "Hapus Terpilih"}
+                            </Button>
+                        </div>
+                    )}
+
                     {loadingGenerations ? (
                         <LoadingState />
                     ) : generations.length === 0 ? (
@@ -188,7 +372,14 @@ export function AssetGrid({ selectedFolderId }: { selectedFolderId?: string | nu
                     ) : (
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                             {generations.map((g) => (
-                                <GenerationCard key={g.id} generation={g} onDelete={handleDeleteGeneration} />
+                                <GenerationCard
+                                    key={g.id}
+                                    generation={g}
+                                    onDelete={handleDeleteGeneration}
+                                    isSelectionMode={isSelectionMode}
+                                    isSelected={selectedGenerationIds.has(g.id)}
+                                    onToggleSelect={toggleGenerationSelection}
+                                />
                             ))}
                         </div>
                     )}

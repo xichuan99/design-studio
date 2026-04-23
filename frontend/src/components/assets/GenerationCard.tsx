@@ -2,7 +2,7 @@
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, Trash2, LinkIcon, Loader2 } from "lucide-react";
+import { Download, Trash2, LinkIcon, Loader2, Check } from "lucide-react";
 import Image from "next/image";
 import { AiGeneration } from "@/lib/api/types";
 import { useState } from "react";
@@ -20,9 +20,18 @@ import {
 interface GenerationCardProps {
     generation: AiGeneration;
     onDelete: (id: string) => Promise<void>;
+    isSelectionMode?: boolean;
+    isSelected?: boolean;
+    onToggleSelect?: (id: string) => void;
 }
 
-export function GenerationCard({ generation, onDelete }: GenerationCardProps) {
+export function GenerationCard({
+    generation,
+    onDelete,
+    isSelectionMode = false,
+    isSelected = false,
+    onToggleSelect,
+}: GenerationCardProps) {
     const [isDeleting, setIsDeleting] = useState(false);
     const [showDeleteConform, setShowDeleteConfirm] = useState(false);
 
@@ -47,8 +56,32 @@ export function GenerationCard({ generation, onDelete }: GenerationCardProps) {
         year: "numeric",
     });
 
+    const toggleSelect = () => {
+        onToggleSelect?.(generation.id);
+    };
+
     return (
-        <Card className="group relative overflow-hidden border-border/50 bg-card hover:border-primary/40 transition-colors">
+        <Card
+            className={`group relative overflow-hidden border-border/50 bg-card transition-colors ${
+                isSelectionMode
+                    ? `${isSelected ? "ring-2 ring-primary border-primary/70" : "hover:border-primary/40"}`
+                    : "hover:border-primary/40"
+            }`}
+            onClick={isSelectionMode ? toggleSelect : undefined}
+            role={isSelectionMode ? "button" : undefined}
+            tabIndex={isSelectionMode ? 0 : undefined}
+            onKeyDown={
+                isSelectionMode
+                    ? (e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              toggleSelect();
+                          }
+                      }
+                    : undefined
+            }
+            aria-label={isSelectionMode ? "Pilih hasil visual" : undefined}
+        >
             {/* Thumbnail */}
             <div className="aspect-square bg-muted relative overflow-hidden">
                 <Image
@@ -60,32 +93,49 @@ export function GenerationCard({ generation, onDelete }: GenerationCardProps) {
                     unoptimized={generation.result_url.startsWith('http')}
                 />
 
-                {/* Hover overlay */}
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
-                    <Button
-                        variant="secondary"
-                        size="sm"
-                        className="w-32 gap-2 text-xs"
-                        onClick={handleDownload}
+                {isSelectionMode ? (
+                    <button
+                        type="button"
+                        className={`absolute top-2 left-2 z-10 w-6 h-6 rounded-full border flex items-center justify-center transition-colors ${
+                            isSelected
+                                ? "bg-primary border-primary text-primary-foreground"
+                                : "bg-black/50 border-white/50 text-white"
+                        }`}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            toggleSelect();
+                        }}
+                        aria-label={isSelected ? "Batalkan pilihan hasil visual" : "Pilih hasil visual"}
                     >
-                        <Download className="w-3.5 h-3.5" />
-                        Download
-                    </Button>
-                    <Button
-                        variant="destructive"
-                        size="sm"
-                        className="w-32 gap-2 text-xs font-semibold bg-red-600/90 hover:bg-red-600 text-white"
-                        onClick={() => setShowDeleteConfirm(true)}
-                        disabled={isDeleting}
-                    >
-                        {isDeleting ? (
+                        {isSelected && <Check className="w-3.5 h-3.5" />}
+                    </button>
+                ) : (
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            className="w-32 gap-2 text-xs"
+                            onClick={handleDownload}
+                        >
+                            <Download className="w-3.5 h-3.5" />
+                            Download
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            size="sm"
+                            className="w-32 gap-2 text-xs font-semibold bg-red-600/90 hover:bg-red-600 text-white"
+                            onClick={() => setShowDeleteConfirm(true)}
+                            disabled={isDeleting}
+                        >
+                            {isDeleting ? (
                                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
                             ) : (
                                 <Trash2 className="w-3.5 h-3.5" />
                             )}
                             Hapus
-                    </Button>
-                </div>
+                        </Button>
+                    </div>
+                )}
 
                 {/* Badge */}
                 <div className="absolute top-2 right-2 flex flex-col gap-1 items-end pointer-events-none">
@@ -107,10 +157,11 @@ export function GenerationCard({ generation, onDelete }: GenerationCardProps) {
                     {label}
                 </p>
                 <p className="text-[10px] text-muted-foreground/60 mt-0.5">{date}</p>
+                {isSelectionMode && isSelected && <p className="text-[10px] text-primary mt-1">Terpilih</p>}
             </div>
 
             {/* Delete Confirmation */}
-            <AlertDialog open={showDeleteConform} onOpenChange={setShowDeleteConfirm}>
+            <AlertDialog open={showDeleteConform && !isSelectionMode} onOpenChange={setShowDeleteConfirm}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Hapus hasil visual ini?</AlertDialogTitle>

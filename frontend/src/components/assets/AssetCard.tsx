@@ -3,13 +3,16 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Trash2, Download } from "lucide-react";
+import { Loader2, Trash2, Download, Check } from "lucide-react";
 import Image from "next/image";
 import { AiToolResult } from "@/lib/api/types";
 
 interface AssetCardProps {
     result: AiToolResult;
     onDelete: (id: string) => Promise<void>;
+    isSelectionMode?: boolean;
+    isSelected?: boolean;
+    onToggleSelect?: (id: string) => void;
 }
 
 const TOOL_LABELS: Record<string, string> = {
@@ -25,7 +28,13 @@ const TOOL_LABELS: Record<string, string> = {
     batch: "Batch",
 };
 
-export function AssetCard({ result, onDelete }: AssetCardProps) {
+export function AssetCard({
+    result,
+    onDelete,
+    isSelectionMode = false,
+    isSelected = false,
+    onToggleSelect,
+}: AssetCardProps) {
     const [deleting, setDeleting] = useState(false);
 
     const handleDelete = async () => {
@@ -51,8 +60,32 @@ export function AssetCard({ result, onDelete }: AssetCardProps) {
         year: "numeric",
     });
 
+    const toggleSelect = () => {
+        onToggleSelect?.(result.id);
+    };
+
     return (
-        <Card className="group relative overflow-hidden border-border/50 bg-card hover:border-primary/40 transition-colors">
+        <Card
+            className={`group relative overflow-hidden border-border/50 bg-card transition-colors ${
+                isSelectionMode
+                    ? `${isSelected ? "ring-2 ring-primary border-primary/70" : "hover:border-primary/40"}`
+                    : "hover:border-primary/40"
+            }`}
+            onClick={isSelectionMode ? toggleSelect : undefined}
+            role={isSelectionMode ? "button" : undefined}
+            tabIndex={isSelectionMode ? 0 : undefined}
+            onKeyDown={
+                isSelectionMode
+                    ? (e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              toggleSelect();
+                          }
+                      }
+                    : undefined
+            }
+            aria-label={isSelectionMode ? `Pilih aset ${label}` : undefined}
+        >
             {/* Thumbnail */}
             <div className="aspect-square bg-muted relative overflow-hidden">
                 <Image
@@ -64,32 +97,49 @@ export function AssetCard({ result, onDelete }: AssetCardProps) {
                     unoptimized={result.result_url.startsWith('http')}
                 />
 
-                {/* Hover overlay */}
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-center items-center gap-2">
-                    <Button
-                        variant="secondary"
-                        size="sm"
-                        className="w-32 gap-2 text-xs"
-                        onClick={handleDownload}
+                {isSelectionMode ? (
+                    <button
+                        type="button"
+                        className={`absolute top-2 left-2 z-10 w-6 h-6 rounded-full border flex items-center justify-center transition-colors ${
+                            isSelected
+                                ? "bg-primary border-primary text-primary-foreground"
+                                : "bg-black/50 border-white/50 text-white"
+                        }`}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            toggleSelect();
+                        }}
+                        aria-label={isSelected ? "Batalkan pilihan aset" : "Pilih aset"}
                     >
-                        <Download className="w-3.5 h-3.5" />
-                        Download
-                    </Button>
-                    <Button
-                        variant="destructive"
-                        size="sm"
-                        className="w-32 gap-2 text-xs"
-                        onClick={handleDelete}
-                        disabled={deleting}
-                    >
-                        {deleting ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                            <Trash2 className="w-3.5 h-3.5" />
-                        )}
-                        Hapus
-                    </Button>
-                </div>
+                        {isSelected && <Check className="w-3.5 h-3.5" />}
+                    </button>
+                ) : (
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-center items-center gap-2">
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            className="w-32 gap-2 text-xs"
+                            onClick={handleDownload}
+                        >
+                            <Download className="w-3.5 h-3.5" />
+                            Download
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            size="sm"
+                            className="w-32 gap-2 text-xs"
+                            onClick={handleDelete}
+                            disabled={deleting}
+                        >
+                            {deleting ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                                <Trash2 className="w-3.5 h-3.5" />
+                            )}
+                            Hapus
+                        </Button>
+                    </div>
+                )}
 
                 {/* Tool badge */}
                 <span className="absolute top-2 right-2 text-[10px] bg-black/70 text-white px-2 py-0.5 rounded-full font-medium border border-white/10 pointer-events-none">
@@ -103,6 +153,7 @@ export function AssetCard({ result, onDelete }: AssetCardProps) {
                     {result.input_summary || "Hasil AI tanpa deskripsi"}
                 </p>
                 <p className="text-[10px] text-muted-foreground/60 mt-0.5">{date}</p>
+                {isSelectionMode && isSelected && <p className="text-[10px] text-primary mt-1">Terpilih</p>}
             </div>
         </Card>
     );
