@@ -1,5 +1,4 @@
 from app.core.exceptions import (
-    AppException,
     ValidationError,
     InsufficientCreditsError,
     InternalServerError,
