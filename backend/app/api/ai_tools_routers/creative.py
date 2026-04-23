@@ -20,6 +20,10 @@ from app.services.storage_service import upload_image
 router = APIRouter(tags=["AI Tools"])
 logger = logging.getLogger(__name__)
 
+_SUPPORTED_PRODUCT_SCENE_ASPECT_RATIO = {"1:1", "4:5", "16:9", "9:16"}
+_SUPPORTED_PRODUCT_SCENE_QUALITY = {"standard", "ultra"}
+_SUPPORTED_PRODUCT_SCENE_PROFILE = {"default", "grounded", "soft"}
+
 
 @router.post(
     "/product-scene",
@@ -43,6 +47,33 @@ async def create_product_scene(
     Cost: 1 credit per generation.
     """
     from app.core.credit_costs import COST_PRODUCT_SCENE
+
+    quality = quality.strip().lower()
+    composite_profile = composite_profile.strip().lower()
+
+    if aspect_ratio not in _SUPPORTED_PRODUCT_SCENE_ASPECT_RATIO:
+        raise ValidationError(
+            detail=(
+                "Invalid aspect_ratio for product scene. "
+                "Allowed values: 1:1, 4:5, 16:9, 9:16"
+            )
+        )
+
+    if quality not in _SUPPORTED_PRODUCT_SCENE_QUALITY:
+        raise ValidationError(
+            detail=(
+                "Invalid quality for product scene. "
+                "Allowed values: standard, ultra"
+            )
+        )
+
+    if composite_profile not in _SUPPORTED_PRODUCT_SCENE_PROFILE:
+        raise ValidationError(
+            detail=(
+                "Invalid composite_profile for product scene. "
+                "Allowed values: default, grounded, soft"
+            )
+        )
 
     if current_user.credits_remaining < COST_PRODUCT_SCENE:
         raise InsufficientCreditsError(detail="Insufficient credits")

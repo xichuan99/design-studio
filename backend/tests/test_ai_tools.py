@@ -581,6 +581,36 @@ def test_product_scene_endpoint_success():
         mock_upload.assert_called_once()
 
 
+def test_product_scene_endpoint_invalid_quality():
+    files = {"file": ("test.png", b"fake_product", "image/png")}
+    data = {
+        "theme": "minimalist",
+        "aspect_ratio": "16:9",
+        "quality": "hd",
+        "composite_profile": "grounded",
+    }
+
+    res = client.post("/api/tools/product-scene", data=data, files=files)
+
+    assert res.status_code == 422
+    assert "Invalid quality for product scene" in str(res.json())
+
+
+def test_product_scene_endpoint_invalid_composite_profile():
+    files = {"file": ("test.png", b"fake_product", "image/png")}
+    data = {
+        "theme": "minimalist",
+        "aspect_ratio": "16:9",
+        "quality": "standard",
+        "composite_profile": "hard-shadow",
+    }
+
+    res = client.post("/api/tools/product-scene", data=data, files=files)
+
+    assert res.status_code == 422
+    assert "Invalid composite_profile for product scene" in str(res.json())
+
+
 def test_batch_endpoint_success():
     """Test /batch endpoint"""
     files = [
