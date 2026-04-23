@@ -1,17 +1,37 @@
 import pytest
 from unittest.mock import patch, MagicMock
+import io
+from PIL import Image
 
 from app.services.product_scene_service import generate_product_scene
 
 
 @pytest.fixture
 def mock_image_bytes():
-    return b"fake_product_image_bytes"
+    img = Image.new("RGB", (320, 240), color=(220, 220, 220))
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG")
+    return buf.getvalue()
 
 
 @pytest.fixture
 def mock_bg_bytes():
-    return b"fake_background_image_bytes"
+    img = Image.new("RGB", (1024, 1024), color=(120, 120, 120))
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG")
+    return buf.getvalue()
+
+
+@pytest.fixture
+def mock_no_bg_bytes():
+    img = Image.new("RGBA", (300, 220), color=(0, 0, 0, 0))
+    # Add an opaque subject rectangle in the middle
+    for x in range(70, 230):
+        for y in range(60, 180):
+            img.putpixel((x, y), (255, 50, 50, 255))
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return buf.getvalue()
 
 
 @pytest.fixture
@@ -32,10 +52,11 @@ async def test_generate_product_scene_success(
     mock_remove_bg,
     mock_image_bytes,
     mock_bg_bytes,
+    mock_no_bg_bytes,
     mock_composite_bytes,
 ):
     # Setup mocks
-    mock_remove_bg.return_value = b"fake_no_bg_bytes"
+    mock_remove_bg.return_value = mock_no_bg_bytes
     mock_generate.return_value = {"image_url": "https://fake-fal-url.com/scene.jpg"}
 
     # Mock httpx response
@@ -52,7 +73,10 @@ async def test_generate_product_scene_success(
     )
 
     # Verify orchestration calls
-    mock_remove_bg.assert_called_once_with(mock_image_bytes)
+    mock_remove_bg.assert_called_once()
+    remove_bg_input = mock_remove_bg.call_args.args[0]
+    assert isinstance(remove_bg_input, bytes)
+    assert len(remove_bg_input) > 0
 
     mock_generate.assert_called_once()
     assert (
@@ -62,14 +86,15 @@ async def test_generate_product_scene_success(
 
     mock_get.assert_called_once_with("https://fake-fal-url.com/scene.jpg", timeout=30.0)
 
-    mock_composite.assert_called_once_with(
-        product_png_bytes=b"fake_no_bg_bytes",
-        background_bytes=mock_bg_bytes,
-        scale_factor=0.58,
-        offset_x_ratio=0.5,
-        offset_y_ratio=0.62,
-        add_shadow=True,
-    )
+    mock_composite.assert_called_once()
+    composite_kwargs = mock_composite.call_args.kwargs
+    assert composite_kwargs["product_png_bytes"] == mock_no_bg_bytes
+    assert composite_kwargs["background_bytes"] == mock_bg_bytes
+    assert composite_kwargs["offset_x_ratio"] == 0.5
+    assert composite_kwargs["offset_y_ratio"] == 0.62
+    assert composite_kwargs["add_shadow"] is True
+    assert composite_kwargs["shadow_profile"] == "default"
+    assert composite_kwargs["scale_factor"] == pytest.approx(0.65)
 
     assert result == mock_composite_bytes
 
@@ -78,10 +103,10 @@ async def test_generate_product_scene_success(
 @patch("app.services.product_scene_service.bg_removal_service.remove_background")
 @patch("app.services.product_scene_service.generate_background")
 async def test_generate_product_scene_fallback_theme(
-    mock_generate, mock_remove_bg, mock_image_bytes
+    mock_generate, mock_remove_bg, mock_image_bytes, mock_no_bg_bytes
 ):
     """Test that an unknown theme falls back to 'studio'"""
-    mock_remove_bg.return_value = b"fake_no_bg_bytes"
+    mock_remove_bg.return_value = mock_no_bg_bytes
 
     # Just need it to crash or pass validation, we intercept at generate_background
     mock_generate.side_effect = Exception("Stop execution here")
