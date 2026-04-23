@@ -1,10 +1,15 @@
 """Service for applying watermarks (logos or text) to images."""
 
 import io
-from PIL import Image, ImageEnhance
+from PIL import Image, ImageDraw, ImageEnhance, ImageStat
 
 # Constants for watermark positions
 POSITIONS = ["bottom-right", "bottom-left", "top-right", "top-left", "center", "tiled"]
+VISIBILITY_PRESETS = {
+    "subtle": {"min_opacity": 0.25, "min_scale": 0.12, "backdrop_alpha": 70},
+    "balanced": {"min_opacity": 0.40, "min_scale": 0.16, "backdrop_alpha": 92},
+    "protective": {"min_opacity": 0.58, "min_scale": 0.22, "backdrop_alpha": 120},
+}
 
 
 def _normalize_watermark_settings(position: str, opacity: float, scale: float) -> tuple[str, float, float]:
@@ -21,12 +26,24 @@ def _normalize_watermark_settings(position: str, opacity: float, scale: float) -
     return normalized_position, normalized_opacity, normalized_scale
 
 
+def _resolve_visibility_preset(preset: str) -> dict:
+    return VISIBILITY_PRESETS.get(str(preset or "balanced").strip().lower(), VISIBILITY_PRESETS["balanced"])
+
+
+def _average_luminance(region: Image.Image) -> float:
+    stat = ImageStat.Stat(region.convert("L"))
+    if not stat.mean:
+        return 127.0
+    return float(stat.mean[0])
+
+
 async def apply_watermark(
     base_image_bytes: bytes,
     watermark_bytes: bytes,
     position: str = "bottom-right",
     opacity: float = 0.5,
     scale: float = 0.2,  # Watermark max size as a percentage of base image width/height
+    visibility_preset: str = "balanced",
     padding_ratio: float = 0.05,  # Padding as a percentage of base image dimensions
 ) -> bytes:
     """
@@ -47,6 +64,7 @@ async def apply_watermark(
         Exception: If opening, resizing, pasting, or saving the images fails.
     """
     position, opacity, scale = _normalize_watermark_settings(position, opacity, scale)
+    profile = _resolve_visibility_preset(visibility_preset)
 
     try:
         # Load images
@@ -65,11 +83,28 @@ async def apply_watermark(
         base_w, base_h = base_img.size
         wm_w, wm_h = watermark_img.size
 
+        if position != "tiled":
+            opacity = max(opacity, profile["min_opacity"])
+            scale = max(scale, profile["min_scale"])
+
         # Calculate target size from base width so typical logos remain visible.
         target_wm_w = int(base_w * scale)
         ratio = target_wm_w / max(wm_w, 1)
         new_wm_w = int(wm_w * ratio)
         new_wm_h = int(wm_h * ratio)
+
+        # Keep text logo readable on large images.
+        if position != "tiled":
+            min_wm_w = max(72, int(base_w * 0.08))
+            min_wm_h = max(28, int(base_h * 0.05))
+            if new_wm_w < min_wm_w:
+                ratio = min_wm_w / max(new_wm_w, 1)
+                new_wm_w = min_wm_w
+                new_wm_h = int(new_wm_h * ratio)
+            if new_wm_h < min_wm_h:
+                ratio = min_wm_h / max(new_wm_h, 1)
+                new_wm_h = min_wm_h
+                new_wm_w = int(new_wm_w * ratio)
 
         # Prevent watermark from being overly tall.
         max_wm_h = int(base_h * 0.35)
@@ -125,6 +160,32 @@ async def apply_watermark(
                 x = (base_w - new_wm_w) // 2
                 y = (base_h - new_wm_h) // 2
 
+            # Add adaptive backdrop for contrast in single-placement mode.
+            backdrop_pad = max(6, int(min(base_w, base_h) * 0.01))
+            crop_left = max(0, x)
+            crop_top = max(0, y)
+            crop_right = min(base_w, x + new_wm_w)
+            crop_bottom = min(base_h, y + new_wm_h)
+            region = base_img.crop((crop_left, crop_top, crop_right, crop_bottom))
+            luminance = _average_luminance(region)
+
+            if luminance >= 145:
+                backdrop_rgb = (0, 0, 0)
+            else:
+                backdrop_rgb = (255, 255, 255)
+
+            draw = ImageDraw.Draw(transparent_layer)
+            draw.rounded_rectangle(
+                (
+                    x - backdrop_pad,
+                    y - backdrop_pad,
+                    x + new_wm_w + backdrop_pad,
+                    y + new_wm_h + backdrop_pad,
+                ),
+                radius=max(8, backdrop_pad + 4),
+                fill=(*backdrop_rgb, profile["backdrop_alpha"]),
+            )
+
             transparent_layer.paste(watermark_img, (x, y), mask=watermark_img)
 
         # 4. Composite the layers together
@@ -135,7 +196,7 @@ async def apply_watermark(
 
         # Save to bytes
         img_byte_arr = io.BytesIO()
-        final_img.save(img_byte_arr, format="JPEG", quality=90)
+        final_img.save(img_byte_arr, format="JPEG", quality=95, optimize=True, progressive=True)
         return img_byte_arr.getvalue()
 
     except Exception as e:

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,8 @@ import { toast } from "sonner";
 import { useProjectApi } from "@/lib/api";
 import { useToolJobProgress } from "@/hooks/useToolJobProgress";
 
+type VisibilityPreset = "subtle" | "balanced" | "protective";
+
 export default function WatermarkPlacerPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -28,7 +30,14 @@ export default function WatermarkPlacerPage() {
   const [position, setPosition] = useState<string>("bottom-right");
   const [opacity, setOpacity] = useState<number[]>([50]);
   const [scale, setScale] = useState<number[]>([20]);
+  const [visibilityPreset, setVisibilityPreset] = useState<VisibilityPreset>("balanced");
   const api = useProjectApi();
+
+  const visibilityProfiles: Record<VisibilityPreset, { minOpacity: number; minScale: number; backdrop: number }> = {
+    subtle: { minOpacity: 0.25, minScale: 0.12, backdrop: 0.18 },
+    balanced: { minOpacity: 0.40, minScale: 0.16, backdrop: 0.26 },
+    protective: { minOpacity: 0.58, minScale: 0.22, backdrop: 0.34 },
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -75,8 +84,9 @@ export default function WatermarkPlacerPage() {
           position,
           opacity: opacity[0] / 100,
           scale: scale[0] / 100,
+          visibility_preset: visibilityPreset,
         },
-        idempotencyKey: `${imageFile.name}:${imageFile.size}:${imageFile.lastModified}:${logoFile.name}:${logoFile.size}:${logoFile.lastModified}:${position}:${opacity[0]}:${scale[0]}`,
+        idempotencyKey: `${imageFile.name}:${imageFile.size}:${imageFile.lastModified}:${logoFile.name}:${logoFile.size}:${logoFile.lastModified}:${position}:${opacity[0]}:${scale[0]}:${visibilityPreset}`,
         onCompleted: (job) => {
           if (job.result_url) {
             setResultImage(job.result_url);
@@ -236,6 +246,29 @@ export default function WatermarkPlacerPage() {
                 <Slider min={5} max={80} step={5} value={scale} onValueChange={setScale} />
               </div>
 
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <Label className="text-sm">Kejelasan Watermark</Label>
+                </div>
+                <RadioGroup value={visibilityPreset} onValueChange={(v) => setVisibilityPreset(v as VisibilityPreset)} className="grid grid-cols-3 gap-2">
+                  {[
+                    { value: "subtle", label: "Subtle" },
+                    { value: "balanced", label: "Balanced" },
+                    { value: "protective", label: "Protective" },
+                  ].map((mode) => (
+                    <div key={mode.value}>
+                      <RadioGroupItem value={mode.value} id={`visibility-${mode.value}`} className="peer sr-only" />
+                      <Label
+                        htmlFor={`visibility-${mode.value}`}
+                        className="flex items-center justify-center px-3 py-2 border rounded-md cursor-pointer peer-data-[state=checked]:bg-primary peer-data-[state=checked]:text-primary-foreground peer-data-[state=checked]:border-primary hover:bg-muted font-medium text-xs transition-colors"
+                      >
+                        {mode.label}
+                      </Label>
+                    </div>
+                  ))}
+                </RadioGroup>
+              </div>
+
               <Button
                 size="lg"
                 className="w-full mt-4 font-bold tracking-wide"
@@ -274,11 +307,87 @@ export default function WatermarkPlacerPage() {
                 <div className="relative w-full h-full p-4 flex items-center justify-center">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={imagePreview} alt="Original" className="max-w-full max-h-full object-contain rounded-lg shadow-sm" />
-                     {logoPreview && (
-                         <div className="absolute inset-0 pointer-events-none flex items-center justify-center bg-black/40 backdrop-blur-sm opacity-0 hover:opacity-100 transition-opacity">
-                            <span className="text-white font-medium bg-black/60 px-4 py-2 rounded-full backdrop-blur-md">Klik &apos;Pasang Watermark&apos; untuk melihat hasil</span>
-                         </div>
-                     )}
+                    {logoPreview && (() => {
+                      const profile = visibilityProfiles[visibilityPreset];
+                      const previewOpacity = Math.max(opacity[0] / 100, profile.minOpacity);
+                      const previewScale = Math.max(scale[0] / 100, profile.minScale);
+                      const logoStyle: CSSProperties = {
+                        width: `${Math.round(previewScale * 100)}%`,
+                        maxWidth: "320px",
+                        opacity: previewOpacity,
+                      };
+
+                      const placementStyle: CSSProperties = {
+                        position: "absolute",
+                        inset: 0,
+                        pointerEvents: "none",
+                      };
+
+                      const watermarkNode = (
+                        <div
+                          className="absolute"
+                          style={{
+                            padding: "8px",
+                            borderRadius: "10px",
+                            backgroundColor: `rgba(0,0,0,${profile.backdrop})`,
+                          }}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={logoPreview} alt="Watermark Preview" style={logoStyle} className="h-auto object-contain" />
+                        </div>
+                      );
+
+                      if (position === "tiled") {
+                        const cells = [
+                          { left: "12%", top: "12%" },
+                          { left: "40%", top: "12%" },
+                          { left: "68%", top: "12%" },
+                          { left: "12%", top: "42%" },
+                          { left: "40%", top: "42%" },
+                          { left: "68%", top: "42%" },
+                          { left: "12%", top: "72%" },
+                          { left: "40%", top: "72%" },
+                          { left: "68%", top: "72%" },
+                        ];
+                        return (
+                          <div style={placementStyle}>
+                            {cells.map((cell, idx) => (
+                              <div key={idx} className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: cell.left, top: cell.top }}>
+                                {watermarkNode}
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      }
+
+                      const slotStyle: CSSProperties = {
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        padding: "18px",
+                      };
+
+                      if (position === "top-left") slotStyle.justifyContent = "flex-start";
+                      if (position === "top-right") slotStyle.justifyContent = "flex-end";
+                      if (position === "bottom-left") {
+                        slotStyle.justifyContent = "flex-start";
+                        slotStyle.alignItems = "flex-end";
+                      }
+                      if (position === "bottom-right") {
+                        slotStyle.justifyContent = "flex-end";
+                        slotStyle.alignItems = "flex-end";
+                      }
+                      if (position === "center") {
+                        slotStyle.justifyContent = "center";
+                        slotStyle.alignItems = "center";
+                      }
+
+                      return (
+                        <div style={placementStyle}>
+                          <div style={slotStyle}>{watermarkNode}</div>
+                        </div>
+                      );
+                    })()}
                 </div>
             ) : (
               <div className="text-center p-8 max-w-sm">

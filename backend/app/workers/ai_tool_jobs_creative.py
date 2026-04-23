@@ -113,6 +113,7 @@ async def execute_watermark_tool_job(job_id: str):
         position = str(payload.get("position", "bottom-right"))
         opacity = float(payload.get("opacity", 0.5))
         scale = float(payload.get("scale", 0.2))
+        visibility_preset = str(payload.get("visibility_preset", "balanced"))
 
         if not image_url:
             raise ValueError("Missing image_url in job payload")
@@ -149,6 +150,7 @@ async def execute_watermark_tool_job(job_id: str):
         position=position,
         opacity=opacity,
         scale=scale,
+        visibility_preset=visibility_preset,
     )
 
     await update_ai_tool_job(

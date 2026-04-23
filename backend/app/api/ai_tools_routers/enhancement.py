@@ -267,6 +267,7 @@ async def apply_watermark(
     position: str = Form("bottom-right"),
     opacity: float = Form(0.5),
     scale: float = Form(0.2),
+    visibility_preset: str = Form("balanced"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(rate_limit_dependency),
 ):
@@ -296,6 +297,7 @@ async def apply_watermark(
             position=position,
             opacity=opacity,
             scale=scale,
+            visibility_preset=visibility_preset,
         )
 
         # 2. Upload result

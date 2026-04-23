@@ -538,6 +538,7 @@ def test_watermark_endpoint_success():
             position="bottom-right",
             opacity=0.7,
             scale=0.3,
+            visibility_preset="balanced",
         )
         mock_upload.assert_called_once()
 
