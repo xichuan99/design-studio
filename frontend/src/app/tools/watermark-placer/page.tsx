@@ -34,9 +34,84 @@ export default function WatermarkPlacerPage() {
   const api = useProjectApi();
 
   const visibilityProfiles: Record<VisibilityPreset, { minOpacity: number; minScale: number; backdrop: number }> = {
-    subtle: { minOpacity: 0.25, minScale: 0.12, backdrop: 0.18 },
-    balanced: { minOpacity: 0.40, minScale: 0.16, backdrop: 0.26 },
-    protective: { minOpacity: 0.58, minScale: 0.22, backdrop: 0.34 },
+    subtle: { minOpacity: 0.25, minScale: 0.12, backdrop: 0.25 },
+    balanced: { minOpacity: 0.40, minScale: 0.16, backdrop: 0.34 },
+    protective: { minOpacity: 0.58, minScale: 0.22, backdrop: 0.43 },
+  };
+
+  const createTrimmedLogoPreview = async (file: File): Promise<string> => {
+    const sourceUrl = URL.createObjectURL(file);
+
+    try {
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const logo = new window.Image();
+        logo.onload = () => resolve(logo);
+        logo.onerror = () => reject(new Error("Gagal membaca logo"));
+        logo.src = sourceUrl;
+      });
+
+      const canvas = document.createElement("canvas");
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext("2d");
+
+      if (!ctx) {
+        return sourceUrl;
+      }
+
+      ctx.drawImage(img, 0, 0);
+      const { data, width, height } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+      let minX = width;
+      let minY = height;
+      let maxX = -1;
+      let maxY = -1;
+
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const alpha = data[(y * width + x) * 4 + 3];
+          if (alpha > 0) {
+            minX = Math.min(minX, x);
+            minY = Math.min(minY, y);
+            maxX = Math.max(maxX, x);
+            maxY = Math.max(maxY, y);
+          }
+        }
+      }
+
+      // No visible pixels, keep original preview and let backend validation handle processing.
+      if (maxX < minX || maxY < minY) {
+        return sourceUrl;
+      }
+
+      const croppedWidth = maxX - minX + 1;
+      const croppedHeight = maxY - minY + 1;
+
+      if (croppedWidth === width && croppedHeight === height) {
+        return sourceUrl;
+      }
+
+      const croppedCanvas = document.createElement("canvas");
+      croppedCanvas.width = croppedWidth;
+      croppedCanvas.height = croppedHeight;
+      const croppedCtx = croppedCanvas.getContext("2d");
+
+      if (!croppedCtx) {
+        return sourceUrl;
+      }
+
+      croppedCtx.drawImage(canvas, minX, minY, croppedWidth, croppedHeight, 0, 0, croppedWidth, croppedHeight);
+      const blob = await new Promise<Blob | null>((resolve) => croppedCanvas.toBlob(resolve, "image/png"));
+
+      if (!blob) {
+        return sourceUrl;
+      }
+
+      URL.revokeObjectURL(sourceUrl);
+      return URL.createObjectURL(blob);
+    } catch {
+      return sourceUrl;
+    }
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,7 +128,7 @@ export default function WatermarkPlacerPage() {
     }
   };
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
@@ -61,8 +136,10 @@ export default function WatermarkPlacerPage() {
         return;
       }
       if (logoPreview) URL.revokeObjectURL(logoPreview);
+
+      const previewUrl = await createTrimmedLogoPreview(file);
       setLogoFile(file);
-      setLogoPreview(URL.createObjectURL(file));
+      setLogoPreview(previewUrl);
       setResultImage(null);
     }
   };

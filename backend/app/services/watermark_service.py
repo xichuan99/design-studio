@@ -1,14 +1,16 @@
 """Service for applying watermarks (logos or text) to images."""
 
 import io
+from typing import Optional
+
 from PIL import Image, ImageDraw, ImageEnhance, ImageStat
 
 # Constants for watermark positions
 POSITIONS = ["bottom-right", "bottom-left", "top-right", "top-left", "center", "tiled"]
 VISIBILITY_PRESETS = {
-    "subtle": {"min_opacity": 0.25, "min_scale": 0.12, "backdrop_alpha": 70},
-    "balanced": {"min_opacity": 0.40, "min_scale": 0.16, "backdrop_alpha": 92},
-    "protective": {"min_opacity": 0.58, "min_scale": 0.22, "backdrop_alpha": 120},
+    "subtle": {"min_opacity": 0.25, "min_scale": 0.12, "backdrop_alpha": 64},
+    "balanced": {"min_opacity": 0.40, "min_scale": 0.16, "backdrop_alpha": 86},
+    "protective": {"min_opacity": 0.58, "min_scale": 0.22, "backdrop_alpha": 110},
 }
 
 
@@ -30,11 +32,20 @@ def _resolve_visibility_preset(preset: str) -> dict:
     return VISIBILITY_PRESETS.get(str(preset or "balanced").strip().lower(), VISIBILITY_PRESETS["balanced"])
 
 
-def _average_luminance(region: Image.Image) -> float:
-    stat = ImageStat.Stat(region.convert("L"))
+def _average_luminance(region: Image.Image, mask: Optional[Image.Image] = None) -> float:
+    stat = ImageStat.Stat(region.convert("L"), mask=mask)
     if not stat.mean:
         return 127.0
     return float(stat.mean[0])
+
+
+def _trim_transparent_padding(watermark_img: Image.Image) -> Image.Image:
+    """Trim fully transparent borders so sizing and backdrop follow visible logo content."""
+    alpha = watermark_img.getchannel("A")
+    bbox = alpha.getbbox()
+    if not bbox:
+        raise ValueError("Watermark image is fully transparent")
+    return watermark_img.crop(bbox)
 
 
 async def apply_watermark(
@@ -78,6 +89,8 @@ async def apply_watermark(
         # Convert watermark to RGBA to ensure it has an alpha channel
         if watermark_img.mode != "RGBA":
             watermark_img = watermark_img.convert("RGBA")
+
+        watermark_img = _trim_transparent_padding(watermark_img)
 
         # 1. Resize the watermark based on the base image dimensions and scale factor
         base_w, base_h = base_img.size
@@ -161,13 +174,14 @@ async def apply_watermark(
                 y = (base_h - new_wm_h) // 2
 
             # Add adaptive backdrop for contrast in single-placement mode.
-            backdrop_pad = max(6, int(min(base_w, base_h) * 0.01))
+            backdrop_pad = max(4, int(min(base_w, base_h) * 0.008))
+            backdrop_pad = min(backdrop_pad, max(6, int(min(new_wm_w, new_wm_h) * 0.18)))
             crop_left = max(0, x)
             crop_top = max(0, y)
             crop_right = min(base_w, x + new_wm_w)
             crop_bottom = min(base_h, y + new_wm_h)
             region = base_img.crop((crop_left, crop_top, crop_right, crop_bottom))
-            luminance = _average_luminance(region)
+            luminance = _average_luminance(region, mask=watermark_img.getchannel("A"))
 
             if luminance >= 145:
                 backdrop_rgb = (0, 0, 0)

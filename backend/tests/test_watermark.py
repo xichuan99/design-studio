@@ -2,7 +2,12 @@ import pytest
 import io
 from PIL import Image
 
-from app.services.watermark_service import apply_watermark, _normalize_watermark_settings
+from app.services.watermark_service import (
+    _normalize_watermark_settings,
+    _resolve_visibility_preset,
+    _trim_transparent_padding,
+    apply_watermark,
+)
 
 
 @pytest.fixture
@@ -110,6 +115,22 @@ def test_normalize_watermark_settings_allows_lower_values_for_tiled_mode():
     assert scale == 0.05
 
 
+def test_resolve_visibility_preset_is_case_insensitive_and_trimmed():
+    subtle = _resolve_visibility_preset("  SuBtLe  ")
+
+    assert subtle["min_opacity"] == 0.25
+    assert subtle["min_scale"] == 0.12
+    assert subtle["backdrop_alpha"] == 64
+
+
+def test_resolve_visibility_preset_falls_back_to_balanced_for_unknown_value():
+    fallback = _resolve_visibility_preset("unknown")
+
+    assert fallback["min_opacity"] == 0.40
+    assert fallback["min_scale"] == 0.16
+    assert fallback["backdrop_alpha"] == 86
+
+
 @pytest.mark.asyncio
 async def test_apply_watermark_alpha_handling():
     """Test that a base image with alpha is properly composited and saved as JPEG"""
@@ -126,3 +147,68 @@ async def test_apply_watermark_alpha_handling():
     result_img = Image.open(io.BytesIO(result_bytes))
     assert result_img.format == "JPEG"  # Output must be JPEG
     assert result_img.mode == "RGB"  # Alpha dropped after composite
+
+
+def test_trim_transparent_padding_removes_outer_alpha_border():
+    img = Image.new("RGBA", (300, 180), color=(0, 0, 0, 0))
+    for x in range(60, 241):
+        for y in range(40, 141):
+            img.putpixel((x, y), (10, 20, 30, 255))
+
+    trimmed = _trim_transparent_padding(img)
+    assert trimmed.size == (181, 101)
+
+
+@pytest.mark.asyncio
+async def test_apply_watermark_rejects_fully_transparent_logo(base_image_bytes):
+    transparent_logo = Image.new("RGBA", (200, 120), color=(0, 0, 0, 0))
+    logo_bytes = io.BytesIO()
+    transparent_logo.save(logo_bytes, format="PNG")
+
+    with pytest.raises(ValueError, match="fully transparent"):
+        await apply_watermark(base_image_bytes, logo_bytes.getvalue())
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "base_color, expected_backdrop_rgb",
+    [
+        ((255, 255, 255), 0),
+        ((0, 0, 0), 255),
+    ],
+)
+async def test_apply_watermark_adaptive_backdrop_tints_background(
+    base_color, expected_backdrop_rgb
+):
+    base = Image.new("RGB", (200, 200), color=base_color)
+    base_bytes = io.BytesIO()
+    base.save(base_bytes, format="JPEG")
+
+    logo = Image.new("RGBA", (50, 30), color=(40, 40, 40, 255))
+    logo_bytes = io.BytesIO()
+    logo.save(logo_bytes, format="PNG")
+
+    result_bytes = await apply_watermark(
+        base_bytes.getvalue(),
+        logo_bytes.getvalue(),
+        position="top-left",
+        opacity=1.0,
+        scale=0.2,
+        visibility_preset="balanced",
+        padding_ratio=0.05,
+    )
+
+    result = Image.open(io.BytesIO(result_bytes)).convert("RGB")
+
+    # Sample point inside backdrop top strip but outside the pasted logo area.
+    sample = result.getpixel((30, 8))
+
+    alpha = _resolve_visibility_preset("balanced")["backdrop_alpha"]
+    expected_channel = int(
+        expected_backdrop_rgb * (alpha / 255.0) + base_color[0] * (1.0 - alpha / 255.0)
+    )
+
+    # JPEG compression can slightly shift values, so keep a small tolerance.
+    tolerance = 24
+    for channel in sample:
+        assert abs(channel - expected_channel) <= tolerance
