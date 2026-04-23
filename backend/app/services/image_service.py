@@ -222,6 +222,56 @@ def build_gpt2_image_edit_args(
     return args
 
 
+def _is_not_found_endpoint_error(exc: Exception) -> bool:
+    """Return True when fal endpoint path/model is unavailable (404/path not found)."""
+    msg = str(exc).lower()
+    return (
+        "path /image-to-image not found" in msg
+        or "not found" in msg
+        or "404" in msg
+        or "model not found" in msg
+    )
+
+
+async def run_gpt2_image_edit(args: dict) -> dict:
+    """
+    Run gpt-image-2 image editing with endpoint fallbacks.
+
+    Some fal deployments use different endpoint ids (e.g. `/edit` vs `/image-to-image`).
+    We try the configured model first, then known alternatives.
+    """
+    from app.core.ai_models import FAL_IMAGE_GPT2_IMAGE_TO_IMAGE
+
+    endpoint_candidates = [
+        FAL_IMAGE_GPT2_IMAGE_TO_IMAGE,
+        "openai/gpt-image-2/edit",
+        "fal-ai/gpt-image-2/edit",
+        "openai/gpt-image-2/image-to-image",
+        "fal-ai/gpt-image-2/image-to-image",
+    ]
+
+    tried: set[str] = set()
+    last_error: Exception | None = None
+
+    for endpoint_id in endpoint_candidates:
+        if endpoint_id in tried:
+            continue
+        tried.add(endpoint_id)
+
+        try:
+            return await fal_client.run_async(endpoint_id, arguments=args)
+        except Exception as exc:
+            last_error = exc
+            if _is_not_found_endpoint_error(exc):
+                logger.warning("gpt-image-2 edit endpoint unavailable: %s (%s)", endpoint_id, exc)
+                continue
+            raise
+
+    if last_error:
+        raise last_error
+    raise RuntimeError("No gpt-image-2 editing endpoint candidates available")
+
+
 async def generate_background_ultra(
     visual_prompt: str,
     aspect_ratio: str = "1:1",

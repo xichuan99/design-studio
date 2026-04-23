@@ -91,11 +91,8 @@ async def execute_background_swap_tool_job(job_id: str):
     if model_quality == "ultra":
         # gpt-image-2 image editing — superior edge blending and background realism
         import os
-
-        import fal_client
-        from app.core.ai_models import FAL_IMAGE_GPT2_IMAGE_TO_IMAGE
         from app.core.config import settings
-        from app.services.image_service import build_gpt2_image_edit_args
+        from app.services.image_service import build_gpt2_image_edit_args, run_gpt2_image_edit
         from app.services.storage_service import upload_image as _upload
 
         os.environ["FAL_KEY"] = settings.FAL_KEY
@@ -106,7 +103,7 @@ async def execute_background_swap_tool_job(job_id: str):
             image_urls=[source_image_url],
             mask_image_url=mask_url,
         )
-        result = await fal_client.run_async(FAL_IMAGE_GPT2_IMAGE_TO_IMAGE, arguments=gpt2_args)
+        result = await run_gpt2_image_edit(gpt2_args)
         images = result.get("images", [])
         if not images:
             raise RuntimeError("gpt-image-2 returned no images for background swap")
@@ -390,11 +387,8 @@ async def execute_magic_eraser_tool_job(job_id: str):
     if model_quality == "ultra":
         # gpt-image-2 — superior inpainting quality for object removal
         import os
-
-        import fal_client
-        from app.core.ai_models import FAL_IMAGE_GPT2_IMAGE_TO_IMAGE
         from app.core.config import settings
-        from app.services.image_service import build_gpt2_image_edit_args
+        from app.services.image_service import build_gpt2_image_edit_args, run_gpt2_image_edit
 
         os.environ["FAL_KEY"] = settings.FAL_KEY
         erase_prompt = str(prompt) if prompt else "Remove this object and fill with natural background"
@@ -403,7 +397,7 @@ async def execute_magic_eraser_tool_job(job_id: str):
             image_urls=[str(image_url)],
             mask_image_url=str(mask_url),
         )
-        result = await fal_client.run_async(FAL_IMAGE_GPT2_IMAGE_TO_IMAGE, arguments=gpt2_args)
+        result = await run_gpt2_image_edit(gpt2_args)
         images = result.get("images", [])
         if not images:
             raise RuntimeError("gpt-image-2 returned no images for magic eraser")

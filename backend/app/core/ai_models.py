@@ -129,7 +129,7 @@ FAL_IMAGE_GPT2_TEXT_TO_IMAGE = _env(
 )
 FAL_IMAGE_GPT2_IMAGE_TO_IMAGE = _env(
     "AI_MODEL_FAL_GPT2_IMAGE_TO_IMAGE",
-    "fal-ai/gpt-image-2/image-to-image",
+    "openai/gpt-image-2/edit",
 )
 
 
