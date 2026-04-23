@@ -1,6 +1,6 @@
 """API endpoints for AI tool async jobs."""
 
-from typing import Any, Literal
+from typing import Any, Literal, Optional
 import asyncio
 import os
 from uuid import UUID
@@ -34,6 +34,7 @@ from app.core.credit_costs import (
     COST_PRODUCT_SCENE,
     COST_PRODUCT_SCENE_ULTRA,
     COST_RETOUCH,
+    COST_RETOUCH_ADVANCED,
     COST_TEXT_BANNER_PREMIUM,
     COST_TEXT_BANNER_PREMIUM_ULTRA,
     COST_TEXT_BANNER_STD,
@@ -76,10 +77,28 @@ _TOOL_CREDIT_COST_ULTRA = {
 }
 
 
-def get_credit_cost(tool_name: str, quality: str) -> int | None:
+def _is_advanced_relight_payload(payload: Optional[dict[str, Any]]) -> bool:
+    mode = str((payload or {}).get("relight_mode", "off")).strip().lower()
+    return mode in {"auto", "advanced"}
+
+
+def _is_retouch_advanced_relight_requested(
+    tool_name: str,
+    payload: Optional[dict[str, Any]],
+) -> bool:
+    return tool_name == "retouch" and _is_advanced_relight_payload(payload)
+
+
+def get_credit_cost(
+    tool_name: str,
+    quality: str,
+    payload: Optional[dict[str, Any]] = None,
+) -> Optional[int]:
     """Return credit cost for a tool/quality combination."""
     if quality == "ultra":
         return _TOOL_CREDIT_COST_ULTRA.get(tool_name)
+    if tool_name == "retouch" and _is_advanced_relight_payload(payload):
+        return COST_RETOUCH_ADVANCED
     return _TOOL_CREDIT_COST_STANDARD.get(tool_name)
 
 
@@ -97,7 +116,7 @@ class CreateToolJobRequest(BaseModel):
         "watermark",
     ]
     payload: dict[str, Any] = Field(default_factory=dict)
-    idempotency_key: str | None = Field(default=None)
+    idempotency_key: Optional[str] = Field(default=None)
     quality: Literal["standard", "ultra"] = Field(
         default="standard",
         description="'ultra' routes to gpt-image-2 at 2× credit cost. Not supported for upscale, retouch, id_photo, watermark.",
@@ -123,6 +142,13 @@ async def create_tool_job(
             detail=f"Ultra quality is not supported for '{request.tool_name}'.",
         )
 
+    if _is_retouch_advanced_relight_requested(request.tool_name, request.payload):
+        if not settings.ADVANCED_RELIGHT_ENABLED:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Advanced relight is currently disabled.",
+            )
+
     # Merge model quality into payload so the worker can read it.
     # Using "_model_quality" to avoid conflict with text_banner's own "quality" field
     # (which means draft/standard/premium for the banner service).
@@ -138,7 +164,7 @@ async def create_tool_job(
     )
 
     if is_new_job:
-        cost = get_credit_cost(request.tool_name, request.quality)
+        cost = get_credit_cost(request.tool_name, request.quality, request.payload)
 
         if request.tool_name == "text_banner":
             banner_quality = str((request.payload or {}).get("quality", "standard"))
@@ -218,7 +244,7 @@ async def get_tool_job_status(
     responses=ERROR_RESPONSES,
 )
 async def list_my_tool_jobs(
-    tool_name: str | None = Query(None, description="Filter by tool name"),
+    tool_name: Optional[str] = Query(None, description="Filter by tool name"),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),

@@ -191,6 +191,9 @@ async def execute_retouch_tool_job(job_id: str):
         image_url = payload.get("image_url")
         output_format = payload.get("output_format", "jpeg")
         fidelity = float(payload.get("fidelity", 0.5))
+        relight_mode = str(payload.get("relight_mode", "off"))
+        light_direction = str(payload.get("light_direction", "front"))
+        light_type = str(payload.get("light_type", "soft overcast daylight lighting"))
 
         if not image_url:
             raise ValueError("Missing image_url in job payload")
@@ -217,7 +220,11 @@ async def execute_retouch_tool_job(job_id: str):
     await update_ai_tool_job(
         job_id,
         status="processing",
-        phase_message="AI sedang memperbaiki detail foto",
+        phase_message=(
+            "AI sedang memperbaiki detail foto dan pencahayaan"
+            if relight_mode in {"auto", "advanced"}
+            else "AI sedang memperbaiki detail foto"
+        ),
         progress_percent=65,
     )
 
@@ -225,6 +232,9 @@ async def execute_retouch_tool_job(job_id: str):
         original_bytes,
         fidelity=fidelity,
         output_format=output_format,
+        relight_mode=relight_mode,
+        light_direction=light_direction,
+        light_type=light_type,
     )
 
     await update_ai_tool_job(

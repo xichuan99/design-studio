@@ -13,6 +13,7 @@ COST_RETOUCH = 5
 COST_BG_SUGGEST = 5  # Florence-2 vision + Gemini text suggestion
 
 # Tier 2 (10 Credits) - Low cost / Good Margin
+COST_RETOUCH_ADVANCED = 10
 COST_BG_SWAP = 10
 COST_UPSCALE = 10
 COST_ID_PHOTO = 10

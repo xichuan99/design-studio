@@ -119,6 +119,14 @@ FAL_RETOUCH = _env(
     "AI_MODEL_FAL_RETOUCH",
     "fal-ai/codeformer",
 )
+FAL_RETOUCH_RELIGHT_PRIMARY = _env(
+    "AI_MODEL_FAL_RETOUCH_RELIGHT_PRIMARY",
+    "bria/fibo-edit/relight",
+)
+FAL_RETOUCH_RELIGHT_FALLBACK = _env(
+    "AI_MODEL_FAL_RETOUCH_RELIGHT_FALLBACK",
+    "fal-ai/image-apps-v2/relighting",
+)
 
 # ═══════════════════════════════════════════════════════════════
 # ULTRA QUALITY — gpt-image-2 via fal.ai (no OpenAI key needed)

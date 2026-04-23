@@ -123,3 +123,48 @@ async def test_auto_retouch_invalid_input() -> None:
 
         with pytest.raises(Exception):
             await auto_retouch(b"invalid data", fidelity=0.7)
+
+
+@pytest.mark.asyncio
+async def test_auto_retouch_with_advanced_relight_fallback(
+    test_image_jpeg: bytes,
+) -> None:
+    """auto_retouch should still return a valid image when advanced relight is requested."""
+    with patch("app.core.config.settings") as mock_settings:
+        mock_settings.FAL_KEY = None
+
+        result = await auto_retouch(
+            test_image_jpeg,
+            fidelity=0.6,
+            output_format="jpeg",
+            relight_mode="advanced",
+            light_direction="top-left",
+            light_type="studio softbox",
+        )
+
+    assert isinstance(result, bytes)
+    img = Image.open(io.BytesIO(result))
+    assert img.format == "JPEG"
+    assert img.size == (100, 100)
+
+
+@pytest.mark.asyncio
+async def test_auto_retouch_with_invalid_relight_values_defaults_safely(
+    test_image_jpeg: bytes,
+) -> None:
+    """Invalid relight inputs should safely normalize and still return a valid image."""
+    with patch("app.core.config.settings") as mock_settings:
+        mock_settings.FAL_KEY = None
+
+        result = await auto_retouch(
+            test_image_jpeg,
+            fidelity=0.6,
+            output_format="jpeg",
+            relight_mode="not-a-mode",
+            light_direction="unknown",
+            light_type="unknown",
+        )
+
+    assert isinstance(result, bytes)
+    img = Image.open(io.BytesIO(result))
+    assert img.format == "JPEG"

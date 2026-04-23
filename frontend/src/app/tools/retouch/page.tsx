@@ -15,6 +15,30 @@ import { useToolJobProgress } from "@/hooks/useToolJobProgress";
 
 type RetouchLevel = "natural" | "balanced" | "maximal";
 type OutputFormat = "jpeg" | "png";
+type RelightMode = "off" | "auto" | "advanced";
+
+const LIGHT_DIRECTIONS = [
+  { id: "front", label: "Front" },
+  { id: "left", label: "Left" },
+  { id: "right", label: "Right" },
+  { id: "top", label: "Top" },
+  { id: "bottom", label: "Bottom" },
+  { id: "top-left", label: "Top Left" },
+  { id: "top-right", label: "Top Right" },
+  { id: "bottom-left", label: "Bottom Left" },
+  { id: "bottom-right", label: "Bottom Right" },
+] as const;
+
+const LIGHT_TYPES = [
+  "soft overcast daylight lighting",
+  "studio softbox",
+  "warm sunset",
+  "cool daylight",
+  "dramatic contrast",
+] as const;
+
+type LightDirection = (typeof LIGHT_DIRECTIONS)[number]["id"];
+type LightType = (typeof LIGHT_TYPES)[number];
 
 const RETOUCH_LEVELS: { id: RetouchLevel; label: string; emoji: string; desc: string; fidelity: number }[] = [
   { id: "natural",  label: "Natural",   emoji: "🌿", desc: "Sedikit perbaikan, wajah tetap asli",   fidelity: 0.8 },
@@ -30,6 +54,9 @@ export default function RetouchPage() {
   const [beforeUrl, setBeforeUrl] = useState<string>("");
   const [outputFormat, setOutputFormat] = useState<OutputFormat>("jpeg");
   const [retouchLevel, setRetouchLevel] = useState<RetouchLevel>("balanced");
+  const [relightMode, setRelightMode] = useState<RelightMode>("off");
+  const [lightDirection, setLightDirection] = useState<LightDirection>("front");
+  const [lightType, setLightType] = useState<LightType>("soft overcast daylight lighting");
   const { loading, activeJob, startToolJob, cancelActiveJob } = useToolJobProgress();
 
   const selectedLevel = RETOUCH_LEVELS.find((l) => l.id === retouchLevel)!;
@@ -46,8 +73,11 @@ export default function RetouchPage() {
           image_url: uploaded.url,
           output_format: outputFormat,
           fidelity: selectedLevel.fidelity,
+          relight_mode: relightMode,
+          light_direction: lightDirection,
+          light_type: lightType,
         },
-        idempotencyKey: `${file.name}:${file.size}:${file.lastModified}:${outputFormat}:${selectedLevel.id}`,
+        idempotencyKey: `${file.name}:${file.size}:${file.lastModified}:${outputFormat}:${selectedLevel.id}:${relightMode}:${lightDirection}:${lightType}`,
         onCompleted: (job) => {
           if (job.result_url) {
             setResultUrl(job.result_url);
@@ -159,6 +189,57 @@ export default function RetouchPage() {
                 <option value="png">PNG (Transparan/High Quality)</option>
               </select>
             </div>
+
+            <div className="space-y-3">
+              <label className="block text-sm font-semibold text-foreground/80">
+                Pencahayaan
+              </label>
+              <select
+                className="bg-transparent border border-border rounded-lg p-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 w-full md:w-auto"
+                value={relightMode}
+                onChange={(e) => setRelightMode(e.target.value as RelightMode)}
+              >
+                <option value="off">Retouch saja (default)</option>
+                <option value="auto">Auto Relight</option>
+                <option value="advanced">Advanced Relight</option>
+              </select>
+              <p className="text-xs text-muted-foreground">
+                Advanced Relight memberi kontrol arah dan karakter cahaya agar hasil lebih presisi.
+              </p>
+            </div>
+
+            {relightMode === "advanced" && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-foreground/80">Light Direction</label>
+                  <select
+                    className="bg-transparent border border-border rounded-lg p-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 w-full"
+                    value={lightDirection}
+                    onChange={(e) => setLightDirection(e.target.value as LightDirection)}
+                  >
+                    {LIGHT_DIRECTIONS.map((direction) => (
+                      <option key={direction.id} value={direction.id}>
+                        {direction.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-foreground/80">Light Type</label>
+                  <select
+                    className="bg-transparent border border-border rounded-lg p-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 w-full"
+                    value={lightType}
+                    onChange={(e) => setLightType(e.target.value as LightType)}
+                  >
+                    {LIGHT_TYPES.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
 
             <ImageDropzone onFileSelect={handleFileSelect} />
           </div>

@@ -19,6 +19,7 @@ class Settings(BaseSettings):
 
     # Image Generation (Fal.ai)
     FAL_KEY: str = ""
+    ADVANCED_RELIGHT_ENABLED: bool = False
 
     # Cloud Storage (Backblaze B2 — S3-compatible)
     S3_ENDPOINT: str = ""
