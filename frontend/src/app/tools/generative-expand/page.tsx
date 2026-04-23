@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useProjectApi } from "@/lib/api";
 import { useToolJobProgress } from "@/hooks/useToolJobProgress";
+import { QualityToggle } from "@/components/tools/QualityToggle";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type ExpandDirection = "top" | "bottom" | "left" | "right";
@@ -45,6 +46,7 @@ export default function GenerativeExpandPage() {
   const [targetHeight, setTargetHeight] = useState(1080);
   
   const [prompt, setPrompt] = useState("");
+    const [modelQuality, setModelQuality] = useState<"standard" | "ultra">("standard");
 
   const handleFileSelect = (file: File) => {
     if (previewOriginal) URL.revokeObjectURL(previewOriginal);
@@ -93,6 +95,7 @@ export default function GenerativeExpandPage() {
                 toolName: "generative_expand",
                 payload,
                 idempotencyKey: `${originalFile.name}:${originalFile.size}:${originalFile.lastModified}:${mode}:${direction}:${pixels[0]}:${targetWidth}:${targetHeight}:${prompt}`,
+                quality: modelQuality,
                 onCompleted: (job) => {
                     if (job.result_url) {
                         setResultUrl(job.result_url);
@@ -348,6 +351,13 @@ export default function GenerativeExpandPage() {
                     defaultMessage="AI sedang memperluas gambar"
                     onCancel={handleCancel}
                 />
+
+                                <QualityToggle
+                                    value={modelQuality}
+                                    onChange={setModelQuality}
+                                    standardCost={20}
+                                    disabled={loading}
+                                />
 
                 <Button 
                     size="lg" 

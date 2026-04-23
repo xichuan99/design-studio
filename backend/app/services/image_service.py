@@ -160,3 +160,107 @@ async def generate_background(
         "content_type": image_data.get("content_type", "image/jpeg"),
     }
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# gpt-image-2 helpers (ultra quality, via fal-ai/gpt-image-2)
+# Note: gpt-image-2 does NOT support negative_prompt / guidance_scale / steps.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Map our internal resolution dicts → fal.ai gpt-image-2 preset names
+_GPT2_SIZE_PRESETS = {
+    (1024, 1024): "square_hd",
+    (512, 512): "square",
+    (768, 1024): "portrait_4_3",
+    (576, 1024): "portrait_16_9",
+    (1024, 768): "landscape_4_3",
+    (1024, 576): "landscape_16_9",
+}
+
+
+def _resolution_to_gpt2_size(width: int, height: int) -> dict | str:
+    """Convert pixel resolution to a gpt-image-2 image_size value."""
+    preset = _GPT2_SIZE_PRESETS.get((width, height))
+    if preset:
+        return preset
+    # Custom dimensions — both must be multiples of 16
+    w = max(16, (width // 16) * 16)
+    h = max(16, (height // 16) * 16)
+    return {"width": w, "height": h}
+
+
+def build_gpt2_text_to_image_args(
+    prompt: str,
+    width: int = 1024,
+    height: int = 1024,
+    num_images: int = 1,
+    output_format: str = "png",
+) -> dict:
+    """Build fal_client arguments for fal-ai/gpt-image-2 text-to-image."""
+    return {
+        "prompt": prompt,
+        "image_size": _resolution_to_gpt2_size(width, height),
+        "quality": "high",
+        "num_images": num_images,
+        "output_format": output_format,
+    }
+
+
+def build_gpt2_image_edit_args(
+    prompt: str,
+    image_urls: list[str],
+    mask_image_url: str | None = None,
+    quality: str = "high",
+) -> dict:
+    """Build fal_client arguments for fal-ai/gpt-image-2/image-to-image editing."""
+    args: dict = {
+        "prompt": prompt,
+        "image_urls": image_urls,
+        "quality": quality,
+    }
+    if mask_image_url:
+        args["mask_image_url"] = mask_image_url
+    return args
+
+
+async def generate_background_ultra(
+    visual_prompt: str,
+    aspect_ratio: str = "1:1",
+) -> dict:
+    """
+    Generate a background image using gpt-image-2 (ultra quality).
+
+    Uses the same FAL_KEY as standard generation — no additional API key needed.
+    """
+    from app.core.ai_models import FAL_IMAGE_GPT2_TEXT_TO_IMAGE
+
+    if not settings.FAL_KEY:
+        raise ValueError("FAL_KEY is missing from environment")
+
+    os.environ["FAL_KEY"] = settings.FAL_KEY
+
+    resolution = ASPECT_RATIO_MAP.get(aspect_ratio, ASPECT_RATIO_MAP["1:1"])
+    fal_args = build_gpt2_text_to_image_args(
+        prompt=visual_prompt,
+        width=resolution["width"],
+        height=resolution["height"],
+    )
+
+    try:
+        result = await fal_client.run_async(FAL_IMAGE_GPT2_TEXT_TO_IMAGE, arguments=fal_args)
+    except Exception as e:
+        logger.error(f"gpt-image-2 generation failed: {e}")
+        raise
+
+    images = result.get("images", [])
+    if not images:
+        raise RuntimeError("gpt-image-2 returned no images")
+
+    image_data = images[0]
+    return {
+        "image_url": image_data["url"],
+        "width": image_data.get("width", resolution["width"]),
+        "height": image_data.get("height", resolution["height"]),
+        "seed": result.get("seed"),
+        "content_type": image_data.get("content_type", "image/png"),
+    }
+

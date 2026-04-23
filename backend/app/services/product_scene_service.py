@@ -7,7 +7,7 @@ from PIL import Image
 from typing import Dict, Any
 
 from app.services import bg_removal_service
-from app.services.image_service import generate_background
+from app.services.image_service import generate_background, generate_background_ultra
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ SCENE_THEMES = {
 
 
 async def generate_product_scene(
-    image_bytes: bytes, theme: str = "studio", aspect_ratio: str = "1:1"
+    image_bytes: bytes, theme: str = "studio", aspect_ratio: str = "1:1", quality: str = "standard"
 ) -> bytes:
     """
     Orchestrates the creation of a professional product scene:
@@ -124,14 +124,20 @@ async def generate_product_scene(
     # 2. Map theme to prompt
     theme_config = SCENE_THEMES.get(theme, SCENE_THEMES["studio"])
 
-    # 3. Generate background with Fal.ai
-    logger.debug(f"Generating background prompt: {theme_config['visual_prompt']}")
-    bg_result: Dict[str, Any] = await generate_background(
-        visual_prompt=theme_config["visual_prompt"],
-        style=theme_config["style"],
-        aspect_ratio=aspect_ratio,
-        integrated_text=False,
-    )
+    # 3. Generate background (standard: Flux Pro, ultra: gpt-image-2)
+    logger.debug(f"Generating background prompt: {theme_config['visual_prompt']} [quality={quality}]")
+    if quality == "ultra":
+        bg_result: Dict[str, Any] = await generate_background_ultra(
+            visual_prompt=theme_config["visual_prompt"],
+            aspect_ratio=aspect_ratio,
+        )
+    else:
+        bg_result: Dict[str, Any] = await generate_background(
+            visual_prompt=theme_config["visual_prompt"],
+            style=theme_config["style"],
+            aspect_ratio=aspect_ratio,
+            integrated_text=False,
+        )
 
     # 4. Fetch the generated background image
     logger.debug("Downloading generated background...")

@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { useProjectApi } from "@/lib/api";
 import { useToolJobProgress } from "@/hooks/useToolJobProgress";
 import { CreditCostBadge } from "@/components/credits/CreditCostBadge";
+import { QualityToggle } from "@/components/tools/QualityToggle";
 
 export default function MagicEraserPage() {
   const router = useRouter();
@@ -23,6 +24,8 @@ export default function MagicEraserPage() {
   const [previewOriginal, setPreviewOriginal] = useState<string>("");
   const [resultUrl, setResultUrl] = useState<string>("");
   const { loading, activeJob, startToolJob, cancelActiveJob } = useToolJobProgress();
+
+  const [modelQuality, setModelQuality] = useState<"standard" | "ultra">("standard");
 
   const handleFileSelect = (file: File) => {
     setOriginalFile(file);
@@ -48,6 +51,7 @@ export default function MagicEraserPage() {
           image_url: uploadedOriginal.url,
           mask_url: uploadedMask.url,
         },
+        quality: modelQuality,
         idempotencyKey: `${originalFile.name}:${originalFile.size}:${originalFile.lastModified}:mask`,
         onCompleted: (job) => {
           if (job.result_url) {
@@ -119,7 +123,7 @@ export default function MagicEraserPage() {
               Coret bagian yang ingin dihapus dari foto \u2014 bisa orang, noda, atau objek apapun. AI yang bersihkan.
             </p>
           </div>
-          <CreditCostBadge cost={20} className="mt-2" />
+            <CreditCostBadge cost={modelQuality === "ultra" ? 40 : 20} className="mt-2" />
         </div>
 
         {step === 1 && (
@@ -130,6 +134,13 @@ export default function MagicEraserPage() {
           <div className="space-y-6 animate-in fade-in duration-300">
             <div className="max-w-3xl mx-auto bg-card rounded-2xl p-6 shadow-sm border border-border">
               <h3 className="text-xl font-semibold mb-4 text-center">Tandai Objek yang Ingin Dihapus</h3>
+              <QualityToggle
+                value={modelQuality}
+                onChange={setModelQuality}
+                standardCost={20}
+                disabled={loading}
+                className="mb-4"
+              />
               <CanvasMaskPainter 
                 imageUrl={previewOriginal} 
                 onMaskComplete={handleMaskComplete} 

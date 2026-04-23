@@ -5,7 +5,7 @@ import asyncio
 import os
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -25,12 +25,17 @@ from app.core.config import settings
 from app.services.credit_service import log_credit_change
 from app.core.credit_costs import (
     COST_BG_SWAP,
+    COST_BG_SWAP_ULTRA,
     COST_GENERATIVE_EXPAND,
+    COST_GENERATIVE_EXPAND_ULTRA,
     COST_ID_PHOTO,
     COST_MAGIC_ERASER,
+    COST_MAGIC_ERASER_ULTRA,
     COST_PRODUCT_SCENE,
+    COST_PRODUCT_SCENE_ULTRA,
     COST_RETOUCH,
     COST_TEXT_BANNER_PREMIUM,
+    COST_TEXT_BANNER_PREMIUM_ULTRA,
     COST_TEXT_BANNER_STD,
     COST_UPSCALE,
 )
@@ -50,7 +55,10 @@ SUPPORTED_TOOL_NAMES = {
     "watermark",
 }
 
-TOOL_CREDIT_COST = {
+# Tools that do NOT support ultra quality (non-generative models)
+_ULTRA_UNSUPPORTED_TOOLS = {"upscale", "retouch", "id_photo", "watermark"}
+
+_TOOL_CREDIT_COST_STANDARD = {
     "upscale": COST_UPSCALE,
     "retouch": COST_RETOUCH,
     "background_swap": COST_BG_SWAP,
@@ -59,6 +67,20 @@ TOOL_CREDIT_COST = {
     "id_photo": COST_ID_PHOTO,
     "magic_eraser": COST_MAGIC_ERASER,
 }
+
+_TOOL_CREDIT_COST_ULTRA = {
+    "background_swap": COST_BG_SWAP_ULTRA,
+    "product_scene": COST_PRODUCT_SCENE_ULTRA,
+    "generative_expand": COST_GENERATIVE_EXPAND_ULTRA,
+    "magic_eraser": COST_MAGIC_ERASER_ULTRA,
+}
+
+
+def get_credit_cost(tool_name: str, quality: str) -> int | None:
+    """Return credit cost for a tool/quality combination."""
+    if quality == "ultra":
+        return _TOOL_CREDIT_COST_ULTRA.get(tool_name)
+    return _TOOL_CREDIT_COST_STANDARD.get(tool_name)
 
 
 class CreateToolJobRequest(BaseModel):
@@ -76,6 +98,10 @@ class CreateToolJobRequest(BaseModel):
     ]
     payload: dict[str, Any] = Field(default_factory=dict)
     idempotency_key: str | None = Field(default=None)
+    quality: Literal["standard", "ultra"] = Field(
+        default="standard",
+        description="'ultra' routes to gpt-image-2 at 2× credit cost. Not supported for upscale, retouch, id_photo, watermark.",
+    )
 
 
 @router.post(
@@ -91,20 +117,37 @@ async def create_tool_job(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(rate_limit_actions),
 ):
+    if request.quality == "ultra" and request.tool_name in _ULTRA_UNSUPPORTED_TOOLS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Ultra quality is not supported for '{request.tool_name}'.",
+        )
+
+    # Merge model quality into payload so the worker can read it.
+    # Using "_model_quality" to avoid conflict with text_banner's own "quality" field
+    # (which means draft/standard/premium for the banner service).
+    merged_payload = dict(request.payload or {})
+    merged_payload["_model_quality"] = request.quality
+
     job, is_new_job = await create_job(
         db=db,
         user_id=current_user.id,
         tool_name=request.tool_name,
-        payload=request.payload,
+        payload=merged_payload,
         idempotency_key=request.idempotency_key,
     )
 
     if is_new_job:
-        cost = TOOL_CREDIT_COST.get(request.tool_name)
+        cost = get_credit_cost(request.tool_name, request.quality)
 
         if request.tool_name == "text_banner":
-            quality = str((request.payload or {}).get("quality", "standard"))
-            cost = COST_TEXT_BANNER_PREMIUM if quality == "premium" else COST_TEXT_BANNER_STD
+            banner_quality = str((request.payload or {}).get("quality", "standard"))
+            if request.quality == "ultra":
+                cost = COST_TEXT_BANNER_PREMIUM_ULTRA
+            elif banner_quality == "premium":
+                cost = COST_TEXT_BANNER_PREMIUM
+            else:
+                cost = COST_TEXT_BANNER_STD
 
         if request.tool_name == "batch":
             payload = request.payload or {}
@@ -114,9 +157,9 @@ async def create_tool_job(
 
             per_file_cost = 0
             if operation == "remove_bg":
-                per_file_cost = COST_BG_SWAP
+                per_file_cost = COST_BG_SWAP_ULTRA if request.quality == "ultra" else COST_BG_SWAP
             elif operation == "product_scene":
-                per_file_cost = COST_PRODUCT_SCENE
+                per_file_cost = COST_PRODUCT_SCENE_ULTRA if request.quality == "ultra" else COST_PRODUCT_SCENE
 
             cost = per_file_cost * file_count
 

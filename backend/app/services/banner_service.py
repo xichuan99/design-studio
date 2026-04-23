@@ -9,6 +9,7 @@ import fal_client
 from app.core.ai_models import (
     FAL_BANNER_DRAFT,
     FAL_BANNER_STANDARD,
+    FAL_IMAGE_GPT2_TEXT_TO_IMAGE,
 )
 from app.core.config import settings
 from app.services.bg_removal_service import remove_background
@@ -76,37 +77,28 @@ async def generate_text_banner(
         banner_url = None
 
         # 2. Generate Image based on quality
-        if quality == "premium":
-            if not settings.FAL_KEY:
-                raise ValueError("FAL_KEY is missing from environment")
+        if not settings.FAL_KEY:
+            raise ValueError("FAL_KEY is missing from environment")
 
-            os.environ["FAL_KEY"] = settings.FAL_KEY
+        os.environ["FAL_KEY"] = settings.FAL_KEY
+
+        if quality == "ultra":
+            # gpt-image-2 — best text rendering for banner text
+            from app.services.image_service import build_gpt2_text_to_image_args
 
             result = await fal_client.run_async(
+                FAL_IMAGE_GPT2_TEXT_TO_IMAGE,
+                arguments=build_gpt2_text_to_image_args(
+                    prompt=prompt, width=1024, height=1024
+                ),
+            )
+        elif quality == "premium":
+            result = await fal_client.run_async(
                 FAL_BANNER_STANDARD,
-                arguments={
-                    "prompt": prompt,
-                    "image_size": "square_hd",
-                },
+                arguments={"prompt": prompt, "image_size": "square_hd"},
             )
-
-            images = result.get("images", [])
-            if not images or not images[0].get("url"):
-                raise RuntimeError("Fal.ai returned no image URL")
-
-            banner_url = images[0]["url"]
-
         else:
-            # Use Fal.ai (Flux)
-            if not settings.FAL_KEY:
-                raise ValueError("FAL_KEY is missing from environment")
-
-            os.environ["FAL_KEY"] = settings.FAL_KEY
-
-            model_id = (
-                FAL_BANNER_DRAFT if quality == "draft" else FAL_BANNER_STANDARD
-            )
-
+            model_id = FAL_BANNER_DRAFT if quality == "draft" else FAL_BANNER_STANDARD
             result = await fal_client.run_async(
                 model_id,
                 arguments={
@@ -115,11 +107,11 @@ async def generate_text_banner(
                 },
             )
 
-            images = result.get("images", [])
-            if not images or not images[0].get("url"):
-                raise RuntimeError("Fal.ai returned no image URL")
+        images = result.get("images", [])
+        if not images or not images[0].get("url"):
+            raise RuntimeError("Fal.ai returned no image URL")
 
-            banner_url = images[0]["url"]
+        banner_url = images[0]["url"]
 
         # 3. Remove Background
         # We need to download the generated image first to pass bytes to remove_background

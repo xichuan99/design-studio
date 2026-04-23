@@ -14,6 +14,7 @@ import Image from "next/image";
 import { toast } from "sonner";
 import { useProjectApi } from "@/lib/api";
 import { useToolJobProgress } from "@/hooks/useToolJobProgress";
+import { QualityToggle } from "@/components/tools/QualityToggle";
 
 type Suggestion = { title: string; emoji: string; prompt: string };
 
@@ -31,6 +32,7 @@ export default function BackgroundSwapPage() {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [selectedSuggestion, setSelectedSuggestion] = useState<number | null>(null);
   const [suggestLoading, setSuggestLoading] = useState(false);
+  const [modelQuality, setModelQuality] = useState<"standard" | "ultra">("standard");
 
   const api = useProjectApi();
 
@@ -80,6 +82,7 @@ export default function BackgroundSwapPage() {
           image_url: uploaded.url,
           prompt,
         },
+        quality: modelQuality,
         idempotencyKey: `${originalFile.name}:${originalFile.size}:${originalFile.lastModified}:${prompt}`,
         onCompleted: (job) => {
           if (job.result_url) {
@@ -280,6 +283,14 @@ export default function BackgroundSwapPage() {
                   </p>
                 </div>
               )}
+
+              <QualityToggle
+                value={modelQuality}
+                onChange={setModelQuality}
+                standardCost={10}
+                disabled={loading}
+                className="mb-1"
+              />
 
               <Button
                 onClick={handleGenerate}

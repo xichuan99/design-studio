@@ -8,6 +8,7 @@ import { ToolProcessingState } from "@/components/tools/ToolProcessingState";
 import { ResultActionCard } from "@/components/tools/ResultActionCard";
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowLeft, Sparkles } from "lucide-react";
+import { QualityToggle } from "@/components/tools/QualityToggle";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { toast } from "sonner";
@@ -32,6 +33,7 @@ export default function ProductScenePage() {
   const [previewOriginal, setPreviewOriginal] = useState<string>("");
   const [theme, setTheme] = useState("studio");
   const [aspectRatio, setAspectRatio] = useState("1:1");
+  const [modelQuality, setModelQuality] = useState<"standard" | "ultra">("standard");
   const [resultUrl, setResultUrl] = useState<string>("");
   const { loading, activeJob, startToolJob, cancelActiveJob } = useToolJobProgress();
   const api = useProjectApi();
@@ -55,7 +57,8 @@ export default function ProductScenePage() {
           theme,
           aspect_ratio: aspectRatio,
         },
-        idempotencyKey: `${originalFile.name}:${originalFile.size}:${originalFile.lastModified}:${theme}:${aspectRatio}`,
+        quality: modelQuality,
+        idempotencyKey: `${originalFile.name}:${originalFile.size}:${originalFile.lastModified}:${theme}:${aspectRatio}:${modelQuality}`,
         onCompleted: (job) => {
           if (job.result_url) {
             setResultUrl(job.result_url);
@@ -99,6 +102,8 @@ export default function ProductScenePage() {
     });
   };
 
+  const creditCost = modelQuality === "ultra" ? 80 : 40;
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <AppHeader />
@@ -107,19 +112,18 @@ export default function ProductScenePage() {
           <ArrowLeft className="w-4 h-4" /> Kembali
         </Button>
 
-        {/* Step Indicator */}
         <div className="flex items-center justify-center gap-1 sm:gap-2 mb-8 select-none">
-          <div className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold flex items-center gap-1.5 sm:gap-2 transition-colors ${step === 1 ? 'bg-primary text-primary-foreground shadow-md' : step > 1 ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>
+          <div className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold flex items-center gap-1.5 sm:gap-2 transition-colors ${step === 1 ? "bg-primary text-primary-foreground shadow-md" : step > 1 ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
             <span className="flex items-center justify-center w-5 h-5 rounded-full text-[10px] bg-background/20 font-bold">1</span>
             <span className="hidden sm:inline">Upload Produk</span>
           </div>
-          <div className={`w-4 sm:w-8 h-[2px] ${step > 1 ? 'bg-primary/40' : 'bg-border'}`}></div>
-          <div className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold flex items-center gap-1.5 sm:gap-2 transition-colors ${step === 2 ? 'bg-primary text-primary-foreground shadow-md' : step > 2 ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>
+          <div className={`w-4 sm:w-8 h-[2px] ${step > 1 ? "bg-primary/40" : "bg-border"}`}></div>
+          <div className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold flex items-center gap-1.5 sm:gap-2 transition-colors ${step === 2 ? "bg-primary text-primary-foreground shadow-md" : step > 2 ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
             <span className="flex items-center justify-center w-5 h-5 rounded-full text-[10px] bg-background/20 font-bold">2</span>
             <span className="hidden sm:inline">Pilih Tema</span>
           </div>
-          <div className={`w-4 sm:w-8 h-[2px] ${step > 2 ? 'bg-primary/40' : 'bg-border'}`}></div>
-          <div className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold flex items-center gap-1.5 sm:gap-2 transition-colors ${step === 3 ? 'bg-primary text-primary-foreground shadow-md' : 'bg-muted text-muted-foreground'}`}>
+          <div className={`w-4 sm:w-8 h-[2px] ${step > 2 ? "bg-primary/40" : "bg-border"}`}></div>
+          <div className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold flex items-center gap-1.5 sm:gap-2 transition-colors ${step === 3 ? "bg-primary text-primary-foreground shadow-md" : "bg-muted text-muted-foreground"}`}>
             <span className="flex items-center justify-center w-5 h-5 rounded-full text-[10px] bg-background/20 font-bold">3</span>
             <span className="hidden sm:inline">Hasil</span>
           </div>
@@ -130,7 +134,7 @@ export default function ProductScenePage() {
             <h1 className="text-3xl font-jakarta font-bold text-foreground">AI Product Scene</h1>
             <p className="text-muted-foreground mt-2">Tidak perlu sewa studio. Upload foto produk Anda, pilih suasana, dan langsung dapat foto profesional.</p>
           </div>
-          <CreditCostBadge cost={40} className="mt-2" />
+          <CreditCostBadge cost={creditCost} className="mt-2" />
         </div>
 
         {step === 1 && (
@@ -142,21 +146,21 @@ export default function ProductScenePage() {
             <div className="space-y-4">
               <h3 className="text-lg font-semibold border-b pb-2">1. Foto Produk (Preview)</h3>
               <div className="flex items-center justify-center p-4 bg-muted/20 border rounded-xl min-h-[300px]">
-                <div 
+                <div
                   className={`bg-muted/50 rounded-xl overflow-hidden border border-border shadow-inner relative transition-all duration-500 ease-in-out w-full max-h-[500px] ${
-                    aspectRatio === '1:1' ? 'aspect-square max-w-[400px]' :
-                    aspectRatio === '9:16' ? 'aspect-[9/16] max-w-[280px]' :
-                    'aspect-video max-w-[500px]'
+                    aspectRatio === "1:1" ? "aspect-square max-w-[400px]" :
+                    aspectRatio === "9:16" ? "aspect-[9/16] max-w-[280px]" :
+                    "aspect-video max-w-[500px]"
                   }`}
                 >
                   <Image src={previewOriginal} alt="Original" fill className="object-contain p-2 transition-all duration-500" unoptimized />
                 </div>
               </div>
             </div>
-            
+
             <div className="space-y-6">
               <h3 className="text-lg font-semibold border-b pb-2">2. Pengaturan Tampilan</h3>
-              
+
               <div className="space-y-3">
                 <label className="text-sm font-medium block">Pilih Tema Background</label>
                 <div className="grid grid-cols-2 gap-3">
@@ -165,8 +169,8 @@ export default function ProductScenePage() {
                       key={t.id}
                       onClick={() => setTheme(t.id)}
                       className={`text-left flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${
-                        theme === t.id 
-                          ? "border-primary bg-primary/5 shadow-md scale-[1.02]" 
+                        theme === t.id
+                          ? "border-primary bg-primary/5 shadow-md scale-[1.02]"
                           : "border-border bg-card hover:border-primary/50 hover:bg-muted"
                       }`}
                     >
@@ -180,18 +184,25 @@ export default function ProductScenePage() {
               <div className="space-y-3">
                 <label className="text-sm font-medium block">Aspek Rasio (Ukuran Foto)</label>
                 <div className="bg-muted/50 p-1.5 rounded-lg flex gap-1 border">
-                  {["1:1", "9:16", "16:9"].map(ratio => (
-                    <Button 
-                      key={ratio} 
+                  {["1:1", "9:16", "16:9"].map((ratio) => (
+                    <Button
+                      key={ratio}
                       variant={aspectRatio === ratio ? "default" : "ghost"}
                       className={`flex-1 ${aspectRatio !== ratio ? "text-muted-foreground" : ""}`}
                       onClick={() => setAspectRatio(ratio)}
                     >
-                      {ratio} {/* 1:1=Square, 9:16=Story, 16:9=Landscape */}
+                      {ratio}
                     </Button>
                   ))}
                 </div>
               </div>
+
+              <QualityToggle
+                value={modelQuality}
+                onChange={setModelQuality}
+                standardCost={40}
+                disabled={loading}
+              />
 
               <ToolProcessingState
                 loading={loading}
@@ -202,14 +213,14 @@ export default function ProductScenePage() {
 
               <CreditConfirmDialog
                 title="AI Product Scene"
-                description={`AI akan membuat latar belakang produk baru dengan tema yang dipilih. Ini akan memotong 40 kredit.`}
-                cost={40}
+                description={`AI akan membuat latar belakang produk baru dengan tema yang dipilih (${modelQuality === "ultra" ? "gpt-image-2 Ultra ✨" : "Standard"}). Ini akan memotong ${creditCost} kredit.`}
+                cost={creditCost}
                 onConfirm={handleGenerate}
                 disabled={loading || !originalFile}
               >
-                <Button 
-                  className="w-full font-bold shadow-md hover:shadow-lg transition-transform active:scale-95 py-6 text-base" 
-                  size="lg" 
+                <Button
+                  className="w-full font-bold shadow-md hover:shadow-lg transition-transform active:scale-95 py-6 text-base"
+                  size="lg"
                   disabled={loading || !originalFile}
                 >
                   {loading ? <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Memproses dengan AI (30s)...</> : <><Sparkles className="w-5 h-5 mr-2" /> Buat Foto Produk</>}

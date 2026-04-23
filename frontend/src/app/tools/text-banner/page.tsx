@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { useToolJobProgress } from "@/hooks/useToolJobProgress";
 import { cn } from "@/lib/utils";
 import { CreditConfirmDialog } from '@/components/credits/CreditConfirmDialog';
+import { QualityToggle } from "@/components/tools/QualityToggle";
 
 export default function TextBannerPage() {
     const router = useRouter();
@@ -25,6 +26,7 @@ export default function TextBannerPage() {
     const [customStyle, setCustomStyle] = useState('');
     const [colorHint, setColorHint] = useState('');
     const [quality, setQuality] = useState<'draft' | 'standard' | 'premium'>('standard');
+        const [modelQuality, setModelQuality] = useState<'standard' | 'ultra'>('standard');
     
     const [resultUrl, setResultUrl] = useState<string>('');
 
@@ -57,6 +59,7 @@ export default function TextBannerPage() {
                     color_hint: colorHint,
                     quality,
                 },
+                quality: modelQuality,
                 idempotencyKey: `${text}:${resolvedStyle}:${colorHint}:${quality}`,
                 onCompleted: (job) => {
                     if (job.result_url) {
@@ -98,7 +101,7 @@ export default function TextBannerPage() {
         });
     };
 
-    const cost = quality === 'premium' ? 40 : 10;
+    const cost = modelQuality === 'ultra' ? 80 : (quality === 'premium' ? 40 : 10);
 
     return (
         <div className="min-h-screen bg-background flex flex-col">
@@ -196,6 +199,16 @@ export default function TextBannerPage() {
                         {/* Quality Selection */}
                         <div className="space-y-3 pt-2">
                             <label className="text-sm font-semibold text-foreground">Kualitas Generasi</label>
+
+                                                        <QualityToggle
+                                                            value={modelQuality}
+                                                            onChange={setModelQuality}
+                                                            standardCost={quality === 'premium' ? 40 : 10}
+                                                            ultraCost={80}
+                                                            disabled={loading}
+                                                            className="mb-2"
+                                                        />
+
                             <div className="grid grid-cols-3 gap-3">
                                 {[
                                     { id: 'draft', label: 'Draft', cost: '10 Credits' },

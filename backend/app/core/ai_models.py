@@ -120,6 +120,18 @@ FAL_RETOUCH = _env(
     "fal-ai/codeformer",
 )
 
+# ═══════════════════════════════════════════════════════════════
+# ULTRA QUALITY — gpt-image-2 via fal.ai (no OpenAI key needed)
+# ═══════════════════════════════════════════════════════════════
+FAL_IMAGE_GPT2_TEXT_TO_IMAGE = _env(
+    "AI_MODEL_FAL_GPT2_TEXT_TO_IMAGE",
+    "fal-ai/gpt-image-2",
+)
+FAL_IMAGE_GPT2_IMAGE_TO_IMAGE = _env(
+    "AI_MODEL_FAL_GPT2_IMAGE_TO_IMAGE",
+    "fal-ai/gpt-image-2/image-to-image",
+)
+
 
 # Embeddings
 EMBEDDING_TEXT_MODEL = _env(

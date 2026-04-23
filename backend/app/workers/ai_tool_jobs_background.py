@@ -8,7 +8,12 @@ import logging
 from app.core.database import AsyncSessionLocal
 from app.models.ai_tool_job import AiToolJob
 from app.models.ai_tool_result import AiToolResult
-from app.services import bg_removal_service, id_photo_service, inpaint_service, outpaint_service
+from app.services import (
+    bg_removal_service,
+    id_photo_service,
+    inpaint_service,
+    outpaint_service,
+)
 from app.services.storage_service import download_image, upload_image
 from app.workers.ai_tool_jobs_common import (
     refund_ai_tool_job_if_needed,
@@ -28,6 +33,7 @@ async def execute_background_swap_tool_job(job_id: str):
         payload = job.payload_json or {}
         image_url = payload.get("image_url")
         prompt = payload.get("prompt")
+        model_quality = str(payload.get("_model_quality", "standard"))
 
         if not image_url:
             raise ValueError("Missing image_url in job payload")
@@ -82,12 +88,40 @@ async def execute_background_swap_tool_job(job_id: str):
         progress_percent=72,
     )
 
-    final_bytes = await bg_removal_service.inpaint_background(
-        original_bytes=original_bytes,
-        transparent_png_bytes=no_bg_bytes,
-        prompt=prompt,
-        original_url=original_url_for_inpaint,
-    )
+    if model_quality == "ultra":
+        # gpt-image-2 image editing — superior edge blending and background realism
+        import os
+
+        import fal_client
+        from app.core.ai_models import FAL_IMAGE_GPT2_IMAGE_TO_IMAGE
+        from app.core.config import settings
+        from app.services.image_service import build_gpt2_image_edit_args
+        from app.services.storage_service import upload_image as _upload
+
+        os.environ["FAL_KEY"] = settings.FAL_KEY
+        # Upload transparent PNG as mask — white=area to fill, black=keep
+        mask_url = await _upload(no_bg_bytes, content_type="image/png", prefix="bgswap_mask_ultra")
+        gpt2_args = build_gpt2_image_edit_args(
+            prompt=prompt,
+            image_urls=[source_image_url],
+            mask_image_url=mask_url,
+        )
+        result = await fal_client.run_async(FAL_IMAGE_GPT2_IMAGE_TO_IMAGE, arguments=gpt2_args)
+        images = result.get("images", [])
+        if not images:
+            raise RuntimeError("gpt-image-2 returned no images for background swap")
+        import httpx
+        async with httpx.AsyncClient() as _http:
+            r = await _http.get(images[0]["url"], timeout=60.0)
+            r.raise_for_status()
+            final_bytes = r.content
+    else:
+        final_bytes = await bg_removal_service.inpaint_background(
+            original_bytes=original_bytes,
+            transparent_png_bytes=no_bg_bytes,
+            prompt=prompt,
+            original_url=original_url_for_inpaint,
+        )
 
     await update_ai_tool_job(
         job_id,
@@ -334,6 +368,7 @@ async def execute_magic_eraser_tool_job(job_id: str):
         image_url = payload.get("image_url")
         mask_url = payload.get("mask_url")
         prompt = payload.get("prompt")
+        model_quality = str(payload.get("_model_quality", "standard"))
 
         if not image_url:
             raise ValueError("Missing image_url in job payload")
@@ -352,14 +387,35 @@ async def execute_magic_eraser_tool_job(job_id: str):
         session.add(job)
         await session.commit()
 
-    result_data = await inpaint_service.inpaint_image(
-        image_url=str(image_url),
-        mask_url=str(mask_url),
-        prompt=str(prompt) if prompt else None,
-        magic_eraser_mode=True,
-    )
+    if model_quality == "ultra":
+        # gpt-image-2 — superior inpainting quality for object removal
+        import os
 
-    inpainted_url = result_data.get("url")
+        import fal_client
+        from app.core.ai_models import FAL_IMAGE_GPT2_IMAGE_TO_IMAGE
+        from app.core.config import settings
+        from app.services.image_service import build_gpt2_image_edit_args
+
+        os.environ["FAL_KEY"] = settings.FAL_KEY
+        erase_prompt = str(prompt) if prompt else "Remove this object and fill with natural background"
+        gpt2_args = build_gpt2_image_edit_args(
+            prompt=erase_prompt,
+            image_urls=[str(image_url)],
+            mask_image_url=str(mask_url),
+        )
+        result = await fal_client.run_async(FAL_IMAGE_GPT2_IMAGE_TO_IMAGE, arguments=gpt2_args)
+        images = result.get("images", [])
+        if not images:
+            raise RuntimeError("gpt-image-2 returned no images for magic eraser")
+        inpainted_url = images[0]["url"]
+    else:
+        result_data = await inpaint_service.inpaint_image(
+            image_url=str(image_url),
+            mask_url=str(mask_url),
+            prompt=str(prompt) if prompt else None,
+            magic_eraser_mode=True,
+        )
+        inpainted_url = result_data.get("url")
     if not inpainted_url:
         raise RuntimeError("Magic eraser model returned invalid URL")
 

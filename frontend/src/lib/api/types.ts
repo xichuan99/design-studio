@@ -430,6 +430,8 @@ export interface CreateToolJobRequest {
     tool_name: AiToolJobName;
     payload?: Record<string, unknown>;
     idempotency_key?: string;
+    /** 'ultra' routes to gpt-image-2 at 2× credits. Only for generative tools. */
+    quality?: 'standard' | 'ultra';
 }
 
 // --- Generation Output Types ---

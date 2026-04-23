@@ -11,6 +11,7 @@ interface StartToolJobArgs {
   toolName: AiToolJobName;
   payload: Record<string, unknown>;
   idempotencyKey?: string;
+  quality?: 'standard' | 'ultra';
   pollIntervalMs?: number;
   onCompleted?: JobTerminalCallback;
   onFailed?: JobTerminalCallback;
@@ -123,6 +124,7 @@ export function useToolJobProgress() {
       toolName,
       payload,
       idempotencyKey,
+      quality,
       pollIntervalMs,
       onCompleted,
       onFailed,
@@ -138,6 +140,7 @@ export function useToolJobProgress() {
         tool_name: toolName,
         payload,
         idempotency_key: normalizedIdempotencyKey,
+        quality,
       });
       setActiveJob(createdJob);
 

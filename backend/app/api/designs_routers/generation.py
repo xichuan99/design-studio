@@ -461,15 +461,29 @@ async def generate_design(
             )
         )
 
-        fal_result = await generate_background(
-            visual_prompt=enhanced_prompt,
-            reference_image_url=getattr(request, "reference_image_url", None),
-            style=style_key,
-            aspect_ratio=request.aspect_ratio,
-            integrated_text=request.integrated_text,
-            preserve_product=bool(getattr(request, "remove_product_bg", False)),
-            seed=getattr(request, "seed", None),
-        )
+        use_ultra = getattr(request, "quality", "standard") == "ultra"
+        if use_ultra:
+            from app.services.image_service import generate_background_ultra
+            from app.core.credit_costs import COST_GENERATE_DESIGN_ULTRA, COST_GENERATE_DESIGN
+            extra_cost = COST_GENERATE_DESIGN_ULTRA - COST_GENERATE_DESIGN
+            if current_user.credits_remaining < extra_cost:
+                raise InsufficientCreditsError(detail="Insufficient credits for ultra quality")
+            await log_credit_change(db, current_user, -extra_cost, "Generate desain (ultra surcharge)")
+            fal_result = await generate_background_ultra(
+                visual_prompt=enhanced_prompt,
+                aspect_ratio=request.aspect_ratio,
+            )
+            model_name = "gpt-image-2"
+        else:
+            fal_result = await generate_background(
+                visual_prompt=enhanced_prompt,
+                reference_image_url=getattr(request, "reference_image_url", None),
+                style=style_key,
+                aspect_ratio=request.aspect_ratio,
+                integrated_text=request.integrated_text,
+                preserve_product=bool(getattr(request, "remove_product_bg", False)),
+                seed=getattr(request, "seed", None),
+            )
         async with httpx.AsyncClient() as http_client:
             img_resp = await http_client.get(fal_result["image_url"], timeout=30.0)
             img_resp.raise_for_status()

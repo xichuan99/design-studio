@@ -26,6 +26,7 @@ async def execute_product_scene_tool_job(job_id: str):
         image_url = payload.get("image_url")
         theme = str(payload.get("theme", "studio"))
         aspect_ratio = str(payload.get("aspect_ratio", "1:1"))
+        model_quality = str(payload.get("_model_quality", "standard"))
 
         if not image_url:
             raise ValueError("Missing image_url in job payload")
@@ -55,6 +56,7 @@ async def execute_product_scene_tool_job(job_id: str):
         image_bytes=original_bytes,
         theme=theme,
         aspect_ratio=aspect_ratio,
+        quality=model_quality,
     )
 
     await update_ai_tool_job(
@@ -109,7 +111,10 @@ async def execute_text_banner_tool_job(job_id: str):
         text = str(payload.get("text", "")).strip()
         style = str(payload.get("style", "ribbon"))
         color_hint = str(payload.get("color_hint", "colorful"))
-        quality = str(payload.get("quality", "standard"))
+        # "quality" here is the banner tier (draft/standard/premium).
+        # "_model_quality" is the ultra toggle (standard/ultra).
+        model_quality = str(payload.get("_model_quality", "standard"))
+        quality = "ultra" if model_quality == "ultra" else str(payload.get("quality", "standard"))
 
         if not text:
             raise ValueError("Missing text in job payload")

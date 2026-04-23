@@ -76,6 +76,11 @@ class DesignGenerationRequest(BaseModel):
     seed: Optional[str] = Field(
         None, description="Optional seed for reproducible generation"
     )
+    quality: str = Field(
+        "standard",
+        description="Model quality tier: 'standard' (Flux Pro) or 'ultra' (gpt-image-2, 2× credits)",
+        pattern="^(standard|ultra)$",
+    )
 
     model_config = ConfigDict(
         json_schema_extra={
