@@ -33,6 +33,8 @@ async def create_product_scene(
     file: UploadFile = File(...),
     theme: str = Form("studio"),
     aspect_ratio: str = Form("1:1"),
+    quality: str = Form("standard"),
+    composite_profile: str = Form("default"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(rate_limit_dependency),
 ):
@@ -64,7 +66,11 @@ async def create_product_scene(
 
         # 1. Process scene
         final_bytes = await product_scene_service.generate_product_scene(
-            image_bytes=content, theme=theme, aspect_ratio=aspect_ratio
+            image_bytes=content,
+            theme=theme,
+            aspect_ratio=aspect_ratio,
+            quality=quality,
+            composite_profile=composite_profile,
         )
 
         # 2. Upload result

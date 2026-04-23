@@ -546,7 +546,12 @@ def test_watermark_endpoint_success():
 def test_product_scene_endpoint_success():
     """Test /product-scene endpoint"""
     files = {"file": ("test.png", b"fake_product", "image/png")}
-    data = {"theme": "minimalist", "aspect_ratio": "16:9"}
+    data = {
+        "theme": "minimalist",
+        "aspect_ratio": "16:9",
+        "quality": "ultra",
+        "composite_profile": "grounded",
+    }
 
     with (
         patch(
@@ -567,7 +572,11 @@ def test_product_scene_endpoint_success():
         assert data["url"] == "http://storage.com/scene.jpg"
         assert "result_id" in data
         mock_scene.assert_called_once_with(
-            image_bytes=b"fake_product", theme="minimalist", aspect_ratio="16:9"
+            image_bytes=b"fake_product",
+            theme="minimalist",
+            aspect_ratio="16:9",
+            quality="ultra",
+            composite_profile="grounded",
         )
         mock_upload.assert_called_once()
 
