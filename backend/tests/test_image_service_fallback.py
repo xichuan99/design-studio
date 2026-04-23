@@ -58,3 +58,54 @@ async def test_generate_background_total_failure():
 
         with pytest.raises(Exception):
             await image_service.generate_background("A test prompt")
+
+
+@pytest.mark.asyncio
+async def test_run_bria_fibo_edit_success_from_images_list():
+    with patch("app.services.image_service.fal_client.run_async") as mock_submit:
+        mock_submit.return_value = {"images": [{"url": "http://example.com/bria-after.png"}]}
+
+        args = image_service.build_bria_fibo_edit_args(
+            instruction="remove object",
+            image_url="http://example.com/input.png",
+            mask_url="http://example.com/mask.png",
+        )
+        result = await image_service.run_bria_fibo_edit(args)
+
+        assert result["url"] == "http://example.com/bria-after.png"
+
+
+@pytest.mark.asyncio
+async def test_run_bria_fibo_edit_success_from_nested_result():
+    with patch("app.services.image_service.fal_client.run_async") as mock_submit:
+        mock_submit.return_value = {"result": {"after": {"image_url": "http://example.com/nested.png"}}}
+
+        args = image_service.build_bria_fibo_edit_args(
+            instruction="remove object",
+            image_url="http://example.com/input.png",
+        )
+        result = await image_service.run_bria_fibo_edit(args)
+
+        assert result["url"] == "http://example.com/nested.png"
+
+
+@pytest.mark.asyncio
+async def test_run_bria_fibo_edit_endpoint_fallback(monkeypatch):
+    monkeypatch.setattr(image_service, "FAL_IMAGE_BRIA_FIBO_EDIT", "bria/fibo-edit/invalid")
+
+    with patch("app.services.image_service.fal_client.run_async") as mock_submit:
+        async def _side_effect(endpoint_id, arguments):
+            if endpoint_id == "bria/fibo-edit/invalid":
+                raise Exception("404 model not found")
+            return {"url": "http://example.com/fallback-bria.png"}
+
+        mock_submit.side_effect = _side_effect
+
+        args = image_service.build_bria_fibo_edit_args(
+            instruction="remove object",
+            image_url="http://example.com/input.png",
+            mask_url="http://example.com/mask.png",
+        )
+        result = await image_service.run_bria_fibo_edit(args)
+
+        assert result["url"] == "http://example.com/fallback-bria.png"

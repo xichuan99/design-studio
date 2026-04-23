@@ -188,7 +188,7 @@ async def magic_eraser(
 ):
     """
     1. Uploads original image and mask
-    2. Calls inpaint_service (fal-ai/flux-pro/v1/fill)
+    2. Calls BRIA FIBO edit by default (fallback to flux fill)
     3. Uploads resulting image
     """
     from app.core.credit_costs import COST_MAGIC_ERASER
@@ -224,13 +224,26 @@ async def magic_eraser(
             mask_content, content_type="image/png", prefix=f"inpaint_mask_{base_id}"
         )
 
-        # 2. Call Fal Service
-        result_data = await inpaint_service.inpaint_image(
-            image_url=image_url,
-            mask_url=mask_url,
-            prompt=prompt,
-            magic_eraser_mode=True,
-        )
+        # 2. Call Fal service (default: BRIA FIBO edit, rollback fallback: flux fill)
+        erase_prompt = inpaint_service.build_magic_eraser_prompt(prompt)
+        try:
+            from app.services.image_service import build_bria_fibo_edit_args, run_bria_fibo_edit
+
+            bria_args = build_bria_fibo_edit_args(
+                instruction=erase_prompt,
+                image_url=image_url,
+                mask_url=mask_url,
+            )
+            bria_result = await run_bria_fibo_edit(bria_args)
+            result_data = {"url": bria_result.get("url")}
+        except Exception as bria_err:
+            logger.warning("Magic Eraser BRIA default failed, fallback to flux fill: %s", bria_err)
+            result_data = await inpaint_service.inpaint_image(
+                image_url=image_url,
+                mask_url=mask_url,
+                prompt=prompt,
+                magic_eraser_mode=True,
+            )
 
         # If Fal returns a URL directly, we can either return it or download+upload to our storage.
         # For simplicity and speed, returning Fal's URL directly or assuming inpaint_service does it.

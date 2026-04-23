@@ -393,16 +393,17 @@ async def execute_magic_eraser_tool_job(job_id: str):
         prefix="magic_eraser_mask_prepared",
     )
 
+    erase_prompt = inpaint_service.build_magic_eraser_prompt(
+        str(prompt) if prompt else None
+    )
+
     if model_quality == "ultra":
-        # gpt-image-2 — superior inpainting quality for object removal
+        # gpt-image-2 remains the ultra tier for higher-fidelity edits.
         import os
         from app.core.config import settings
         from app.services.image_service import build_gpt2_image_edit_args, run_gpt2_image_edit
 
         os.environ["FAL_KEY"] = settings.FAL_KEY
-        erase_prompt = inpaint_service.build_magic_eraser_prompt(
-            str(prompt) if prompt else None
-        )
         gpt2_args = build_gpt2_image_edit_args(
             prompt=erase_prompt,
             image_urls=[str(image_url)],
@@ -414,13 +415,30 @@ async def execute_magic_eraser_tool_job(job_id: str):
             raise RuntimeError("gpt-image-2 returned no images for magic eraser")
         inpainted_url = images[0]["url"]
     else:
-        result_data = await inpaint_service.inpaint_image(
-            image_url=str(image_url),
-            mask_url=prepared_mask_url,
-            prompt=str(prompt) if prompt else None,
-            magic_eraser_mode=True,
-        )
-        inpainted_url = result_data.get("url")
+        # Default standard tier now uses BRIA FIBO edit with flux fill rollback fallback.
+        from app.services.image_service import build_bria_fibo_edit_args, run_bria_fibo_edit
+
+        try:
+            bria_args = build_bria_fibo_edit_args(
+                instruction=erase_prompt,
+                image_url=str(image_url),
+                mask_url=prepared_mask_url,
+            )
+            bria_result = await run_bria_fibo_edit(bria_args)
+            inpainted_url = bria_result.get("url")
+        except Exception as bria_err:
+            logger.warning(
+                "Magic eraser BRIA edit failed for job %s, fallback to flux fill: %s",
+                job_id,
+                bria_err,
+            )
+            result_data = await inpaint_service.inpaint_image(
+                image_url=str(image_url),
+                mask_url=prepared_mask_url,
+                prompt=str(prompt) if prompt else None,
+                magic_eraser_mode=True,
+            )
+            inpainted_url = result_data.get("url")
     if not inpainted_url:
         raise RuntimeError("Magic eraser model returned invalid URL")
 

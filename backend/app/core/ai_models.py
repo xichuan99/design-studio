@@ -132,6 +132,12 @@ FAL_IMAGE_GPT2_IMAGE_TO_IMAGE = _env(
     "openai/gpt-image-2/edit",
 )
 
+# Default standard provider for Magic Eraser
+FAL_IMAGE_BRIA_FIBO_EDIT = _env(
+    "AI_MODEL_FAL_BRIA_FIBO_EDIT",
+    "bria/fibo-edit/edit",
+)
+
 
 # Embeddings
 EMBEDDING_TEXT_MODEL = _env(

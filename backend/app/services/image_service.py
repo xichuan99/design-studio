@@ -8,6 +8,7 @@ import os
 import fal_client
 import logging
 from app.core.ai_models import (
+    FAL_IMAGE_BRIA_FIBO_EDIT,
     FAL_IMAGE_IMAGE_TO_IMAGE_PRIMARY,
     FAL_IMAGE_TEXT_TO_IMAGE_FALLBACK,
     FAL_IMAGE_TEXT_TO_IMAGE_PRIMARY,
@@ -270,6 +271,90 @@ async def run_gpt2_image_edit(args: dict) -> dict:
     if last_error:
         raise last_error
     raise RuntimeError("No gpt-image-2 editing endpoint candidates available")
+
+
+def build_bria_fibo_edit_args(
+    instruction: str,
+    image_url: str,
+    mask_url: str | None = None,
+    seed: int | None = None,
+) -> dict:
+    """Build fal_client arguments for bria/fibo-edit/edit."""
+    args: dict = {
+        "instruction": instruction,
+        "image_url": image_url,
+    }
+    if mask_url:
+        args["mask_url"] = mask_url
+    if seed is not None:
+        args["seed"] = seed
+    return args
+
+
+def _extract_image_url(result: dict) -> str | None:
+    """Extract an output image URL from heterogeneous partner response formats."""
+    if not isinstance(result, dict):
+        return None
+
+    direct_keys = ("url", "image_url", "result_url", "output_url", "after_url")
+    for key in direct_keys:
+        value = result.get(key)
+        if isinstance(value, str) and value:
+            return value
+
+    images = result.get("images")
+    if isinstance(images, list) and images:
+        for image in reversed(images):
+            if isinstance(image, dict):
+                url = image.get("url") or image.get("image_url")
+                if isinstance(url, str) and url:
+                    return url
+
+    nested_keys = ("image", "output", "result", "after")
+    for key in nested_keys:
+        value = result.get(key)
+        if isinstance(value, dict):
+            nested_url = _extract_image_url(value)
+            if nested_url:
+                return nested_url
+
+    return None
+
+
+async def run_bria_fibo_edit(args: dict) -> dict:
+    """Run BRIA FIBO image edit with endpoint fallback and normalized output."""
+    endpoint_candidates = [
+        FAL_IMAGE_BRIA_FIBO_EDIT,
+        "bria/fibo-edit/edit",
+    ]
+
+    tried: set[str] = set()
+    last_error: Exception | None = None
+
+    for endpoint_id in endpoint_candidates:
+        if endpoint_id in tried:
+            continue
+        tried.add(endpoint_id)
+
+        try:
+            result = await fal_client.run_async(endpoint_id, arguments=args)
+            normalized_url = _extract_image_url(result)
+            if not normalized_url:
+                raise RuntimeError("bria/fibo-edit/edit returned no output image URL")
+            return {
+                "url": normalized_url,
+                "raw": result,
+            }
+        except Exception as exc:
+            last_error = exc
+            if _is_not_found_endpoint_error(exc):
+                logger.warning("bria fibo edit endpoint unavailable: %s (%s)", endpoint_id, exc)
+                continue
+            raise
+
+    if last_error:
+        raise last_error
+    raise RuntimeError("No bria fibo edit endpoint candidates available")
 
 
 async def generate_background_ultra(
