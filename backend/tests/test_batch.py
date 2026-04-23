@@ -81,7 +81,12 @@ async def test_process_batch_watermark(mock_apply_watermark, mock_files):
 async def test_process_batch_product_scene(mock_generate, mock_files):
     mock_generate.side_effect = [b"scene_1", b"scene_2"]
 
-    params = {"theme": "minimalist", "aspect_ratio": "16:9"}
+    params = {
+        "theme": "minimalist",
+        "aspect_ratio": "16:9",
+        "quality": "ultra",
+        "composite_profile": "grounded",
+    }
     zip_bytes, errors = await process_batch(mock_files, "product_scene", params)
 
     assert len(errors) == 0
@@ -91,7 +96,34 @@ async def test_process_batch_product_scene(mock_generate, mock_files):
         assert zf.read("image2_scene_minimalist.jpg") == b"scene_2"
 
     mock_generate.assert_called_with(
-        image_bytes=b"fake_bytes_2", theme="minimalist", aspect_ratio="16:9"
+        image_bytes=b"fake_bytes_2",
+        theme="minimalist",
+        aspect_ratio="16:9",
+        quality="ultra",
+        composite_profile="grounded",
+    )
+
+
+@pytest.mark.asyncio
+@patch("app.services.batch_service.product_scene_service.generate_product_scene")
+async def test_process_batch_product_scene_invalid_params_fallback(mock_generate, mock_files):
+    mock_generate.side_effect = [b"scene_1", b"scene_2"]
+
+    params = {
+        "theme": "studio",
+        "aspect_ratio": "invalid_ratio",
+        "quality": "hd",
+        "composite_profile": "wrong_profile",
+    }
+    _, errors = await process_batch(mock_files, "product_scene", params)
+
+    assert errors == []
+    mock_generate.assert_called_with(
+        image_bytes=b"fake_bytes_2",
+        theme="studio",
+        aspect_ratio="1:1",
+        quality="standard",
+        composite_profile="default",
     )
 
 

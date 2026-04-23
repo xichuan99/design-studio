@@ -205,6 +205,10 @@ async def execute_batch_tool_job(job_id: str):
         items = payload.get("items") or []
         operation = str(payload.get("operation", ""))
         params = dict(payload.get("params") or {})
+        model_quality = str(payload.get("_model_quality", "standard"))
+
+        if operation == "product_scene" and not params.get("quality"):
+            params["quality"] = model_quality
 
         if not isinstance(items, list) or len(items) == 0:
             raise ValueError("Missing batch items in job payload")

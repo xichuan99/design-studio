@@ -20,6 +20,30 @@ from app.services.storage_service import upload_image
 
 logger = logging.getLogger(__name__)
 
+_SHADOW_PROFILE_SETTINGS = {
+    "default": {
+        "alpha": 150,
+        "blur_ratio": 0.03,
+        "pad_ratio": 0.2,
+        "x_shift_ratio": 0.012,
+        "y_shift_ratio": 0.035,
+    },
+    "grounded": {
+        "alpha": 170,
+        "blur_ratio": 0.024,
+        "pad_ratio": 0.18,
+        "x_shift_ratio": 0.01,
+        "y_shift_ratio": 0.03,
+    },
+    "soft": {
+        "alpha": 132,
+        "blur_ratio": 0.038,
+        "pad_ratio": 0.24,
+        "x_shift_ratio": 0.015,
+        "y_shift_ratio": 0.042,
+    },
+}
+
 
 def _ensure_fal_key() -> None:
     if not settings.FAL_KEY:
@@ -311,6 +335,7 @@ async def composite_with_shadow(
     offset_x_ratio: float = 0.5,
     offset_y_ratio: float = 0.55,
     add_shadow: bool = True,
+    shadow_profile: str = "default",
 ) -> bytes:
     """
     Advanced compositing: overlays product on background with scale, offset, and optional drop shadow.
@@ -339,8 +364,8 @@ async def composite_with_shadow(
         max_dim = int(min(bg_w, bg_h) * scale_factor)
         product_img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
 
-        # Apply edge feathering to hide seam artifacts
-        product_img = _feather_edges(product_img, radius=2.5)
+        # Apply light feathering only; aggressive blur can cause floating/halo artifacts.
+        product_img = _feather_edges(product_img, radius=1.0)
 
         p_w, p_h = product_img.size
 
@@ -349,26 +374,41 @@ async def composite_with_shadow(
         offset_y = int((bg_h - p_h) * offset_y_ratio)
 
         if add_shadow:
+            profile = _SHADOW_PROFILE_SETTINGS.get(
+                shadow_profile,
+                _SHADOW_PROFILE_SETTINGS["default"],
+            )
             shadow = Image.new("RGBA", (int(p_w * 1.5), int(p_h * 1.5)), (0, 0, 0, 0))
 
             # Create black shadow from alpha mask
             product_alpha = product_img.split()[-1]
             black_mask = Image.new(
-                "RGBA", (p_w, p_h), (0, 0, 0, 160)
+                "RGBA", (p_w, p_h), (0, 0, 0, profile["alpha"])
             )  # semi-transparent black
             black_mask.putalpha(product_alpha)
 
             # Paste to padded shadow image to avoid cropping when blurring
-            pad_x = int(p_w * 0.25)
-            pad_y = int(p_h * 0.25)
+            pad_x = int(p_w * profile["pad_ratio"])
+            pad_y = int(p_h * profile["pad_ratio"])
             shadow.paste(black_mask, (pad_x, pad_y), black_mask)
 
             # Apply blur
-            shadow = shadow.filter(ImageFilter.GaussianBlur(radius=int(max_dim * 0.04)))
+            blur_radius = max(1, int(max_dim * profile["blur_ratio"]))
+            shadow = shadow.filter(ImageFilter.GaussianBlur(radius=blur_radius))
 
-            # Offset shadow slightly down
-            shadow_x = offset_x - pad_x + int(p_w * 0.05)
-            shadow_y = offset_y - pad_y + int(p_h * 0.08)
+            # Ratio-based shadow offset keeps visual contact stable across varying object sizes.
+            shadow_x = offset_x - pad_x + int(p_w * profile["x_shift_ratio"])
+            shadow_y = offset_y - pad_y + int(p_h * profile["y_shift_ratio"])
+
+            logger.debug(
+                "Composite shadow profile=%s blur=%s offset=(%s,%s) size=(%s,%s)",
+                shadow_profile,
+                blur_radius,
+                shadow_x,
+                shadow_y,
+                p_w,
+                p_h,
+            )
 
             # Paste shadow first using its own alpha as mask
             background_img.paste(shadow, (shadow_x, shadow_y), shadow)

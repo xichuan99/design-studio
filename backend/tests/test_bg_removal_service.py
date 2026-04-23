@@ -179,6 +179,25 @@ async def test_composite_with_shadow_no_shadow(
 
 
 @pytest.mark.asyncio
+async def test_composite_with_shadow_profile_grounded(
+    product_image_bytes, background_image_bytes
+):
+    result_bytes = await composite_with_shadow(
+        product_image_bytes,
+        background_image_bytes,
+        add_shadow=True,
+        shadow_profile="grounded",
+    )
+
+    assert isinstance(result_bytes, bytes)
+    assert len(result_bytes) > 0
+
+    result_img = Image.open(io.BytesIO(result_bytes))
+    assert result_img.format == "JPEG"
+    assert result_img.size == (800, 600)
+
+
+@pytest.mark.asyncio
 async def test_composite_invalid_image():
     with pytest.raises(Exception):
         await composite_product_on_background(b"invalid", b"invalid")

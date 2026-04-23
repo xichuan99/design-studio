@@ -13,6 +13,10 @@ from app.services import product_scene_service
 
 logger = logging.getLogger(__name__)
 
+_SUPPORTED_QUALITY = {"standard", "ultra"}
+_SUPPORTED_ASPECT_RATIO = {"1:1", "4:5", "16:9", "9:16"}
+_SUPPORTED_COMPOSITE_PROFILE = {"default", "grounded", "soft"}
+
 
 def _make_unique_filename(filename: str, used_filenames: set[str]) -> str:
     """Ensure each ZIP entry name is unique to avoid overwriting duplicates on extract."""
@@ -81,10 +85,45 @@ async def process_single_image(
 
         elif operation == "product_scene":
             theme = params.get("theme", "studio")
-            aspect_ratio = params.get("aspect_ratio", "1:1")
+            aspect_ratio = str(params.get("aspect_ratio", "1:1"))
+            quality = str(params.get("quality", "standard"))
+            composite_profile = str(params.get("composite_profile", "default"))
+
+            if aspect_ratio not in _SUPPORTED_ASPECT_RATIO:
+                logger.warning(
+                    "Invalid batch aspect_ratio '%s'; fallback to 1:1",
+                    aspect_ratio,
+                )
+                aspect_ratio = "1:1"
+
+            if quality not in _SUPPORTED_QUALITY:
+                logger.warning(
+                    "Invalid batch quality '%s'; fallback to standard",
+                    quality,
+                )
+                quality = "standard"
+
+            if composite_profile not in _SUPPORTED_COMPOSITE_PROFILE:
+                logger.warning(
+                    "Invalid batch composite_profile '%s'; fallback to default",
+                    composite_profile,
+                )
+                composite_profile = "default"
+
+            logger.info(
+                "Batch product_scene params resolved: theme=%s aspect=%s quality=%s profile=%s",
+                theme,
+                aspect_ratio,
+                quality,
+                composite_profile,
+            )
 
             result_bytes = await product_scene_service.generate_product_scene(
-                image_bytes=image_bytes, theme=theme, aspect_ratio=aspect_ratio
+                image_bytes=image_bytes,
+                theme=theme,
+                aspect_ratio=aspect_ratio,
+                quality=quality,
+                composite_profile=composite_profile,
             )
             new_filename = filename.rsplit(".", 1)[0] + f"_scene_{theme}.jpg"
             return new_filename, result_bytes, None

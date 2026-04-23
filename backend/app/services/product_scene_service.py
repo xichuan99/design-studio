@@ -41,7 +41,11 @@ SCENE_THEMES = {
 
 
 async def generate_product_scene(
-    image_bytes: bytes, theme: str = "studio", aspect_ratio: str = "1:1", quality: str = "standard"
+    image_bytes: bytes,
+    theme: str = "studio",
+    aspect_ratio: str = "1:1",
+    quality: str = "standard",
+    composite_profile: str = "default",
 ) -> bytes:
     """
     Orchestrates the creation of a professional product scene:
@@ -99,11 +103,11 @@ async def generate_product_scene(
             f"Gagal menghapus background gambar asli. Pastikan foto produk cukup jelas. Error: {str(e)}"
         )
 
-    # Analyze if it's a closeup photo
+    # Analyze subject occupancy to compute a more grounded product scale.
     try:
         img = Image.open(io.BytesIO(no_bg_bytes))
         bbox = img.getbbox()
-        scale_factor = 0.58
+        scale_factor = 0.65
 
         if bbox:
             obj_w = bbox[2] - bbox[0]
@@ -111,15 +115,27 @@ async def generate_product_scene(
             img_w, img_h = img.size
 
             area_ratio = (obj_w * obj_h) / (img_w * img_h)
+            width_ratio = obj_w / max(1, img_w)
+            height_ratio = obj_h / max(1, img_h)
 
-            if area_ratio > 0.6 or (obj_w / img_w) > 0.8 or (obj_h / img_h) > 0.8:
+            # Larger crop occupancy indicates closeup source; scale up to avoid floating look.
+            if area_ratio > 0.75 or width_ratio > 0.9 or height_ratio > 0.9:
+                scale_factor = 0.86
+            elif area_ratio > 0.55 or width_ratio > 0.78 or height_ratio > 0.78:
+                scale_factor = 0.8
+            elif area_ratio < 0.22:
                 scale_factor = 0.72
-                logger.info(
-                    f"Detected closeup product (area_ratio: {area_ratio:.2f}), increasing scale_factor to {scale_factor}"
-                )
+
+            logger.info(
+                "Product scene occupancy: area=%.2f width=%.2f height=%.2f -> scale=%.2f",
+                area_ratio,
+                width_ratio,
+                height_ratio,
+                scale_factor,
+            )
     except Exception as e:
         logger.warning(f"Error analyzing image bounding box: {e}")
-        scale_factor = 0.58
+        scale_factor = 0.65
 
     # 2. Map theme to prompt
     theme_config = SCENE_THEMES.get(theme, SCENE_THEMES["studio"])
@@ -162,6 +178,7 @@ async def generate_product_scene(
             offset_x_ratio=0.5,  # Center X
             offset_y_ratio=0.62,  # Lower placement to improve contact with scene surface
             add_shadow=True,
+            shadow_profile=composite_profile,
         )
     except Exception as e:
         logger.error(f"Compositing failed for product scene: {e}")

@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useProjectApi } from "@/lib/api";
 import { useToolJobProgress } from "@/hooks/useToolJobProgress";
+import { QualityToggle } from "@/components/tools/QualityToggle";
 
 const OPERATIONS = [
   { id: "remove_bg", name: "Hapus Latar Belakang", cost: 10, desc: "Hapus background foto produk secara otomatis" },
@@ -23,6 +24,21 @@ const THEMES = [
   { id: "cafe", name: "Cafe" },
 ];
 
+const ASPECT_RATIOS = [
+  { id: "1:1", name: "1:1" },
+  { id: "4:5", name: "4:5" },
+  { id: "16:9", name: "16:9" },
+  { id: "9:16", name: "9:16" },
+];
+
+const COMPOSITE_PROFILES = [
+  { id: "grounded", name: "Grounded (Rekomendasi)" },
+  { id: "default", name: "Default" },
+  { id: "soft", name: "Soft Shadow" },
+];
+
+const ULTRA_ENABLED_OPERATIONS = new Set(["product_scene"]);
+
 export default function BatchProcessPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
@@ -31,6 +47,9 @@ export default function BatchProcessPage() {
   
   // Extra configs
   const [theme, setTheme] = useState("studio");
+  const [aspectRatio, setAspectRatio] = useState("1:1");
+  const [compositeProfile, setCompositeProfile] = useState("grounded");
+  const [modelQuality, setModelQuality] = useState<"standard" | "ultra">("standard");
   const [logoFile, setLogoFile] = useState<File | null>(null);
 
   const [resultUrl, setResultUrl] = useState<string>("");
@@ -46,7 +65,8 @@ export default function BatchProcessPage() {
   const calculateTotalCost = () => {
     const op = OPERATIONS.find(o => o.id === operation);
     if (!op) return 0;
-    return op.cost * files.length;
+    const multiplier = ULTRA_ENABLED_OPERATIONS.has(operation) && modelQuality === "ultra" ? 2 : 1;
+    return op.cost * multiplier * files.length;
   };
 
   const handleGenerate = async () => {
@@ -58,8 +78,11 @@ export default function BatchProcessPage() {
 
     try {
       const params: Record<string, string> = {};
-      if (operation === "product_scene") {
+        if (operation === "product_scene") {
           params.theme = theme;
+          params.aspect_ratio = aspectRatio;
+          params.quality = modelQuality;
+          params.composite_profile = compositeProfile;
       }
 
       const uploadedItems = await Promise.all(
@@ -84,7 +107,8 @@ export default function BatchProcessPage() {
           operation,
           params,
         },
-        idempotencyKey: `${operation}:${theme}:${files.map((f) => `${f.name}:${f.size}:${f.lastModified}`).join("|")}:${logoFile ? `${logoFile.name}:${logoFile.size}:${logoFile.lastModified}` : ""}`,
+        quality: operation === "product_scene" ? modelQuality : "standard",
+        idempotencyKey: `${operation}:${theme}:${aspectRatio}:${modelQuality}:${compositeProfile}:${files.map((f) => `${f.name}:${f.size}:${f.lastModified}`).join("|")}:${logoFile ? `${logoFile.name}:${logoFile.size}:${logoFile.lastModified}` : ""}`,
         onCompleted: (job) => {
           if (!job.result_url) return;
           setResultUrl(job.result_url);
@@ -214,6 +238,13 @@ export default function BatchProcessPage() {
               {/* Extra Logic Configs depending on selected operation */}
               {operation === "product_scene" && (
                 <div className="space-y-3 p-4 border rounded-xl bg-card">
+                  <QualityToggle
+                    value={modelQuality}
+                    onChange={setModelQuality}
+                    standardCost={40}
+                    className="mb-3"
+                  />
+
                   <label className="text-sm font-medium block">Pilih Tema Background</label>
                   <div className="flex flex-wrap gap-2">
                     {THEMES.map(t => (
@@ -226,6 +257,32 @@ export default function BatchProcessPage() {
                         </div>
                     ))}
                   </div>
+
+                    <label className="text-sm font-medium block mt-2">Aspect Ratio</label>
+                    <div className="flex flex-wrap gap-2">
+                      {ASPECT_RATIOS.map((ratio) => (
+                        <div
+                          key={ratio.id}
+                          className={`px-3 py-1.5 border rounded-full text-sm cursor-pointer ${aspectRatio === ratio.id ? 'bg-primary text-white border-primary' : 'bg-muted hover:bg-muted/80'}`}
+                          onClick={() => setAspectRatio(ratio.id)}
+                        >
+                          {ratio.name}
+                        </div>
+                      ))}
+                    </div>
+
+                    <label className="text-sm font-medium block mt-2">Blend Profile</label>
+                    <div className="flex flex-wrap gap-2">
+                      {COMPOSITE_PROFILES.map((profile) => (
+                        <div
+                          key={profile.id}
+                          className={`px-3 py-1.5 border rounded-full text-sm cursor-pointer ${compositeProfile === profile.id ? 'bg-primary text-white border-primary' : 'bg-muted hover:bg-muted/80'}`}
+                          onClick={() => setCompositeProfile(profile.id)}
+                        >
+                          {profile.name}
+                        </div>
+                      ))}
+                    </div>
                 </div>
               )}
 
