@@ -1,5 +1,4 @@
 from app.core.exceptions import (
-    AppException,
     ValidationError,
     InsufficientCreditsError,
     InternalServerError,
@@ -8,7 +7,6 @@ from app.schemas.error import ERROR_RESPONSES
 import logging
 import time
 import uuid
-import httpx
 from fastapi import APIRouter, Depends, UploadFile, File, Form, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.services import (
