@@ -422,10 +422,22 @@ export function useAiToolsEndpoints() {
         }, [API_BASE_URL, getHeaders]);
 
     const suggestBackgrounds = useCallback(async (
-            file: File
-        ): Promise<{ suggestions: Array<{ title: string; emoji: string; prompt: string }> }> => {
+            file: File,
+            context?: {
+                productCategory?: string;
+                targetChannel?: string;
+                audience?: string;
+                brandTone?: string;
+                priceTier?: string;
+            }
+        ): Promise<{ suggestions: Array<{ title: string; emoji: string; prompt: string; rationale?: string; best_for?: string; risk_note?: string }> }> => {
             const formData = new FormData();
             formData.append('file', file);
+            if (context?.productCategory) formData.append('product_category', context.productCategory);
+            if (context?.targetChannel) formData.append('target_channel', context.targetChannel);
+            if (context?.audience) formData.append('audience', context.audience);
+            if (context?.brandTone) formData.append('brand_tone', context.brandTone);
+            if (context?.priceTier) formData.append('price_tier', context.priceTier);
 
             const response = await fetchWithTimeout(`${API_BASE_URL}/tools/background-suggest`, {
                 method: 'POST',

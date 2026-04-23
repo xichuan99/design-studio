@@ -12,6 +12,7 @@ and Gemini only processes text (no image), which is far cheaper than Gemini Visi
 
 import logging
 import uuid
+from typing import Any, Dict, List, Optional
 
 import fal_client
 from google.genai import types as genai_types
@@ -28,27 +29,233 @@ from app.services.llm_client import get_genai_client
 logger = logging.getLogger(__name__)
 
 
+CONTEXT_KEYS = (
+    "product_category",
+    "target_channel",
+    "audience",
+    "brand_tone",
+    "price_tier",
+)
+
+
 SUGGESTION_SYSTEM_PROMPT = """\
 You are a professional product photographer and creative director.
-You will receive a short description of a product/object (detected by a vision AI).
-Your task is to suggest exactly 3 beautiful, aesthetically pleasing background settings for a product photo.
+You will receive:
+1) a short visual description of a product/object (detected by a vision AI), and
+2) optional business context (category, channel, audience, brand tone, price tier).
+
+Your task is to generate highly relevant background concepts for product photography.
 
 REQUIREMENTS:
-1. Return exactly 3 suggestions.
+1. Return exactly 6 candidate suggestions.
 2. Each suggestion must have:
    - "title": short Indonesian name (2-4 words, e.g. "Studio Minimalis", "Alam Terbuka")
    - "emoji": a single relevant emoji
    - "prompt": a detailed English prompt (30-50 words) for an AI image generator.
      The prompt must include: setting, lighting style, mood, surface material, depth of field.
      Always end with: "professional product photography, 8k, photorealistic"
-3. Vary the styles — e.g. one studio, one nature/outdoor, one lifestyle/contextual.
-4. Output MUST be valid JSON only, matching this schema:
-{"suggestions": [{"title": "...", "emoji": "...", "prompt": "..."}, ...]}
+   - "rationale": short Indonesian explanation why this background suits the product and context (1 sentence)
+   - "best_for": one of ["marketplace", "social", "ads", "catalog"]
+   - "risk_note": short Indonesian risk note (e.g. too busy for small thumbnails)
+3. Vary the styles across candidates (studio, lifestyle, outdoor/nature, editorial, clean e-commerce).
+4. Guardrails:
+   - Avoid cluttered scenes and distracting objects.
+   - Avoid unrealistic perspective and impossible shadows.
+   - Avoid color clash with product subject.
+   - Keep subject readability high for thumbnail use.
+5. Output MUST be valid JSON only, matching this schema:
+{"suggestions": [{"title": "...", "emoji": "...", "prompt": "...", "rationale": "...", "best_for": "marketplace", "risk_note": "..."}, ...]}
 """
 
 
+def _compact_context(context: Optional[Dict[str, Optional[str]]]) -> Dict[str, str]:
+    compact: Dict[str, str] = {}
+    for key in CONTEXT_KEYS:
+        value = str((context or {}).get(key, "")).strip()
+        if value:
+            compact[key] = value
+    return compact
+
+
+def _build_context_text(context: Dict[str, str]) -> str:
+    if not context:
+        return "No additional business context provided."
+
+    lines = ["Business context:"]
+    for key in CONTEXT_KEYS:
+        if key in context:
+            lines.append(f"- {key}: {context[key]}")
+    return "\n".join(lines)
+
+
+def _normalize_suggestion(item: Dict[str, Any]) -> Dict[str, str]:
+    title = str(item.get("title", "")).strip() or "Saran Background"
+    emoji = str(item.get("emoji", "✨")).strip() or "✨"
+    prompt = str(item.get("prompt", "")).strip()
+    rationale = str(item.get("rationale", "")).strip()
+    best_for = str(item.get("best_for", "marketplace")).strip().lower() or "marketplace"
+    risk_note = str(item.get("risk_note", "")).strip()
+
+    allowed_best_for = {"marketplace", "social", "ads", "catalog"}
+    if best_for not in allowed_best_for:
+        best_for = "marketplace"
+
+    if not prompt:
+        prompt = (
+            "Clean professional studio setup, soft controlled lighting, balanced shadows, "
+            "neutral backdrop and subtle depth separation, professional product photography, "
+            "8k, photorealistic"
+        )
+
+    normalized: Dict[str, str] = {
+        "title": title,
+        "emoji": emoji,
+        "prompt": prompt,
+    }
+
+    if rationale:
+        normalized["rationale"] = rationale
+    if best_for:
+        normalized["best_for"] = best_for
+    if risk_note:
+        normalized["risk_note"] = risk_note
+    return normalized
+
+
+def _keyword_score(text: str, keywords: List[str], weight: int = 1) -> int:
+    lowered = text.lower()
+    score = 0
+    for keyword in keywords:
+        if keyword in lowered:
+            score += weight
+    return score
+
+
+def _score_suggestion(
+    suggestion: Dict[str, str],
+    context: Dict[str, str],
+    product_description: str,
+) -> int:
+    combined_text = " ".join(
+        [
+            suggestion.get("title", ""),
+            suggestion.get("prompt", ""),
+            suggestion.get("rationale", ""),
+            suggestion.get("risk_note", ""),
+            product_description,
+        ]
+    ).lower()
+
+    score = 0
+
+    # Readability and commercial suitability bias.
+    score += _keyword_score(
+        combined_text,
+        ["clean", "minimal", "soft", "neutral", "professional", "catalog"],
+        weight=2,
+    )
+    score -= _keyword_score(
+        combined_text,
+        ["crowded", "chaotic", "busy", "noisy", "clutter"],
+        weight=3,
+    )
+
+    channel = context.get("target_channel", "").lower()
+    if channel:
+        if "market" in channel:
+            score += _keyword_score(combined_text, ["clean", "plain", "high contrast"], weight=2)
+        if "social" in channel or "instagram" in channel or "tiktok" in channel:
+            score += _keyword_score(combined_text, ["lifestyle", "editorial", "dramatic"], weight=2)
+
+    category = context.get("product_category", "").lower()
+    if category:
+        if "fashion" in category or "apparel" in category:
+            score += _keyword_score(combined_text, ["editorial", "studio", "textured"], weight=2)
+        if "food" in category or "beverage" in category:
+            score += _keyword_score(combined_text, ["table", "warm", "natural", "wood"], weight=2)
+        if "beauty" in category or "cosmetic" in category:
+            score += _keyword_score(combined_text, ["clean", "soft", "glossy", "pastel"], weight=2)
+
+    return score
+
+
+def _pick_top_suggestions(
+    candidates: List[Dict[str, str]],
+    context: Dict[str, str],
+    product_description: str,
+    limit: int = 3,
+) -> List[Dict[str, str]]:
+    ranked = sorted(
+        candidates,
+        key=lambda item: _score_suggestion(item, context, product_description),
+        reverse=True,
+    )
+    return ranked[:limit]
+
+
+def _fallback_suggestions(context: Dict[str, str]) -> List[Dict[str, str]]:
+    category = context.get("product_category", "").lower()
+
+    if "food" in category or "beverage" in category:
+        return [
+            {
+                "title": "Meja Hangat",
+                "emoji": "🍽️",
+                "prompt": "Warm wooden tabletop setting with soft natural side light, appetizing cozy mood, clean composition with subtle bokeh background, commercial food styling surface, shallow depth of field, professional product photography, 8k, photorealistic",
+                "rationale": "Nuansa hangat membantu produk makanan terlihat lebih menggugah selera.",
+                "best_for": "social",
+                "risk_note": "Hindari props berlebihan agar fokus tetap di produk.",
+            },
+            {
+                "title": "Studio Putih",
+                "emoji": "✨",
+                "prompt": "Bright minimal white studio with softbox lighting and gentle shadow grounding, clean reflective surface, high product separation and crisp detail, shallow depth of field, professional product photography, 8k, photorealistic",
+                "rationale": "Background bersih cocok untuk listing marketplace dan katalog.",
+                "best_for": "marketplace",
+                "risk_note": "Pastikan exposure produk tidak over terang.",
+            },
+            {
+                "title": "Cafe Lifestyle",
+                "emoji": "☕",
+                "prompt": "Lifestyle cafe setting with soft ambient daylight, muted earthy palette, textured tabletop surface and blurred interior depth, relaxed premium mood, shallow depth of field, professional product photography, 8k, photorealistic",
+                "rationale": "Scene lifestyle memberi konteks penggunaan nyata dan terasa premium.",
+                "best_for": "ads",
+                "risk_note": "Jaga kontras agar produk tetap menonjol di thumbnail.",
+            },
+        ]
+
+    return [
+        {
+            "title": "Studio Minimal",
+            "emoji": "✨",
+            "prompt": "Minimalist clean studio setting with neutral seamless backdrop, soft even lighting, subtle grounding shadow and matte surface texture, strong product separation and shallow depth of field, professional product photography, 8k, photorealistic",
+            "rationale": "Aman untuk berbagai kategori dan menjaga produk tetap jadi fokus utama.",
+            "best_for": "marketplace",
+            "risk_note": "Terlalu netral bisa terasa kurang emosional untuk campaign.",
+        },
+        {
+            "title": "Alam Terbuka",
+            "emoji": "🌿",
+            "prompt": "Natural outdoor setting with diffused daylight, soft foliage bokeh, clean foreground surface and fresh airy mood, realistic shadows and shallow depth of field, professional product photography, 8k, photorealistic",
+            "rationale": "Nuansa natural meningkatkan kesan fresh dan organik pada produk.",
+            "best_for": "social",
+            "risk_note": "Warna hijau dominan bisa bentrok dengan produk warna serupa.",
+        },
+        {
+            "title": "Lifestyle Modern",
+            "emoji": "🏠",
+            "prompt": "Modern lifestyle interior with controlled window lighting, warm neutral tones, clean stone surface and subtle background depth, premium everyday mood, shallow depth of field, professional product photography, 8k, photorealistic",
+            "rationale": "Memberi konteks pemakaian nyata yang efektif untuk materi iklan.",
+            "best_for": "ads",
+            "risk_note": "Jika terlalu ramai, elemen interior dapat mengalihkan fokus.",
+        },
+    ]
+
+
 async def suggest_backgrounds(
-    image_bytes: bytes, mime_type: str = "image/jpeg"
+    image_bytes: bytes,
+    mime_type: str = "image/jpeg",
+    context: Optional[Dict[str, Optional[str]]] = None,
 ) -> dict:
     """
     Analyzes a product image and returns 3 AI-generated background suggestions.
@@ -108,10 +315,14 @@ async def suggest_backgrounds(
     # ─────────────────────────────────────────
     # Step 3: Gemini Flash (text only) → 3 background suggestions
     # ─────────────────────────────────────────
+    compact_context = _compact_context(context)
+    context_text = _build_context_text(compact_context)
+
     client = get_genai_client()
     user_message = (
         f"Product/object detected: {product_description}\n\n"
-        "Generate 3 background suggestions for this product photo."
+        f"{context_text}\n\n"
+        "Generate 6 background suggestions for this product photo, then we will rank internally."
     )
 
     try:
@@ -133,31 +344,30 @@ async def suggest_backgrounds(
         except Exception as e:
             logger.error(f"Failed to parse LLM JSON response: {e}\nRaw: {response.text}")
             raise
-        suggestions = parsed.get("suggestions", [])
+        raw_suggestions = parsed.get("suggestions", [])
+        if not isinstance(raw_suggestions, list):
+            raw_suggestions = []
 
-        # Guarantee at most 3 items
-        return {"suggestions": suggestions[:3]}
+        normalized_candidates: List[Dict[str, str]] = []
+        for item in raw_suggestions:
+            if isinstance(item, dict):
+                normalized_candidates.append(_normalize_suggestion(item))
+
+        if not normalized_candidates:
+            raise RuntimeError("Suggestion response is empty")
+
+        top_suggestions = _pick_top_suggestions(
+            normalized_candidates,
+            compact_context,
+            product_description,
+            limit=3,
+        )
+
+        # Keep response shape compatible: `suggestions` list always exists.
+        return {"suggestions": top_suggestions}
     except Exception:
         logger.warning(
             "LLM suggestion generation failed, using fallback suggestions", exc_info=True
         )
-        return {
-            "suggestions": [
-                {
-                    "title": "Studio Minimal",
-                    "emoji": "✨",
-                    "prompt": "Minimalist clean studio setting, neutral background, soft even lighting, professional product photography, 8k, photorealistic"
-                },
-                {
-                    "title": "Alam Terbuka",
-                    "emoji": "🌿",
-                    "prompt": "Natural outdoor setting, dappled sunlight, blurred soft foliage background, professional product photography, 8k, photorealistic"
-                },
-                {
-                    "title": "Meja Kayu",
-                    "emoji": "🪵",
-                    "prompt": "Rustic wooden table surface, warm golden hour lighting, cozy atmosphere, professional product photography, 8k, photorealistic"
-                }
-            ]
-        }
+        return {"suggestions": _fallback_suggestions(compact_context)}
 

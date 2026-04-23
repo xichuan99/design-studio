@@ -16,7 +16,14 @@ import { useProjectApi } from "@/lib/api";
 import { useToolJobProgress } from "@/hooks/useToolJobProgress";
 import { QualityToggle } from "@/components/tools/QualityToggle";
 
-type Suggestion = { title: string; emoji: string; prompt: string };
+type Suggestion = {
+  title: string;
+  emoji: string;
+  prompt: string;
+  rationale?: string;
+  best_for?: string;
+  risk_note?: string;
+};
 
 export default function BackgroundSwapPage() {
   const router = useRouter();
@@ -33,6 +40,11 @@ export default function BackgroundSwapPage() {
   const [selectedSuggestion, setSelectedSuggestion] = useState<number | null>(null);
   const [suggestLoading, setSuggestLoading] = useState(false);
   const [modelQuality, setModelQuality] = useState<"standard" | "ultra">("standard");
+  const [productCategory, setProductCategory] = useState("");
+  const [targetChannel, setTargetChannel] = useState("");
+  const [audience, setAudience] = useState("");
+  const [brandTone, setBrandTone] = useState("");
+  const [priceTier, setPriceTier] = useState("");
 
   const api = useProjectApi();
 
@@ -53,7 +65,13 @@ export default function BackgroundSwapPage() {
     setPrompt("");
 
     try {
-      const data = await api.suggestBackgrounds(originalFile);
+      const data = await api.suggestBackgrounds(originalFile, {
+        productCategory,
+        targetChannel,
+        audience,
+        brandTone,
+        priceTier,
+      });
       setSuggestions(data.suggestions || []);
       if (data.suggestions?.length === 0) {
         toast.warning("Tidak ada saran yang dihasilkan. Coba mode Tulis Sendiri.");
@@ -204,6 +222,54 @@ export default function BackgroundSwapPage() {
               {/* ── Mode: Saran AI ── */}
               {promptMode === "suggest" && (
                 <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">Kategori Produk (opsional)</label>
+                      <Input
+                        placeholder="contoh: skincare, fashion, makanan"
+                        value={productCategory}
+                        onChange={(e) => setProductCategory(e.target.value)}
+                        className="bg-card shadow-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">Channel (opsional)</label>
+                      <Input
+                        placeholder="contoh: marketplace, instagram, ads"
+                        value={targetChannel}
+                        onChange={(e) => setTargetChannel(e.target.value)}
+                        className="bg-card shadow-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">Audience (opsional)</label>
+                      <Input
+                        placeholder="contoh: wanita 20-30, keluarga muda"
+                        value={audience}
+                        onChange={(e) => setAudience(e.target.value)}
+                        className="bg-card shadow-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">Tone Brand (opsional)</label>
+                      <Input
+                        placeholder="contoh: premium, playful, minimal"
+                        value={brandTone}
+                        onChange={(e) => setBrandTone(e.target.value)}
+                        className="bg-card shadow-sm"
+                      />
+                    </div>
+                    <div className="space-y-1 sm:col-span-2">
+                      <label className="text-xs text-muted-foreground">Price Tier (opsional)</label>
+                      <Input
+                        placeholder="contoh: budget, mid-range, premium"
+                        value={priceTier}
+                        onChange={(e) => setPriceTier(e.target.value)}
+                        className="bg-card shadow-sm"
+                      />
+                    </div>
+                  </div>
+
                   <p className="text-sm text-muted-foreground">
                     Klik tombol di bawah — AI akan memindai gambar dan memberikan 3 rekomendasi background yang cantik untuk produkmu.
                   </p>
@@ -243,6 +309,25 @@ export default function BackgroundSwapPage() {
                             <div className="flex-1 min-w-0">
                               <p className="font-semibold text-foreground text-sm">{s.title}</p>
                               <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{s.prompt}</p>
+                              {s.rationale && (
+                                <p className="text-xs mt-2 text-foreground/80 line-clamp-2">
+                                  Alasan: {s.rationale}
+                                </p>
+                              )}
+                              {(s.best_for || s.risk_note) && (
+                                <div className="mt-2 flex flex-col gap-1">
+                                  {s.best_for && (
+                                    <span className="text-[11px] text-primary font-medium">
+                                      Cocok untuk: {s.best_for}
+                                    </span>
+                                  )}
+                                  {s.risk_note && (
+                                    <span className="text-[11px] text-muted-foreground line-clamp-1">
+                                      Catatan: {s.risk_note}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
                             </div>
                             {selectedSuggestion === i && (
                               <span className="text-primary text-xs font-bold shrink-0 mt-0.5">✓ Dipilih</span>

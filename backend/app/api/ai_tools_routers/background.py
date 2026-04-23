@@ -112,6 +112,11 @@ async def background_swap(
 )
 async def background_suggest(
     file: UploadFile = File(...),
+    product_category: Optional[str] = Form(None),
+    target_channel: Optional[str] = Form(None),
+    audience: Optional[str] = Form(None),
+    brand_tone: Optional[str] = Form(None),
+    price_tier: Optional[str] = Form(None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(rate_limit_dependency),
 ):
@@ -141,7 +146,19 @@ async def background_suggest(
     try:
         from app.services.bg_suggest_service import suggest_backgrounds
 
-        result = await suggest_backgrounds(content, mime_type=real_mime_type)
+        context = {
+            "product_category": (product_category or "").strip() or None,
+            "target_channel": (target_channel or "").strip() or None,
+            "audience": (audience or "").strip() or None,
+            "brand_tone": (brand_tone or "").strip() or None,
+            "price_tier": (price_tier or "").strip() or None,
+        }
+
+        result = await suggest_backgrounds(
+            content,
+            mime_type=real_mime_type,
+            context=context,
+        )
         return result
     except Exception as e:
         from app.services.credit_service import log_credit_change

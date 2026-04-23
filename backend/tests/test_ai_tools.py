@@ -112,7 +112,66 @@ def test_background_suggest_endpoint_success():
         assert body["suggestions"][0]["title"] == "Studio Minimalis"
         assert body["suggestions"][0]["emoji"] == "🎨"
         assert "prompt" in body["suggestions"][0]
-        mock_suggest.assert_called_once()
+        mock_suggest.assert_called_once_with(
+            mock_file_content,
+            mime_type="image/png",
+            context={
+                "product_category": None,
+                "target_channel": None,
+                "audience": None,
+                "brand_tone": None,
+                "price_tier": None,
+            },
+        )
+
+
+def test_background_suggest_endpoint_with_context_success():
+    """Test the background-suggest endpoint passes context fields to service."""
+    mock_file_content = b"fake_image_bytes"
+    files = {"file": ("test.png", mock_file_content, "image/png")}
+    data = {
+        "product_category": "skincare",
+        "target_channel": "marketplace",
+        "audience": "women 20-30",
+        "brand_tone": "premium",
+        "price_tier": "mid-range",
+    }
+
+    mock_suggestions = {
+        "suggestions": [
+            {
+                "title": "Studio Premium",
+                "emoji": "✨",
+                "prompt": "clean premium studio setup",
+                "rationale": "Cocok untuk brand premium",
+                "best_for": "marketplace",
+                "risk_note": "Hindari exposure terlalu terang",
+            }
+        ]
+    }
+
+    with patch(
+        "app.services.bg_suggest_service.suggest_backgrounds", new_callable=AsyncMock
+    ) as mock_suggest:
+        mock_suggest.return_value = mock_suggestions
+
+        res = client.post("/api/tools/background-suggest", files=files, data=data)
+
+        assert res.status_code == 200
+        body = res.json()
+        assert "suggestions" in body
+        assert body["suggestions"][0]["best_for"] == "marketplace"
+        mock_suggest.assert_called_once_with(
+            mock_file_content,
+            mime_type="image/png",
+            context={
+                "product_category": "skincare",
+                "target_channel": "marketplace",
+                "audience": "women 20-30",
+                "brand_tone": "premium",
+                "price_tier": "mid-range",
+            },
+        )
 
 
 def test_upscale_endpoint_disabled():
