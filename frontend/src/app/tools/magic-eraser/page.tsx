@@ -7,6 +7,7 @@ import { CanvasMaskPainter } from "@/components/tools/CanvasMaskPainter";
 import { BeforeAfterSlider } from "@/components/tools/BeforeAfterSlider";
 import { ToolProcessingState } from "@/components/tools/ToolProcessingState";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { ArrowLeft, Download, PenSquare } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -23,6 +24,7 @@ export default function MagicEraserPage() {
   const [originalFile, setOriginalFile] = useState<File | null>(null);
   const [previewOriginal, setPreviewOriginal] = useState<string>("");
   const [resultUrl, setResultUrl] = useState<string>("");
+  const [erasePrompt, setErasePrompt] = useState<string>("");
   const { loading, activeJob, startToolJob, cancelActiveJob } = useToolJobProgress();
 
   const [modelQuality, setModelQuality] = useState<"standard" | "ultra">("standard");
@@ -39,6 +41,12 @@ export default function MagicEraserPage() {
     setStep(3); // Loading state
 
     try {
+      const maskBuffer = await maskBlob.arrayBuffer();
+      const hashBuffer = await crypto.subtle.digest("SHA-256", maskBuffer);
+      const maskHash = Array.from(new Uint8Array(hashBuffer))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+
       const maskFile = new File([maskBlob], "mask.png", { type: "image/png" });
       const [uploadedOriginal, uploadedMask] = await Promise.all([
         api.uploadImage(originalFile),
@@ -50,9 +58,10 @@ export default function MagicEraserPage() {
         payload: {
           image_url: uploadedOriginal.url,
           mask_url: uploadedMask.url,
+          ...(erasePrompt.trim() ? { prompt: erasePrompt.trim() } : {}),
         },
         quality: modelQuality,
-        idempotencyKey: `${originalFile.name}:${originalFile.size}:${originalFile.lastModified}:mask`,
+        idempotencyKey: `${originalFile.name}:${originalFile.size}:${originalFile.lastModified}:${modelQuality}:${erasePrompt.trim()}:${maskHash}`,
         onCompleted: (job) => {
           if (job.result_url) {
             setResultUrl(job.result_url);
@@ -141,6 +150,15 @@ export default function MagicEraserPage() {
                 disabled={loading}
                 className="mb-4"
               />
+              <div className="mb-4 space-y-1">
+                <label className="text-xs text-muted-foreground">Petunjuk AI (opsional)</label>
+                <Input
+                  value={erasePrompt}
+                  onChange={(e) => setErasePrompt(e.target.value)}
+                  placeholder="Contoh: hapus orang di kanan, isi jadi dinding polos"
+                  className="bg-background"
+                />
+              </div>
               <CanvasMaskPainter 
                 imageUrl={previewOriginal} 
                 onMaskComplete={handleMaskComplete} 

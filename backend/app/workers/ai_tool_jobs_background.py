@@ -384,6 +384,15 @@ async def execute_magic_eraser_tool_job(job_id: str):
         session.add(job)
         await session.commit()
 
+    # Normalize/clean mask before sending to inpaint model to improve fill quality.
+    raw_mask_bytes = await download_image(str(mask_url))
+    prepared_mask_bytes = inpaint_service.prepare_magic_eraser_mask(raw_mask_bytes)
+    prepared_mask_url = await upload_image(
+        prepared_mask_bytes,
+        content_type="image/png",
+        prefix="magic_eraser_mask_prepared",
+    )
+
     if model_quality == "ultra":
         # gpt-image-2 — superior inpainting quality for object removal
         import os
@@ -395,7 +404,7 @@ async def execute_magic_eraser_tool_job(job_id: str):
         gpt2_args = build_gpt2_image_edit_args(
             prompt=erase_prompt,
             image_urls=[str(image_url)],
-            mask_image_url=str(mask_url),
+            mask_image_url=prepared_mask_url,
         )
         result = await run_gpt2_image_edit(gpt2_args)
         images = result.get("images", [])
@@ -405,7 +414,7 @@ async def execute_magic_eraser_tool_job(job_id: str):
     else:
         result_data = await inpaint_service.inpaint_image(
             image_url=str(image_url),
-            mask_url=str(mask_url),
+            mask_url=prepared_mask_url,
             prompt=str(prompt) if prompt else None,
             magic_eraser_mode=True,
         )
