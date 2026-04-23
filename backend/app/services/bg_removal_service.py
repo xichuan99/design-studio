@@ -364,8 +364,17 @@ async def composite_with_shadow(
         max_dim = int(min(bg_w, bg_h) * scale_factor)
         product_img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
 
-        # Apply light feathering only; aggressive blur can cause floating/halo artifacts.
-        product_img = _feather_edges(product_img, radius=1.0)
+        # Adaptive feathering: keep large products crisp, soften smaller cutouts a bit more.
+        if scale_factor >= 0.82:
+            feather_radius = 0.65
+        elif scale_factor >= 0.74:
+            feather_radius = 0.8
+        elif scale_factor <= 0.68:
+            feather_radius = 1.05
+        else:
+            feather_radius = 0.9
+
+        product_img = _feather_edges(product_img, radius=feather_radius)
 
         p_w, p_h = product_img.size
 
