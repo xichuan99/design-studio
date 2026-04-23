@@ -60,8 +60,8 @@ async def generate_brand_identity_json(
     design_style: str = "",
     emotional_tone: str = "",
 ) -> Dict[str, Any]:
-    if not settings.GEMINI_API_KEY:
-        raise ValueError("GEMINI_API_KEY is not set")
+    if not settings.OPENROUTER_API_KEY:
+        raise ValueError("OPENROUTER_API_KEY is not set")
 
     traits = ", ".join(brand_personality) if brand_personality else "Modern, minimal"
 

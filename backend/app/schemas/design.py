@@ -18,6 +18,10 @@ class StylePreference(str, Enum):
     PLAYFUL = "playful"
 
 
+class ImageProviderPreference(str, Enum):
+    AUTO = "auto"
+
+
 class DesignGenerationRequest(BaseModel):
     raw_text: str = Field(
         ...,
@@ -50,6 +54,10 @@ class DesignGenerationRequest(BaseModel):
         False,
         description="Whether to instruct the image AI to render text directly into the pixels",
     )
+    image_provider: ImageProviderPreference = Field(
+        ImageProviderPreference.AUTO,
+        description="Image provider selection. 'auto' uses the Fal.ai routing.",
+    )
     clarification_answers: Optional[dict] = Field(
         None,
         description="User's answers to the clarification questions",
@@ -74,6 +82,7 @@ class DesignGenerationRequest(BaseModel):
             "example": {
                 "raw_text": "Promo Seblak Pedas, Diskon 50% khusus Jumat",
                 "aspect_ratio": "1:1",
+                "image_provider": "auto",
                 "num_variations": 2,
             }
         }
@@ -123,6 +132,10 @@ class RedesignRequest(BaseModel):
     style_preference: StylePreference = Field(
         StylePreference.BOLD, description="[Deprecated] Gaya visual pilihan."
     )
+    image_provider: ImageProviderPreference = Field(
+        ImageProviderPreference.AUTO,
+        description="Image provider selection for redesign. 'auto' uses the Fal.ai routing.",
+    )
     brand_kit_id: Optional[str] = Field(
         None, description="ID Brand Kit aktif (jika ada)."
     )
@@ -139,6 +152,7 @@ class RedesignRequest(BaseModel):
                 "raw_text": "Make it futuristic",
                 "strength": 0.65,
                 "aspect_ratio": "1:1",
+                "image_provider": "auto",
                 "preserve_product": False,
             }
         }

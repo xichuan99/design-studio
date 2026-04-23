@@ -40,8 +40,8 @@ async def analyze_reference_image(image_url: str) -> ReferenceAnalysis:
     Downloads an image from a URL, analyzes it using Gemini Vision,
     and returns structured style parameters.
     """
-    if not settings.GEMINI_API_KEY:
-        logging.warning("GEMINI_API_KEY is missing, returning mock reference analysis")
+    if not settings.OPENROUTER_API_KEY:
+        logging.warning("OPENROUTER_API_KEY is missing, returning mock reference analysis")
         return ReferenceAnalysis(
             style_description="A placeholder style due to missing API key.",
             dominant_colors=["#FFFFFF", "#000000"],
@@ -147,4 +147,5 @@ async def run_flux_redesign(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Gagal melakukan redesign dari fal.ai: {str(e)}",
         )
+
 

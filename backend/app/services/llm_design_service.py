@@ -56,7 +56,7 @@ async def generate_design_brief_questions(raw_text: str) -> dict:
     """
     from app.schemas.design import BriefQuestionsResponse
 
-    if not settings.GEMINI_API_KEY:
+    if not settings.OPENROUTER_API_KEY:
         import logging
         from unittest.mock import AsyncMock
 
@@ -74,7 +74,7 @@ async def generate_design_brief_questions(raw_text: str) -> dict:
 
         import logging
 
-        logging.warning("GEMINI_API_KEY is missing – returning mock brief questions")
+        logging.warning("OPENROUTER_API_KEY is missing – returning mock brief questions")
         return {
             "questions": [
                 {
@@ -158,7 +158,7 @@ async def generate_unified_brief_questions(
     """
     from app.schemas.design import BriefQuestionsResponse
 
-    if not settings.GEMINI_API_KEY:
+    if not settings.OPENROUTER_API_KEY:
         import logging
         from unittest.mock import AsyncMock
 
@@ -175,7 +175,7 @@ async def generate_unified_brief_questions(
 
         import logging
 
-        logging.warning("GEMINI_API_KEY is missing – returning mock unified questions")
+        logging.warning("OPENROUTER_API_KEY is missing – returning mock unified questions")
 
         if mode == "redesign":
             return {
@@ -375,7 +375,7 @@ async def parse_design_text(
         + brand_memory_modifier
     )
 
-    if not settings.GEMINI_API_KEY:
+    if not settings.OPENROUTER_API_KEY:
         # Allow tests to patch asyncio.to_thread and provide fake LLM responses
         # even when API key is missing; otherwise return the development mock.
         import logging
@@ -399,7 +399,7 @@ async def parse_design_text(
 
         # Dev-mode mock: return sample parsed elements so the app is usable without an API key
         logging.warning(
-            "GEMINI_API_KEY is missing – returning mock parsed data for development"
+            "OPENROUTER_API_KEY is missing – returning mock parsed data for development"
         )
         words = raw_text.split()
         headline = " ".join(words[:5]) if len(words) >= 5 else raw_text[:40]
@@ -520,10 +520,10 @@ async def modify_visual_prompt(
     """
     from app.schemas.design import ModifyPromptResponse
 
-    if not settings.GEMINI_API_KEY:
+    if not settings.OPENROUTER_API_KEY:
         import logging
 
-        logging.warning("GEMINI_API_KEY is missing – returning mock modified data")
+        logging.warning("OPENROUTER_API_KEY is missing – returning mock modified data")
         # simple mock
         new_parts = []
         for p in original_parts:
@@ -597,10 +597,10 @@ async def generate_project_title(prompt: str) -> str:
         ValueError: If the LLM returns an empty response.
         Exception: If the LLM call fails (handled internally by returning a fallback title).
     """
-    if not settings.GEMINI_API_KEY:
+    if not settings.OPENROUTER_API_KEY:
         import logging
 
-        logging.warning("GEMINI_API_KEY is missing – returning mock title")
+        logging.warning("OPENROUTER_API_KEY is missing – returning mock title")
         words = prompt.split()
         return " ".join(words[:4]).title() if words else "Desain AI Baru"
 

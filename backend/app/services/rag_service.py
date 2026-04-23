@@ -3,10 +3,11 @@ import json
 import logging
 import PyPDF2
 from typing import List
+import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.core.ai_models import EMBEDDING_TEXT_MODEL
-from app.services.llm_client import get_genai_client
+from app.core.config import settings
 from app.models.brand_memory import BrandMemory
 
 logger = logging.getLogger(__name__)
@@ -26,15 +27,33 @@ async def extract_text_from_pdf(file_bytes: bytes) -> str:
         return ""
 
 async def get_embedding_for_text(text: str) -> List[float]:
-    """Generates an embedding vector for a given text chunk using Gemini."""
-    client = get_genai_client()
+    """Generates an embedding vector for a given text chunk using OpenRouter embeddings."""
     try:
-        # Use gemini-embedding model
-        result = client.models.embed_content(
-            model=EMBEDDING_TEXT_MODEL,
-            contents=text,
-        )
-        return result.embeddings[0].values
+        if not settings.OPENROUTER_API_KEY:
+            raise ValueError("OPENROUTER_API_KEY is not configured")
+
+        model_name = EMBEDDING_TEXT_MODEL
+        if model_name.startswith("openrouter/"):
+            model_name = model_name.replace("openrouter/", "", 1)
+
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                "https://openrouter.ai/api/v1/embeddings",
+                headers={
+                    "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": "https://design-studio.dev",
+                },
+                json={"model": model_name, "input": text},
+            )
+            response.raise_for_status()
+            payload = response.json()
+
+        vectors = payload.get("data", [])
+        if not vectors or "embedding" not in vectors[0]:
+            raise ValueError("Invalid embedding response from OpenRouter")
+
+        return vectors[0]["embedding"]
     except Exception as e:
         logger.error(f"Error generating embedding: {e}")
         # Return fallback zeros vector just to avoid db crash for prototyping

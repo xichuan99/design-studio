@@ -18,7 +18,6 @@ from app.core.exceptions import (
     InsufficientCreditsError,
     AppException,
 )
-from app.core.ai_models import GOOGLE_IMAGE_GENERATION, XAI_IMAGE_GENERATION
 from uuid import UUID
 import re
 import httpx
@@ -381,13 +380,10 @@ async def generate_design(
 
     import logging
 
-    logging.info(
-        "Using Gemini synchronous generation (Nano Banana / Imagen) for image generation"
-    )
+    logging.info("Using Fal/OpenRouter synchronous generation for image generation")
     try:
         from datetime import datetime, timezone
         from app.services.llm_service import parse_design_text
-        import asyncio
 
         # Parse text first (reuse existing logic)
         parsed = await parse_design_text(
@@ -427,11 +423,8 @@ async def generate_design(
 
         await db.commit()
 
-        # Generate image with Gemini Imagen
-        from google import genai
-        from google.genai import types
-
-        from app.services.image_service import STYLE_SUFFIXES
+        # Generate image with Fal.ai providers
+        from app.services.image_service import STYLE_SUFFIXES, generate_background
         from app.services.prompt_builder import PromptBuilder
 
         style_key = request.style_preference if request.style_preference else "auto"
@@ -440,11 +433,9 @@ async def generate_design(
             logging.warning(f"Unrecognized style preference: '{style_key}'. Falling back to 'auto'.")
             style_key = "auto"
 
-        # Determine text instructions based on integration needs
+        # Fal.ai-only image pipeline.
+        model_name = "fal-ai"
         if request.integrated_text:
-            model_name = XAI_IMAGE_GENERATION
-
-            # Build all text elements for integrated rendering
             text_parts = [f"'{parsed.headline}'"]
             if parsed.sub_headline:
                 text_parts.append(f"'{parsed.sub_headline}'")
@@ -453,11 +444,13 @@ async def generate_design(
             all_text = ", and ".join(text_parts)
             text_instruction = (
                 f"high quality typography, clearly readable text showing {all_text}, "
-                "with proper visual hierarchy, stylized to perfectly integrate organically into the scene"
+                "with proper visual hierarchy, polished ad design"
             )
         else:
-            model_name = GOOGLE_IMAGE_GENERATION
-            text_instruction = "professional graphic design background, copy space area for text overlay, no text, no letters, no words"
+            text_instruction = (
+                "professional graphic design background, copy space area for text overlay, "
+                "no text, no letters, no words"
+            )
 
         enhanced_prompt = sanitize_prompt_for_imagen(
             PromptBuilder.build(
@@ -468,51 +461,19 @@ async def generate_design(
             )
         )
 
-        client = genai.Client(api_key=app_settings.GEMINI_API_KEY)
-
-        image_bytes = None
-        if model_name == XAI_IMAGE_GENERATION:
-            # Use xAI Grok Imagine for integrated text
-            from app.services.llm_client import generate_image_xai
-
-            response = await asyncio.to_thread(
-                generate_image_xai,
-                model_id=model_name,
-                prompt=enhanced_prompt,
-                aspect_ratio=request.aspect_ratio
-            )
-
-            if response:
-                img_obj = response.generated_images[0].image
-                if hasattr(img_obj, "image_bytes") and img_obj.image_bytes:
-                    image_bytes = img_obj.image_bytes
-                elif hasattr(img_obj, "url") and img_obj.url:
-                    # Download if it's a URL
-                    async with httpx.AsyncClient() as http_client:
-                        id_resp = await http_client.get(img_obj.url, timeout=30.0)
-                        id_resp.raise_for_status()
-                        image_bytes = id_resp.content
-                        image_bytes = id_resp.content
-        else:
-            # Traditional Imagen models use generate_images
-            imagen_config = {
-                "number_of_images": 1,
-                "aspect_ratio": request.aspect_ratio.replace(":", ":"),
-            }
-            if getattr(request, "seed", None):
-                try:
-                    imagen_config["seed"] = int(request.seed)
-                except ValueError:
-                    pass
-
-            response = await asyncio.to_thread(
-                client.models.generate_images,
-                model=model_name,
-                prompt=enhanced_prompt,
-                config=types.GenerateImagesConfig(**imagen_config),
-            )
-            if response.generated_images:
-                image_bytes = response.generated_images[0].image.image_bytes
+        fal_result = await generate_background(
+            visual_prompt=enhanced_prompt,
+            reference_image_url=getattr(request, "reference_image_url", None),
+            style=style_key,
+            aspect_ratio=request.aspect_ratio,
+            integrated_text=request.integrated_text,
+            preserve_product=bool(getattr(request, "remove_product_bg", False)),
+            seed=getattr(request, "seed", None),
+        )
+        async with httpx.AsyncClient() as http_client:
+            img_resp = await http_client.get(fal_result["image_url"], timeout=30.0)
+            img_resp.raise_for_status()
+            image_bytes = img_resp.content
 
         if image_bytes:
             # --- Flow A: Product Composite Logic ---
@@ -614,7 +575,10 @@ async def redesign_image(
     from app.core.credit_costs import COST_REDESIGN
     from app.core.exceptions import InsufficientCreditsError, InternalServerError
     from app.services.credit_service import log_credit_change
-    from app.services.redesign_service import analyze_reference_image, run_flux_redesign
+    from app.services.redesign_service import (
+        analyze_reference_image,
+        run_flux_redesign,
+    )
     from app.services.storage_service import upload_image_tracked
     from datetime import datetime, timezone
 
@@ -682,7 +646,7 @@ async def redesign_image(
             preserve_product=request.preserve_product,
         )
 
-        # Step 2: Run FLUX.2 Dev image-to-image
+        # Step 2: Run Fal.ai image-to-image redesign.
         image_bytes = await run_flux_redesign(
             image_url=request.reference_image_url,
             enriched_prompt=enriched_prompt,

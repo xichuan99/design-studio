@@ -1,7 +1,10 @@
 import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
 
-from app.services.redesign_service import analyze_reference_image, run_flux_redesign
+from app.services.redesign_service import (
+    analyze_reference_image,
+    run_flux_redesign,
+)
 from app.schemas.design import ReferenceAnalysis
 from app.core.exceptions import AppException
 
@@ -36,10 +39,10 @@ async def test_analyze_reference_image_success():
         with patch("asyncio.to_thread", new_callable=AsyncMock) as mock_to_thread:
             mock_to_thread.return_value = mock_gemini_response
 
-            # Since we mock to_thread, the actual GEMINI_API_KEY check will still run.
+            # Since we mock to_thread, the actual OPENROUTER_API_KEY check will still run.
             # We need to temporarily set it or mock the settings if it fails, but assuming it's set in tests
             with patch(
-                "app.services.redesign_service.settings.GEMINI_API_KEY", "fake_key"
+                "app.services.redesign_service.settings.OPENROUTER_API_KEY", "fake_key"
             ):
                 result = await analyze_reference_image("https://fake.url/image.jpg")
 
@@ -60,7 +63,7 @@ async def test_analyze_reference_image_download_failure():
     mock_client.get.side_effect = Exception("Download error")
 
     with patch("httpx.AsyncClient", return_value=mock_client):
-        with patch("app.services.redesign_service.settings.GEMINI_API_KEY", "fake_key"):
+        with patch("app.services.redesign_service.settings.OPENROUTER_API_KEY", "fake_key"):
             with pytest.raises(AppException) as excinfo:
                 await analyze_reference_image("https://fake.url/fail.jpg")
 
@@ -127,3 +130,4 @@ async def test_run_flux_redesign_fal_error():
 
             assert excinfo.value.status_code == 502
             assert "Gagal melakukan redesign dari fal.ai" in excinfo.value.detail
+

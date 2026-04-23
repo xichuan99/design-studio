@@ -9,12 +9,10 @@ import fal_client
 from app.core.ai_models import (
     FAL_BANNER_DRAFT,
     FAL_BANNER_STANDARD,
-    XAI_IMAGE_GENERATION,
 )
 from app.core.config import settings
 from app.services.bg_removal_service import remove_background
 from app.services.storage_service import upload_image
-from app.services.llm_client import generate_image_xai
 
 logger = logging.getLogger(__name__)
 
@@ -41,19 +39,18 @@ async def generate_text_banner(
     Quality tiers:
     - draft:    fal-ai/flux/schnell (fast, cheap)
     - standard: fal-ai/flux/dev (good quality)
-    - premium:  grok-imagine-image (best text rendering)
+    - premium:  fal-ai/flux/dev with higher-resolution output
 
     Args:
         text (str): The text to display on the banner.
         style (str): The visual style of the banner (e.g., "ribbon", "badge"). Defaults to "ribbon".
         color_hint (str): A hint for the color palette. Defaults to "colorful".
         quality (str): Quality tier for the generation ("draft", "standard", "premium"). Defaults to "standard".
-
     Returns:
         dict: A dictionary containing the generated image's "url", "width", and "height".
 
     Raises:
-        ValueError: If a required API key (GEMINI_API_KEY or FAL_KEY) is missing.
+        ValueError: If a required API key (FAL_KEY) is missing.
         RuntimeError: If the external API fails to return a valid image.
         Exception: For any other errors during the generation or upload process.
     """
@@ -80,41 +77,24 @@ async def generate_text_banner(
 
         # 2. Generate Image based on quality
         if quality == "premium":
-            # Use xAI (Grok) for high fidelity text rendering
-            if not settings.XAI_API_KEY:
-                raise ValueError(
-                    "XAI_API_KEY is not configured for premium generation"
-                )
+            if not settings.FAL_KEY:
+                raise ValueError("FAL_KEY is missing from environment")
 
-            import asyncio
-            loop = asyncio.get_running_loop()
+            os.environ["FAL_KEY"] = settings.FAL_KEY
 
-            def run_xai():
-                return generate_image_xai(
-                    model_id=XAI_IMAGE_GENERATION,
-                    prompt=prompt,
-                    aspect_ratio="1:1"
-                )
+            result = await fal_client.run_async(
+                FAL_BANNER_STANDARD,
+                arguments={
+                    "prompt": prompt,
+                    "image_size": "square_hd",
+                },
+            )
 
-            response = await loop.run_in_executor(None, run_xai)
+            images = result.get("images", [])
+            if not images or not images[0].get("url"):
+                raise RuntimeError("Fal.ai returned no image URL")
 
-            if not response:
-                raise RuntimeError("xAI API returned no response")
-
-            # Check if we got bytes or a URL
-            img_obj = response.generated_images[0].image
-            if hasattr(img_obj, "image_bytes") and img_obj.image_bytes:
-                image_bytes_data = img_obj.image_bytes
-                temp_id = str(uuid.uuid4())[:8]
-                banner_url = await upload_image(
-                    image_bytes_data,
-                    content_type="image/jpeg",
-                    prefix=f"temp_xai_{temp_id}",
-                )
-            elif hasattr(img_obj, "url") and img_obj.url:
-                banner_url = img_obj.url
-            else:
-                raise RuntimeError("xAI API returned no valid image data or URL")
+            banner_url = images[0]["url"]
 
         else:
             # Use Fal.ai (Flux)

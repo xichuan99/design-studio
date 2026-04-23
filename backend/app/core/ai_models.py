@@ -13,54 +13,52 @@ def _env(name: str, default: str) -> str:
     return value or default
 
 
-# Shared LLM model pairs (OpenRouter/xAI)
-LLM_REASONING_PRIMARY = _env(
-    "AI_MODEL_LLM_REASONING_PRIMARY",
-    "openrouter/minimax/minimax-01",
-)
-LLM_REASONING_FALLBACK = _env(
-    "AI_MODEL_LLM_REASONING_FALLBACK",
-    "openrouter/qwen/qwen-2.5-72b-instruct",
-)
-
+# ═══════════════════════════════════════════════════════════════
+# VISION — Analisis Gambar, Logo, Screenshot Website
+# ═══════════════════════════════════════════════════════════════
 LLM_VISION_PRIMARY = _env(
     "AI_MODEL_LLM_VISION_PRIMARY",
-    "xai/grok-2-vision-1212",
+    "openrouter/qwen/qwen3.5-flash-02-23",
 )
 LLM_VISION_FALLBACK = _env(
     "AI_MODEL_LLM_VISION_FALLBACK",
-    "openrouter/qwen/qwen-vl-max",
+    "openrouter/bytedance-seed/seed-2.0-mini",
 )
 
+# ═══════════════════════════════════════════════════════════════
+# BACKGROUND SUGGEST — Color Palette, Latar Rekomendasi
+# ═══════════════════════════════════════════════════════════════
 LLM_BG_SUGGEST_PRIMARY = _env(
     "AI_MODEL_LLM_BG_SUGGEST_PRIMARY",
     "openrouter/qwen/qwen3.5-flash-02-23",
 )
-LLM_BG_SUGGEST_FALLBACK = _env(
-    "AI_MODEL_LLM_BG_SUGGEST_FALLBACK",
-    "minimax/minimax-m2.5",
-)
 
+# ═══════════════════════════════════════════════════════════════
+# BRAND KIT — Ekstraksi dari URL, File, Brief (butuh vision + long context)
+# ═══════════════════════════════════════════════════════════════
 LLM_BRAND_KIT_PRIMARY = _env(
     "AI_MODEL_LLM_BRAND_KIT_PRIMARY",
-    "openrouter/minimax/minimax-m2.7",
+    "openrouter/qwen/qwen3.5-flash-02-23",
 )
 LLM_BRAND_KIT_FALLBACK = _env(
     "AI_MODEL_LLM_BRAND_KIT_FALLBACK",
-    "qwen/qwen-2.5-72b-instruct",
+    "openrouter/bytedance-seed/seed-1.6",
+)
+
+# ═══════════════════════════════════════════════════════════════
+# REASONING — Design Brief Interview, Complex Copywriting
+# ═══════════════════════════════════════════════════════════════
+LLM_REASONING_PRIMARY = _env(
+    "AI_MODEL_LLM_REASONING_PRIMARY",
+    "openrouter/qwen/qwq-32b",
+)
+LLM_REASONING_FALLBACK = _env(
+    "AI_MODEL_LLM_REASONING_FALLBACK",
+    "openrouter/deepseek/deepseek-r1",
 )
 
 
 # Image generation and editing models
-XAI_IMAGE_GENERATION = _env(
-    "AI_MODEL_XAI_IMAGE_GENERATION",
-    "grok-imagine-image",
-)
-GOOGLE_IMAGE_GENERATION = _env(
-    "AI_MODEL_GOOGLE_IMAGE_GENERATION",
-    "imagen-4.0-fast-generate-001",
-)
-
 FAL_IMAGE_TEXT_TO_IMAGE_PRIMARY = _env(
     "AI_MODEL_FAL_IMAGE_TEXT_TO_IMAGE_PRIMARY",
     "fal-ai/flux-pro/v1.1",
@@ -126,5 +124,5 @@ FAL_RETOUCH = _env(
 # Embeddings
 EMBEDDING_TEXT_MODEL = _env(
     "AI_MODEL_EMBEDDING_TEXT",
-    "text-embedding-004",
+    "openrouter/nomic-ai/nomic-embed-text-v1.5",
 )

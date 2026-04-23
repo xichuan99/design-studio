@@ -133,8 +133,8 @@ def _normalize_slide_payload(payload: object, request: CarouselGenerateRequest) 
     for index, slide_type in enumerate(slide_types, start=1):
         if index - 1 < len(items) and isinstance(items[index - 1], dict):
             current = dict(items[index - 1])
-            current.setdefault("index", index)
-            current.setdefault("type", slide_type)
+            current["index"] = index
+            current["type"] = slide_type
             slides.append(CarouselSlide.model_validate(current))
         else:
             slides.append(
@@ -153,7 +153,7 @@ async def generate_carousel(request: CarouselGenerateRequest) -> CarouselGenerat
     brand_tokens = derive_carousel_brand_tokens(request.primary_color, request.font_style)
     slides = _build_fallback_slides(request)
 
-    if settings.GEMINI_API_KEY:
+    if settings.OPENROUTER_API_KEY:
         prompt = f"""
 Generate {request.num_slides} Instagram carousel slides in Indonesian for this topic: {request.topic}
 Brand: {request.brand_name}
@@ -211,7 +211,7 @@ async def regenerate_carousel_slide(
         request.instruction,
     )
 
-    if not settings.GEMINI_API_KEY:
+    if not settings.OPENROUTER_API_KEY:
         return fallback
 
     prompt = {

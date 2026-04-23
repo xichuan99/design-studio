@@ -32,7 +32,7 @@ async def generate_copywriting_questions(raw_text: str) -> dict:
     """
     from app.schemas.design import BriefQuestionsResponse
 
-    if not settings.GEMINI_API_KEY:
+    if not settings.OPENROUTER_API_KEY:
         import logging
         from unittest.mock import AsyncMock
 
@@ -50,7 +50,7 @@ async def generate_copywriting_questions(raw_text: str) -> dict:
         import logging
 
         logging.warning(
-            "GEMINI_API_KEY is missing – returning mock copywriting questions"
+            "OPENROUTER_API_KEY is missing – returning mock copywriting questions"
         )
         return {
             "questions": [
@@ -163,10 +163,10 @@ async def generate_ai_copywriting(
         for key, value in clarification_answers.items():
             prompt_payload += f"- {key}: {value}\n"
 
-    if not settings.GEMINI_API_KEY:
+    if not settings.OPENROUTER_API_KEY:
         import logging
 
-        logging.warning("GEMINI_API_KEY is missing – returning mock copywriting")
+        logging.warning("OPENROUTER_API_KEY is missing – returning mock copywriting")
         headline = "PROMO DISKON HARI INI"
         subline = f"Dapatkan {product_description[:20]} dengan harga spesial."
         cta = "BELI SEKARANG"

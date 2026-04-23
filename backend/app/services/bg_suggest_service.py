@@ -18,7 +18,6 @@ from google.genai import types as genai_types
 
 from app.core.ai_models import (
     FAL_BG_SUGGEST_CAPTION,
-    LLM_BG_SUGGEST_FALLBACK,
     LLM_BG_SUGGEST_PRIMARY,
 )
 from app.core.config import settings
@@ -68,8 +67,8 @@ async def suggest_backgrounds(
     """
     if not settings.FAL_KEY:
         raise ValueError("FAL_KEY is missing from environment")
-    if not settings.GEMINI_API_KEY:
-        raise ValueError("GEMINI_API_KEY is missing from environment")
+    if not settings.OPENROUTER_API_KEY:
+        raise ValueError("OPENROUTER_API_KEY is missing from environment")
 
     import os
 
@@ -121,7 +120,7 @@ async def suggest_backgrounds(
         response = call_gemini_with_fallback(
             client=client,
             primary_model=LLM_BG_SUGGEST_PRIMARY,
-            fallback_model=LLM_BG_SUGGEST_FALLBACK,
+            fallback_model=LLM_BG_SUGGEST_PRIMARY,
             contents=[user_message],
             config=genai_types.GenerateContentConfig(
                 system_instruction=SUGGESTION_SYSTEM_PROMPT,

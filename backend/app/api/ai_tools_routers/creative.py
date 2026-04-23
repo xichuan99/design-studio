@@ -61,7 +61,10 @@ async def text_banner(
 
         # Call the banner service
         result = await banner_service.generate_text_banner(
-            text=text, style=style, color_hint=color_hint, quality=quality
+            text=text,
+            style=style,
+            color_hint=color_hint,
+            quality=quality,
         )
 
         # Deduct credits
