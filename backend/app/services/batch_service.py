@@ -16,6 +16,19 @@ logger = logging.getLogger(__name__)
 _SUPPORTED_QUALITY = {"standard", "ultra"}
 _SUPPORTED_ASPECT_RATIO = {"1:1", "4:5", "16:9", "9:16"}
 _SUPPORTED_COMPOSITE_PROFILE = {"default", "grounded", "soft"}
+_SUPPORTED_WATERMARK_PRESETS = {"subtle", "balanced", "protective"}
+
+
+def _normalize_visibility_preset(value: Any) -> str:
+    preset = str(value or "balanced").strip().lower()
+    if preset in _SUPPORTED_WATERMARK_PRESETS:
+        return preset
+
+    logger.warning(
+        "Invalid batch visibility_preset '%s'; fallback to balanced",
+        value,
+    )
+    return "balanced"
 
 
 def _make_unique_filename(filename: str, used_filenames: set[str]) -> str:
@@ -71,6 +84,9 @@ async def process_single_image(
             position = params.get("position", "bottom-right")
             opacity = params.get("opacity", 0.5)
             scale = params.get("scale", 0.2)
+            visibility_preset = _normalize_visibility_preset(
+                params.get("visibility_preset", "balanced")
+            )
 
             result_bytes = await watermark_service.apply_watermark(
                 base_image_bytes=image_bytes,
@@ -78,6 +94,7 @@ async def process_single_image(
                 position=position,
                 opacity=opacity,
                 scale=scale,
+                visibility_preset=visibility_preset,
             )
             # Default to jpeg for watermarks if original might be jpeg
             new_filename = filename.rsplit(".", 1)[0] + "_watermarked.jpg"

@@ -38,6 +38,15 @@ const COMPOSITE_PROFILES = [
 ];
 
 const ULTRA_ENABLED_OPERATIONS = new Set(["product_scene"]);
+const WATERMARK_POSITIONS = [
+  { id: "top-left", name: "Kiri Atas" },
+  { id: "top-right", name: "Kanan Atas" },
+  { id: "bottom-left", name: "Kiri Bawah" },
+  { id: "bottom-right", name: "Kanan Bawah" },
+  { id: "center", name: "Tengah" },
+  { id: "tiled", name: "Pattern (Penuh)" },
+];
+type VisibilityPreset = "subtle" | "balanced" | "protective";
 
 export default function BatchProcessPage() {
   const router = useRouter();
@@ -51,6 +60,10 @@ export default function BatchProcessPage() {
   const [compositeProfile, setCompositeProfile] = useState("grounded");
   const [modelQuality, setModelQuality] = useState<"standard" | "ultra">("standard");
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [watermarkPosition, setWatermarkPosition] = useState("bottom-right");
+  const [watermarkOpacity, setWatermarkOpacity] = useState(50);
+  const [watermarkScale, setWatermarkScale] = useState(20);
+  const [watermarkVisibilityPreset, setWatermarkVisibilityPreset] = useState<VisibilityPreset>("balanced");
 
   const [resultUrl, setResultUrl] = useState<string>("");
   const [batchResult, setBatchResult] = useState<{success: number, error: number, errors: Array<{filename: string, error: string}>}>({success: 0, error: 0, errors: []});
@@ -77,12 +90,19 @@ export default function BatchProcessPage() {
     }
 
     try {
-      const params: Record<string, string> = {};
+      const params: Record<string, string | number> = {};
         if (operation === "product_scene") {
           params.theme = theme;
           params.aspect_ratio = aspectRatio;
           params.quality = modelQuality;
           params.composite_profile = compositeProfile;
+      }
+
+      if (operation === "watermark") {
+        params.position = watermarkPosition;
+        params.opacity = watermarkOpacity / 100;
+        params.scale = watermarkScale / 100;
+        params.visibility_preset = watermarkVisibilityPreset;
       }
 
       const uploadedItems = await Promise.all(
@@ -108,7 +128,7 @@ export default function BatchProcessPage() {
           params,
         },
         quality: operation === "product_scene" ? modelQuality : "standard",
-        idempotencyKey: `${operation}:${theme}:${aspectRatio}:${modelQuality}:${compositeProfile}:${files.map((f) => `${f.name}:${f.size}:${f.lastModified}`).join("|")}:${logoFile ? `${logoFile.name}:${logoFile.size}:${logoFile.lastModified}` : ""}`,
+        idempotencyKey: `${operation}:${theme}:${aspectRatio}:${modelQuality}:${compositeProfile}:${watermarkPosition}:${watermarkOpacity}:${watermarkScale}:${watermarkVisibilityPreset}:${files.map((f) => `${f.name}:${f.size}:${f.lastModified}`).join("|")}:${logoFile ? `${logoFile.name}:${logoFile.size}:${logoFile.lastModified}` : ""}`,
         onCompleted: (job) => {
           if (!job.result_url) return;
           setResultUrl(job.result_url);
@@ -291,6 +311,58 @@ export default function BatchProcessPage() {
                   <label className="text-sm font-medium block">Upload Logo (PNG transparan disarankan)</label>
                   <input type="file" accept="image/png,image/jpeg" onChange={(e) => setLogoFile(e.target.files?.[0] || null)} />
                   {logoFile && <p className="text-xs text-green-600 mt-1">Logo diupload: {logoFile.name}</p>}
+
+                  <label className="text-sm font-medium block mt-2">Posisi Watermark</label>
+                  <div className="flex flex-wrap gap-2">
+                    {WATERMARK_POSITIONS.map((pos) => (
+                      <div
+                        key={pos.id}
+                        className={`px-3 py-1.5 border rounded-full text-sm cursor-pointer ${watermarkPosition === pos.id ? 'bg-primary text-white border-primary' : 'bg-muted hover:bg-muted/80'}`}
+                        onClick={() => setWatermarkPosition(pos.id)}
+                      >
+                        {pos.name}
+                      </div>
+                    ))}
+                  </div>
+
+                  <label className="text-sm font-medium block mt-2">Opacity: {watermarkOpacity}%</label>
+                  <input
+                    type="range"
+                    min={10}
+                    max={100}
+                    step={5}
+                    value={watermarkOpacity}
+                    onChange={(e) => setWatermarkOpacity(Number(e.target.value))}
+                    className="w-full"
+                  />
+
+                  <label className="text-sm font-medium block mt-2">Ukuran: {watermarkScale}%</label>
+                  <input
+                    type="range"
+                    min={5}
+                    max={80}
+                    step={5}
+                    value={watermarkScale}
+                    onChange={(e) => setWatermarkScale(Number(e.target.value))}
+                    className="w-full"
+                  />
+
+                  <label className="text-sm font-medium block mt-2">Kejelasan Watermark</label>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { id: "subtle", name: "Subtle" },
+                      { id: "balanced", name: "Balanced" },
+                      { id: "protective", name: "Protective" },
+                    ].map((preset) => (
+                      <div
+                        key={preset.id}
+                        className={`px-3 py-1.5 border rounded-full text-sm cursor-pointer ${watermarkVisibilityPreset === preset.id ? 'bg-primary text-white border-primary' : 'bg-muted hover:bg-muted/80'}`}
+                        onClick={() => setWatermarkVisibilityPreset(preset.id as VisibilityPreset)}
+                      >
+                        {preset.name}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 

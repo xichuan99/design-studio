@@ -391,6 +391,7 @@ export default function WatermarkPlacerPage() {
                       const logoStyle: CSSProperties = {
                         width: `${Math.round(previewScale * 100)}%`,
                         maxWidth: "320px",
+                        maxHeight: "35%",
                         opacity: previewOpacity,
                       };
 
@@ -433,6 +434,9 @@ export default function WatermarkPlacerPage() {
                                 {watermarkNode}
                               </div>
                             ))}
+                            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded bg-black/60 px-2 py-1 text-[10px] text-white">
+                              Preview pattern bersifat representatif
+                            </div>
                           </div>
                         );
                       }

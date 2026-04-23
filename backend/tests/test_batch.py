@@ -57,6 +57,7 @@ async def test_process_batch_watermark(mock_apply_watermark, mock_files):
         "position": "center",
         "opacity": 0.8,
         "scale": 0.5,
+        "visibility_preset": "protective",
     }
     zip_bytes, errors = await process_batch(mock_files, "watermark", params)
 
@@ -73,6 +74,33 @@ async def test_process_batch_watermark(mock_apply_watermark, mock_files):
         position="center",
         opacity=0.8,
         scale=0.5,
+        visibility_preset="protective",
+    )
+
+
+@pytest.mark.asyncio
+@patch("app.services.batch_service.watermark_service.apply_watermark")
+async def test_process_batch_watermark_invalid_visibility_preset_falls_back(mock_apply_watermark, mock_files):
+    mock_apply_watermark.side_effect = [b"wm_1", b"wm_2"]
+
+    params = {
+        "logo_bytes": b"fake_logo",
+        "position": "center",
+        "opacity": 0.8,
+        "scale": 0.5,
+        "visibility_preset": "invalid-preset",
+    }
+
+    _, errors = await process_batch(mock_files, "watermark", params)
+
+    assert errors == []
+    mock_apply_watermark.assert_called_with(
+        base_image_bytes=b"fake_bytes_2",
+        watermark_bytes=b"fake_logo",
+        position="center",
+        opacity=0.8,
+        scale=0.5,
+        visibility_preset="balanced",
     )
 
 
