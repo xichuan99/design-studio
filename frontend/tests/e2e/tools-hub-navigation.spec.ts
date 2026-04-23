@@ -12,7 +12,6 @@ const TOOL_ROUTES = [
   { cardName: 'ID Photo Maker', expectedHeading: 'ID Photo (Pasfoto) Maker', expectedPath: '/tools/id-photo' },
   { cardName: 'Magic Eraser', expectedHeading: 'Magic Eraser', expectedPath: '/tools/magic-eraser' },
   { cardName: 'Generative Expand', expectedHeading: 'Generative Expand', expectedPath: '/tools/generative-expand' },
-  { cardName: 'AI Text Banner', expectedHeading: 'AI Text Banner', expectedPath: '/tools/text-banner' },
   { cardName: 'AI Watermark Placer', expectedHeading: 'AI Watermark Placer', expectedPath: '/tools/watermark-placer' },
 ] as const;
 

@@ -190,43 +190,6 @@ def test_upscale_endpoint_disabled():
     assert "dinonaktifkan" in str(res.json()).lower()
 
 
-def test_text_banner_endpoint_success():
-    """Test generating a text banner."""
-    data = {
-        "text": "SALE MANTAP",
-        "style": "ribbon",
-        "color_hint": "merah kuning",
-        "quality": "standard",
-    }
-
-    with patch(
-        "app.services.banner_service.generate_text_banner", new_callable=AsyncMock
-    ) as mock_gen:
-        mock_gen.return_value = {
-            "url": "http://storage.com/banner.png",
-            "width": 1024,
-            "height": 1024,
-        }
-
-        res = client.post(
-            "/api/tools/text-banner",
-            data=data,
-        )
-
-        assert res.status_code == 200
-        data = res.json()
-        assert data["url"] == "http://storage.com/banner.png"
-        assert data["width"] == 1024
-        assert data["height"] == 1024
-        assert "result_id" in data
-        mock_gen.assert_called_once_with(
-            text="SALE MANTAP",
-            style="ribbon",
-            color_hint="merah kuning",
-            quality="standard",
-        )
-
-
 def test_retouch_endpoint_success():
     """Test auto-retouch endpoint with CodeFormer/OpenCV pipeline."""
     mock_file_content = b"fake_image_bytes"

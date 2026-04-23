@@ -274,31 +274,6 @@ export function useAiToolsEndpoints() {
             throw new Error('Fitur Upscaler sudah dinonaktifkan');
         }, []);
 
-    const generateTextBanner = useCallback(async (payload: {
-            text: string;
-            style?: string;
-            color_hint?: string;
-            quality?: string;
-        }): Promise<{ url: string, width?: number, height?: number }> => {
-            const formData = new FormData();
-            formData.append('text', payload.text);
-            if (payload.style) formData.append('style', payload.style);
-            if (payload.color_hint) formData.append('color_hint', payload.color_hint);
-            if (payload.quality) formData.append('quality', payload.quality);
-    
-            const response = await fetch(`${API_BASE_URL}/tools/text-banner`, {
-                method: 'POST',
-                headers: getHeaders(true),
-                body: formData,
-            });
-            
-            if (!response.ok) {
-                const errBase = await response.json().catch(() => ({}));
-                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to generate text banner');
-            }
-            return response.json();
-        }, [API_BASE_URL, getHeaders]);
-
     const retouchImage = useCallback(async (file: File, outputFormat: 'jpeg' | 'png' = 'jpeg', fidelity: number = 0.7): Promise<{ url: string, before_url: string }> => {
             const formData = new FormData();
             formData.append('file', file);
@@ -603,7 +578,6 @@ export function useAiToolsEndpoints() {
         generateMagicTextLayout,
         removeBackground,
         upscaleImage,
-        generateTextBanner,
         retouchImage,
         generateIdPhoto,
         magicEraser,

@@ -12,7 +12,7 @@ import json
 from typing import List
 from fastapi import APIRouter, Depends, UploadFile, File, Form, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.services import banner_service, product_scene_service, batch_service
+from app.services import product_scene_service, batch_service
 from app.api.deps import get_db
 from app.api.rate_limit import rate_limit_dependency
 from app.models.user import User
@@ -20,86 +20,6 @@ from app.services.storage_service import upload_image
 
 router = APIRouter(tags=["AI Tools"])
 logger = logging.getLogger(__name__)
-
-
-@router.post(
-    "/text-banner",
-    response_model=dict,
-    status_code=status.HTTP_200_OK,
-    summary="Generate Text Banner",
-    description="Generate a decorative AI-generated text banner with transparent background.",
-    responses=ERROR_RESPONSES,
-)
-async def text_banner(
-    text: str = Form(...),
-    style: str = Form("ribbon"),
-    color_hint: str = Form("colorful"),
-    quality: str = Form("standard"),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(rate_limit_dependency),
-):
-    """
-    Generate a decorative AI-generated text banner with transparent background.
-    Premium quality uses Gemini 3.1 Flash Image Preview (Nano Banana 2).
-    """
-    try:
-        # Validate quality
-        valid_qualities = ["draft", "standard", "premium"]
-        if quality not in valid_qualities:
-            raise ValidationError(detail="Invalid quality requested")
-
-        from app.core.credit_costs import COST_TEXT_BANNER_PREMIUM, COST_TEXT_BANNER_STD
-
-        cost = (
-            COST_TEXT_BANNER_PREMIUM if quality == "premium" else COST_TEXT_BANNER_STD
-        )
-
-        if current_user.credits_remaining < cost:
-            raise InsufficientCreditsError(detail="Insufficient credits")
-
-        start_time = time.time()
-
-        # Call the banner service
-        result = await banner_service.generate_text_banner(
-            text=text,
-            style=style,
-            color_hint=color_hint,
-            quality=quality,
-        )
-
-        # Deduct credits
-        from app.services.credit_service import log_credit_change
-
-        await log_credit_change(
-            db, current_user, -cost, f"Generate text banner ({quality})"
-        )
-        await db.commit()
-
-        # Save to AI tool results gallery
-        from app.api.ai_tools_routers.results import save_tool_result
-
-        banner_url = result.get("url", "")
-        result_id = await save_tool_result(
-            db,
-            current_user.id,
-            "text_banner",
-            banner_url,
-            0,
-            f"{text[:100]} ({style})",
-        )
-        await db.commit()
-
-        logger.info(
-            f"Text banner generation ({quality}) took {time.time() - start_time:.2f}s"
-        )
-        result["result_id"] = result_id
-        return result
-
-    except AppException:
-        raise
-    except Exception as e:
-        logger.exception(f"Failed to generate text banner: {str(e)}")
-        raise InternalServerError(detail="Failed to generate text banner")
 
 
 @router.post(

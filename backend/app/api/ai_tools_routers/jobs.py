@@ -35,9 +35,6 @@ from app.core.credit_costs import (
     COST_PRODUCT_SCENE_ULTRA,
     COST_RETOUCH,
     COST_RETOUCH_ADVANCED,
-    COST_TEXT_BANNER_PREMIUM,
-    COST_TEXT_BANNER_PREMIUM_ULTRA,
-    COST_TEXT_BANNER_STD,
 )
 
 router = APIRouter(tags=["AI Tools"])
@@ -50,7 +47,6 @@ SUPPORTED_TOOL_NAMES = {
     "batch",
     "id_photo",
     "magic_eraser",
-    "text_banner",
     "watermark",
 }
 
@@ -108,7 +104,6 @@ class CreateToolJobRequest(BaseModel):
         "batch",
         "id_photo",
         "magic_eraser",
-        "text_banner",
         "watermark",
     ]
     payload: dict[str, Any] = Field(default_factory=dict)
@@ -146,8 +141,6 @@ async def create_tool_job(
             )
 
     # Merge model quality into payload so the worker can read it.
-    # Using "_model_quality" to avoid conflict with text_banner's own "quality" field
-    # (which means draft/standard/premium for the banner service).
     merged_payload = dict(request.payload or {})
     merged_payload["_model_quality"] = request.quality
 
@@ -161,15 +154,6 @@ async def create_tool_job(
 
     if is_new_job:
         cost = get_credit_cost(request.tool_name, request.quality, request.payload)
-
-        if request.tool_name == "text_banner":
-            banner_quality = str((request.payload or {}).get("quality", "standard"))
-            if request.quality == "ultra":
-                cost = COST_TEXT_BANNER_PREMIUM_ULTRA
-            elif banner_quality == "premium":
-                cost = COST_TEXT_BANNER_PREMIUM
-            else:
-                cost = COST_TEXT_BANNER_STD
 
         if request.tool_name == "batch":
             payload = request.payload or {}

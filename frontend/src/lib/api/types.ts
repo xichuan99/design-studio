@@ -408,7 +408,6 @@ export type AiToolJobName =
     | 'batch'
     | 'id_photo'
     | 'magic_eraser'
-    | 'text_banner'
     | 'watermark';
 
 export interface AiToolJob {

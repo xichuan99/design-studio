@@ -77,14 +77,6 @@ FAL_REDESIGN_EDIT = _env(
     "fal-ai/flux-2/flash/edit",
 )
 
-FAL_BANNER_DRAFT = _env(
-    "AI_MODEL_FAL_BANNER_DRAFT",
-    "fal-ai/flux/schnell",
-)
-FAL_BANNER_STANDARD = _env(
-    "AI_MODEL_FAL_BANNER_STANDARD",
-    "fal-ai/flux/dev",
-)
 FAL_BRAND_LOGO = _env(
     "AI_MODEL_FAL_BRAND_LOGO",
     "fal-ai/flux/dev",

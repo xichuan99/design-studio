@@ -12,7 +12,7 @@
 - **5-Step Create Flow** — Flow UI intuitif: 1) Input Teks, 2) **AI Interview** (pilihan ganda/teks), 3) Visual Prompt Review, 4) Generating, 5) Split-view Preview & Editor
 - **AI Text Parsing & Copy Orchestration** — Backend menyiapkan headline, CTA, prompt visual, dan struktur output berbasis LLM sebelum hasil gambar dibuat
 - **AI Image Generation** — Generate visual promosi dari brief teks dengan pipeline backend async dan integrasi AI image tooling terpisah
-- **AI Photo Tools (Stand Alone)** — Hapus background foto produk, integrasikan ke latar profesional baru, Text Banner, Retouch & hapus noda/objek, Expand (Outpaint), Watermark, ID Photo, Batch Processing, serta Fitur Image Upscaler untuk menjernihkan & memperbesar foto hingga 4x resolusi. Dilengkapi fitur *Continue to Editor* untuk lanjut mengedit di Canvas utama.
+- **AI Photo Tools (Stand Alone)** — Hapus background foto produk, integrasikan ke latar profesional baru, Retouch & hapus noda/objek, Expand (Outpaint), Watermark, ID Photo, Batch Processing, serta Fitur Image Upscaler untuk menjernihkan & memperbesar foto hingga 4x resolusi. Dilengkapi fitur *Continue to Editor* untuk lanjut mengedit di Canvas utama.
 - **AI Background Removal** — Hapus latar belakang foto produk secara instan menggunakan model U<sup>2</sup>-Net (rembg)
 - **Brand Kit** — Buat brand kit dari brief, file, atau URL website; simpan beberapa profil brand, aktifkan yang dipakai, lalu injeksikan konteks brand ke flow create/copywriting
 - **AI Copywriting / Headline Generator** — Generate 3 variasi teks promosi (FOMO, Benefit, Social Proof) dari deskripsi produk. Dilengkapi mini-interview klarifikasi, pilihan tone (Persuasif/Kasual/Profesional/Lucu), integrasi Brand Kit, dan re-generate.
@@ -195,7 +195,7 @@ Frontend menggunakan NextAuth untuk session management. Backend mengekspos endpo
 - `GET /health` dan `GET /api/health` untuk health check aplikasi + koneksi database.
 - `POST /api/auth/*` untuk register, login, refresh token, forgot password, dan reset password.
 - `POST /api/designs/*` untuk clarify, parse, generate, upload media, copywriting, dan polling job hasil generasi.
-- `POST /api/tools/*` untuk AI photo tools seperti background swap, retouch, magic eraser, generative expand, text banner, watermark, ID photo, product scene, upscale, batch process, jobs, dan result gallery.
+- `POST /api/tools/*` untuk AI photo tools seperti background swap, retouch, magic eraser, generative expand, watermark, ID photo, product scene, upscale, batch process, jobs, dan result gallery.
 - `GET|POST|PUT|DELETE /api/projects/*`, `/api/folders/*`, dan `/api/history/*` untuk project management, foldering, dan snapshot history.
 - `GET|POST|PUT|DELETE /api/brand-kits/*` untuk ekstraksi warna, manajemen brand kit, dan brand context.
 - `GET /api/templates/*` dan route marketplace terkait untuk template browsing, submission, dan listing template komunitas yang sudah dipublikasikan.

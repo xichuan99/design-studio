@@ -18,7 +18,6 @@ export const ULTRA_SUPPORTED_TOOLS = new Set([
   'product_scene',
   'generative_expand',
   'magic_eraser',
-  'text_banner',
 ]);
 
 interface QualityToggleProps {

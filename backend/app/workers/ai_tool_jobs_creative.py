@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from app.core.database import AsyncSessionLocal
 from app.models.ai_tool_job import AiToolJob
 from app.models.ai_tool_result import AiToolResult
-from app.services import banner_service, batch_service, product_scene_service, watermark_service
+from app.services import batch_service, product_scene_service, watermark_service
 from app.services.storage_service import download_image, upload_image
 from app.workers.ai_tool_jobs_common import (
     set_ai_tool_job_canceled,
@@ -91,83 +91,6 @@ async def execute_product_scene_tool_job(job_id: str):
                 input_summary=f"Product scene: {theme}",
             )
         )
-
-        job.status = "completed"
-        job.result_url = result_url
-        job.phase_message = "Selesai"
-        job.progress_percent = 100
-        job.finished_at = datetime.now(timezone.utc)
-        session.add(job)
-        await session.commit()
-
-
-async def execute_text_banner_tool_job(job_id: str):
-    async with AsyncSessionLocal() as session:
-        job = await session.get(AiToolJob, job_id)
-        if not job:
-            raise RuntimeError("AI tool job not found")
-
-        payload = job.payload_json or {}
-        text = str(payload.get("text", "")).strip()
-        style = str(payload.get("style", "ribbon"))
-        color_hint = str(payload.get("color_hint", "colorful"))
-        # "quality" here is the banner tier (draft/standard/premium).
-        # "_model_quality" is the ultra toggle (standard/ultra).
-        model_quality = str(payload.get("_model_quality", "standard"))
-        quality = "ultra" if model_quality == "ultra" else str(payload.get("quality", "standard"))
-
-        if not text:
-            raise ValueError("Missing text in job payload")
-
-        if job.cancel_requested:
-            await set_ai_tool_job_canceled(session, job, "Refund: job text banner dibatalkan")
-            await session.commit()
-            return
-
-        job.status = "processing"
-        job.phase_message = "AI sedang membuat text banner"
-        job.progress_percent = 75
-        job.started_at = datetime.now(timezone.utc)
-        session.add(job)
-        await session.commit()
-
-    result_data = await banner_service.generate_text_banner(
-        text=text,
-        style=style,
-        color_hint=color_hint,
-        quality=quality,
-    )
-
-    result_url = result_data.get("url")
-    if not result_url:
-        raise RuntimeError("Text banner model returned invalid URL")
-
-    async with AsyncSessionLocal() as session:
-        job = await session.get(AiToolJob, job_id)
-        if not job:
-            return
-
-        if job.cancel_requested:
-            await set_ai_tool_job_canceled(session, job, "Refund: job text banner dibatalkan")
-            await session.commit()
-            return
-
-        session.add(
-            AiToolResult(
-                user_id=job.user_id,
-                tool_name="text_banner",
-                result_url=result_url,
-                file_size=0,
-                input_summary=f"{text[:100]} ({style})",
-            )
-        )
-
-        payload = dict(job.payload_json or {})
-        payload["_result_meta"] = {
-            "width": result_data.get("width"),
-            "height": result_data.get("height"),
-        }
-        job.payload_json = payload
 
         job.status = "completed"
         job.result_url = result_url

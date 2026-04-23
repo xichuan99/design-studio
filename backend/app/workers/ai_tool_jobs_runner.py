@@ -17,7 +17,6 @@ from app.workers.ai_tool_jobs_common import logger, refund_ai_tool_job_if_needed
 from app.workers.ai_tool_jobs_creative import (
     execute_batch_tool_job,
     execute_product_scene_tool_job,
-    execute_text_banner_tool_job,
     execute_watermark_tool_job,
 )
 from app.workers.ai_tool_jobs_enhancement import (
@@ -34,7 +33,6 @@ AI_TOOL_EXECUTORS: dict[str, AiToolExecutor] = {
     "id_photo": execute_id_photo_tool_job,
     "magic_eraser": execute_magic_eraser_tool_job,
     "product_scene": execute_product_scene_tool_job,
-    "text_banner": execute_text_banner_tool_job,
     "watermark": execute_watermark_tool_job,
     "batch": execute_batch_tool_job,
 }
