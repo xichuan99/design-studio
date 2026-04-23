@@ -1,6 +1,7 @@
 import html
 import io
 import zipfile
+from typing import Optional
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -92,7 +93,7 @@ def render_carousel_slide(
     slide: CarouselSlide,
     tokens: CarouselBrandTokens,
     brand_name: str,
-    ig_handle: str | None,
+    ig_handle: Optional[str],
     total_slides: int,
 ) -> bytes:
     width = 1080

@@ -1,6 +1,7 @@
 from app.core.exceptions import NotFoundError, ValidationError
 from app.schemas.error import ERROR_RESPONSES
 from fastapi import APIRouter, Depends, Query, status
+from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import desc
@@ -21,7 +22,7 @@ router = APIRouter(tags=["Designs - Jobs"])
     responses=ERROR_RESPONSES,
 )
 async def get_my_generations(
-    folder_id: str | None = Query(None, description="Filter by folder ID"),
+    folder_id: Optional[str] = Query(None, description="Filter by folder ID"),
     limit: int = 20,
     offset: int = 0,
     db: AsyncSession = Depends(get_db),

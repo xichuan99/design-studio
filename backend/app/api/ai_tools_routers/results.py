@@ -2,6 +2,7 @@
 
 import logging
 import uuid as uuid_mod
+from typing import Optional
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -24,7 +25,7 @@ async def save_tool_result(
     tool_name: str,
     result_url: str,
     file_size: int,
-    input_summary: str | None = None,
+    input_summary: Optional[str] = None,
 ) -> str:
     """
     Helper: insert an AiToolResult record and return its ID as string.
@@ -51,8 +52,8 @@ async def save_tool_result(
     responses=ERROR_RESPONSES,
 )
 async def list_my_results(
-    tool_name: str | None = Query(None, description="Filter by tool name"),
-    folder_id: str | None = Query(None, description="Filter by folder ID"),
+    tool_name: Optional[str] = Query(None, description="Filter by tool name"),
+    folder_id: Optional[str] = Query(None, description="Filter by folder ID"),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
