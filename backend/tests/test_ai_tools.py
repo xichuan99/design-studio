@@ -581,6 +581,39 @@ def test_product_scene_endpoint_success():
         mock_upload.assert_called_once()
 
 
+def test_product_scene_endpoint_normalizes_quality_and_profile():
+    files = {"file": ("test.png", b"fake_product", "image/png")}
+    data = {
+        "theme": "minimalist",
+        "aspect_ratio": "16:9",
+        "quality": " ULTRA ",
+        "composite_profile": " GROUNDED ",
+    }
+
+    with (
+        patch(
+            "app.services.product_scene_service.generate_product_scene",
+            new_callable=AsyncMock,
+        ) as mock_scene,
+        patch(
+            "app.api.ai_tools_routers.creative.upload_image", new_callable=AsyncMock
+        ) as mock_upload,
+    ):
+        mock_scene.return_value = b"scene_bytes"
+        mock_upload.return_value = "http://storage.com/scene.jpg"
+
+        res = client.post("/api/tools/product-scene", data=data, files=files)
+
+        assert res.status_code == 200
+        mock_scene.assert_called_once_with(
+            image_bytes=b"fake_product",
+            theme="minimalist",
+            aspect_ratio="16:9",
+            quality="ultra",
+            composite_profile="grounded",
+        )
+
+
 def test_product_scene_endpoint_invalid_quality():
     files = {"file": ("test.png", b"fake_product", "image/png")}
     data = {
