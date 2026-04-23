@@ -400,7 +400,9 @@ async def execute_magic_eraser_tool_job(job_id: str):
         from app.services.image_service import build_gpt2_image_edit_args, run_gpt2_image_edit
 
         os.environ["FAL_KEY"] = settings.FAL_KEY
-        erase_prompt = str(prompt) if prompt else "Remove this object and fill with natural background"
+        erase_prompt = inpaint_service.build_magic_eraser_prompt(
+            str(prompt) if prompt else None
+        )
         gpt2_args = build_gpt2_image_edit_args(
             prompt=erase_prompt,
             image_urls=[str(image_url)],

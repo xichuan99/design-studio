@@ -16,8 +16,15 @@ DEFAULT_INPAINT_PROMPT = "Improve visual quality"
 DEFAULT_MAGIC_ERASER_PROMPT = "Remove the masked object and reconstruct the original background naturally"
 MAGIC_ERASER_GUARDRAILS = (
     "Preserve original scene, lighting, and perspective. "
-    "Do not add new objects, people, masks, text, logos, labels, or extra decorations."
+    "Do not add new objects, people, masks, text, logos, labels, or extra decorations. "
+    "Only continue existing background context in the masked region."
 )
+
+
+def build_magic_eraser_prompt(prompt: Optional[str] = None) -> str:
+    """Build a constrained prompt for object removal without introducing new elements."""
+    base_prompt = (prompt or "").strip() or DEFAULT_MAGIC_ERASER_PROMPT
+    return f"{base_prompt}. {MAGIC_ERASER_GUARDRAILS}"
 
 
 def prepare_magic_eraser_mask(mask_bytes: bytes) -> bytes:
@@ -66,7 +73,7 @@ async def inpaint_image(
                 else DEFAULT_INPAINT_PROMPT
             )
         if magic_eraser_mode:
-            resolved_prompt = f"{resolved_prompt}. {MAGIC_ERASER_GUARDRAILS}"
+            resolved_prompt = build_magic_eraser_prompt(resolved_prompt)
 
         arguments = {
             "image_url": image_url,

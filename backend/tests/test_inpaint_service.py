@@ -5,7 +5,11 @@ from unittest.mock import patch
 from PIL import Image
 from app.core.exceptions import AppException
 
-from app.services.inpaint_service import inpaint_image, prepare_magic_eraser_mask
+from app.services.inpaint_service import (
+    build_magic_eraser_prompt,
+    inpaint_image,
+    prepare_magic_eraser_mask,
+)
 
 
 @pytest.mark.asyncio
@@ -74,7 +78,7 @@ async def test_inpaint_image_magic_eraser_uses_default_prompt(mock_fal_run):
             "mask_url": "http://mask.url",
             "sync_mode": True,
             "output_format": "jpeg",
-            "prompt": "Remove the masked object and reconstruct the original background naturally. Preserve original scene, lighting, and perspective. Do not add new objects, people, masks, text, logos, labels, or extra decorations.",
+            "prompt": "Remove the masked object and reconstruct the original background naturally. Preserve original scene, lighting, and perspective. Do not add new objects, people, masks, text, logos, labels, or extra decorations. Only continue existing background context in the masked region.",
         },
     )
 
@@ -103,7 +107,7 @@ async def test_inpaint_image_magic_eraser_appends_guardrails_to_custom_prompt(
             "mask_url": "http://mask.url",
             "sync_mode": True,
             "output_format": "jpeg",
-            "prompt": "hapus objek donat. Preserve original scene, lighting, and perspective. Do not add new objects, people, masks, text, logos, labels, or extra decorations.",
+            "prompt": "hapus objek donat. Preserve original scene, lighting, and perspective. Do not add new objects, people, masks, text, logos, labels, or extra decorations. Only continue existing background context in the masked region.",
         },
     )
 
@@ -151,3 +155,15 @@ def test_prepare_magic_eraser_mask_returns_png_bytes():
 def test_prepare_magic_eraser_mask_falls_back_on_invalid_bytes():
     raw = b"not-a-valid-image"
     assert prepare_magic_eraser_mask(raw) == raw
+
+
+def test_build_magic_eraser_prompt_uses_default_when_empty():
+    built = build_magic_eraser_prompt("   ")
+    assert built.startswith("Remove the masked object and reconstruct the original background naturally.")
+    assert "Do not add new objects" in built
+
+
+def test_build_magic_eraser_prompt_appends_guardrails_to_custom_prompt():
+    built = build_magic_eraser_prompt("hapus botol di meja")
+    assert built.startswith("hapus botol di meja.")
+    assert "Only continue existing background context in the masked region." in built
