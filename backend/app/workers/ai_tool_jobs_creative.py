@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from datetime import datetime, timezone
+import logging
 
 from app.core.database import AsyncSessionLocal
 from app.models.ai_tool_job import AiToolJob
@@ -14,6 +15,8 @@ from app.workers.ai_tool_jobs_common import (
     set_ai_tool_job_canceled,
     update_ai_tool_job,
 )
+
+logger = logging.getLogger(__name__)
 
 
 async def execute_product_scene_tool_job(job_id: str):
@@ -27,6 +30,14 @@ async def execute_product_scene_tool_job(job_id: str):
         theme = str(payload.get("theme", "studio"))
         aspect_ratio = str(payload.get("aspect_ratio", "1:1"))
         model_quality = str(payload.get("_model_quality", "standard"))
+        composite_profile = str(payload.get("composite_profile", "default"))
+
+        if composite_profile not in {"default", "grounded", "soft"}:
+            logger.warning(
+                "Invalid product_scene composite_profile '%s'; fallback to default",
+                composite_profile,
+            )
+            composite_profile = "default"
 
         if not image_url:
             raise ValueError("Missing image_url in job payload")
@@ -57,6 +68,7 @@ async def execute_product_scene_tool_job(job_id: str):
         theme=theme,
         aspect_ratio=aspect_ratio,
         quality=model_quality,
+        composite_profile=composite_profile,
     )
 
     await update_ai_tool_job(

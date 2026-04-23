@@ -26,6 +26,14 @@ const THEMES = [
   { id: "bathroom", name: "Kamar Mandi & Spa", emoji: "🛁" },
 ];
 
+const ASPECT_RATIOS = ["1:1", "4:5", "16:9", "9:16"];
+
+const COMPOSITE_PROFILES = [
+  { id: "grounded", name: "Grounded (Rekomendasi)" },
+  { id: "default", name: "Default" },
+  { id: "soft", name: "Soft Shadow" },
+] as const;
+
 export default function ProductScenePage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
@@ -33,6 +41,7 @@ export default function ProductScenePage() {
   const [previewOriginal, setPreviewOriginal] = useState<string>("");
   const [theme, setTheme] = useState("studio");
   const [aspectRatio, setAspectRatio] = useState("1:1");
+  const [compositeProfile, setCompositeProfile] = useState<"grounded" | "default" | "soft">("grounded");
   const [modelQuality, setModelQuality] = useState<"standard" | "ultra">("standard");
   const [resultUrl, setResultUrl] = useState<string>("");
   const { loading, activeJob, startToolJob, cancelActiveJob } = useToolJobProgress();
@@ -56,9 +65,10 @@ export default function ProductScenePage() {
           image_url: uploaded.url,
           theme,
           aspect_ratio: aspectRatio,
+          composite_profile: compositeProfile,
         },
         quality: modelQuality,
-        idempotencyKey: `${originalFile.name}:${originalFile.size}:${originalFile.lastModified}:${theme}:${aspectRatio}:${modelQuality}`,
+        idempotencyKey: `${originalFile.name}:${originalFile.size}:${originalFile.lastModified}:${theme}:${aspectRatio}:${modelQuality}:${compositeProfile}`,
         onCompleted: (job) => {
           if (job.result_url) {
             setResultUrl(job.result_url);
@@ -149,6 +159,7 @@ export default function ProductScenePage() {
                 <div
                   className={`bg-muted/50 rounded-xl overflow-hidden border border-border shadow-inner relative transition-all duration-500 ease-in-out w-full max-h-[500px] ${
                     aspectRatio === "1:1" ? "aspect-square max-w-[400px]" :
+                    aspectRatio === "4:5" ? "aspect-[4/5] max-w-[320px]" :
                     aspectRatio === "9:16" ? "aspect-[9/16] max-w-[280px]" :
                     "aspect-video max-w-[500px]"
                   }`}
@@ -184,7 +195,7 @@ export default function ProductScenePage() {
               <div className="space-y-3">
                 <label className="text-sm font-medium block">Aspek Rasio (Ukuran Foto)</label>
                 <div className="bg-muted/50 p-1.5 rounded-lg flex gap-1 border">
-                  {["1:1", "9:16", "16:9"].map((ratio) => (
+                  {ASPECT_RATIOS.map((ratio) => (
                     <Button
                       key={ratio}
                       variant={aspectRatio === ratio ? "default" : "ghost"}
@@ -192,6 +203,22 @@ export default function ProductScenePage() {
                       onClick={() => setAspectRatio(ratio)}
                     >
                       {ratio}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-sm font-medium block">Blend Profile</label>
+                <div className="bg-muted/50 p-1.5 rounded-lg flex flex-wrap gap-1 border">
+                  {COMPOSITE_PROFILES.map((profile) => (
+                    <Button
+                      key={profile.id}
+                      variant={compositeProfile === profile.id ? "default" : "ghost"}
+                      className={compositeProfile !== profile.id ? "text-muted-foreground" : ""}
+                      onClick={() => setCompositeProfile(profile.id)}
+                    >
+                      {profile.name}
                     </Button>
                   ))}
                 </div>
@@ -213,7 +240,7 @@ export default function ProductScenePage() {
 
               <CreditConfirmDialog
                 title="AI Product Scene"
-                description={`AI akan membuat latar belakang produk baru dengan tema yang dipilih (${modelQuality === "ultra" ? "gpt-image-2 Ultra ✨" : "Standard"}). Ini akan memotong ${creditCost} kredit.`}
+                description={`AI akan membuat latar belakang produk baru dengan tema dan blend profile yang dipilih (${modelQuality === "ultra" ? "gpt-image-2 Ultra ✨" : "Standard"}). Ini akan memotong ${creditCost} kredit.`}
                 cost={creditCost}
                 onConfirm={handleGenerate}
                 disabled={loading || !originalFile}
