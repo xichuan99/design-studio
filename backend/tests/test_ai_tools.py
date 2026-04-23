@@ -611,6 +611,21 @@ def test_product_scene_endpoint_invalid_composite_profile():
     assert "Invalid composite_profile for product scene" in str(res.json())
 
 
+def test_product_scene_endpoint_invalid_aspect_ratio():
+    files = {"file": ("test.png", b"fake_product", "image/png")}
+    data = {
+        "theme": "minimalist",
+        "aspect_ratio": "3:2",
+        "quality": "standard",
+        "composite_profile": "grounded",
+    }
+
+    res = client.post("/api/tools/product-scene", data=data, files=files)
+
+    assert res.status_code == 422
+    assert "Invalid aspect_ratio for product scene" in str(res.json())
+
+
 def test_batch_endpoint_success():
     """Test /batch endpoint"""
     files = [
