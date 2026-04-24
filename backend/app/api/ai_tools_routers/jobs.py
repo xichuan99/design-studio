@@ -48,10 +48,11 @@ SUPPORTED_TOOL_NAMES = {
     "id_photo",
     "magic_eraser",
     "watermark",
+    "pipeline",
 }
 
 # Tools that do NOT support ultra quality (non-generative models)
-_ULTRA_UNSUPPORTED_TOOLS = {"retouch", "id_photo", "watermark"}
+_ULTRA_UNSUPPORTED_TOOLS = {"retouch", "id_photo", "watermark", "pipeline"}
 
 _TOOL_CREDIT_COST_STANDARD = {
     "retouch": COST_RETOUCH,
@@ -105,6 +106,7 @@ class CreateToolJobRequest(BaseModel):
         "id_photo",
         "magic_eraser",
         "watermark",
+        "pipeline",
     ]
     payload: dict[str, Any] = Field(default_factory=dict)
     idempotency_key: Optional[str] = Field(default=None)

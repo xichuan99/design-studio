@@ -66,6 +66,58 @@ State yang di-persist ke `localStorage`:
 | `parsedData` | `ParsedDesignData` | Hasil parse dari backend |
 | `imageHistory` | `{url, prompt}[]` | Riwayat gambar yang di-generate |
 
+## E2E Testing — Playwright
+
+All E2E specs in `tests/e2e/` use Playwright with role-based locators.
+
+### Running Tests Locally
+
+```bash
+# Start frontend dev server first
+npm run dev
+
+# In another terminal:
+npx playwright test                          # All specs, chromium only
+npx playwright test --project=firefox        # Test Firefox
+npx playwright test --project=webkit         # Test WebKit
+npx playwright test --project="Mobile Chrome" # Test mobile viewport
+npx playwright test --reporter=html          # Generate HTML report
+npx playwright show-report                   # View last HTML report
+```
+
+### CI Execution Strategy
+
+- **Fast Smoke** (GitHub Actions CI, ~2 min):
+  - `tools-hub-navigation.spec.ts`
+  - `tools-transform.spec.ts`
+  - `user-settings-and-profile.spec.ts`
+  - `account-destructive-actions.spec.ts`
+  - `brand-kit-workflow.spec.ts`
+
+- **Authenticated Core** (GH Actions, ~5 min):
+  - Adds: `critical-journey.spec.ts`, `intent-first-entry.spec.ts`, `asset-library-management.spec.ts`, `session-expiry-and-reauth.spec.ts`
+
+- **AI-Heavy Tools** (Manual/Nightly, requires Celery worker + Redis):
+  - `tools-retouch.spec.ts`, `tools-product-scene.spec.ts`, `tools-batch-process.spec.ts`, `tools-magic-eraser.spec.ts`, `tools-generative-expand.spec.ts`, `tools-watermark-placer.spec.ts`
+  - **Prerequisites**: Backend + Celery worker at `localhost:6380` + demo user with sufficient credits
+
+- **Mobile & Cross-Browser** (Optional nightly):
+  - `responsive-design-mobile.spec.ts` on Mobile Chrome & Mobile Safari
+  - All smoke tests promoted to Firefox & WebKit
+
+### Runtime Prerequisites (Local E2E)
+
+1. **Frontend**: `npm run dev` at `http://localhost:3000`
+2. **Backend**: FastAPI at `http://localhost:8000` (for auth login)
+3. **Demo User**: Seeded via `backend/create_test_user.py` — `demo@example.com` / `password123`
+4. **For AI tool flows**: Celery worker at localhost:6380 + sufficient test credits
+
+### Triage & Debugging
+
+- **Timeouts**: Usually mean backend/worker not running or credits exhausted
+- **Selector failures**: Check if UI changed; use `--reporter=html` to view traces
+- **Intermittent flakes**: Enable `--retries=2` or check async state in network tab
+
 ## Tech Stack
 
 - **Framework:** Next.js 16 (App Router) + React 19

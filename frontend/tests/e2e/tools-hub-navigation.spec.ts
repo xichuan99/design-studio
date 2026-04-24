@@ -5,13 +5,13 @@ import { goToToolsHub } from './utils/tools';
 
 const TOOL_ROUTES = [
   { cardName: 'AI Background Swap', expectedHeading: 'AI Background Swap', expectedPath: '/tools/background-swap' },
-  { cardName: 'AI Image Upscaler', expectedHeading: 'AI Image Upscaler', expectedPath: '/tools/upscaler' },
   { cardName: 'Quick Retouch', expectedHeading: 'Auto-Retouch & Color Correction', expectedPath: '/tools/retouch' },
   { cardName: 'AI Product Scene', expectedHeading: 'AI Product Scene', expectedPath: '/tools/product-scene' },
   { cardName: 'Batch Photo Processor', expectedHeading: 'Batch Photo Processor', expectedPath: '/tools/batch-process' },
   { cardName: 'ID Photo Maker', expectedHeading: 'ID Photo (Pasfoto) Maker', expectedPath: '/tools/id-photo' },
   { cardName: 'Magic Eraser', expectedHeading: 'Magic Eraser', expectedPath: '/tools/magic-eraser' },
   { cardName: 'Generative Expand', expectedHeading: 'Generative Expand', expectedPath: '/tools/generative-expand' },
+  { cardName: 'AI Transform Pipeline', expectedHeading: 'AI Transform Pipeline', expectedPath: '/tools/transform' },
   { cardName: 'AI Watermark Placer', expectedHeading: 'AI Watermark Placer', expectedPath: '/tools/watermark-placer' },
 ] as const;
 

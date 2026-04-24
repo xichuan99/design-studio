@@ -1,6 +1,6 @@
 import { AppHeader } from "@/components/layout/AppHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Wand2, Eraser, MoveDiagonal, Sparkles, Camera, ShieldCheck, Layers, Images } from "lucide-react";
+import { Wand2, Eraser, MoveDiagonal, Sparkles, Camera, ShieldCheck, Layers, Images, Workflow } from "lucide-react";
 import Link from "next/link";
 
 export default function ToolsHubPage() {
@@ -52,6 +52,13 @@ export default function ToolsHubPage() {
       description: "Foto terlalu sempit untuk banner? Perluas sisi foto tanpa kehilangan objek utama.",
       icon: <MoveDiagonal className="w-8 h-8 text-indigo-500" />,
       href: "/tools/generative-expand",
+      isReady: true,
+    },
+    {
+      title: "AI Transform Pipeline",
+      description: "Gabungkan remove background, inpaint/generate background, dan watermark dalam satu alur kerja.",
+      icon: <Workflow className="w-8 h-8 text-teal-500" />,
+      href: "/tools/transform",
       isReady: true,
     },
     {
