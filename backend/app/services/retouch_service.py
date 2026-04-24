@@ -19,23 +19,37 @@ from app.core.ai_models import (
 logger = logging.getLogger(__name__)
 
 _RELIGHT_MODES = {"off", "auto", "advanced"}
+# Valid values accepted by bria/fibo-edit/relight FAL model
 _LIGHT_DIRECTIONS = {
     "front",
-    "left",
-    "right",
-    "top",
+    "side",
     "bottom",
-    "top-left",
-    "top-right",
-    "bottom-left",
-    "bottom-right",
+    "top-down",
 }
 _LIGHT_TYPES = {
     "soft overcast daylight lighting",
-    "studio softbox",
-    "warm sunset",
-    "cool daylight",
-    "dramatic contrast",
+    "midday",
+    "sunrise light",
+    "moonlight lighting",
+    "spotlight on subject",
+    "harsh studio lighting",
+}
+
+# Translation map from primary model light_type to fallback model lighting_style
+_LIGHT_TYPE_TO_FALLBACK_STYLE: dict[str, str] = {
+    "soft overcast daylight lighting": "soft",
+    "midday": "natural",
+    "sunrise light": "sunrise",
+    "moonlight lighting": "moonlight",
+    "spotlight on subject": "spotlight",
+    "harsh studio lighting": "studio",
+}
+# Translation map from primary model light_direction to fallback model lighting_style suffix
+_DIRECTION_TO_FALLBACK_STYLE: dict[str, str] = {
+    "front": "front_light",
+    "side": "side_light",
+    "bottom": "backlight",
+    "top-down": "front_light",
 }
 
 
@@ -290,43 +304,35 @@ async def _apply_opencv_relight(
     y = np.linspace(0.0, 1.0, h)[:, None]
     x = np.linspace(0.0, 1.0, w)[None, :]
 
-    if light_direction == "left":
-        grad = 1.0 - x
-    elif light_direction == "right":
-        grad = x
-    elif light_direction == "top":
-        grad = 1.0 - y
+    if light_direction == "side":
+        grad = 1.0 - x  # Light from the left/side
     elif light_direction == "bottom":
-        grad = y
-    elif light_direction == "top-left":
-        grad = ((1.0 - x) + (1.0 - y)) / 2.0
-    elif light_direction == "top-right":
-        grad = (x + (1.0 - y)) / 2.0
-    elif light_direction == "bottom-left":
-        grad = ((1.0 - x) + y) / 2.0
-    elif light_direction == "bottom-right":
-        grad = (x + y) / 2.0
-    else:
+        grad = y  # Light from below
+    elif light_direction == "top-down":
+        grad = 1.0 - y  # Light from above
+    else:  # "front" or fallback
         grad = np.full((h, w), 0.65)
 
     beta = 12.0
     alpha = 1.03
-    if light_type == "studio softbox":
-        beta, alpha = 16.0, 1.04
-    elif light_type == "warm sunset":
-        beta, alpha = 20.0, 1.05
-    elif light_type == "cool daylight":
-        beta, alpha = 14.0, 1.03
-    elif light_type == "dramatic contrast":
-        beta, alpha = 8.0, 1.08
+    if light_type == "midday":
+        beta, alpha = 18.0, 1.05
+    elif light_type == "sunrise light":
+        beta, alpha = 20.0, 1.04
+    elif light_type == "moonlight lighting":
+        beta, alpha = 6.0, 0.95
+    elif light_type == "spotlight on subject":
+        beta, alpha = 10.0, 1.08
+    elif light_type == "harsh studio lighting":
+        beta, alpha = 8.0, 1.10
 
     grad_3 = np.repeat(grad[:, :, None], 3, axis=2)
     lifted = bgr_img.astype(np.float32) * alpha + (grad_3 * beta)
 
-    if light_type == "warm sunset":
-        lifted[:, :, 2] *= 1.04  # Boost reds slightly for warm tone.
-    elif light_type == "cool daylight":
-        lifted[:, :, 0] *= 1.04  # Boost blues slightly for cool tone.
+    if light_type == "sunrise light":
+        lifted[:, :, 2] *= 1.05  # Boost reds slightly for warm tone.
+    elif light_type == "moonlight lighting":
+        lifted[:, :, 0] *= 1.06  # Boost blues slightly for cool tone.
 
     clipped = np.clip(lifted, 0, 255).astype(np.uint8)
     rgb = cv2.cvtColor(clipped, cv2.COLOR_BGR2RGB)
@@ -362,6 +368,11 @@ async def relight_with_fal(
         image_bytes, content_type=mime_type, prefix="retouch_relight_input"
     )
 
+    # Translate to fallback model's enum values
+    fallback_style = _LIGHT_TYPE_TO_FALLBACK_STYLE.get(
+        light_type, _DIRECTION_TO_FALLBACK_STYLE.get(light_direction, "natural")
+    )
+
     relight_candidates = [
         (
             FAL_RETOUCH_RELIGHT_PRIMARY,
@@ -375,7 +386,7 @@ async def relight_with_fal(
             FAL_RETOUCH_RELIGHT_FALLBACK,
             {
                 "image_url": temp_url,
-                "lighting_style": light_type,
+                "lighting_style": fallback_style,
             },
         ),
     ]
@@ -436,24 +447,31 @@ async def auto_retouch(
     tone = _normalize_light_type(light_type)
 
     if settings.FAL_KEY:
+        codeformer_result: Optional[bytes] = None
         try:
-            result = await retouch_with_codeformer(image_bytes, fidelity, output_format)
+            codeformer_result = await retouch_with_codeformer(image_bytes, fidelity, output_format)
+        except Exception:
+            logger.exception("CodeFormer failed, falling back to OpenCV retouch.")
 
+        if codeformer_result is not None:
             if mode in {"auto", "advanced"}:
                 try:
-                    relit = await relight_with_fal(result, output_format, direction, tone)
+                    relit = await relight_with_fal(codeformer_result, output_format, direction, tone)
                     return _blend_retouch_with_original(
-                        original_bytes=result,
+                        original_bytes=codeformer_result,
                         retouched_bytes=relit,
                         fidelity=min(float(fidelity), 0.85),
                         output_format=output_format,
                     )
                 except Exception:
-                    logger.exception("Relight failed, returning retouch-only result.")
+                    if mode == "advanced":
+                        # User explicitly requested advanced relight — propagate so the
+                        # job fails visibly and the user can retry rather than silently
+                        # receiving a retouch-only result.
+                        raise
+                    logger.exception("Auto-relight failed, returning retouch-only result.")
 
-            return result
-        except Exception:
-            logger.exception("CodeFormer failed, falling back to OpenCV retouch.")
+            return codeformer_result
 
     logger.warning("FAL_KEY not set. Using OpenCV fallback for retouch.")
     result = await retouch_opencv_fallback(image_bytes, fidelity, output_format)

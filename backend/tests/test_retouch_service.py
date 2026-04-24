@@ -138,14 +138,79 @@ async def test_auto_retouch_with_advanced_relight_fallback(
             fidelity=0.6,
             output_format="jpeg",
             relight_mode="advanced",
-            light_direction="top-left",
-            light_type="studio softbox",
+            light_direction="top-down",
+            light_type="harsh studio lighting",
         )
 
     assert isinstance(result, bytes)
     img = Image.open(io.BytesIO(result))
     assert img.format == "JPEG"
     assert img.size == (100, 100)
+
+
+@pytest.mark.asyncio
+async def test_auto_retouch_advanced_relight_propagates_fal_error(
+    test_image_jpeg: bytes,
+) -> None:
+    """advanced relight must raise (not silently fall back) when FAL relight fails."""
+    from unittest.mock import AsyncMock
+
+    with patch("app.core.config.settings") as mock_settings:
+        mock_settings.FAL_KEY = "fake-key"
+
+        with patch(
+            "app.services.retouch_service.retouch_with_codeformer",
+            new_callable=AsyncMock,
+            return_value=test_image_jpeg,
+        ):
+            with patch(
+                "app.services.retouch_service.relight_with_fal",
+                new_callable=AsyncMock,
+                side_effect=RuntimeError("FAL relight failed"),
+            ):
+                with pytest.raises(RuntimeError, match="FAL relight failed"):
+                    await auto_retouch(
+                        test_image_jpeg,
+                        fidelity=0.6,
+                        output_format="jpeg",
+                        relight_mode="advanced",
+                        light_direction="side",
+                        light_type="midday",
+                    )
+
+
+@pytest.mark.asyncio
+async def test_auto_retouch_auto_relight_silently_falls_back_on_fal_error(
+    test_image_jpeg: bytes,
+) -> None:
+    """auto relight must silently return retouch-only result when FAL relight fails."""
+    from unittest.mock import AsyncMock
+
+    with patch("app.core.config.settings") as mock_settings:
+        mock_settings.FAL_KEY = "fake-key"
+
+        with patch(
+            "app.services.retouch_service.retouch_with_codeformer",
+            new_callable=AsyncMock,
+            return_value=test_image_jpeg,
+        ):
+            with patch(
+                "app.services.retouch_service.relight_with_fal",
+                new_callable=AsyncMock,
+                side_effect=RuntimeError("FAL relight failed"),
+            ):
+                result = await auto_retouch(
+                    test_image_jpeg,
+                    fidelity=0.6,
+                    output_format="jpeg",
+                    relight_mode="auto",
+                    light_direction="front",
+                    light_type="soft overcast daylight lighting",
+                )
+
+    assert isinstance(result, bytes)
+    img = Image.open(io.BytesIO(result))
+    assert img.format == "JPEG"
 
 
 @pytest.mark.asyncio

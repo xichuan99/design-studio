@@ -18,23 +18,19 @@ type OutputFormat = "jpeg" | "png";
 type RelightMode = "off" | "auto" | "advanced";
 
 const LIGHT_DIRECTIONS = [
-  { id: "front", label: "Front" },
-  { id: "left", label: "Left" },
-  { id: "right", label: "Right" },
-  { id: "top", label: "Top" },
-  { id: "bottom", label: "Bottom" },
-  { id: "top-left", label: "Top Left" },
-  { id: "top-right", label: "Top Right" },
-  { id: "bottom-left", label: "Bottom Left" },
-  { id: "bottom-right", label: "Bottom Right" },
+  { id: "front", label: "Front (Depan)" },
+  { id: "side", label: "Side (Samping)" },
+  { id: "bottom", label: "Bottom (Bawah)" },
+  { id: "top-down", label: "Top-Down (Atas)" },
 ] as const;
 
 const LIGHT_TYPES = [
   "soft overcast daylight lighting",
-  "studio softbox",
-  "warm sunset",
-  "cool daylight",
-  "dramatic contrast",
+  "midday",
+  "sunrise light",
+  "moonlight lighting",
+  "spotlight on subject",
+  "harsh studio lighting",
 ] as const;
 
 type LightDirection = (typeof LIGHT_DIRECTIONS)[number]["id"];
