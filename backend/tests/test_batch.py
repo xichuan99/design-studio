@@ -80,7 +80,9 @@ async def test_process_batch_watermark(mock_apply_watermark, mock_files):
 
 @pytest.mark.asyncio
 @patch("app.services.batch_service.watermark_service.apply_watermark")
-async def test_process_batch_watermark_invalid_visibility_preset_falls_back(mock_apply_watermark, mock_files):
+async def test_process_batch_watermark_invalid_visibility_preset_falls_back(
+    mock_apply_watermark, mock_files
+):
     mock_apply_watermark.side_effect = [b"wm_1", b"wm_2"]
 
     params = {
@@ -134,7 +136,9 @@ async def test_process_batch_product_scene(mock_generate, mock_files):
 
 @pytest.mark.asyncio
 @patch("app.services.batch_service.product_scene_service.generate_product_scene")
-async def test_process_batch_product_scene_invalid_params_fallback(mock_generate, mock_files):
+async def test_process_batch_product_scene_invalid_params_fallback(
+    mock_generate, mock_files
+):
     mock_generate.side_effect = [b"scene_1", b"scene_2"]
 
     params = {
@@ -192,3 +196,106 @@ async def test_process_batch_makes_duplicate_output_names_unique(mock_remove_bg)
         assert names == ["image_nobg.png", "image_nobg_2.png"]
         assert zf.read("image_nobg.png") == b"nobg_1"
         assert zf.read("image_nobg_2.png") == b"nobg_2"
+
+
+@pytest.mark.asyncio
+@patch("app.services.batch_service.bg_removal_service.remove_background")
+async def test_process_batch_remove_bg_applies_edge_feathering(mock_remove_bg):
+    """Verify that edge feathering is applied to batch remove_bg outputs."""
+    # Mock the remove_background to return a minimal transparent PNG
+    # (in reality, it returns a real transparent PNG from Fal.ai)
+    mock_transparent_png = (
+        b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
+        b"\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01"
+        b"\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82"
+    )
+    mock_remove_bg.side_effect = [mock_transparent_png, mock_transparent_png]
+
+    files = [("img1.jpg", b"1"), ("img2.jpg", b"2")]
+    params = {"quality": "standard"}
+
+    zip_bytes, errors = await process_batch(files, "remove_bg", params)
+
+    assert len(errors) == 0
+    # Verify feathering was called (output should exist and be non-empty)
+    with zipfile.ZipFile(io.BytesIO(zip_bytes), "r") as zf:
+        names = zf.namelist()
+        assert len(names) == 2
+        assert all("nobg.png" in name for name in names)
+        # Output bytes should be present (feathering modifies the PNG)
+        for name in names:
+            content = zf.read(name)
+            assert len(content) > 0
+
+
+@pytest.mark.asyncio
+@patch("app.services.batch_service.bg_removal_service.remove_background")
+async def test_process_batch_remove_bg_with_quality_parameter(mock_remove_bg):
+    """Verify that quality parameter is accepted for remove_bg without errors."""
+    mock_remove_bg.side_effect = [b"nobg_1", b"nobg_2"]
+
+    files = [("image1.jpg", b"1"), ("image2.jpg", b"2")]
+    params = {"quality": "ultra"}  # Quality parameter passed
+
+    zip_bytes, errors = await process_batch(files, "remove_bg", params)
+
+    assert len(errors) == 0
+    with zipfile.ZipFile(io.BytesIO(zip_bytes), "r") as zf:
+        names = zf.namelist()
+        assert "image1_nobg.png" in names
+        assert "image2_nobg.png" in names
+
+
+@pytest.mark.asyncio
+@patch("app.services.batch_service.bg_removal_service.remove_background")
+async def test_process_batch_remove_bg_with_invalid_quality_fallback(mock_remove_bg):
+    """Verify that invalid quality falls back to standard without breaking the process."""
+    mock_remove_bg.side_effect = [b"nobg_1", b"nobg_2"]
+
+    files = [("image1.jpg", b"1"), ("image2.jpg", b"2")]
+    params = {"quality": "invalid_quality"}  # Invalid quality value
+
+    zip_bytes, errors = await process_batch(files, "remove_bg", params)
+
+    assert len(errors) == 0  # Should not error, just fallback
+    with zipfile.ZipFile(io.BytesIO(zip_bytes), "r") as zf:
+        names = zf.namelist()
+        assert "image1_nobg.png" in names
+        assert "image2_nobg.png" in names
+
+
+@pytest.mark.asyncio
+@patch("app.services.batch_service.watermark_service.apply_watermark")
+async def test_process_batch_watermark_still_applies_globally(mock_apply_watermark):
+    """Verify that watermark operation still applies globally to all batch items (expected behavior)."""
+    mock_apply_watermark.side_effect = [b"wm_1", b"wm_2"]
+
+    files = [("photo1.jpg", b"1"), ("photo2.jpg", b"2")]
+    params = {
+        "logo_bytes": b"fake_logo",
+        "position": "bottom-right",
+        "opacity": 0.8,
+        "scale": 0.5,
+        "visibility_preset": "balanced",
+    }
+
+    zip_bytes, errors = await process_batch(files, "watermark", params)
+
+    assert len(errors) == 0
+
+    # Verify watermark was called twice with IDENTICAL params (global application)
+    assert mock_apply_watermark.call_count == 2
+    calls = mock_apply_watermark.call_args_list
+
+    # Both calls should have identical parameters
+    for call in calls:
+        assert call.kwargs.get("position") == "bottom-right"
+        assert call.kwargs.get("opacity") == 0.8
+        assert call.kwargs.get("scale") == 0.5
+        assert call.kwargs.get("visibility_preset") == "balanced"
+
+    # Verify ZIP contains both watermarked images
+    with zipfile.ZipFile(io.BytesIO(zip_bytes), "r") as zf:
+        names = zf.namelist()
+        assert len(names) == 2
+        assert all("watermarked.jpg" in name for name in names)

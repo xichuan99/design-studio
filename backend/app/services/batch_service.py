@@ -7,6 +7,8 @@ import zipfile
 import logging
 from typing import List, Tuple, Dict, Any, Optional
 
+from PIL import Image, ImageFilter
+
 from app.services import bg_removal_service
 from app.services import watermark_service
 from app.services import product_scene_service
@@ -29,6 +31,35 @@ def _normalize_visibility_preset(value: Any) -> str:
         value,
     )
     return "balanced"
+
+
+def _apply_edge_feathering(transparent_png_bytes: bytes, radius: float = 1.0) -> bytes:
+    """
+    Softens the edges of a transparent PNG to smooth cutout seams and avoid harsh lines.
+    This reduces the visual impact of model artifacts at the boundary between subject and background.
+
+    Args:
+        transparent_png_bytes (bytes): Transparent PNG from background removal model.
+        radius (float): Gaussian blur radius for alpha channel smoothing. Defaults to 1.0.
+
+    Returns:
+        bytes: Feathered transparent PNG with smoothed edges.
+    """
+    try:
+        img = Image.open(io.BytesIO(transparent_png_bytes)).convert("RGBA")
+        alpha = img.split()[-1]
+
+        # Apply Gaussian blur to alpha channel to feather edges
+        alpha = alpha.filter(ImageFilter.GaussianBlur(radius=radius))
+        img.putalpha(alpha)
+
+        # Encode back to PNG bytes
+        output = io.BytesIO()
+        img.save(output, format="PNG")
+        return output.getvalue()
+    except Exception as e:
+        logger.warning(f"Edge feathering failed, returning original bytes: {str(e)}")
+        return transparent_png_bytes
 
 
 def _make_unique_filename(filename: str, used_filenames: set[str]) -> str:
@@ -72,6 +103,19 @@ async def process_single_image(
     try:
         if operation == "remove_bg":
             result_bytes = await bg_removal_service.remove_background(image_bytes)
+
+            # Validate and log quality parameter
+            quality = str(params.get("quality", "standard"))
+            if quality not in _SUPPORTED_QUALITY:
+                logger.warning(
+                    "Invalid batch quality '%s' for remove_bg; fallback to standard",
+                    quality,
+                )
+                quality = "standard"
+
+            # Post-process transparent PNG to smooth edges and avoid harsh cutout lines
+            result_bytes = _apply_edge_feathering(result_bytes)
+
             # Change extension to .png since remove_background outputs PNG
             new_filename = filename.rsplit(".", 1)[0] + "_nobg.png"
             return new_filename, result_bytes, None
@@ -218,4 +262,3 @@ async def process_batch(
         f"Batch completed. {len(files) - len(errors)} successes, {len(errors)} failures."
     )
     return zip_buffer.getvalue(), errors
-

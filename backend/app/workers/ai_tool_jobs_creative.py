@@ -43,7 +43,9 @@ async def execute_product_scene_tool_job(job_id: str):
             raise ValueError("Missing image_url in job payload")
 
         if job.cancel_requested:
-            await set_ai_tool_job_canceled(session, job, "Refund: job product scene dibatalkan")
+            await set_ai_tool_job_canceled(
+                session, job, "Refund: job product scene dibatalkan"
+            )
             await session.commit()
             return
 
@@ -90,7 +92,9 @@ async def execute_product_scene_tool_job(job_id: str):
             return
 
         if job.cancel_requested:
-            await set_ai_tool_job_canceled(session, job, "Refund: job product scene dibatalkan")
+            await set_ai_tool_job_canceled(
+                session, job, "Refund: job product scene dibatalkan"
+            )
             await session.commit()
             return
 
@@ -133,7 +137,9 @@ async def execute_watermark_tool_job(job_id: str):
             raise ValueError("Missing logo_url in job payload")
 
         if job.cancel_requested:
-            await set_ai_tool_job_canceled(session, job, "Refund: job watermark dibatalkan")
+            await set_ai_tool_job_canceled(
+                session, job, "Refund: job watermark dibatalkan"
+            )
             await session.commit()
             return
 
@@ -184,7 +190,9 @@ async def execute_watermark_tool_job(job_id: str):
             return
 
         if job.cancel_requested:
-            await set_ai_tool_job_canceled(session, job, "Refund: job watermark dibatalkan")
+            await set_ai_tool_job_canceled(
+                session, job, "Refund: job watermark dibatalkan"
+            )
             await session.commit()
             return
 
@@ -220,6 +228,9 @@ async def execute_batch_tool_job(job_id: str):
         model_quality = str(payload.get("_model_quality", "standard"))
 
         if operation == "product_scene" and not params.get("quality"):
+            params["quality"] = model_quality
+
+        if operation == "remove_bg" and not params.get("quality"):
             params["quality"] = model_quality
 
         if not isinstance(items, list) or len(items) == 0:
