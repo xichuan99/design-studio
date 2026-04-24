@@ -38,15 +38,14 @@ async def get_my_generations(
     if folder_id:
         try:
             import uuid
+
             f_uuid = uuid.UUID(folder_id)
             query = query.where(Job.folder_id == f_uuid)
         except ValueError:
             pass
 
     result = await db.execute(
-        query.order_by(desc(Job.created_at))
-        .offset(offset)
-        .limit(limit)
+        query.order_by(desc(Job.created_at)).offset(offset).limit(limit)
     )
     jobs = result.scalars().all()
 
@@ -80,15 +79,13 @@ async def get_job_status(
     """Poll job status. Returns result URL when completed."""
     try:
         import uuid
+
         job_uuid = uuid.UUID(job_id)
     except ValueError:
         raise ValidationError(detail="Invalid job ID format")
 
     result = await db.execute(
-        select(Job).where(
-            Job.id == job_uuid,
-            Job.user_id == current_user.id
-        )
+        select(Job).where(Job.id == job_uuid, Job.user_id == current_user.id)
     )
     job = result.scalar_one_or_none()
 
@@ -156,7 +153,12 @@ async def delete_job(
             decrement_usage,
         )
 
-        size = await estimate_file_size(job.result_url)
+        # Prefer the stored file_size; fall back to HEAD request for old records
+        size = (
+            job.file_size
+            if getattr(job, "file_size", 0)
+            else await estimate_file_size(job.result_url)
+        )
         if size > 0:
             await decrement_usage(current_user.id, size, db)
 

@@ -1,7 +1,7 @@
 """Job model for tracking async image generation tasks."""
 
 import uuid
-from sqlalchemy import Column, String, DateTime, ForeignKey, Text
+from sqlalchemy import Column, String, DateTime, ForeignKey, Text, BigInteger
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from app.core.database import Base
@@ -41,6 +41,7 @@ class Job(Base):
 
     # Output
     result_url = Column(Text, nullable=True)
+    file_size = Column(BigInteger, nullable=False, default=0)
     seed = Column(String(50), nullable=True)
     parsed_headline = Column(Text, nullable=True)
     parsed_sub_headline = Column(Text, nullable=True)
@@ -50,5 +51,7 @@ class Job(Base):
 
     error_message = Column(Text, nullable=True)
 
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
     completed_at = Column(DateTime(timezone=True), nullable=True)

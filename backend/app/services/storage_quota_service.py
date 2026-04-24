@@ -10,7 +10,7 @@ from __future__ import annotations
 from fastapi import status
 
 from app.core.exceptions import AppException
-from sqlalchemy import update
+from sqlalchemy import update, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -104,3 +104,33 @@ async def decrement_usage(user_id, file_size: int, db: AsyncSession) -> None:
     )
     await db.commit()
 
+
+async def recalculate_storage(user_id, db: AsyncSession) -> int:
+    """
+    Recalculate a user's storage_used from the sum of all stored file_size
+    values across ai_tool_results and jobs.
+
+    Updates the user record and returns the new storage_used value.
+    This is the authoritative reconciliation mechanism for correcting drift.
+    """
+    from app.models.ai_tool_result import AiToolResult
+    from app.models.job import Job
+
+    ai_result = await db.execute(
+        select(func.coalesce(func.sum(AiToolResult.file_size), 0)).where(
+            AiToolResult.user_id == user_id
+        )
+    )
+    ai_total: int = ai_result.scalar()
+
+    job_result = await db.execute(
+        select(func.coalesce(func.sum(Job.file_size), 0)).where(Job.user_id == user_id)
+    )
+    job_total: int = job_result.scalar()
+
+    total = ai_total + job_total
+
+    await db.execute(update(User).where(User.id == user_id).values(storage_used=total))
+    await db.commit()
+
+    return total

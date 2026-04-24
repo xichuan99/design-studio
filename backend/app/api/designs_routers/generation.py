@@ -538,6 +538,7 @@ async def generate_design(
                 prefix="generated",
             )
             job.result_url = result_url
+            job.file_size = len(image_bytes)
             job.status = "completed"
             job.completed_at = datetime.now(timezone.utc)
         else:
@@ -688,6 +689,7 @@ async def redesign_image(
 
         # Update job success
         job.result_url = result_url
+        job.file_size = len(image_bytes)
         job.status = "completed"
         job.completed_at = datetime.now(timezone.utc)
         await db.commit()

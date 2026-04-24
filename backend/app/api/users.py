@@ -141,3 +141,32 @@ async def get_my_storage(
     from app.services.storage_quota_service import get_storage_stats
 
     return await get_storage_stats(current_user.id, db)
+
+
+@router.post(
+    "/me/recalculate-storage",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="Recalculate Storage Usage",
+    description=(
+        "Recalculates the user's storage_used from actual DB records "
+        "(ai_tool_results + jobs). Use this to fix drift caused by "
+        "failed deletions or missing decrements."
+    ),
+    responses=ERROR_RESPONSES,
+)
+async def recalculate_my_storage(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Reconcile storage_used against actual stored file sizes.
+    Safe to call at any time — idempotent.
+    """
+    from app.services.storage_quota_service import (
+        recalculate_storage,
+        get_storage_stats,
+    )
+
+    await recalculate_storage(current_user.id, db)
+    return await get_storage_stats(current_user.id, db)
