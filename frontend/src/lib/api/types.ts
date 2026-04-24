@@ -408,7 +408,40 @@ export type AiToolJobName =
     | 'batch'
     | 'id_photo'
     | 'magic_eraser'
-    | 'watermark';
+    | 'watermark'
+    | 'pipeline';
+
+export type PipelineStageType = 'remove_bg' | 'inpaint_bg' | 'generate_bg' | 'watermark';
+
+export interface PipelineStageRequest {
+    type: PipelineStageType;
+    params?: Record<string, unknown>;
+}
+
+export interface CreatePipelineJobRequest {
+    image_url?: string;
+    image_bytes?: string;
+    stages: PipelineStageRequest[];
+    metadata?: Record<string, unknown>;
+    idempotency_key?: string;
+    output_content_type?: 'image/jpeg' | 'image/png' | 'image/webp';
+    quality?: 'standard' | 'ultra';
+}
+
+export interface ExecutePipelinePreviewRequest {
+    image_url?: string;
+    image_bytes?: string;
+    stages: PipelineStageRequest[];
+    metadata?: Record<string, unknown>;
+    output_content_type?: 'image/jpeg' | 'image/png' | 'image/webp';
+    save_result?: boolean;
+}
+
+export interface ExecutePipelinePreviewResponse {
+    url: string;
+    result_id: string | null;
+    stage_count: number;
+}
 
 export interface AiToolJob {
     job_id: string;

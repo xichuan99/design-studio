@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useProjectApi } from "@/lib/api";
-import type { AiToolJob, AiToolJobName } from "@/lib/api";
+import type { AiToolJob, AiToolJobName, PipelineStageRequest } from "@/lib/api";
 
 type JobTerminalCallback = (job: AiToolJob) => void;
 type JobErrorCallback = (error: unknown) => void;
@@ -10,6 +10,20 @@ type JobErrorCallback = (error: unknown) => void;
 interface StartToolJobArgs {
   toolName: AiToolJobName;
   payload: Record<string, unknown>;
+  idempotencyKey?: string;
+  quality?: 'standard' | 'ultra';
+  pollIntervalMs?: number;
+  onCompleted?: JobTerminalCallback;
+  onFailed?: JobTerminalCallback;
+  onCanceled?: JobTerminalCallback;
+  onError?: JobErrorCallback;
+}
+
+interface StartPipelineJobArgs {
+  imageUrl?: string;
+  imageBytes?: string;
+  stages: PipelineStageRequest[];
+  metadata?: Record<string, unknown>;
   idempotencyKey?: string;
   quality?: 'standard' | 'ultra';
   pollIntervalMs?: number;
@@ -157,6 +171,48 @@ export function useToolJobProgress() {
     [api, pollJobStatus]
   );
 
+  const startPipelineJob = useCallback(
+    async ({
+      imageUrl,
+      imageBytes,
+      stages,
+      metadata,
+      idempotencyKey,
+      quality,
+      pollIntervalMs,
+      onCompleted,
+      onFailed,
+      onCanceled,
+      onError,
+    }: StartPipelineJobArgs) => {
+      setLoading(true);
+      setActiveJob(null);
+
+      const normalizedIdempotencyKey = normalizeIdempotencyKey(idempotencyKey);
+
+      const createdJob = await api.createPipelineJob({
+        image_url: imageUrl,
+        image_bytes: imageBytes,
+        stages,
+        metadata,
+        idempotency_key: normalizedIdempotencyKey,
+        quality,
+      });
+      setActiveJob(createdJob);
+
+      await pollJobStatus(createdJob.job_id, {
+        pollIntervalMs,
+        onCompleted,
+        onFailed,
+        onCanceled,
+        onError,
+      });
+
+      return createdJob;
+    },
+    [api, pollJobStatus]
+  );
+
   const cancelActiveJob = useCallback(
     async ({ onCanceled, onError }: CancelArgs = {}) => {
       if (!activeJob) return null;
@@ -185,6 +241,7 @@ export function useToolJobProgress() {
     loading,
     activeJob,
     startToolJob,
+    startPipelineJob,
     cancelActiveJob,
     resetToolJob,
     stopPolling,

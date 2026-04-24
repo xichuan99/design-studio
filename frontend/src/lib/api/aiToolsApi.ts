@@ -185,6 +185,32 @@ export function useAiToolsEndpoints() {
             return res.json();
         }, [API_BASE_URL, getHeaders]);
 
+    const createPipelineJob = useCallback(async (payload: Types.CreatePipelineJobRequest): Promise<Types.AiToolJob> => {
+            const res = await fetch(`${API_BASE_URL}/tools/pipeline`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(payload),
+            });
+            if (!res.ok) {
+                const errBase = await res.json().catch(() => ({}));
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to create pipeline job');
+            }
+            return res.json();
+        }, [API_BASE_URL, getHeaders]);
+
+    const executePipelinePreview = useCallback(async (payload: Types.ExecutePipelinePreviewRequest): Promise<Types.ExecutePipelinePreviewResponse> => {
+            const res = await fetch(`${API_BASE_URL}/tools/pipeline/preview`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(payload),
+            });
+            if (!res.ok) {
+                const errBase = await res.json().catch(() => ({}));
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to execute pipeline preview');
+            }
+            return res.json();
+        }, [API_BASE_URL, getHeaders]);
+
     const getToolJobStatus = useCallback(async (jobId: string): Promise<Types.AiToolJob> => {
             const res = await fetch(`${API_BASE_URL}/tools/jobs/${jobId}`, {
                 headers: getHeaders(),
@@ -572,6 +598,8 @@ export function useAiToolsEndpoints() {
         getMyGenerations,
         deleteGeneration,
         createToolJob,
+        createPipelineJob,
+        executePipelinePreview,
         getToolJobStatus,
         cancelToolJob,
         getMyToolJobs,
