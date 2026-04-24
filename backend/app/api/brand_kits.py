@@ -380,8 +380,14 @@ async def delete_brand_kit(
     if not kit:
         raise NotFoundError(detail="Brand Kit not found.")
 
-    # Decrement storage usage for all logos in this brand kit
-    from app.services.storage_quota_service import estimate_file_size, decrement_usage
+    # Decrement storage usage for all logos in this brand kit.
+    # We still attempt targeted decrement for responsiveness, then run
+    # reconciliation to prevent long-term drift.
+    from app.services.storage_quota_service import (
+        estimate_file_size,
+        decrement_usage,
+        recalculate_storage,
+    )
 
     if getattr(kit, "logos", None):
         for logo_url in kit.logos:
@@ -391,6 +397,7 @@ async def delete_brand_kit(
 
     await db.delete(kit)
     await db.commit()
+    await recalculate_storage(current_user.id, db)
 
 @router.post(
     "/{kit_id}/documents",

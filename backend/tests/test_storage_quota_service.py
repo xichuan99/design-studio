@@ -10,6 +10,7 @@ from app.services.storage_quota_service import (
     check_quota,
     increment_usage,
     decrement_usage,
+    recalculate_storage,
 )
 
 
@@ -158,3 +159,38 @@ async def test_decrement_usage_not_found(mock_db):
 
     assert mock_db.execute.call_count == 1
     assert mock_db.commit.call_count == 0
+
+
+@pytest.mark.asyncio
+async def test_recalculate_storage_includes_brand_kit_logos(mock_db):
+    ai_sum_result = MagicMock()
+    ai_sum_result.scalar.return_value = 1024
+
+    job_sum_result = MagicMock()
+    job_sum_result.scalar.return_value = 2048
+
+    brand_kit = MagicMock()
+    brand_kit.logo_url = "https://cdn.example.com/kit-logo-1.png"
+    brand_kit.logos = [
+        "https://cdn.example.com/kit-logo-2.png",
+        "https://cdn.example.com/kit-logo-3.png",
+    ]
+
+    kits_result = MagicMock()
+    kits_result.scalars.return_value.all.return_value = [brand_kit]
+
+    mock_db.execute.side_effect = [
+        ai_sum_result,
+        job_sum_result,
+        kits_result,
+        MagicMock(),
+    ]
+
+    with patch(
+        "app.services.storage_quota_service.estimate_file_size",
+        new=AsyncMock(side_effect=[100, 200, 0]),
+    ):
+        total = await recalculate_storage("user_123", mock_db)
+
+    assert total == 1024 + 2048 + 300
+    assert mock_db.commit.call_count == 1

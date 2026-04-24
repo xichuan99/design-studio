@@ -107,6 +107,7 @@ async def _execute_pipeline(
             job_id,
             status="completed",
             result_url=permanent_url,
+            file_size=len(gen_bytes),
             completed_at=datetime.now(timezone.utc),
         )
         logger.info(f"Design generation completed successfully | Job: {job_id}")

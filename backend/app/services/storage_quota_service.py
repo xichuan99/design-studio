@@ -7,6 +7,8 @@ per-user storage usage against their quota.
 
 from __future__ import annotations
 
+import asyncio
+
 from fastapi import status
 
 from app.core.exceptions import AppException
@@ -15,6 +17,22 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from app.models.user import User
+
+
+def _collect_brand_kit_logo_urls(brand_kits: list) -> list[str]:
+    """Collect logo URLs from BrandKit.logo_url and BrandKit.logos JSON list."""
+    urls: list[str] = []
+    for kit in brand_kits:
+        logo_url = getattr(kit, "logo_url", None)
+        if isinstance(logo_url, str) and logo_url.strip():
+            urls.append(logo_url.strip())
+
+        logos = getattr(kit, "logos", None)
+        if isinstance(logos, list):
+            for item in logos:
+                if isinstance(item, str) and item.strip():
+                    urls.append(item.strip())
+    return urls
 
 
 async def estimate_file_size(url: str) -> int:
@@ -114,6 +132,7 @@ async def recalculate_storage(user_id, db: AsyncSession) -> int:
     This is the authoritative reconciliation mechanism for correcting drift.
     """
     from app.models.ai_tool_result import AiToolResult
+    from app.models.brand_kit import BrandKit
     from app.models.job import Job
 
     ai_result = await db.execute(
@@ -128,7 +147,22 @@ async def recalculate_storage(user_id, db: AsyncSession) -> int:
     )
     job_total: int = job_result.scalar()
 
-    total = ai_total + job_total
+    kits_result = await db.execute(select(BrandKit).where(BrandKit.user_id == user_id))
+    brand_kits = kits_result.scalars().all()
+    brand_logo_urls = _collect_brand_kit_logo_urls(brand_kits)
+
+    brand_logo_total = 0
+    if brand_logo_urls:
+        size_results = await asyncio.gather(
+            *(estimate_file_size(url) for url in brand_logo_urls),
+            return_exceptions=True,
+        )
+        for size in size_results:
+            if isinstance(size, Exception):
+                continue
+            brand_logo_total += max(0, int(size))
+
+    total = ai_total + job_total + brand_logo_total
 
     await db.execute(update(User).where(User.id == user_id).values(storage_used=total))
     await db.commit()

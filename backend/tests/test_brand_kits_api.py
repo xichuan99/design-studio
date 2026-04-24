@@ -4,7 +4,7 @@ from uuid import uuid4
 
 import pytest
 
-from app.api.brand_kits import create_brand_kit
+from app.api.brand_kits import create_brand_kit, delete_brand_kit
 from app.schemas.brand_kit import BrandKitCreate
 
 
@@ -38,3 +38,39 @@ async def test_create_brand_kit_without_folder_id_uses_none() -> None:
     saved_brand_kit = db.add.call_args.args[0]
     assert saved_brand_kit.folder_id is None
     assert result.folder_id is None
+
+
+@pytest.mark.asyncio
+async def test_delete_brand_kit_triggers_recalculate() -> None:
+    current_user = SimpleNamespace(id=uuid4())
+    kit_id = uuid4()
+    kit = SimpleNamespace(logos=["https://cdn.example.com/logo.png"])
+
+    execute_result = MagicMock()
+    execute_result.scalar_one_or_none.return_value = kit
+
+    db = AsyncMock()
+    db.execute.return_value = execute_result
+    db.delete = AsyncMock()
+    db.commit = AsyncMock()
+
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(
+            "app.services.storage_quota_service.estimate_file_size",
+            AsyncMock(return_value=0),
+        )
+        mp.setattr(
+            "app.services.storage_quota_service.decrement_usage",
+            AsyncMock(),
+        )
+        recalc_mock = AsyncMock(return_value=0)
+        mp.setattr(
+            "app.services.storage_quota_service.recalculate_storage",
+            recalc_mock,
+        )
+
+        await delete_brand_kit(kit_id=kit_id, current_user=current_user, db=db)
+
+    db.delete.assert_awaited_once_with(kit)
+    assert db.commit.await_count == 1
+    recalc_mock.assert_awaited_once_with(current_user.id, db)
