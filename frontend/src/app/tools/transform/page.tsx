@@ -1,6 +1,6 @@
 "use client";
 
-import { type ChangeEvent, useMemo, useState } from "react";
+import { type ChangeEvent, useMemo, useRef, useState } from "react";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { ImageDropzone } from "@/components/tools/ImageDropzone";
 import { BeforeAfterSlider } from "@/components/tools/BeforeAfterSlider";
@@ -91,6 +91,72 @@ const INTENT_META: Record<IntentKey, { creditEstimate: string; runtimeEstimate: 
   bulk: { creditEstimate: "variable", runtimeEstimate: "variable" },
 };
 
+type TransformEventName =
+  | "file_selected"
+  | "intent_recommended"
+  | "intent_selected"
+  | "advanced_toggled"
+  | "preview_requested"
+  | "run_requested";
+
+interface TransformEventLog {
+  event: TransformEventName;
+  timestamp: string;
+  payload: Record<string, unknown>;
+}
+
+async function getImageDimensions(file: File): Promise<{ width: number; height: number } | null> {
+  return new Promise((resolve) => {
+    const objectUrl = URL.createObjectURL(file);
+    const image = new window.Image();
+    image.onload = () => {
+      const width = image.naturalWidth;
+      const height = image.naturalHeight;
+      URL.revokeObjectURL(objectUrl);
+      resolve({ width, height });
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(null);
+    };
+    image.src = objectUrl;
+  });
+}
+
+async function recommendIntentForFile(file: File): Promise<{ intent: IntentKey; reason: string }> {
+  const lowerName = file.name.toLowerCase();
+  const dims = await getImageDimensions(file);
+
+  if (/batch|bulk|zip/.test(lowerName)) {
+    return { intent: "bulk", reason: "Nama file mengindikasikan proses massal." };
+  }
+
+  if (/scene|studio|lifestyle/.test(lowerName)) {
+    return { intent: "scene", reason: "Nama file cocok untuk pembuatan scene produk." };
+  }
+
+  if (/erase|remove|clean/.test(lowerName)) {
+    return { intent: "remove_object", reason: "Nama file mengarah ke pembersihan objek pengganggu." };
+  }
+
+  if (/bg|background|cutout|transparent/.test(lowerName)) {
+    return { intent: "background", reason: "Nama file mengarah ke workflow background." };
+  }
+
+  if (dims) {
+    const ratio = dims.width / Math.max(dims.height, 1);
+    if (ratio > 1.65 || ratio < 0.65) {
+      return { intent: "scene", reason: "Rasio gambar ekstrem lebih cocok untuk komposisi scene." };
+    }
+
+    if (dims.width < 900 || dims.height < 900) {
+      return { intent: "quick_fix", reason: "Resolusi kecil cocok diproses cepat untuk perbaikan ringan." };
+    }
+  }
+
+  return { intent: "quick_fix", reason: "Workflow default untuk perbaikan cepat satu foto." };
+}
+
 async function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -108,6 +174,8 @@ export default function TransformPipelinePage() {
 
   const [step, setStep] = useState(1);
   const [selectedIntent, setSelectedIntent] = useState<IntentKey>("quick_fix");
+  const [recommendedIntent, setRecommendedIntent] = useState<IntentKey | null>(null);
+  const [recommendedReason, setRecommendedReason] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [originalFile, setOriginalFile] = useState<File | null>(null);
   const [previewOriginal, setPreviewOriginal] = useState("");
@@ -126,6 +194,19 @@ export default function TransformPipelinePage() {
   const [watermarkOpacity, setWatermarkOpacity] = useState("0.55");
   const [watermarkScale, setWatermarkScale] = useState("0.22");
   const [watermarkFile, setWatermarkFile] = useState<File | null>(null);
+  const eventLogRef = useRef<TransformEventLog[]>([]);
+
+  const trackEvent = (event: TransformEventName, payload: Record<string, unknown>) => {
+    const log: TransformEventLog = {
+      event,
+      timestamp: new Date().toISOString(),
+      payload,
+    };
+    eventLogRef.current = [...eventLogRef.current.slice(-19), log];
+    if (process.env.NODE_ENV !== "production") {
+      console.info("[transform-tracking]", log);
+    }
+  };
 
   const buildStages = useMemo(() => {
     const stageMap: Record<StageId, PipelineStageRequest | null> = {
@@ -206,6 +287,12 @@ export default function TransformPipelinePage() {
   };
 
   const applyIntent = (intent: IntentKey) => {
+    trackEvent("intent_selected", {
+      selected_intent: intent,
+      previous_intent: selectedIntent,
+      recommended_intent: recommendedIntent,
+      step,
+    });
     setSelectedIntent(intent);
 
     if (intent === "quick_fix") {
@@ -268,13 +355,27 @@ export default function TransformPipelinePage() {
     if (stageId === "watermark") setEnableWatermark(enabled);
   };
 
-  const handleFileSelect = (file: File) => {
+  const handleFileSelect = async (file: File) => {
     setOriginalFile(file);
     setPreviewOriginal(URL.createObjectURL(file));
     setResultUrl("");
-    setSelectedIntent("quick_fix");
+
+    trackEvent("file_selected", {
+      file_name: file.name,
+      file_type: file.type,
+      file_size: file.size,
+    });
+
+    const recommendation = await recommendIntentForFile(file);
+    setRecommendedIntent(recommendation.intent);
+    setRecommendedReason(recommendation.reason);
+    trackEvent("intent_recommended", {
+      recommended_intent: recommendation.intent,
+      reason: recommendation.reason,
+    });
+
     setShowAdvanced(false);
-    applyIntent("quick_fix");
+    applyIntent(recommendation.intent);
     setStep(2);
   };
 
@@ -292,6 +393,11 @@ export default function TransformPipelinePage() {
         return;
       }
 
+      trackEvent("run_requested", {
+        selected_intent: selectedIntent,
+        advanced_enabled: showAdvanced,
+      });
+
       const { imageBytes, resolvedStages } = await preparePipelinePayload();
 
       await startPipelineJob({
@@ -300,8 +406,11 @@ export default function TransformPipelinePage() {
         metadata: {
           source: "tools_transform_page",
           selected_intent: selectedIntent,
+          recommended_intent: recommendedIntent,
+          recommended_reason: recommendedReason,
           intent_credit_estimate: INTENT_META[selectedIntent].creditEstimate,
           intent_runtime_estimate: INTENT_META[selectedIntent].runtimeEstimate,
+          interaction_events: eventLogRef.current,
           source_mode: "image_bytes",
           stage_count: resolvedStages.length,
           ordered_stages: stageOrder,
@@ -408,6 +517,11 @@ export default function TransformPipelinePage() {
         return;
       }
 
+      trackEvent("preview_requested", {
+        selected_intent: selectedIntent,
+        advanced_enabled: showAdvanced,
+      });
+
       setPreviewLoading(true);
       const { imageBytes, resolvedStages } = await preparePipelinePayload();
       const preview = await api.executePipelinePreview({
@@ -416,8 +530,11 @@ export default function TransformPipelinePage() {
         metadata: {
           source: "tools_transform_page",
           selected_intent: selectedIntent,
+          recommended_intent: recommendedIntent,
+          recommended_reason: recommendedReason,
           intent_credit_estimate: INTENT_META[selectedIntent].creditEstimate,
           intent_runtime_estimate: INTENT_META[selectedIntent].runtimeEstimate,
+          interaction_events: eventLogRef.current,
           mode: "sync_preview",
         },
         save_result: true,
@@ -450,6 +567,8 @@ export default function TransformPipelinePage() {
       },
     });
   };
+
+  const selectedIntentConfig = INTENTS.find((intent) => intent.key === selectedIntent);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -532,6 +651,7 @@ export default function TransformPipelinePage() {
                 <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {INTENTS.map(({ key, title, description, creditEstimate, runtimeEstimate, Icon }) => {
                     const isActive = selectedIntent === key;
+                    const isRecommended = recommendedIntent === key;
                     return (
                       <button
                         key={key}
@@ -548,7 +668,14 @@ export default function TransformPipelinePage() {
                           <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
                             <Icon className="w-4 h-4 text-primary" />
                           </div>
-                          <p className="text-sm font-semibold text-foreground leading-tight">{title}</p>
+                          <div>
+                            <p className="text-sm font-semibold text-foreground leading-tight">{title}</p>
+                            {isRecommended ? (
+                              <span className="inline-flex mt-1 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-300">
+                                Recommended
+                              </span>
+                            ) : null}
+                          </div>
                         </div>
                         <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>
                         <div className="mt-2.5 flex items-center gap-2 text-[11px] text-muted-foreground">
@@ -571,8 +698,11 @@ export default function TransformPipelinePage() {
                   <div className="rounded-lg border bg-muted/20 p-3">
                     <p className="text-sm font-semibold text-foreground">Estimasi Intent Terpilih</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Kredit: {INTENTS.find((intent) => intent.key === selectedIntent)?.creditEstimate} · Durasi: {INTENTS.find((intent) => intent.key === selectedIntent)?.runtimeEstimate}
+                      Kredit: {selectedIntentConfig?.creditEstimate} · Durasi: {selectedIntentConfig?.runtimeEstimate}
                     </p>
+                    {recommendedReason ? (
+                      <p className="text-[11px] text-muted-foreground/90 mt-1.5">Alasan rekomendasi: {recommendedReason}</p>
+                    ) : null}
                   </div>
                   <div className="flex items-center justify-between rounded-lg border bg-muted/20 p-3">
                     <div>
@@ -585,7 +715,13 @@ export default function TransformPipelinePage() {
                       type="button"
                       variant={showAdvanced ? "default" : "outline"}
                       size="sm"
-                      onClick={() => setShowAdvanced((prev) => !prev)}
+                      onClick={() => {
+                        setShowAdvanced((prev) => {
+                          const next = !prev;
+                          trackEvent("advanced_toggled", { enabled: next, selected_intent: selectedIntent });
+                          return next;
+                        });
+                      }}
                     >
                       {showAdvanced ? "Aktif" : "Mati"}
                     </Button>
