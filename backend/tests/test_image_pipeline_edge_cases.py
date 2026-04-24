@@ -5,8 +5,7 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, patch
 import pytest
 
-from app.schemas.image_pipeline import StageType, TransformationStageRequest
-from app.services.image_pipeline.pipeline import ImageTransformationPipeline, build_pipeline
+from app.services.image_pipeline.pipeline import ImageTransformationPipeline
 from app.services.image_pipeline.stages import (
     ApplyWatermarkStage,
     GenerateBackgroundStage,
@@ -254,7 +253,7 @@ async def test_generate_background_stage_with_all_params() -> None:
             new=AsyncMock(return_value=b"generated"),
         ),
     ):
-        result = await stage.execute(payload)
+        await stage.execute(payload)
 
     call_kwargs = mock_generate.await_args.kwargs
     assert call_kwargs["visual_prompt"] == "studio background"
@@ -309,7 +308,7 @@ async def test_apply_watermark_stage_with_base64_watermark() -> None:
             new=AsyncMock(return_value=b"watermarked"),
         ) as mock_apply,
     ):
-        result = await stage.execute(payload)
+        await stage.execute(payload)
 
     call_kwargs = mock_apply.await_args.kwargs
     assert call_kwargs["watermark_bytes"] == b"logo-data"
@@ -371,7 +370,7 @@ async def test_apply_watermark_stage_with_bytearray_base_image() -> None:
         "app.services.image_pipeline.stages.watermark_service.apply_watermark",
         new=AsyncMock(return_value=b"watermarked"),
     ) as mock_apply:
-        result = await stage.execute(payload)
+        await stage.execute(payload)
 
     call_kwargs = mock_apply.await_args.kwargs
     assert isinstance(call_kwargs["base_image_bytes"], bytes)
@@ -388,7 +387,7 @@ async def test_apply_watermark_stage_with_bytearray_watermark() -> None:
         "app.services.image_pipeline.stages.watermark_service.apply_watermark",
         new=AsyncMock(return_value=b"watermarked"),
     ) as mock_apply:
-        result = await stage.execute(payload)
+        await stage.execute(payload)
 
     call_kwargs = mock_apply.await_args.kwargs
     assert isinstance(call_kwargs["watermark_bytes"], bytes)
@@ -432,7 +431,7 @@ async def test_apply_watermark_stage_with_image_url_base() -> None:
             new=AsyncMock(return_value=b"watermarked"),
         ) as mock_apply,
     ):
-        result = await stage.execute(payload)
+        await stage.execute(payload)
 
     mock_download.assert_awaited_once_with("https://example.com/image.jpg")
     call_kwargs = mock_apply.await_args.kwargs
@@ -479,7 +478,7 @@ async def test_apply_watermark_stage_with_all_params() -> None:
         "app.services.image_pipeline.stages.watermark_service.apply_watermark",
         new=AsyncMock(return_value=b"watermarked"),
     ) as mock_apply:
-        result = await stage.execute(payload)
+        await stage.execute(payload)
 
     call_kwargs = mock_apply.await_args.kwargs
     assert call_kwargs["position"] == "center"
@@ -514,7 +513,7 @@ async def test_pipeline_progress_callback_handles_sync_callback() -> None:
     pipeline = ImageTransformationPipeline(
         stages=[DummyStage()], progress_callback=sync_callback
     )
-    result = await pipeline.run(StageExecutionPayload(image_bytes=b"test"))
+    await pipeline.run(StageExecutionPayload(image_bytes=b"test"))
 
     assert len(events) == 2  # running + completed
     assert events[0]["status"] == "running"
@@ -524,7 +523,7 @@ async def test_pipeline_progress_callback_handles_sync_callback() -> None:
 @pytest.mark.asyncio
 async def test_multi_stage_pipeline_cancellation_handling() -> None:
     """Pipeline should handle stage execution in correct order with metadata chaining."""
-    
+
     class MetadataChainStage(TransformationStage):
         def __init__(self, stage_id: str):
             super().__init__()
