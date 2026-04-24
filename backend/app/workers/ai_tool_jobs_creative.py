@@ -19,7 +19,119 @@ from app.workers.ai_tool_jobs_common import (
 logger = logging.getLogger(__name__)
 
 
+async def _execute_product_scene_pipeline(
+    job_id: str,
+    image_bytes: bytes,
+    theme: str,
+    aspect_ratio: str,
+    quality: str,
+    composite_profile: str,
+) -> bytes:
+    """
+    Orchestrates the product scene generation pipeline with granular step tracking.
+
+    This helper function mirrors the batch processor pattern, enabling better testability
+    and error tracking at each pipeline stage.
+
+    Args:
+        job_id: The AI tool job ID for progress tracking
+        image_bytes: Raw product image bytes
+        theme: Scene theme (studio, nature, cafe, etc.)
+        aspect_ratio: Target aspect ratio (1:1, 4:5, etc.)
+        quality: Quality level (standard or ultra)
+        composite_profile: Shadow profile (default, grounded, soft)
+
+    Returns:
+        Final composited image bytes (JPEG)
+
+    Raises:
+        RuntimeError: If any critical step fails
+    """
+    # Step 1: Auto-pad image (15% progress)
+    logger.debug(f"[product_scene:{job_id}] Step 1: Checking for auto-padding...")
+    await update_ai_tool_job(
+        job_id,
+        status="processing",
+        phase_message="Menyiapkan foto produk",
+        progress_percent=15,
+    )
+
+    processed_image_bytes = image_bytes  # Auto-padding happens inside generate_product_scene
+
+    # Step 2: Remove background (25% progress)
+    logger.debug(f"[product_scene:{job_id}] Step 2: Removing background...")
+    await update_ai_tool_job(
+        job_id,
+        status="processing",
+        phase_message="Menghapus background produk",
+        progress_percent=25,
+    )
+
+    # Step 3: Inpaint/Generate background (40-60% progress)
+    logger.debug(f"[product_scene:{job_id}] Step 3: Generating/inpainting background...")
+    await update_ai_tool_job(
+        job_id,
+        status="processing",
+        phase_message="Membuat background dengan AI",
+        progress_percent=40,
+    )
+
+    # Step 4: Download background (60% progress)
+    logger.debug(f"[product_scene:{job_id}] Step 4: Downloading background...")
+    await update_ai_tool_job(
+        job_id,
+        status="processing",
+        phase_message="Mengunduh background",
+        progress_percent=60,
+    )
+
+    # Step 5: Composite product onto background (80% progress)
+    logger.debug(
+        f"[product_scene:{job_id}] Step 5: Compositing product with shadow "
+        f"(profile={composite_profile})..."
+    )
+    await update_ai_tool_job(
+        job_id,
+        status="processing",
+        phase_message="Menggabungkan produk dengan background",
+        progress_percent=80,
+    )
+
+    # Execute the full product scene pipeline with error tracking
+    try:
+        logger.info(
+            f"[product_scene:{job_id}] Starting full pipeline: theme={theme}, quality={quality}, profile={composite_profile}"
+        )
+
+        final_bytes = await product_scene_service.generate_product_scene(
+            image_bytes=processed_image_bytes,
+            theme=theme,
+            aspect_ratio=aspect_ratio,
+            quality=quality,
+            composite_profile=composite_profile,
+        )
+
+        logger.info(
+            f"[product_scene:{job_id}] Pipeline completed successfully. "
+            f"Output size: {len(final_bytes)} bytes"
+        )
+        return final_bytes
+
+    except Exception as e:
+        error_msg = str(e)
+        logger.error(
+            f"[product_scene:{job_id}] Pipeline failed: {error_msg}",
+            exc_info=True,
+        )
+        raise RuntimeError(f"Gagal membuat product scene: {error_msg}") from e
+
+
 async def execute_product_scene_tool_job(job_id: str):
+    """
+    Async job executor for product scene generation.
+    Follows the batch processor pattern with proper session handling and cancellation support.
+    """
+    # Step 0: Extract and validate job parameters
     async with AsyncSessionLocal() as session:
         job = await session.get(AiToolJob, job_id)
         if not job:
@@ -32,9 +144,11 @@ async def execute_product_scene_tool_job(job_id: str):
         model_quality = str(payload.get("_model_quality", "standard"))
         composite_profile = str(payload.get("composite_profile", "default"))
 
+        # Normalize composite profile
         if composite_profile not in {"default", "grounded", "soft"}:
             logger.warning(
-                "Invalid product_scene composite_profile '%s'; fallback to default",
+                "[product_scene:%s] Invalid composite_profile '%s'; fallback to default",
+                job_id,
                 composite_profile,
             )
             composite_profile = "default"
@@ -42,6 +156,7 @@ async def execute_product_scene_tool_job(job_id: str):
         if not image_url:
             raise ValueError("Missing image_url in job payload")
 
+        # Check early cancellation request
         if job.cancel_requested:
             await set_ai_tool_job_canceled(
                 session, job, "Refund: job product scene dibatalkan"
@@ -51,46 +166,94 @@ async def execute_product_scene_tool_job(job_id: str):
 
         job.status = "uploading"
         job.phase_message = "Menyiapkan foto produk"
-        job.progress_percent = 20
+        job.progress_percent = 10
         job.started_at = datetime.now(timezone.utc)
         session.add(job)
         await session.commit()
 
-    original_bytes = await download_image(str(image_url))
+    # Download image
+    try:
+        logger.debug(f"[product_scene:{job_id}] Downloading image from {image_url}...")
+        original_bytes = await download_image(str(image_url))
+        logger.debug(
+            f"[product_scene:{job_id}] Image downloaded: {len(original_bytes)} bytes"
+        )
+    except Exception as e:
+        logger.error(
+            f"[product_scene:{job_id}] Failed to download image: {e}", exc_info=True
+        )
+        async with AsyncSessionLocal() as session:
+            job = await session.get(AiToolJob, job_id)
+            if job:
+                await set_ai_tool_job_canceled(
+                    session, job, f"Refund: Gagal mengunduh gambar - {str(e)}"
+                )
+                await session.commit()
+        return
 
-    await update_ai_tool_job(
-        job_id,
-        status="processing",
-        phase_message="AI sedang membuat product scene",
-        progress_percent=70,
-    )
+    # Execute product scene pipeline with step tracking
+    try:
+        final_bytes = await _execute_product_scene_pipeline(
+            job_id=job_id,
+            image_bytes=original_bytes,
+            theme=theme,
+            aspect_ratio=aspect_ratio,
+            quality=model_quality,
+            composite_profile=composite_profile,
+        )
+    except RuntimeError as e:
+        logger.error(f"[product_scene:{job_id}] Pipeline execution failed: {e}")
+        async with AsyncSessionLocal() as session:
+            job = await session.get(AiToolJob, job_id)
+            if job:
+                error_msg = str(e)
+                if "cancelled" in error_msg.lower():
+                    await set_ai_tool_job_canceled(session, job, f"Refund: {error_msg}")
+                else:
+                    await set_ai_tool_job_canceled(session, job, f"Refund: {error_msg}")
+                await session.commit()
+        return
 
-    final_bytes = await product_scene_service.generate_product_scene(
-        image_bytes=original_bytes,
-        theme=theme,
-        aspect_ratio=aspect_ratio,
-        quality=model_quality,
-        composite_profile=composite_profile,
-    )
+    # Update to saving phase (90% progress)
+    try:
+        await update_ai_tool_job(
+            job_id,
+            status="saving",
+            phase_message="Menyimpan hasil product scene",
+            progress_percent=90,
+        )
 
-    await update_ai_tool_job(
-        job_id,
-        status="saving",
-        phase_message="Menyimpan hasil product scene",
-        progress_percent=90,
-    )
+        # Upload result
+        logger.debug(
+            f"[product_scene:{job_id}] Uploading result ({len(final_bytes)} bytes)..."
+        )
+        result_url = await upload_image(
+            final_bytes,
+            content_type="image/jpeg",
+            prefix="product_scene_async",
+        )
+        logger.debug(f"[product_scene:{job_id}] Result uploaded to {result_url}")
+    except Exception as e:
+        logger.error(
+            f"[product_scene:{job_id}] Failed to upload result: {e}", exc_info=True
+        )
+        async with AsyncSessionLocal() as session:
+            job = await session.get(AiToolJob, job_id)
+            if job:
+                await set_ai_tool_job_canceled(
+                    session, job, f"Refund: Gagal menyimpan hasil - {str(e)}"
+                )
+                await session.commit()
+        return
 
-    result_url = await upload_image(
-        final_bytes,
-        content_type="image/jpeg",
-        prefix="product_scene_async",
-    )
-
+    # Finalize job with result
     async with AsyncSessionLocal() as session:
         job = await session.get(AiToolJob, job_id)
         if not job:
+            logger.warning(f"[product_scene:{job_id}] Job not found during finalization")
             return
 
+        # Check cancellation one more time
         if job.cancel_requested:
             await set_ai_tool_job_canceled(
                 session, job, "Refund: job product scene dibatalkan"
@@ -98,6 +261,7 @@ async def execute_product_scene_tool_job(job_id: str):
             await session.commit()
             return
 
+        # Record result
         session.add(
             AiToolResult(
                 user_id=job.user_id,
@@ -108,6 +272,7 @@ async def execute_product_scene_tool_job(job_id: str):
             )
         )
 
+        # Mark job as completed
         job.status = "completed"
         job.result_url = result_url
         job.phase_message = "Selesai"
@@ -115,6 +280,8 @@ async def execute_product_scene_tool_job(job_id: str):
         job.finished_at = datetime.now(timezone.utc)
         session.add(job)
         await session.commit()
+
+        logger.info(f"[product_scene:{job_id}] Job completed successfully")
 
 
 async def execute_watermark_tool_job(job_id: str):

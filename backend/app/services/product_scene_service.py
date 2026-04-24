@@ -305,13 +305,14 @@ async def generate_product_scene(
         processed_image_bytes = image_bytes
 
     # 1. Background removal using existing service
-    logger.debug("Removing background...")
+    logger.info("Step 1/6: Removing background from product image...")
     try:
         no_bg_bytes: bytes = await bg_removal_service.remove_background(
             processed_image_bytes
         )
+        logger.info(f"Step 1/6: Background removal completed. Output size: {len(no_bg_bytes)} bytes")
     except Exception as e:
-        logger.error(f"Background removal failed for product scene: {e}")
+        logger.error(f"Step 1/6: Background removal failed - {e}", exc_info=True)
         raise RuntimeError(
             f"Gagal menghapus background gambar asli. Pastikan foto produk cukup jelas. Error: {str(e)}"
         )

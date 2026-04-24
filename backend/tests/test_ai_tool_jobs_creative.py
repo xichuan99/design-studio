@@ -79,8 +79,8 @@ async def test_execute_product_scene_tool_job_forwards_composite_profile(
     mock_update_job.assert_any_await(
         "job-1",
         status="processing",
-        phase_message="AI sedang membuat product scene",
-        progress_percent=70,
+        phase_message="Menggabungkan produk dengan background",
+        progress_percent=80,
     )
 
 
