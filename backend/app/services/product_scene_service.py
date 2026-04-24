@@ -23,6 +23,15 @@ _LIGHTING_BY_THEME = {
     "bathroom": "soft diffused spa lighting from front-left with gentle reflective highlights",
 }
 
+_PLACEMENT_HINT_BY_THEME = {
+    "studio": "product sitting stably on display platform, grounded in lower third of frame",
+    "nature": "product resting naturally on mossy ground surface, grounded in lower third of frame",
+    "cafe": "food resting on wooden table surface, lower third of frame, slight overhead angle",
+    "minimalist": "product placed on minimalist pedestal, grounded in lower third of frame",
+    "kitchen": "product resting on kitchen counter top surface, grounded in lower third of frame",
+    "bathroom": "product placed on marble tray surface, grounded in lower third of frame",
+}
+
 
 def _compute_subject_metrics(img: Image.Image) -> Tuple[Optional[Tuple[int, int, int, int]], float, float, float]:
     """Compute bbox occupancy metrics for a transparent product image."""
@@ -142,15 +151,94 @@ SCENE_THEMES = {
 }
 
 
-def _build_scene_prompt(theme: str, visual_prompt: str) -> str:
+def _build_scene_prompt(theme: str, visual_prompt: str, include_placement: bool = False) -> str:
     """Compose an object-aware scene prompt with explicit lighting guidance."""
     lighting = _LIGHTING_BY_THEME.get(theme, _LIGHTING_BY_THEME["studio"])
+    placement = ""
+    if include_placement:
+        hint = _PLACEMENT_HINT_BY_THEME.get(theme, "product placed in lower third of frame")
+        placement = f", {hint}"
     return (
-        f"{visual_prompt}, {lighting}, "
+        f"{visual_prompt}, {lighting}{placement}, "
         "maintain realistic contact shadows under the subject, "
         "harmonize subject color temperature with environment, "
         "photorealistic commercial product photography"
     )
+
+
+def _reframe_subject_lower(
+    original_bytes: bytes,
+    no_bg_bytes: bytes,
+    target_bottom_ratio: float = 0.80,
+) -> tuple:
+    """
+    Shifts the subject downward within the same canvas so the inpaint model
+    has more vertical space above to render scene context, and more space
+    below for a natural ground surface.
+
+    Returns originals unchanged when no shift is needed (subject already grounded).
+    """
+    try:
+        orig_img = Image.open(io.BytesIO(original_bytes)).convert("RGB")
+        no_bg_img = Image.open(io.BytesIO(no_bg_bytes)).convert("RGBA")
+        nobg_w, nobg_h = no_bg_img.size
+
+        if orig_img.size != no_bg_img.size:
+            orig_img = orig_img.resize((nobg_w, nobg_h), Image.Resampling.LANCZOS)
+
+        bbox = no_bg_img.getbbox()
+        if not bbox:
+            return original_bytes, no_bg_bytes
+
+        sub_bottom = bbox[3]
+        target_bottom_px = int(nobg_h * target_bottom_ratio)
+        shift_y = target_bottom_px - sub_bottom
+
+        if shift_y <= 5:
+            # Subject is already grounded or below target — no reframe needed.
+            return original_bytes, no_bg_bytes
+
+        max_shift = nobg_h - sub_bottom - 5
+        shift_y = min(shift_y, max_shift)
+        if shift_y <= 5:
+            return original_bytes, no_bg_bytes
+
+        # Reframe the transparent mask: paste whole image shifted down.
+        new_nobg = Image.new("RGBA", (nobg_w, nobg_h), (0, 0, 0, 0))
+        new_nobg.paste(no_bg_img, (0, shift_y), no_bg_img)
+
+        # Reframe the original: extract subject pixels (via alpha) on a neutral
+        # gray canvas at the new shifted position.  Non-subject area will be
+        # fully inpainted by the model, so the fill colour does not matter.
+        alpha = no_bg_img.split()[-1]
+        subject_rgba = Image.new("RGBA", (nobg_w, nobg_h), (0, 0, 0, 0))
+        subject_rgba.paste(orig_img, (0, 0))
+        subject_rgba.putalpha(alpha)
+
+        shifted_subject = Image.new("RGBA", (nobg_w, nobg_h), (0, 0, 0, 0))
+        shifted_subject.paste(subject_rgba, (0, shift_y), subject_rgba)
+
+        new_orig = Image.new("RGB", (nobg_w, nobg_h), (210, 210, 210))
+        new_orig.paste(
+            shifted_subject.convert("RGB"), mask=shifted_subject.split()[-1]
+        )
+
+        nobg_buf = io.BytesIO()
+        new_nobg.save(nobg_buf, format="PNG")
+        orig_buf = io.BytesIO()
+        new_orig.save(orig_buf, format="JPEG", quality=95)
+
+        logger.debug(
+            "Reframed subject lower by %dpx (target_bottom=%.0f%% of %dpx height)",
+            shift_y,
+            target_bottom_ratio * 100,
+            nobg_h,
+        )
+        return orig_buf.getvalue(), nobg_buf.getvalue()
+
+    except Exception as e:
+        logger.warning("Subject reframe failed, using originals: %s", e)
+        return original_bytes, no_bg_bytes
 
 
 async def generate_product_scene(
@@ -219,15 +307,20 @@ async def generate_product_scene(
 
     # 2. Map theme to prompt
     theme_config = SCENE_THEMES.get(theme, SCENE_THEMES["studio"])
-    scene_prompt = _build_scene_prompt(theme, theme_config["visual_prompt"])
+    scene_prompt = _build_scene_prompt(
+        theme, theme_config["visual_prompt"], include_placement=(quality == "ultra")
+    )
 
     # 3. Ultra quality path: object-aware inpainting on the original context.
     if quality == "ultra":
         logger.debug("Using object-aware inpaint path for product_scene ultra")
         try:
+            inpaint_orig, inpaint_mask = _reframe_subject_lower(
+                processed_image_bytes, no_bg_bytes
+            )
             result_bytes = await bg_removal_service.inpaint_background(
-                original_bytes=processed_image_bytes,
-                transparent_png_bytes=no_bg_bytes,
+                original_bytes=inpaint_orig,
+                transparent_png_bytes=inpaint_mask,
                 prompt=scene_prompt,
             )
             logger.info("Product scene generation complete (object-aware ultra)")

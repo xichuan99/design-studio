@@ -3,7 +3,7 @@ from unittest.mock import patch, MagicMock
 import io
 from PIL import Image
 
-from app.services.product_scene_service import generate_product_scene
+from app.services.product_scene_service import generate_product_scene, _reframe_subject_lower
 
 
 @pytest.fixture
@@ -202,9 +202,10 @@ async def test_generate_product_scene_ultra_uses_object_aware_inpaint(
     mock_inpaint.assert_called_once()
     inpaint_kwargs = mock_inpaint.call_args.kwargs
     assert isinstance(inpaint_kwargs["original_bytes"], bytes)
-    assert inpaint_kwargs["transparent_png_bytes"] == mock_no_bg_bytes
+    assert isinstance(inpaint_kwargs["transparent_png_bytes"], bytes)
     assert "cozy cafe setting" in inpaint_kwargs["prompt"]
     assert "contact shadows" in inpaint_kwargs["prompt"]
+    assert "table surface" in inpaint_kwargs["prompt"]  # placement hint for cafe theme
 
     # Ultra route should skip background-generation and composite path.
     mock_generate.assert_not_called()
@@ -230,3 +231,55 @@ async def test_generate_product_scene_ultra_inpaint_failure_raises_runtime_error
             aspect_ratio="1:1",
             quality="ultra",
         )
+
+
+def test_reframe_subject_lower_shifts_subject_down():
+    """When subject is centered/high, it should be shifted toward 80% of frame height."""
+    # no_bg: 300x300, subject at rows 80-200 (sub_bottom=200, target=240, shift_y=+40)
+    no_bg_img = Image.new("RGBA", (300, 300), (0, 0, 0, 0))
+    for x in range(80, 220):
+        for y in range(80, 200):
+            no_bg_img.putpixel((x, y), (255, 50, 50, 255))
+    nobg_buf = io.BytesIO()
+    no_bg_img.save(nobg_buf, format="PNG")
+    no_bg_bytes = nobg_buf.getvalue()
+
+    orig_img = Image.new("RGB", (300, 300), (200, 200, 200))
+    orig_buf = io.BytesIO()
+    orig_img.save(orig_buf, format="JPEG")
+    original_bytes = orig_buf.getvalue()
+
+    new_orig_bytes, new_nobg_bytes = _reframe_subject_lower(original_bytes, no_bg_bytes)
+
+    # Canvas dimensions must be preserved
+    new_nobg = Image.open(io.BytesIO(new_nobg_bytes)).convert("RGBA")
+    assert new_nobg.size == (300, 300)
+
+    # Subject bottom should now be near 80% of 300 = 240
+    shifted_bbox = new_nobg.getbbox()
+    assert shifted_bbox is not None
+    assert shifted_bbox[3] >= 235
+
+
+def test_reframe_subject_lower_returns_original_when_already_grounded():
+    """When subject bottom is already at/below target, return originals unchanged."""
+    # no_bg: 300x220, subject rows 60-180 (sub_bottom=180, target=int(220*0.80)=176)
+    # shift_y = 176 - 180 = -4 => <=5 => no reframe
+    no_bg_img = Image.new("RGBA", (300, 220), (0, 0, 0, 0))
+    for x in range(70, 230):
+        for y in range(60, 180):
+            no_bg_img.putpixel((x, y), (255, 50, 50, 255))
+    nobg_buf = io.BytesIO()
+    no_bg_img.save(nobg_buf, format="PNG")
+    no_bg_bytes = nobg_buf.getvalue()
+
+    orig_img = Image.new("RGB", (300, 220), (200, 200, 200))
+    orig_buf = io.BytesIO()
+    orig_img.save(orig_buf, format="JPEG")
+    original_bytes = orig_buf.getvalue()
+
+    new_orig, new_mask = _reframe_subject_lower(original_bytes, no_bg_bytes)
+
+    # Should return the exact same bytes objects (no allocation)
+    assert new_orig is original_bytes
+    assert new_mask is no_bg_bytes
