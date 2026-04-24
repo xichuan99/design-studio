@@ -54,6 +54,7 @@ def mock_no_bg_closeup_bytes():
 
 @pytest.mark.asyncio
 @patch("app.services.product_scene_service.bg_removal_service.remove_background")
+@patch("app.services.product_scene_service.bg_removal_service.inpaint_background")
 @patch("app.services.product_scene_service.generate_background")
 @patch("app.services.product_scene_service.httpx.AsyncClient.get")
 @patch("app.services.product_scene_service.bg_removal_service.composite_with_shadow")
@@ -61,6 +62,7 @@ async def test_generate_product_scene_success(
     mock_composite,
     mock_get,
     mock_generate,
+    mock_inpaint,
     mock_remove_bg,
     mock_image_bytes,
     mock_bg_bytes,
@@ -78,6 +80,7 @@ async def test_generate_product_scene_success(
     mock_get.return_value = mock_response
 
     mock_composite.return_value = mock_composite_bytes
+    mock_inpaint.return_value = b"inpainted_standard_result"
 
     # Run function
     result = await generate_product_scene(
@@ -90,36 +93,34 @@ async def test_generate_product_scene_success(
     assert isinstance(remove_bg_input, bytes)
     assert len(remove_bg_input) > 0
 
-    mock_generate.assert_called_once()
-    assert (
-        "photograph" in mock_generate.call_args[1]["visual_prompt"]
-        or "professional" in mock_generate.call_args[1]["visual_prompt"]
-    )
+    mock_inpaint.assert_called_once()
+    inpaint_kwargs = mock_inpaint.call_args.kwargs
+    assert isinstance(inpaint_kwargs["original_bytes"], bytes)
+    assert isinstance(inpaint_kwargs["transparent_png_bytes"], bytes)
+    assert "natural grounding" in inpaint_kwargs["prompt"]
 
-    mock_get.assert_called_once_with("https://fake-fal-url.com/scene.jpg", timeout=30.0)
+    # Standard inpaint-lite success should skip legacy fallback steps.
+    mock_generate.assert_not_called()
+    mock_get.assert_not_called()
+    mock_composite.assert_not_called()
 
-    mock_composite.assert_called_once()
-    composite_kwargs = mock_composite.call_args.kwargs
-    assert isinstance(composite_kwargs["product_png_bytes"], bytes)
-    assert len(composite_kwargs["product_png_bytes"]) > 0
-    assert composite_kwargs["background_bytes"] == mock_bg_bytes
-    assert composite_kwargs["offset_x_ratio"] == 0.5
-    assert 0.56 <= composite_kwargs["offset_y_ratio"] <= 0.68
-    assert composite_kwargs["add_shadow"] is True
-    assert composite_kwargs["shadow_profile"] == "default"
-    assert 0.72 <= composite_kwargs["scale_factor"] <= 0.86
-
-    assert result == mock_composite_bytes
+    assert result == b"inpainted_standard_result"
 
 
 @pytest.mark.asyncio
 @patch("app.services.product_scene_service.bg_removal_service.remove_background")
+@patch("app.services.product_scene_service.bg_removal_service.inpaint_background")
 @patch("app.services.product_scene_service.generate_background")
 async def test_generate_product_scene_fallback_theme(
-    mock_generate, mock_remove_bg, mock_image_bytes, mock_no_bg_bytes
+    mock_generate,
+    mock_inpaint,
+    mock_remove_bg,
+    mock_image_bytes,
+    mock_no_bg_bytes,
 ):
     """Test that an unknown theme falls back to 'studio'"""
     mock_remove_bg.return_value = mock_no_bg_bytes
+    mock_inpaint.side_effect = RuntimeError("force fallback to legacy path")
 
     # Just need it to crash or pass validation, we intercept at generate_background
     mock_generate.side_effect = Exception("Stop execution here")
@@ -139,6 +140,7 @@ async def test_generate_product_scene_fallback_theme(
 
 @pytest.mark.asyncio
 @patch("app.services.product_scene_service.bg_removal_service.remove_background")
+@patch("app.services.product_scene_service.bg_removal_service.inpaint_background")
 @patch("app.services.product_scene_service.generate_background")
 @patch("app.services.product_scene_service.httpx.AsyncClient.get")
 @patch("app.services.product_scene_service.bg_removal_service.composite_with_shadow")
@@ -146,6 +148,7 @@ async def test_generate_product_scene_closeup_uses_grounded_scale_and_offset(
     mock_composite,
     mock_get,
     mock_generate,
+    mock_inpaint,
     mock_remove_bg,
     mock_image_bytes,
     mock_bg_bytes,
@@ -160,6 +163,7 @@ async def test_generate_product_scene_closeup_uses_grounded_scale_and_offset(
     mock_response.raise_for_status = MagicMock()
     mock_get.return_value = mock_response
     mock_composite.return_value = mock_composite_bytes
+    mock_inpaint.side_effect = RuntimeError("force fallback to legacy path")
 
     await generate_product_scene(
         image_bytes=mock_image_bytes,
@@ -172,6 +176,47 @@ async def test_generate_product_scene_closeup_uses_grounded_scale_and_offset(
     assert kwargs["shadow_profile"] == "grounded"
     assert kwargs["scale_factor"] == pytest.approx(0.82)
     assert kwargs["offset_y_ratio"] == pytest.approx(0.56)
+
+
+@pytest.mark.asyncio
+@patch("app.services.product_scene_service.bg_removal_service.remove_background")
+@patch("app.services.product_scene_service.bg_removal_service.inpaint_background")
+@patch("app.services.product_scene_service.generate_background")
+@patch("app.services.product_scene_service.httpx.AsyncClient.get")
+@patch("app.services.product_scene_service.bg_removal_service.composite_with_shadow")
+async def test_generate_product_scene_standard_inpaint_lite_fallbacks_to_composite(
+    mock_composite,
+    mock_get,
+    mock_generate,
+    mock_inpaint,
+    mock_remove_bg,
+    mock_image_bytes,
+    mock_bg_bytes,
+    mock_no_bg_bytes,
+    mock_composite_bytes,
+):
+    mock_remove_bg.return_value = mock_no_bg_bytes
+    mock_inpaint.side_effect = RuntimeError("inpaint unavailable")
+    mock_generate.return_value = {"image_url": "https://fake-fal-url.com/scene.jpg"}
+
+    mock_response = MagicMock()
+    mock_response.content = mock_bg_bytes
+    mock_response.raise_for_status = MagicMock()
+    mock_get.return_value = mock_response
+    mock_composite.return_value = mock_composite_bytes
+
+    result = await generate_product_scene(
+        image_bytes=mock_image_bytes,
+        theme="studio",
+        aspect_ratio="1:1",
+        quality="standard",
+    )
+
+    mock_inpaint.assert_called_once()
+    mock_generate.assert_called_once()
+    mock_get.assert_called_once_with("https://fake-fal-url.com/scene.jpg", timeout=30.0)
+    mock_composite.assert_called_once()
+    assert result == mock_composite_bytes
 
 
 @pytest.mark.asyncio

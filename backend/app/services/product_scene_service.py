@@ -166,6 +166,17 @@ def _build_scene_prompt(theme: str, visual_prompt: str, include_placement: bool 
     )
 
 
+def _build_scene_prompt_lite(theme: str, visual_prompt: str) -> str:
+    """Compose a lighter inpaint prompt for standard quality grounding."""
+    lighting = _LIGHTING_BY_THEME.get(theme, _LIGHTING_BY_THEME["studio"])
+    hint = _PLACEMENT_HINT_BY_THEME.get(theme, "product placed in lower third of frame")
+    return (
+        f"{visual_prompt}, {lighting}, {hint}, "
+        "natural grounding and realistic surface contact, "
+        "photorealistic product photography"
+    )
+
+
 def _reframe_subject_lower(
     original_bytes: bytes,
     no_bg_bytes: bytes,
@@ -307,6 +318,7 @@ async def generate_product_scene(
 
     # 2. Map theme to prompt
     theme_config = SCENE_THEMES.get(theme, SCENE_THEMES["studio"])
+    scene_prompt_lite = _build_scene_prompt_lite(theme, theme_config["visual_prompt"])
     scene_prompt = _build_scene_prompt(
         theme, theme_config["visual_prompt"], include_placement=(quality == "ultra")
     )
@@ -331,7 +343,27 @@ async def generate_product_scene(
                 f"Gagal membuat product scene object-aware (ultra). Error: {str(e)}"
             )
 
-    # Standard path only: normalize sparse subject and compute adaptive placement.
+    # 4. Standard quality path: try object-aware inpaint-lite first,
+    #    then fall back to legacy background+composite on failure.
+    logger.debug("Using hybrid inpaint-lite path for product_scene standard")
+    try:
+        inpaint_orig, inpaint_mask = _reframe_subject_lower(
+            processed_image_bytes, no_bg_bytes
+        )
+        result_bytes = await bg_removal_service.inpaint_background(
+            original_bytes=inpaint_orig,
+            transparent_png_bytes=inpaint_mask,
+            prompt=scene_prompt_lite,
+        )
+        logger.info("Product scene generation complete (hybrid inpaint-lite)")
+        return result_bytes
+    except Exception as e:
+        logger.warning(
+            "Hybrid inpaint-lite failed, falling back to legacy composite path: %s",
+            e,
+        )
+
+    # 5. Fallback standard path: normalize sparse subject and compute adaptive placement.
     try:
         img = Image.open(io.BytesIO(no_bg_bytes)).convert("RGBA")
         normalized_img = _normalize_sparse_subject(img)
@@ -358,7 +390,7 @@ async def generate_product_scene(
         scale_factor = 0.72
         offset_y_ratio = 0.62
 
-    # 3. Standard quality path: background generation + compositing.
+    # 6. Fallback standard quality path: background generation + compositing.
     logger.debug(f"Generating background prompt: {scene_prompt} [quality={quality}]")
     bg_result: Dict[str, Any] = await generate_background(
         visual_prompt=scene_prompt,
