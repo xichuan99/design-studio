@@ -8,7 +8,7 @@ import { PipelineBuilder, type StageId } from "@/components/tools/PipelineBuilde
 import { ResultActionCard } from "@/components/tools/ResultActionCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Workflow } from "lucide-react";
+import { ArrowLeft, Eraser, Layers, Scissors, Sparkles, Wand2, Workflow } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Image from "next/image";
@@ -31,6 +31,66 @@ const WATERMARK_POSITIONS = [
   "tiled",
 ] as const;
 
+type IntentKey = "quick_fix" | "background" | "scene" | "remove_object" | "bulk";
+
+const INTENTS: {
+  key: IntentKey;
+  title: string;
+  description: string;
+  creditEstimate: string;
+  runtimeEstimate: string;
+  Icon: React.ComponentType<{ className?: string }>;
+}[] = [
+  {
+    key: "quick_fix",
+    title: "Perbaiki Cepat",
+    description: "Auto-fix pencahayaan dan kebersihan foto dalam satu klik.",
+    creditEstimate: "Estimasi 1-2 kredit",
+    runtimeEstimate: "~10-20 detik",
+    Icon: Sparkles,
+  },
+  {
+    key: "background",
+    title: "Hapus / Ganti Background",
+    description: "Pisahkan produk dan buat background baru yang lebih clean.",
+    creditEstimate: "Estimasi 2-4 kredit",
+    runtimeEstimate: "~20-40 detik",
+    Icon: Scissors,
+  },
+  {
+    key: "scene",
+    title: "Buat Scene Produk",
+    description: "Ubah foto jadi scene produk siap jual dengan look premium.",
+    creditEstimate: "Estimasi 3-6 kredit",
+    runtimeEstimate: "~30-60 detik",
+    Icon: Wand2,
+  },
+  {
+    key: "remove_object",
+    title: "Hapus Objek Pengganggu",
+    description: "Bersihkan elemen yang mengganggu supaya fokus ke produk utama.",
+    creditEstimate: "Estimasi 2-4 kredit",
+    runtimeEstimate: "~20-45 detik",
+    Icon: Eraser,
+  },
+  {
+    key: "bulk",
+    title: "Proses Banyak Foto",
+    description: "Arahkan ke alur batch untuk memproses banyak file sekaligus.",
+    creditEstimate: "Estimasi sesuai jumlah file",
+    runtimeEstimate: "Tergantung volume",
+    Icon: Layers,
+  },
+];
+
+const INTENT_META: Record<IntentKey, { creditEstimate: string; runtimeEstimate: string }> = {
+  quick_fix: { creditEstimate: "1-2", runtimeEstimate: "10-20s" },
+  background: { creditEstimate: "2-4", runtimeEstimate: "20-40s" },
+  scene: { creditEstimate: "3-6", runtimeEstimate: "30-60s" },
+  remove_object: { creditEstimate: "2-4", runtimeEstimate: "20-45s" },
+  bulk: { creditEstimate: "variable", runtimeEstimate: "variable" },
+};
+
 async function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -47,6 +107,8 @@ export default function TransformPipelinePage() {
   const [previewLoading, setPreviewLoading] = useState(false);
 
   const [step, setStep] = useState(1);
+  const [selectedIntent, setSelectedIntent] = useState<IntentKey>("quick_fix");
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [originalFile, setOriginalFile] = useState<File | null>(null);
   const [previewOriginal, setPreviewOriginal] = useState("");
   const [resultUrl, setResultUrl] = useState("");
@@ -143,6 +205,51 @@ export default function TransformPipelinePage() {
     setStageOrder(["remove_bg", "generate_bg", "watermark", "inpaint_bg"]);
   };
 
+  const applyIntent = (intent: IntentKey) => {
+    setSelectedIntent(intent);
+
+    if (intent === "quick_fix") {
+      applyPreset("quick_cutout");
+      return;
+    }
+
+    if (intent === "background") {
+      setEnableRemoveBg(true);
+      setEnableInpaintBg(true);
+      setEnableGenerateBg(false);
+      setEnableWatermark(false);
+      setInpaintPrompt((prev) => prev || "clean studio background, realistic soft shadows");
+      setStageOrder(["remove_bg", "inpaint_bg", "generate_bg", "watermark"]);
+      return;
+    }
+
+    if (intent === "scene") {
+      setEnableRemoveBg(true);
+      setEnableInpaintBg(false);
+      setEnableGenerateBg(true);
+      setEnableWatermark(false);
+      setGeneratePrompt((prev) => prev || "premium product scene, soft shadow, ecommerce lighting");
+      setStageOrder(["remove_bg", "generate_bg", "inpaint_bg", "watermark"]);
+      return;
+    }
+
+    if (intent === "remove_object") {
+      setEnableRemoveBg(true);
+      setEnableInpaintBg(true);
+      setEnableGenerateBg(false);
+      setEnableWatermark(false);
+      setInpaintPrompt((prev) => prev || "remove distracting objects and reconstruct clean natural background");
+      setStageOrder(["remove_bg", "inpaint_bg", "generate_bg", "watermark"]);
+      return;
+    }
+
+    setEnableRemoveBg(true);
+    setEnableInpaintBg(false);
+    setEnableGenerateBg(false);
+    setEnableWatermark(false);
+    setStageOrder(["remove_bg", "inpaint_bg", "generate_bg", "watermark"]);
+  };
+
   const moveStage = (index: number, direction: -1 | 1) => {
     const target = index + direction;
     if (target < 0 || target >= stageOrder.length) return;
@@ -165,6 +272,9 @@ export default function TransformPipelinePage() {
     setOriginalFile(file);
     setPreviewOriginal(URL.createObjectURL(file));
     setResultUrl("");
+    setSelectedIntent("quick_fix");
+    setShowAdvanced(false);
+    applyIntent("quick_fix");
     setStep(2);
   };
 
@@ -176,6 +286,12 @@ export default function TransformPipelinePage() {
 
   const handleRunPipeline = async () => {
     try {
+      if (selectedIntent === "bulk") {
+        toast.message("Untuk banyak foto, gunakan Batch Photo Processor.");
+        router.push("/tools/batch-process");
+        return;
+      }
+
       const { imageBytes, resolvedStages } = await preparePipelinePayload();
 
       await startPipelineJob({
@@ -183,12 +299,15 @@ export default function TransformPipelinePage() {
         stages: resolvedStages,
         metadata: {
           source: "tools_transform_page",
+          selected_intent: selectedIntent,
+          intent_credit_estimate: INTENT_META[selectedIntent].creditEstimate,
+          intent_runtime_estimate: INTENT_META[selectedIntent].runtimeEstimate,
           source_mode: "image_bytes",
           stage_count: resolvedStages.length,
           ordered_stages: stageOrder,
         },
         quality: "standard",
-        idempotencyKey: `${originalFile?.name || "file"}:${originalFile?.size || 0}:${originalFile?.lastModified || 0}:${stageOrder.join(",")}:${resolvedStages.length}`,
+        idempotencyKey: `${selectedIntent}:${originalFile?.name || "file"}:${originalFile?.size || 0}:${originalFile?.lastModified || 0}:${stageOrder.join(",")}:${resolvedStages.length}`,
         onCompleted: (job) => {
           if (job.result_url) {
             setResultUrl(job.result_url);
@@ -283,6 +402,12 @@ export default function TransformPipelinePage() {
 
   const handleRunPreview = async () => {
     try {
+      if (selectedIntent === "bulk") {
+        toast.message("Intent ini diarahkan ke Batch Photo Processor.");
+        router.push("/tools/batch-process");
+        return;
+      }
+
       setPreviewLoading(true);
       const { imageBytes, resolvedStages } = await preparePipelinePayload();
       const preview = await api.executePipelinePreview({
@@ -290,6 +415,9 @@ export default function TransformPipelinePage() {
         stages: resolvedStages,
         metadata: {
           source: "tools_transform_page",
+          selected_intent: selectedIntent,
+          intent_credit_estimate: INTENT_META[selectedIntent].creditEstimate,
+          intent_runtime_estimate: INTENT_META[selectedIntent].runtimeEstimate,
           mode: "sync_preview",
         },
         save_result: true,
@@ -383,53 +511,140 @@ export default function TransformPipelinePage() {
 
         {step === 2 && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <Card className="border-2">
-              <CardHeader>
-                <CardTitle>Preview Input</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="relative w-full aspect-square rounded-xl border bg-muted/30 overflow-hidden">
-                  {previewOriginal && (
-                    <Image src={previewOriginal} alt="Input" fill className="object-contain p-2" unoptimized />
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            <div className="space-y-5">
+              <Card className="border-2">
+                <CardHeader>
+                  <CardTitle>Preview Input</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="relative w-full aspect-square rounded-xl border bg-muted/30 overflow-hidden">
+                    {previewOriginal && (
+                      <Image src={previewOriginal} alt="Input" fill className="object-contain p-2" unoptimized />
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
 
-            <PipelineBuilder
-              stageOrder={stageOrder}
-              enableRemoveBg={enableRemoveBg}
-              enableInpaintBg={enableInpaintBg}
-              enableGenerateBg={enableGenerateBg}
-              enableWatermark={enableWatermark}
-              inpaintPrompt={inpaintPrompt}
-              generatePrompt={generatePrompt}
-              watermarkPosition={watermarkPosition}
-              watermarkOpacity={watermarkOpacity}
-              watermarkScale={watermarkScale}
-              loading={loading}
-              previewLoading={previewLoading}
-              activeJob={activeJob}
-              hasOriginalFile={Boolean(originalFile)}
-              activeStageCount={stages.length}
-              onApplyPreset={applyPreset}
-              onMoveStage={moveStage}
-              onSetEnabled={setEnabled}
-              onSetEnableRemoveBg={setEnableRemoveBg}
-              onSetEnableInpaintBg={setEnableInpaintBg}
-              onSetEnableGenerateBg={setEnableGenerateBg}
-              onSetEnableWatermark={setEnableWatermark}
-              onSetInpaintPrompt={setInpaintPrompt}
-              onSetGeneratePrompt={setGeneratePrompt}
-              onSetWatermarkPosition={setWatermarkPosition}
-              onSetWatermarkOpacity={setWatermarkOpacity}
-              onSetWatermarkScale={setWatermarkScale}
-              onWatermarkFileChange={handleWatermarkFileSelect}
-              onRunPipeline={handleRunPipeline}
-              onRunPreview={handleRunPreview}
-              onCancel={handleCancel}
-              watermarkPositions={WATERMARK_POSITIONS}
-            />
+              <Card className="border-2">
+                <CardHeader>
+                  <CardTitle>Mau diapain?</CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {INTENTS.map(({ key, title, description, creditEstimate, runtimeEstimate, Icon }) => {
+                    const isActive = selectedIntent === key;
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => applyIntent(key)}
+                        className={[
+                          "text-left rounded-xl border p-3 transition-all",
+                          isActive
+                            ? "border-primary bg-primary/5 ring-1 ring-primary/30"
+                            : "border-border hover:border-primary/50 hover:bg-muted/40",
+                        ].join(" ")}
+                      >
+                        <div className="flex items-center gap-2.5 mb-1.5">
+                          <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
+                            <Icon className="w-4 h-4 text-primary" />
+                          </div>
+                          <p className="text-sm font-semibold text-foreground leading-tight">{title}</p>
+                        </div>
+                        <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>
+                        <div className="mt-2.5 flex items-center gap-2 text-[11px] text-muted-foreground">
+                          <span className="rounded-full border px-2 py-0.5">{creditEstimate}</span>
+                          <span>{runtimeEstimate}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="space-y-5">
+              <Card className="border-2">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Mode Opsi</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0 space-y-3">
+                  <div className="rounded-lg border bg-muted/20 p-3">
+                    <p className="text-sm font-semibold text-foreground">Estimasi Intent Terpilih</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Kredit: {INTENTS.find((intent) => intent.key === selectedIntent)?.creditEstimate} · Durasi: {INTENTS.find((intent) => intent.key === selectedIntent)?.runtimeEstimate}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg border bg-muted/20 p-3">
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Advanced Controls</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Aktifkan jika ingin atur urutan stage, prompt, dan watermark manual.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant={showAdvanced ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setShowAdvanced((prev) => !prev)}
+                    >
+                      {showAdvanced ? "Aktif" : "Mati"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {selectedIntent === "bulk" ? (
+                <Card className="border-2">
+                  <CardHeader>
+                    <CardTitle>Intent Batch</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                      Intent ini lebih optimal di Batch Photo Processor agar Anda bisa upload banyak foto sekaligus.
+                    </p>
+                    <Button className="w-full" onClick={() => router.push("/tools/batch-process")}>
+                      Buka Batch Photo Processor
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <PipelineBuilder
+                  stageOrder={stageOrder}
+                  enableRemoveBg={enableRemoveBg}
+                  enableInpaintBg={enableInpaintBg}
+                  enableGenerateBg={enableGenerateBg}
+                  enableWatermark={enableWatermark}
+                  inpaintPrompt={inpaintPrompt}
+                  generatePrompt={generatePrompt}
+                  watermarkPosition={watermarkPosition}
+                  watermarkOpacity={watermarkOpacity}
+                  watermarkScale={watermarkScale}
+                  loading={loading}
+                  previewLoading={previewLoading}
+                  activeJob={activeJob}
+                  hasOriginalFile={Boolean(originalFile)}
+                  activeStageCount={stages.length}
+                  showAdvanced={showAdvanced}
+                  onApplyPreset={applyPreset}
+                  onMoveStage={moveStage}
+                  onSetEnabled={setEnabled}
+                  onSetEnableRemoveBg={setEnableRemoveBg}
+                  onSetEnableInpaintBg={setEnableInpaintBg}
+                  onSetEnableGenerateBg={setEnableGenerateBg}
+                  onSetEnableWatermark={setEnableWatermark}
+                  onSetInpaintPrompt={setInpaintPrompt}
+                  onSetGeneratePrompt={setGeneratePrompt}
+                  onSetWatermarkPosition={setWatermarkPosition}
+                  onSetWatermarkOpacity={setWatermarkOpacity}
+                  onSetWatermarkScale={setWatermarkScale}
+                  onWatermarkFileChange={handleWatermarkFileSelect}
+                  onRunPipeline={handleRunPipeline}
+                  onRunPreview={handleRunPreview}
+                  onCancel={handleCancel}
+                  watermarkPositions={WATERMARK_POSITIONS}
+                />
+              )}
+            </div>
           </div>
         )}
 
