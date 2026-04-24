@@ -93,45 +93,53 @@ export function PipelineBuilder({
         <CardTitle>Pipeline Builder</CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
-        <div className="flex items-center justify-between rounded-lg border p-3">
-          <Label htmlFor="remove-bg-switch" className="font-medium">1. Remove Background</Label>
-          <Switch id="remove-bg-switch" checked={enableRemoveBg} onCheckedChange={onSetEnableRemoveBg} />
-        </div>
+        {/* ── Stage Toggles ── */}
+        <fieldset className="space-y-2" aria-label="Stage configuration">
+          <legend className="sr-only">Stage configuration</legend>
 
-        <div className="space-y-2 rounded-lg border p-3">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="inpaint-switch" className="font-medium">2. Inpaint Background</Label>
-            <Switch id="inpaint-switch" checked={enableInpaintBg} onCheckedChange={onSetEnableInpaintBg} />
+          <div className="flex items-center justify-between rounded-lg border bg-muted/20 p-3 min-h-[44px]">
+            <Label htmlFor="remove-bg-switch" className="font-medium cursor-pointer">1. Remove Background</Label>
+            <Switch id="remove-bg-switch" checked={enableRemoveBg} onCheckedChange={onSetEnableRemoveBg} aria-label="Toggle Remove Background stage" />
           </div>
-          {enableInpaintBg && (
-            <Input
-              placeholder="Contoh: soft cafe background with warm light"
-              value={inpaintPrompt}
-              onChange={(event) => onSetInpaintPrompt(event.target.value)}
-            />
-          )}
-        </div>
 
-        <div className="space-y-2 rounded-lg border p-3">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="generate-switch" className="font-medium">3. Generate Background</Label>
-            <Switch id="generate-switch" checked={enableGenerateBg} onCheckedChange={onSetEnableGenerateBg} />
+          <div className="space-y-2 rounded-lg border bg-muted/20 p-3">
+            <div className="flex items-center justify-between min-h-[44px]">
+              <Label htmlFor="inpaint-switch" className="font-medium cursor-pointer">2. Inpaint Background</Label>
+              <Switch id="inpaint-switch" checked={enableInpaintBg} onCheckedChange={onSetEnableInpaintBg} aria-label="Toggle Inpaint Background stage" />
+            </div>
+            {enableInpaintBg && (
+              <Input
+                aria-label="Inpaint background prompt"
+                placeholder="Contoh: soft cafe background with warm light"
+                value={inpaintPrompt}
+                onChange={(event) => onSetInpaintPrompt(event.target.value)}
+              />
+            )}
           </div>
-          {enableGenerateBg && (
-            <Input
-              placeholder="Contoh: clean studio backdrop, premium look"
-              value={generatePrompt}
-              onChange={(event) => onSetGeneratePrompt(event.target.value)}
-            />
-          )}
-        </div>
 
-        <div className="space-y-2 rounded-lg border p-3">
-          <Label className="font-medium">Preset Pipeline</Label>
+          <div className="space-y-2 rounded-lg border bg-muted/20 p-3">
+            <div className="flex items-center justify-between min-h-[44px]">
+              <Label htmlFor="generate-switch" className="font-medium cursor-pointer">3. Generate Background</Label>
+              <Switch id="generate-switch" checked={enableGenerateBg} onCheckedChange={onSetEnableGenerateBg} aria-label="Toggle Generate Background stage" />
+            </div>
+            {enableGenerateBg && (
+              <Input
+                aria-label="Generate background prompt"
+                placeholder="Contoh: clean studio backdrop, premium look"
+                value={generatePrompt}
+                onChange={(event) => onSetGeneratePrompt(event.target.value)}
+              />
+            )}
+          </div>
+        </fieldset>
+
+        {/* ── Presets ── */}
+        <div className="space-y-2 rounded-lg border bg-muted/20 p-3">
+          <p className="text-sm font-semibold text-foreground">Preset Pipeline</p>
           <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={() => onApplyPreset("quick_cutout")}>Quick Cutout</Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => onApplyPreset("studio_rebuild")}>Studio Rebuild</Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => onApplyPreset("branded_ready")}>Branded Ready</Button>
+            <Button type="button" variant="outline" size="sm" className="min-h-[44px]" onClick={() => onApplyPreset("quick_cutout")}>Quick Cutout</Button>
+            <Button type="button" variant="outline" size="sm" className="min-h-[44px]" onClick={() => onApplyPreset("studio_rebuild")}>Studio Rebuild</Button>
+            <Button type="button" variant="outline" size="sm" className="min-h-[44px]" onClick={() => onApplyPreset("branded_ready")}>Branded Ready</Button>
           </div>
         </div>
 
@@ -166,8 +174,9 @@ export function PipelineBuilder({
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="h-7 w-7"
+                                className="h-11 w-11"
                                 disabled={index === 0}
+                                aria-label={`Move ${STAGE_LABELS[stageId]} up`}
                                 onClick={() => onMoveStage(index, -1)}
                               >
                                 <ArrowUp className="w-4 h-4" />
@@ -176,8 +185,9 @@ export function PipelineBuilder({
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="h-7 w-7"
+                                className="h-11 w-11"
                                 disabled={index === stageOrder.length - 1}
+                                aria-label={`Move ${STAGE_LABELS[stageId]} down`}
                                 onClick={() => onMoveStage(index, 1)}
                               >
                                 <ArrowDown className="w-4 h-4" />

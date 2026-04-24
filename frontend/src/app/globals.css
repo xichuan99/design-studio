@@ -41,6 +41,27 @@
   --animate-accordion-up: accordion-up 0.2s ease-out;
   --animate-scroll: scroll 40s linear infinite;
 
+  /* ── Stitch v1.0 ITP Design Tokens ────────────────────────────────────── */
+  /* Used as Tailwind utilities: bg-itp-primary, text-itp-danger, etc.       */
+  --color-itp-primary:       #4da6ff; /* Brand blue */
+  --color-itp-primary-light: #a3d4ff;
+  --color-itp-primary-dark:  #2e5c99;
+  --color-itp-success:       #a3e6a3;
+  --color-itp-warning:       #fff4e6;
+  --color-itp-danger:        #ff6b6b;
+  --color-itp-info:          #4da6ff;
+  --color-itp-surface:       hsl(217.2 32.6% 12%);
+  --color-itp-surface-raised:hsl(217.2 32.6% 17.5%);
+
+  /* Spacing aliases aligned to Stitch spacing scale */
+  --spacing-itp-xs:  4px;
+  --spacing-itp-sm:  8px;
+  --spacing-itp-md:  16px;
+  --spacing-itp-lg:  24px;
+  --spacing-itp-xl:  32px;
+  --spacing-itp-xxl: 48px;
+  /* ─────────────────────────────────────────────────────────────────────── */
+
   @keyframes accordion-down {
     from {
       height: 0;

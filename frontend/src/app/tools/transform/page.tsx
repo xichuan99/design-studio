@@ -343,6 +343,40 @@ export default function TransformPipelinePage() {
           <p className="text-muted-foreground mt-2">
             Gabungkan beberapa transformasi dalam satu proses: remove background, inpaint/generate background, lalu watermark.
           </p>
+
+          {/* Step indicator — Stitch progress pattern */}
+          <nav aria-label="Langkah proses" className="mt-5">
+            <ol className="flex items-center gap-1 sm:gap-2">
+              {(["Upload", "Konfigurasi", "Hasil"] as const).map((label, idx) => {
+                const stepNum = idx + 1;
+                const isActive = step === stepNum;
+                const isDone = step > stepNum;
+                return (
+                  <li key={label} className="flex items-center gap-1 sm:gap-2">
+                    <span
+                      aria-current={isActive ? "step" : undefined}
+                      className={[
+                        "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-colors",
+                        isActive
+                          ? "bg-primary text-primary-foreground"
+                          : isDone
+                          ? "bg-itp-success/20 text-itp-success"
+                          : "bg-muted text-muted-foreground",
+                      ].join(" ")}
+                    >
+                      <span className="h-4 w-4 inline-flex items-center justify-center rounded-full border border-current text-[10px] shrink-0">
+                        {stepNum}
+                      </span>
+                      <span className="hidden sm:inline">{label}</span>
+                    </span>
+                    {idx < 2 && (
+                      <span aria-hidden="true" className="h-px w-4 sm:w-6 bg-border shrink-0" />
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+          </nav>
         </div>
 
         {step === 1 && <ImageDropzone onFileSelect={handleFileSelect} />}

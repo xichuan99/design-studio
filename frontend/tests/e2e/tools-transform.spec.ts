@@ -35,9 +35,10 @@ test.describe('AI Transform Pipeline Tool', () => {
       // Verify frontend submits the job correctly — button becomes disabled/loading
       // or an error/API-unavailable message appears. Full AI completion is not
       // expected in unit-CI environments where the backend is not running.
+      // Disambiguate [role="alert"] from Next.js route announcer by filtering for app error text.
       await expect(
         page.locator('button:has-text("Memproses")').or(
-          page.locator('[role="alert"]')
+          page.locator('[role="alert"]').filter({ hasText: /gagal|error|failed|tidak/i })
         ).or(
           page.getByRole('heading', { name: /Hasil pipeline siap/i })
         )

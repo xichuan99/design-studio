@@ -30,7 +30,12 @@ export function ToolProcessingState({
 
   if (variant === "centered") {
     return (
-      <div className="flex flex-col items-center justify-center py-24 text-center space-y-4">
+      <div
+        role="status"
+        aria-live="polite"
+        aria-label="AI sedang memproses"
+        className="flex flex-col items-center justify-center py-24 text-center space-y-4"
+      >
         <Loader2 className="w-12 h-12 animate-spin text-primary" />
         <h3 className="text-xl font-semibold">{phaseMessage}</h3>
         {description && <p className="text-muted-foreground max-w-md">{description}</p>}
@@ -56,7 +61,12 @@ export function ToolProcessingState({
   }
 
   return (
-    <div className="rounded-xl border bg-muted/40 p-4 space-y-3">
+    <div
+      role="status"
+      aria-live="polite"
+      aria-label="Status pemrosesan AI"
+      className="rounded-xl border bg-muted/40 p-4 space-y-3"
+    >
       <div className="flex items-center justify-between text-sm">
         <span className="font-medium">Status Proses</span>
         <span className="text-muted-foreground">{progressPercent}%</span>
