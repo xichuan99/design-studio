@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { BrandKit } from "@/lib/api";
 import { Palette, Wand2, ImagePlus } from "lucide-react";
@@ -7,6 +7,8 @@ import { GenerationOptions } from "./inputs/GenerationOptions";
 import { ProductSettings } from "./inputs/ProductSettings";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
+import type { CreateStep } from "@/app/create/hooks/useCreateDesign";
+import type { UserIntent } from "@/app/create/types";
 
 interface SidebarInputFormProps {
     createMode: 'generate' | 'redesign';
@@ -37,6 +39,9 @@ interface SidebarInputFormProps {
     activeBrandKit: BrandKit | null;
     brandKitEnabled: boolean;
     setBrandKitEnabled: (val: boolean) => void;
+    currentStep: CreateStep;
+    userIntent: UserIntent;
+    intentFirstEnabled?: boolean;
 }
 
 export function SidebarInputForm({
@@ -47,33 +52,80 @@ export function SidebarInputForm({
     removeProductBg, setRemoveProductBg,
     showManualRef, setShowManualRef, referenceFile, referencePreview, isDragOver,
     fileInputRef, handleFileInputChange, handleRemoveFile, handleDragOver, handleDragLeave, handleDrop,
-    activeBrandKit, brandKitEnabled, setBrandKitEnabled
+    activeBrandKit, brandKitEnabled, setBrandKitEnabled,
+    currentStep,
+    userIntent,
+    intentFirstEnabled = false,
 }: SidebarInputFormProps) {
+    const [referenceSettingsOverride, setReferenceSettingsOverride] = useState<boolean | null>(null);
     const formatStepNumber = showManualRef ? 3 : 2;
     const isGenerateMode = createMode === 'generate';
+    const isIntentFlow = intentFirstEnabled && userIntent !== null;
+    const isBriefStepActive = currentStep === 'input' || currentStep === 'brief';
+    const isResultStepActive = currentStep === 'results' || currentStep === 'generating' || currentStep === 'preview';
+
+    const intentLabel = useMemo(() => {
+        if (userIntent === 'ad_from_photo') return 'Buat Iklan dari Foto';
+        if (userIntent === 'clean_photo') return 'Rapikan Foto Produk';
+        if (userIntent === 'content_from_text') return 'Buat Konten dari Teks';
+        return null;
+    }, [userIntent]);
+
+    const showReferenceSettings =
+        referenceSettingsOverride ?? (!isIntentFlow || userIntent !== 'content_from_text');
 
     return (
         <div className="space-y-6 pt-4">
-            <Tabs value={createMode} onValueChange={(v) => setCreateMode(v as 'generate' | 'redesign')} className="w-full mb-6">
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="generate" disabled={isInputLocked} className="font-medium">
-                        <Wand2 className="w-4 h-4 mr-2" />
-                        Buat dari Brief
-                    </TabsTrigger>
-                    <TabsTrigger value="redesign" disabled={isInputLocked} className="font-medium">
-                        <ImagePlus className="w-4 h-4 mr-2" />
-                        Ubah dari Foto
-                    </TabsTrigger>
-                </TabsList>
-            </Tabs>
+            {isIntentFlow ? (
+                <div className="space-y-3 rounded-xl border bg-muted/20 p-3">
+                    <div>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Flow Aktif</p>
+                        <p className="text-sm font-semibold text-foreground mt-1">{intentLabel}</p>
+                    </div>
+                    <ol className="grid grid-cols-3 gap-2">
+                        <li>
+                            <div className="rounded-md px-2 py-1.5 bg-primary/15 border border-primary/30 text-primary text-[11px] font-semibold text-center">1. Tujuan</div>
+                        </li>
+                        <li>
+                            <div className={`rounded-md px-2 py-1.5 border text-[11px] font-semibold text-center ${isBriefStepActive ? 'bg-primary/15 border-primary/30 text-primary' : 'bg-muted border-border text-muted-foreground'}`}>
+                                2. Brief
+                            </div>
+                        </li>
+                        <li>
+                            <div className={`rounded-md px-2 py-1.5 border text-[11px] font-semibold text-center ${isResultStepActive ? 'bg-primary/15 border-primary/30 text-primary' : 'bg-muted border-border text-muted-foreground'}`}>
+                                3. Hasil
+                            </div>
+                        </li>
+                    </ol>
+                </div>
+            ) : (
+                <Tabs value={createMode} onValueChange={(v) => setCreateMode(v as 'generate' | 'redesign')} className="w-full mb-6">
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="generate" disabled={isInputLocked} className="font-medium">
+                            <Wand2 className="w-4 h-4 mr-2" />
+                            Buat dari Brief
+                        </TabsTrigger>
+                        <TabsTrigger value="redesign" disabled={isInputLocked} className="font-medium">
+                            <ImagePlus className="w-4 h-4 mr-2" />
+                            Ubah dari Foto
+                        </TabsTrigger>
+                    </TabsList>
+                </Tabs>
+            )}
 
             <div className={`space-y-2 ${isGenerateMode ? 'tour-step-1' : ''}`}>
                 <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
                     <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">1</span>
-                    {isGenerateMode ? "Tujuan Desain Anda" : "Arah Redesign"}
+                    {isIntentFlow
+                        ? (userIntent === 'content_from_text' ? 'Brief Konten Anda' : 'Arah Visual Anda')
+                        : (isGenerateMode ? "Tujuan Desain Anda" : "Arah Redesign")}
                 </label>
                 <p className="text-xs leading-relaxed text-muted-foreground">
-                    {isGenerateMode
+                    {isIntentFlow
+                        ? (userIntent === 'content_from_text'
+                            ? "Tulis poin promosi utama. Visual akan disusun otomatis dari brief ini."
+                            : "Tulis hasil yang ingin dicapai agar AI menyiapkan visual yang tepat.")
+                        : isGenerateMode
                         ? "Tulis hasil yang ingin Anda capai. Detail visual dan copy promosi bisa digabung dalam satu brief."
                         : "Jelaskan perubahan yang Anda inginkan agar foto referensi diarahkan ke tampilan baru."}
                 </p>
@@ -132,22 +184,56 @@ export function SidebarInputForm({
             </div>
 
             <div className={`${isInputLocked ? 'opacity-60 pointer-events-none' : ''}`}>
-                <ProductSettings
-                    createMode={createMode}
-                    referenceFile={referenceFile}
-                    referencePreview={referencePreview}
-                    isDragOver={isDragOver}
-                    fileInputRef={fileInputRef}
-                    showManualRef={createMode === 'redesign' ? true : showManualRef}
-                    setShowManualRef={setShowManualRef}
-                    removeProductBg={removeProductBg}
-                    setRemoveProductBg={setRemoveProductBg}
-                    handleFileInputChange={handleFileInputChange}
-                    handleRemoveFile={handleRemoveFile}
-                    handleDragOver={handleDragOver}
-                    handleDragLeave={handleDragLeave}
-                    handleDrop={handleDrop}
-                />
+                {isIntentFlow ? (
+                    <div className="space-y-2 rounded-lg border bg-muted/20 p-3">
+                        <button
+                            type="button"
+                            className="w-full flex items-center justify-between text-left"
+                            onClick={() => setReferenceSettingsOverride(!showReferenceSettings)}
+                        >
+                            <div>
+                                <p className="text-sm font-semibold text-foreground">Foto Produk / Referensi</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">Opsional, aktifkan jika ingin memberi acuan visual.</p>
+                            </div>
+                            <span className="text-xs text-primary font-semibold">{showReferenceSettings ? 'Sembunyikan' : 'Tampilkan'}</span>
+                        </button>
+                        {showReferenceSettings ? (
+                            <ProductSettings
+                                createMode={createMode}
+                                referenceFile={referenceFile}
+                                referencePreview={referencePreview}
+                                isDragOver={isDragOver}
+                                fileInputRef={fileInputRef}
+                                showManualRef={createMode === 'redesign' ? true : showManualRef}
+                                setShowManualRef={setShowManualRef}
+                                removeProductBg={removeProductBg}
+                                setRemoveProductBg={setRemoveProductBg}
+                                handleFileInputChange={handleFileInputChange}
+                                handleRemoveFile={handleRemoveFile}
+                                handleDragOver={handleDragOver}
+                                handleDragLeave={handleDragLeave}
+                                handleDrop={handleDrop}
+                            />
+                        ) : null}
+                    </div>
+                ) : (
+                    <ProductSettings
+                        createMode={createMode}
+                        referenceFile={referenceFile}
+                        referencePreview={referencePreview}
+                        isDragOver={isDragOver}
+                        fileInputRef={fileInputRef}
+                        showManualRef={createMode === 'redesign' ? true : showManualRef}
+                        setShowManualRef={setShowManualRef}
+                        removeProductBg={removeProductBg}
+                        setRemoveProductBg={setRemoveProductBg}
+                        handleFileInputChange={handleFileInputChange}
+                        handleRemoveFile={handleRemoveFile}
+                        handleDragOver={handleDragOver}
+                        handleDragLeave={handleDragLeave}
+                        handleDrop={handleDrop}
+                    />
+                )}
             </div>
 
             {createMode === 'redesign' && (

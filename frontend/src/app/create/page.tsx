@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { redirect, useRouter } from "next/navigation";
-import { Loader2, PanelLeftOpen, PanelLeftClose, ImagePlus, Wand2, Sparkles, Clock, Scissors, X, PanelsTopLeft } from "lucide-react";
+import { Loader2, PanelLeftOpen, PanelLeftClose, ImagePlus, Wand2, Sparkles, Clock, Scissors, X, PanelsTopLeft, ChevronDown } from "lucide-react";
 import { usePostHog } from 'posthog-js/react';
 import { toast } from "sonner";
 import { useProjectApi, ProjectPayload } from "@/lib/api";
@@ -28,6 +28,7 @@ export default function CreatePage() {
     const { getProjects, saveProject } = useProjectApi();
     const [latestProject, setLatestProject] = useState<ProjectPayload | null>(null);
     const [isLoadingProject, setIsLoadingProject] = useState(true);
+    const [showExtendedCreateOptions, setShowExtendedCreateOptions] = useState(false);
 
     useEffect(() => {
         let isMounted = true;
@@ -71,6 +72,7 @@ export default function CreatePage() {
         imageHistory,
         activeImageIndex, setActiveImageIndex,
         showManualRef, setShowManualRef,
+        userIntent,
         fileInputRef,
         isInputLocked,
         handleTogglePromptPart,
@@ -209,6 +211,9 @@ export default function CreatePage() {
                             activeBrandKit={activeBrandKit}
                             brandKitEnabled={brandKitEnabled}
                             setBrandKitEnabled={setBrandKitEnabled}
+                            currentStep={currentStep}
+                            userIntent={userIntent}
+                            intentFirstEnabled={INTENT_FIRST_ENTRY_ENABLED}
                         />
                     </div>
 
@@ -351,8 +356,7 @@ export default function CreatePage() {
                             </h2>
                             
                             {INTENT_FIRST_ENTRY_ENABLED ? (
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl">
-                                    {/* Intent 1: Ad from Photo */}
+                                <div className="w-full max-w-5xl space-y-5">
                                     <button
                                         onClick={async () => {
                                             setUserIntent('ad_from_photo');
@@ -361,85 +365,116 @@ export default function CreatePage() {
                                             setShowManualRef(true);
                                             posthog?.capture('intent_selected', { intent: 'ad_from_photo' });
                                         }}
-                                        className="group flex flex-col items-center text-center p-8 bg-card border shadow-sm hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 rounded-3xl transition-all h-full"
+                                        className="group w-full flex items-center justify-between text-left p-6 md:p-7 bg-card border shadow-sm hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 rounded-3xl transition-all"
                                     >
-                                        <div className="w-20 h-20 mb-6 rounded-2xl bg-primary/10 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
+                                        <div className="max-w-xl">
+                                            <span className="inline-flex rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary mb-3">
+                                                Direkomendasikan
+                                            </span>
+                                            <h3 className="text-2xl font-bold mb-2 text-foreground">Buat Iklan dari Foto</h3>
+                                            <p className="text-muted-foreground leading-relaxed text-sm md:text-base">
+                                                Upload foto produk, kami bantu siapkan konsep visual dan copy yang siap lanjut ke editor.
+                                            </p>
+                                        </div>
+                                        <div className="hidden md:flex w-20 h-20 rounded-2xl bg-primary/10 items-center justify-center group-hover:scale-105 transition-transform duration-300">
                                             <Sparkles className="w-10 h-10 text-primary" />
                                         </div>
-                                        <h3 className="text-xl font-bold mb-2 text-foreground">Buat Iklan dari Foto</h3>
-                                        <p className="text-muted-foreground leading-relaxed text-sm">
-                                            Upload foto produk, kami bantu menyiapkan konsep iklan yang siap posting.
-                                        </p>
                                     </button>
 
-                                    {/* Intent 2: Clean Photo */}
-                                    <button
-                                        onClick={async () => {
-                                            setUserIntent('clean_photo');
-                                            const toastId = toast.loading("Membuka Studio...");
-                                            try {
-                                                const newProject = await saveProject({
-                                                    title: "Rapikan Foto",
-                                                    status: "draft",
-                                                    aspect_ratio: "1:1",
-                                                    canvas_state: {
-                                                        elements: [],
-                                                        backgroundUrl: null,
-                                                        backgroundColor: "#ffffff"
-                                                    }
-                                                });
-                                                toast.dismiss(toastId);
-                                                posthog?.capture('intent_selected', { intent: 'clean_photo' });
-                                                router.push(`/edit/${newProject.id}?panel=bgremoval`);
-                                            } catch {
-                                                toast.error("Gagal membuka studio", { id: toastId });
-                                            }
-                                        }}
-                                        className="group flex flex-col items-center text-center p-8 bg-card border shadow-sm hover:border-indigo-500/50 hover:shadow-xl hover:shadow-indigo-500/5 rounded-3xl transition-all h-full"
-                                    >
-                                        <div className="w-20 h-20 mb-6 rounded-2xl bg-indigo-500/10 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
-                                            <Scissors className="w-10 h-10 text-indigo-500" />
-                                        </div>
-                                        <h3 className="text-xl font-bold mb-2 text-foreground">Rapikan Foto Produk</h3>
-                                        <p className="text-muted-foreground leading-relaxed text-sm">
-                                            Hapus background, rapikan kualitas, lalu lanjut ke editor.
-                                        </p>
-                                    </button>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <button
+                                            onClick={async () => {
+                                                setUserIntent('clean_photo');
+                                                const toastId = toast.loading("Membuka Studio...");
+                                                try {
+                                                    const newProject = await saveProject({
+                                                        title: "Rapikan Foto",
+                                                        status: "draft",
+                                                        aspect_ratio: "1:1",
+                                                        canvas_state: {
+                                                            elements: [],
+                                                            backgroundUrl: null,
+                                                            backgroundColor: "#ffffff"
+                                                        }
+                                                    });
+                                                    toast.dismiss(toastId);
+                                                    posthog?.capture('intent_selected', { intent: 'clean_photo' });
+                                                    router.push(`/edit/${newProject.id}?panel=bgremoval`);
+                                                } catch {
+                                                    toast.error("Gagal membuka studio", { id: toastId });
+                                                }
+                                            }}
+                                            className="group flex items-start gap-3 text-left p-4 bg-card border shadow-sm hover:border-indigo-500/50 hover:shadow-lg hover:shadow-indigo-500/5 rounded-2xl transition-all"
+                                        >
+                                            <div className="w-11 h-11 rounded-xl bg-indigo-500/10 flex items-center justify-center shrink-0">
+                                                <Scissors className="w-5 h-5 text-indigo-500" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-base font-bold text-foreground">Rapikan Foto Produk</h3>
+                                                <p className="text-muted-foreground leading-relaxed text-xs mt-1">
+                                                    Hapus background dan lanjut edit dengan cepat.
+                                                </p>
+                                            </div>
+                                        </button>
 
-                                    {/* Intent 3: Content from Text */}
-                                    <button
-                                        onClick={() => {
-                                            setUserIntent('content_from_text');
-                                            setCreateMode('generate');
-                                            setSidebarOpen(true);
-                                            posthog?.capture('intent_selected', { intent: 'content_from_text' });
-                                        }}
-                                        className="group flex flex-col items-center text-center p-8 bg-card border shadow-sm hover:border-purple-500/50 hover:shadow-xl hover:shadow-purple-500/5 rounded-3xl transition-all h-full"
-                                    >
-                                        <div className="w-20 h-20 mb-6 rounded-2xl bg-purple-500/10 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
-                                            <Wand2 className="w-10 h-10 text-purple-500" />
-                                        </div>
-                                        <h3 className="text-xl font-bold mb-2 text-foreground">Buat Konten dari Teks</h3>
-                                        <p className="text-muted-foreground leading-relaxed text-sm">
-                                            Tulis promomu, lalu kami bantu susun desain yang siap lanjut ke editor.
-                                        </p>
-                                    </button>
+                                        <button
+                                            onClick={() => {
+                                                setUserIntent('content_from_text');
+                                                setCreateMode('generate');
+                                                setSidebarOpen(true);
+                                                posthog?.capture('intent_selected', { intent: 'content_from_text' });
+                                            }}
+                                            className="group flex items-start gap-3 text-left p-4 bg-card border shadow-sm hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/5 rounded-2xl transition-all"
+                                        >
+                                            <div className="w-11 h-11 rounded-xl bg-purple-500/10 flex items-center justify-center shrink-0">
+                                                <Wand2 className="w-5 h-5 text-purple-500" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-base font-bold text-foreground">Buat Konten dari Teks</h3>
+                                                <p className="text-muted-foreground leading-relaxed text-xs mt-1">
+                                                    Tulis ide promomu, AI bantu susun draft visual.
+                                                </p>
+                                            </div>
+                                        </button>
+                                    </div>
 
-                                    <button
-                                        onClick={() => {
-                                            posthog?.capture('intent_selected', { intent: 'carousel_instagram' });
-                                            router.push('/create/carousel');
-                                        }}
-                                        className="group flex flex-col items-center text-center p-8 bg-card border shadow-sm hover:border-emerald-500/50 hover:shadow-xl hover:shadow-emerald-500/5 rounded-3xl transition-all h-full md:col-span-3"
-                                    >
-                                        <div className="w-20 h-20 mb-6 rounded-2xl bg-emerald-500/10 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
-                                            <PanelsTopLeft className="w-10 h-10 text-emerald-500" />
-                                        </div>
-                                        <h3 className="text-xl font-bold mb-2 text-foreground">Carousel Instagram</h3>
-                                        <p className="text-muted-foreground leading-relaxed text-sm max-w-xl">
-                                            Susun 5 sampai 10 slide dari satu topik, edit per slide, lalu export ZIP PNG untuk posting carousel tanpa memecah alur ke tool lain.
-                                        </p>
-                                    </button>
+                                    <div className="rounded-2xl border bg-card/50 p-4">
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowExtendedCreateOptions((prev) => !prev)}
+                                            className="w-full flex items-center justify-between text-left"
+                                        >
+                                            <div>
+                                                <p className="text-sm font-semibold text-foreground">Opsi Lanjutan</p>
+                                                <p className="text-xs text-muted-foreground mt-0.5">
+                                                    Fitur khusus untuk kebutuhan konten yang lebih kompleks.
+                                                </p>
+                                            </div>
+                                            <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${showExtendedCreateOptions ? "rotate-180" : ""}`} />
+                                        </button>
+
+                                        {showExtendedCreateOptions ? (
+                                            <div className="mt-3 pt-3 border-t">
+                                                <button
+                                                    onClick={() => {
+                                                        posthog?.capture('intent_selected', { intent: 'carousel_instagram' });
+                                                        router.push('/create/carousel');
+                                                    }}
+                                                    className="group w-full flex items-start gap-3 text-left p-3 bg-background border hover:border-emerald-500/50 rounded-xl transition-all"
+                                                >
+                                                    <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
+                                                        <PanelsTopLeft className="w-5 h-5 text-emerald-500" />
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="text-sm font-bold text-foreground">Carousel Instagram</h3>
+                                                        <p className="text-muted-foreground leading-relaxed text-xs mt-1">
+                                                            Susun 5 sampai 10 slide dan export ZIP PNG dalam satu alur.
+                                                        </p>
+                                                    </div>
+                                                </button>
+                                            </div>
+                                        ) : null}
+                                    </div>
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl">
