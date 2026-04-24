@@ -172,3 +172,61 @@ async def test_generate_product_scene_closeup_uses_grounded_scale_and_offset(
     assert kwargs["shadow_profile"] == "grounded"
     assert kwargs["scale_factor"] == pytest.approx(0.82)
     assert kwargs["offset_y_ratio"] == pytest.approx(0.56)
+
+
+@pytest.mark.asyncio
+@patch("app.services.product_scene_service.bg_removal_service.inpaint_background")
+@patch("app.services.product_scene_service.bg_removal_service.remove_background")
+@patch("app.services.product_scene_service.generate_background")
+@patch("app.services.product_scene_service.bg_removal_service.composite_with_shadow")
+async def test_generate_product_scene_ultra_uses_object_aware_inpaint(
+    mock_composite,
+    mock_generate,
+    mock_remove_bg,
+    mock_inpaint,
+    mock_image_bytes,
+    mock_no_bg_bytes,
+):
+    mock_remove_bg.return_value = mock_no_bg_bytes
+    mock_inpaint.return_value = b"inpainted_result"
+
+    result = await generate_product_scene(
+        image_bytes=mock_image_bytes,
+        theme="cafe",
+        aspect_ratio="1:1",
+        quality="ultra",
+    )
+
+    assert result == b"inpainted_result"
+    mock_remove_bg.assert_called_once()
+    mock_inpaint.assert_called_once()
+    inpaint_kwargs = mock_inpaint.call_args.kwargs
+    assert isinstance(inpaint_kwargs["original_bytes"], bytes)
+    assert inpaint_kwargs["transparent_png_bytes"] == mock_no_bg_bytes
+    assert "cozy cafe setting" in inpaint_kwargs["prompt"]
+    assert "contact shadows" in inpaint_kwargs["prompt"]
+
+    # Ultra route should skip background-generation and composite path.
+    mock_generate.assert_not_called()
+    mock_composite.assert_not_called()
+
+
+@pytest.mark.asyncio
+@patch("app.services.product_scene_service.bg_removal_service.inpaint_background")
+@patch("app.services.product_scene_service.bg_removal_service.remove_background")
+async def test_generate_product_scene_ultra_inpaint_failure_raises_runtime_error(
+    mock_remove_bg,
+    mock_inpaint,
+    mock_image_bytes,
+    mock_no_bg_bytes,
+):
+    mock_remove_bg.return_value = mock_no_bg_bytes
+    mock_inpaint.side_effect = RuntimeError("inpaint service unavailable")
+
+    with pytest.raises(RuntimeError, match="object-aware"):
+        await generate_product_scene(
+            image_bytes=mock_image_bytes,
+            theme="studio",
+            aspect_ratio="1:1",
+            quality="ultra",
+        )

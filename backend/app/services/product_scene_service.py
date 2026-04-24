@@ -7,12 +7,21 @@ from PIL import Image
 from typing import Dict, Any, Tuple, Optional
 
 from app.services import bg_removal_service
-from app.services.image_service import generate_background, generate_background_ultra
+from app.services.image_service import generate_background
 
 logger = logging.getLogger(__name__)
 
 _AUTO_PAD_RATIO = 0.15
 _SPARSE_NORMALIZE_THRESHOLD = 0.38
+
+_LIGHTING_BY_THEME = {
+    "studio": "three-point studio lighting with key light from left-front and soft fill from right",
+    "nature": "natural directional sunlight from upper-left with soft ambient bounce",
+    "cafe": "warm window light from side-left with gentle interior ambient fill",
+    "minimalist": "clean directional key light from right-front with crisp but controlled shadows",
+    "kitchen": "bright morning key light from left with balanced overhead ambient illumination",
+    "bathroom": "soft diffused spa lighting from front-left with gentle reflective highlights",
+}
 
 
 def _compute_subject_metrics(img: Image.Image) -> Tuple[Optional[Tuple[int, int, int, int]], float, float, float]:
@@ -107,11 +116,11 @@ def _pick_offset_y_ratio(area_ratio: float) -> float:
 # Predefined themes to make it easy for UMKM users without requiring complex prompting
 SCENE_THEMES = {
     "studio": {
-        "visual_prompt": "professional photography studio setup, soft lighting, infinite smooth backdrop gradient, premium product display platform, clean 8k resolution",
+        "visual_prompt": "professional photography studio setup, infinite smooth backdrop gradient, premium product display platform, clean 8k resolution",
         "style": "minimalist",
     },
     "nature": {
-        "visual_prompt": "outdoor nature setting, placed on mossy rock or wooden stump, surrounded by green leaves, dappled sunlight, shallow depth of field, natural lighting",
+        "visual_prompt": "outdoor nature setting, placed on mossy rock or wooden stump, surrounded by green leaves, dappled sunlight, shallow depth of field",
         "style": "bold",
     },
     "cafe": {
@@ -131,6 +140,17 @@ SCENE_THEMES = {
         "style": "elegant",
     },
 }
+
+
+def _build_scene_prompt(theme: str, visual_prompt: str) -> str:
+    """Compose an object-aware scene prompt with explicit lighting guidance."""
+    lighting = _LIGHTING_BY_THEME.get(theme, _LIGHTING_BY_THEME["studio"])
+    return (
+        f"{visual_prompt}, {lighting}, "
+        "maintain realistic contact shadows under the subject, "
+        "harmonize subject color temperature with environment, "
+        "photorealistic commercial product photography"
+    )
 
 
 async def generate_product_scene(
@@ -197,7 +217,28 @@ async def generate_product_scene(
             f"Gagal menghapus background gambar asli. Pastikan foto produk cukup jelas. Error: {str(e)}"
         )
 
-    # Normalize sparse subject geometry, then compute adaptive scale/placement.
+    # 2. Map theme to prompt
+    theme_config = SCENE_THEMES.get(theme, SCENE_THEMES["studio"])
+    scene_prompt = _build_scene_prompt(theme, theme_config["visual_prompt"])
+
+    # 3. Ultra quality path: object-aware inpainting on the original context.
+    if quality == "ultra":
+        logger.debug("Using object-aware inpaint path for product_scene ultra")
+        try:
+            result_bytes = await bg_removal_service.inpaint_background(
+                original_bytes=processed_image_bytes,
+                transparent_png_bytes=no_bg_bytes,
+                prompt=scene_prompt,
+            )
+            logger.info("Product scene generation complete (object-aware ultra)")
+            return result_bytes
+        except Exception as e:
+            logger.error(f"Object-aware inpaint failed for product scene ultra: {e}")
+            raise RuntimeError(
+                f"Gagal membuat product scene object-aware (ultra). Error: {str(e)}"
+            )
+
+    # Standard path only: normalize sparse subject and compute adaptive placement.
     try:
         img = Image.open(io.BytesIO(no_bg_bytes)).convert("RGBA")
         normalized_img = _normalize_sparse_subject(img)
@@ -224,23 +265,14 @@ async def generate_product_scene(
         scale_factor = 0.72
         offset_y_ratio = 0.62
 
-    # 2. Map theme to prompt
-    theme_config = SCENE_THEMES.get(theme, SCENE_THEMES["studio"])
-
-    # 3. Generate background (standard: Flux Pro, ultra: gpt-image-2)
-    logger.debug(f"Generating background prompt: {theme_config['visual_prompt']} [quality={quality}]")
-    if quality == "ultra":
-        bg_result: Dict[str, Any] = await generate_background_ultra(
-            visual_prompt=theme_config["visual_prompt"],
-            aspect_ratio=aspect_ratio,
-        )
-    else:
-        bg_result: Dict[str, Any] = await generate_background(
-            visual_prompt=theme_config["visual_prompt"],
-            style=theme_config["style"],
-            aspect_ratio=aspect_ratio,
-            integrated_text=False,
-        )
+    # 3. Standard quality path: background generation + compositing.
+    logger.debug(f"Generating background prompt: {scene_prompt} [quality={quality}]")
+    bg_result: Dict[str, Any] = await generate_background(
+        visual_prompt=scene_prompt,
+        style=theme_config["style"],
+        aspect_ratio=aspect_ratio,
+        integrated_text=False,
+    )
 
     # 4. Fetch the generated background image
     logger.debug("Downloading generated background...")
