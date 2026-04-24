@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { BrandKit } from "@/lib/api";
-import { Palette, Wand2, ImagePlus } from "lucide-react";
+import { ChevronDown, Palette, Wand2, ImagePlus } from "lucide-react";
 import { DimensionPresets } from "./inputs/DimensionPresets";
 import { GenerationOptions } from "./inputs/GenerationOptions";
 import { ProductSettings } from "./inputs/ProductSettings";
@@ -193,11 +193,14 @@ export function SidebarInputForm({
                         >
                             <div>
                                 <p className="text-sm font-semibold text-foreground">Foto Produk / Referensi</p>
-                                <p className="text-xs text-muted-foreground mt-0.5">Opsional, aktifkan jika ingin memberi acuan visual.</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">Opsional, tambahkan jika ingin acuan visual.</p>
                             </div>
-                            <span className="text-xs text-primary font-semibold">{showReferenceSettings ? 'Sembunyikan' : 'Tampilkan'}</span>
+                            <div className="flex items-center gap-1">
+                                <span className="text-xs text-primary font-semibold">{showReferenceSettings ? 'Sembunyikan' : 'Tampilkan'}</span>
+                                <ChevronDown className={`w-4 h-4 text-primary transition-transform ${showReferenceSettings ? 'rotate-180' : ''}`} />
+                            </div>
                         </button>
-                        {showReferenceSettings ? (
+                        <div className={`overflow-hidden transition-all duration-300 ease-out ${showReferenceSettings ? 'max-h-[560px] opacity-100 pt-2' : 'max-h-0 opacity-0'}`}>
                             <ProductSettings
                                 createMode={createMode}
                                 referenceFile={referenceFile}
@@ -214,7 +217,7 @@ export function SidebarInputForm({
                                 handleDragLeave={handleDragLeave}
                                 handleDrop={handleDrop}
                             />
-                        ) : null}
+                        </div>
                     </div>
                 ) : (
                     <ProductSettings

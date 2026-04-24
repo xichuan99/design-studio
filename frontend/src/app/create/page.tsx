@@ -373,7 +373,7 @@ export default function CreatePage() {
                                             </span>
                                             <h3 className="text-2xl font-bold mb-2 text-foreground">Buat Iklan dari Foto</h3>
                                             <p className="text-muted-foreground leading-relaxed text-sm md:text-base">
-                                                Upload foto produk, kami bantu siapkan konsep visual dan copy yang siap lanjut ke editor.
+                                                Upload foto produk, lalu lanjutkan ke konsep visual siap edit.
                                             </p>
                                         </div>
                                         <div className="hidden md:flex w-20 h-20 rounded-2xl bg-primary/10 items-center justify-center group-hover:scale-105 transition-transform duration-300">
@@ -412,7 +412,7 @@ export default function CreatePage() {
                                             <div>
                                                 <h3 className="text-base font-bold text-foreground">Rapikan Foto Produk</h3>
                                                 <p className="text-muted-foreground leading-relaxed text-xs mt-1">
-                                                    Hapus background dan lanjut edit dengan cepat.
+                                                    Bersihkan background dan kualitas foto dalam satu alur.
                                                 </p>
                                             </div>
                                         </button>
@@ -432,7 +432,7 @@ export default function CreatePage() {
                                             <div>
                                                 <h3 className="text-base font-bold text-foreground">Buat Konten dari Teks</h3>
                                                 <p className="text-muted-foreground leading-relaxed text-xs mt-1">
-                                                    Tulis ide promomu, AI bantu susun draft visual.
+                                                    Tulis brief singkat, AI bantu susun draft visual.
                                                 </p>
                                             </div>
                                         </button>
@@ -453,8 +453,8 @@ export default function CreatePage() {
                                             <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${showExtendedCreateOptions ? "rotate-180" : ""}`} />
                                         </button>
 
-                                        {showExtendedCreateOptions ? (
-                                            <div className="mt-3 pt-3 border-t">
+                                        <div className={`overflow-hidden transition-all duration-300 ease-out ${showExtendedCreateOptions ? "max-h-40 opacity-100 mt-3 pt-3 border-t" : "max-h-0 opacity-0"}`}>
+                                            <div>
                                                 <button
                                                     onClick={() => {
                                                         posthog?.capture('intent_selected', { intent: 'carousel_instagram' });
@@ -468,12 +468,12 @@ export default function CreatePage() {
                                                     <div>
                                                         <h3 className="text-sm font-bold text-foreground">Carousel Instagram</h3>
                                                         <p className="text-muted-foreground leading-relaxed text-xs mt-1">
-                                                            Susun 5 sampai 10 slide dan export ZIP PNG dalam satu alur.
+                                                            Susun 5-10 slide dan export ZIP PNG langsung.
                                                         </p>
                                                     </div>
                                                 </button>
                                             </div>
-                                        ) : null}
+                                        </div>
                                     </div>
                                 </div>
                             ) : (
