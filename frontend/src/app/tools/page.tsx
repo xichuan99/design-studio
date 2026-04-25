@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { useEffect } from "react";
+import { usePostHog } from "posthog-js/react";
 import { Loader2 } from "lucide-react";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +12,12 @@ import { badgeClassName, toolSections } from "@/lib/tool-catalog";
 
 export default function ToolsHubPage() {
   const { status } = useSession();
+  const posthog = usePostHog();
+
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    posthog?.capture("tools_hub_viewed", { source: "authenticated_app" });
+  }, [posthog, status]);
 
   if (status === "loading") {
     return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
@@ -34,11 +42,11 @@ export default function ToolsHubPage() {
         </section>
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          <Link href="/tools/background-swap" className="rounded-3xl border bg-card p-6 transition-colors hover:bg-muted/40">
+          <Link href="/tools/background-swap" className="rounded-3xl border bg-card p-6 transition-colors hover:bg-muted/40" onClick={() => posthog?.capture("tools_hub_tool_clicked", { tool_name: "AI Background Swap", tool_href: "/tools/background-swap", section: "featured" })}>
             <p className="text-sm font-semibold text-foreground">Single image flow</p>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">Upload satu foto, review before/after, lalu pilih download atau lanjut ke canvas.</p>
           </Link>
-          <Link href="/tools/batch-process" className="rounded-3xl border bg-card p-6 transition-colors hover:bg-muted/40">
+          <Link href="/tools/batch-process" className="rounded-3xl border bg-card p-6 transition-colors hover:bg-muted/40" onClick={() => posthog?.capture("tools_hub_tool_clicked", { tool_name: "Batch Photo Processor", tool_href: "/tools/batch-process", section: "featured" })}>
             <p className="text-sm font-semibold text-foreground">Batch processing</p>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">Proses banyak file sekaligus, lihat progres per item, dan pilih hasil yang ingin diteruskan.</p>
           </Link>
@@ -57,7 +65,7 @@ export default function ToolsHubPage() {
               </CardHeader>
               <CardContent className="grid gap-3">
                 {section.items.map((item) => (
-                  <Link key={item.href} href={item.href} className="flex items-start gap-4 rounded-2xl border bg-muted/20 px-4 py-4 transition-colors hover:bg-muted/50">
+                  <Link key={item.href} href={item.href} className="flex items-start gap-4 rounded-2xl border bg-muted/20 px-4 py-4 transition-colors hover:bg-muted/50" onClick={() => posthog?.capture("tools_hub_tool_clicked", { tool_name: item.title, tool_href: item.href, section: section.title })}>
                     <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-background shadow-sm">
                       <item.Icon className="h-5 w-5 text-primary" />
                     </div>

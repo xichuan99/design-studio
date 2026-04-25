@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePostHog } from "posthog-js/react";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { BatchImageDropzone } from "@/components/tools/BatchImageDropzone";
@@ -78,9 +78,34 @@ export default function BatchProcessPage() {
   const { openInEditor, isLoading: handoffLoading } = useToolHandoff();
   const api = useProjectApi();
 
+  useEffect(() => {
+    posthog?.capture("batch_process_step_changed", { step, files_count: files.length, operation });
+  }, [files.length, operation, posthog, step]);
+
+  useEffect(() => {
+    if (step !== 3 || batchResult.itemResults.length === 0) return;
+    posthog?.capture("tool_result_viewed", {
+      tool_name: "batch",
+      operation,
+      success_count: batchResult.success,
+      error_count: batchResult.error,
+      item_count: batchResult.itemResults.length,
+    });
+  }, [batchResult.error, batchResult.itemResults.length, batchResult.success, operation, posthog, step]);
+
   const handleFilesSelect = (selectedFiles: File[]) => {
     setFiles(selectedFiles);
     setStep(2);
+  };
+
+  const handleOperationChange = (nextOperation: string) => {
+    setOperation(nextOperation);
+    posthog?.capture("batch_operation_selected", { operation: nextOperation });
+  };
+
+  const handleQualityChange = (nextQuality: "standard" | "ultra") => {
+    setModelQuality(nextQuality);
+    posthog?.capture("batch_quality_toggled", { quality: nextQuality, operation });
   };
 
   const calculateTotalCost = () => {
@@ -254,7 +279,7 @@ export default function BatchProcessPage() {
                       name="operation" 
                       className="mt-1" 
                       checked={operation === op.id} 
-                      onChange={() => setOperation(op.id)} 
+                      onChange={() => handleOperationChange(op.id)} 
                     />
                     <div>
                       <div className="font-semibold">{op.name}</div>
@@ -270,7 +295,7 @@ export default function BatchProcessPage() {
                 <div className="space-y-3 p-4 border rounded-xl bg-card">
                   <QualityToggle
                     value={modelQuality}
-                    onChange={setModelQuality}
+                    onChange={handleQualityChange}
                     standardCost={40}
                     className="mb-3"
                   />

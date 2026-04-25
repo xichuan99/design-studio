@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { usePostHog } from "posthog-js/react";
 import { Loader2 } from "lucide-react";
 import WebFont from 'webfontloader';
 import { toast } from "sonner";
@@ -59,6 +60,7 @@ function parseImportQueue(value: unknown): ImportQueueItem[] {
 export default function EditorPage() {
     const { projectId } = useParams();
     const { status } = useSession();
+    const posthog = usePostHog();
     const { getProject, saveProject } = useProjectApi();
     const { loadState } = useCanvasStore();
 
@@ -284,6 +286,19 @@ export default function EditorPage() {
             console.warn("Failed to persist workflow hydration state", err);
         });
     }, [loadingStage, projectId, loadedProjectMeta, saveProject]);
+
+    useEffect(() => {
+        if (loadingStage !== 'ready' || !projectId || !loadedProjectMeta) return;
+        const workflow = isRecord(loadedProjectMeta.canvasState.workflow) ? loadedProjectMeta.canvasState.workflow : null;
+        posthog?.capture("editor_loaded", {
+            project_id: projectId,
+            workflow_source: typeof workflow?.sourceTool === "string" ? workflow.sourceTool : "direct",
+            entry_mode: typeof workflow?.entryMode === "string" ? workflow.entryMode : null,
+            intent: typeof workflow?.intent === "string" ? workflow.intent : null,
+            has_background: hasBackgroundRef.current,
+            has_elements: Array.isArray(loadedProjectMeta.canvasState.elements) && loadedProjectMeta.canvasState.elements.length > 0,
+        });
+    }, [loadedProjectMeta, loadingStage, posthog, projectId]);
 
     // Safety timeout: if image takes more than 8 seconds, proceed anyway
     useEffect(() => {

@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { usePostHog } from "posthog-js/react";
 import { useProjectEndpoints } from "@/lib/api/projectApi";
 import { toast } from "sonner";
 import type { CopywritingVariation } from "@/lib/api";
@@ -28,6 +29,7 @@ export interface ToolHandoffOptions {
  */
 export function useToolHandoff() {
   const router = useRouter();
+  const posthog = usePostHog();
   const { saveProject } = useProjectEndpoints();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -55,6 +57,15 @@ export function useToolHandoff() {
         if (copyVariants && copyVariants.length > 0) workflow.copyVariants = copyVariants;
         if (importQueue && importQueue.length > 0) workflow.importQueue = importQueue;
 
+        posthog?.capture("editor_handoff_initiated", {
+          source_tool: sourceTool,
+          source_job_id: jobId ?? null,
+          intent: intent ?? null,
+          entry_mode: workflow.entryMode,
+          has_copy_variants: !!copyVariants?.length,
+          import_queue_count: importQueue?.length ?? 0,
+        });
+
         const project = await saveProject({
           title: title ?? `Hasil ${sourceTool}`,
           status: "draft",
@@ -71,7 +82,7 @@ export function useToolHandoff() {
         setIsLoading(false);
       }
     },
-    [router, saveProject]
+    [posthog, router, saveProject]
   );
 
   return { openInEditor, isLoading };
