@@ -26,6 +26,42 @@ const channels = [
     { id: "ads", label: "Ads", icon: Megaphone },
 ];
 
+const goalExamples: Record<string, string> = {
+    promo: "Contoh: promo bundling akhir pekan dengan CTA jelas.",
+    catalog: "Contoh: katalog 3-5 produk dengan layout rapi dan konsisten.",
+    ads: "Contoh: kreatif iklan fokus benefit utama dalam 3 detik pertama.",
+};
+
+const styleExamples: Record<string, string> = {
+    "Minimal clean": "Contoh: ruang putih lega, elemen sedikit, fokus produk.",
+    "Professional tech": "Contoh: komposisi tegas, modern, dan informatif.",
+    "Premium soft": "Contoh: tone elegan, warna lembut, nuansa eksklusif.",
+    "Bold marketplace": "Contoh: warna kontras, harga menonjol, impact tinggi.",
+};
+
+const channelExamples: Record<string, string> = {
+    instagram: "Contoh: visual square dengan headline singkat yang mudah di-scan.",
+    marketplace: "Contoh: fokus manfaat, detail produk, dan kejelasan harga.",
+    ads: "Contoh: komposisi vertikal dengan hook kuat dan CTA cepat.",
+};
+
+const productTypeExamples: Record<string, string> = {
+    "Makanan & Minuman": "Contoh: tonjolkan tekstur, rasa, dan porsi.",
+    Fashion: "Contoh: fokus style, material, dan look pemakaian.",
+    Beauty: "Contoh: tonjolkan hasil pemakaian dan kesan clean.",
+    Elektronik: "Contoh: tampilkan fitur inti dengan visual tegas.",
+    "Rumah Tangga": "Contoh: fokus fungsi praktis dan before/after.",
+    Lainnya: "Contoh: tonjolkan benefit utama yang paling dicari.",
+};
+
+const copyToneExamples: Record<string, string> = {
+    Friendly: "Contoh: bahasa hangat, santai, dan mudah dipahami.",
+    Persuasif: "Contoh: menekankan manfaat plus alasan untuk aksi sekarang.",
+    Premium: "Contoh: bahasa elegan, percaya diri, dan refined.",
+    Urgent: "Contoh: menekankan batas waktu, stok, atau momentum.",
+    Edukatif: "Contoh: jelaskan value produk dengan poin informatif.",
+};
+
 export default function DesignInterviewPage() {
     const { status } = useSession();
     const router = useRouter();
@@ -113,7 +149,7 @@ export default function DesignInterviewPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-xl">1. Apa tujuan desain ini?</CardTitle>
-                        <CardDescription>Pilih tujuan utama agar engine desain nanti bisa diarahkan lebih presisi.</CardDescription>
+                        <CardDescription>Pilih satu tujuan utama.</CardDescription>
                     </CardHeader>
                     <CardContent className="grid gap-3 md:grid-cols-3">
                         {goals.map((item) => (
@@ -135,13 +171,16 @@ export default function DesignInterviewPage() {
                                 <p className="mt-4 text-sm font-semibold text-foreground">{item.label}</p>
                             </button>
                         ))}
+                        <p className="md:col-span-3 rounded-xl border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+                            {goalExamples[goal]}
+                        </p>
                     </CardContent>
                 </Card>
 
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-xl">2. Jenis produk</CardTitle>
-                        <CardDescription>Pilih kategori utama agar framing visual dan copy lebih relevan.</CardDescription>
+                        <CardDescription>Pilih kategori utama produk.</CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-wrap gap-2">
                         {productTypes.map((item) => (
@@ -160,13 +199,16 @@ export default function DesignInterviewPage() {
                                 {item}
                             </button>
                         ))}
+                        <p className="w-full rounded-xl border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+                            {productTypeExamples[productType]}
+                        </p>
                     </CardContent>
                 </Card>
 
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-xl">3. Gaya visual yang diinginkan</CardTitle>
-                        <CardDescription>Pilih satu arah utama. Anda masih bisa refine lagi di langkah berikutnya.</CardDescription>
+                        <CardDescription>Pilih arah visual utama.</CardDescription>
                     </CardHeader>
                     <CardContent className="grid gap-3 sm:grid-cols-2">
                         {visualStyles.map((item) => (
@@ -193,13 +235,16 @@ export default function DesignInterviewPage() {
                                 </div>
                             </button>
                         ))}
+                        <p className="sm:col-span-2 rounded-xl border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+                            {styleExamples[style]}
+                        </p>
                     </CardContent>
                 </Card>
 
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-xl">4. Channel utama</CardTitle>
-                        <CardDescription>Channel memengaruhi framing, hierarchy, dan konteks copy saat preview nanti.</CardDescription>
+                        <CardDescription>Pilih tempat desain paling sering dipakai.</CardDescription>
                     </CardHeader>
                     <CardContent className="grid gap-3 md:grid-cols-3">
                         {channels.map((item) => (
@@ -219,13 +264,16 @@ export default function DesignInterviewPage() {
                                 <p className="mt-4 text-sm font-semibold text-foreground">{item.label}</p>
                             </button>
                         ))}
+                        <p className="md:col-span-3 rounded-xl border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+                            {channelExamples[channel]}
+                        </p>
                     </CardContent>
                 </Card>
 
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-xl">5. Tone copy</CardTitle>
-                        <CardDescription>Pilih nada pesan utama untuk headline dan CTA awal.</CardDescription>
+                        <CardDescription>Pilih nada komunikasi utama.</CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-wrap gap-2">
                         {copyTones.map((item) => (
@@ -244,6 +292,9 @@ export default function DesignInterviewPage() {
                                 {item}
                             </button>
                         ))}
+                        <p className="w-full rounded-xl border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+                            {copyToneExamples[copyTone]}
+                        </p>
                     </CardContent>
                 </Card>
 
