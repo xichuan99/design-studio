@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { redirect, useRouter } from "next/navigation";
-import { Loader2, Plus, PenSquare, Trash2, Layers, MoreVertical, Copy, Edit2, Check, X, Wand2, Search, ArrowUpDown, SearchX, FolderOpen, Folder as FolderIcon } from "lucide-react";
+import { Loader2, Plus, PenSquare, Trash2, Layers, MoreVertical, Copy, Edit2, Check, X, Search, ArrowUpDown, SearchX, FolderOpen, Folder as FolderIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardFooter } from "@/components/ui/card";
 import { useProjectApi } from "@/lib/api";
@@ -250,17 +250,6 @@ export default function ProjectsPage() {
                         </div>
                         <Button onClick={handleNewDesignClick} size="lg" className="gap-2 font-semibold shadow-md hover:shadow-lg transition-shadow w-full sm:w-auto">
                             <Plus className="w-5 h-5" /> Desain Baru
-                        </Button>
-                    </div>
-
-                    {/* AI Tools Banner */}
-                    <div className="bg-gradient-to-r from-primary/10 to-blue-500/10 border border-primary/20 rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <div>
-                            <h2 className="text-xl font-bold flex items-center gap-2"><Wand2 className="w-5 h-5 text-primary" /> AI Photo Tools Baru!</h2>
-                            <p className="text-muted-foreground text-sm mt-1">Sulap foto buram jadi HD atau ganti background produk dengan otomatis.</p>
-                        </div>
-                        <Button onClick={() => router.push('/tools')} variant="default" className="shrink-0 shadow-sm">
-                            Coba Fitur AI
                         </Button>
                     </div>
 

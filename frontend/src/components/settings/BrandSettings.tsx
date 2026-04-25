@@ -180,10 +180,14 @@ export default function BrandSettings({ selectedFolderId }: { selectedFolderId?:
                     logo_url: editingBrand.logos && editingBrand.logos.length > 0 ? editingBrand.logos[0] : null,
                     is_active: false
                 };
-                await api.saveBrandKit(payload);
+                const savedKit = await api.saveBrandKit(payload);
+                await refreshKits();
+                setEditingBrand(savedKit); // Stay in edit mode with the new ID so user can upload PDF
             }
-            await refreshKits();
-            setEditingBrand(null); // Return to list view
+            if (editingBrand.id) {
+                await refreshKits();
+                setEditingBrand(null); // Return to list view after update
+            }
             setShowStrategyReport(false);
         } catch (error) {
              console.error("Error saving brand kit", error);
@@ -366,43 +370,94 @@ export default function BrandSettings({ selectedFolderId }: { selectedFolderId?:
                             const secondaryFont = editingBrand.typography?.secondaryFont || 'Inter';
                             const allSecondaryFonts = SUPPORTED_FONTS.includes(secondaryFont) ? SUPPORTED_FONTS : [secondaryFont, ...SUPPORTED_FONTS];
 
+                            const loadGoogleFont = (fontName: string) => {
+                                if (!fontName.trim()) return;
+                                const formatted = fontName.trim().replace(/ /g, '+');
+                                const linkId = `gfont-${formatted}`;
+                                if (!document.getElementById(linkId)) {
+                                    const link = document.createElement('link');
+                                    link.id = linkId;
+                                    link.rel = 'stylesheet';
+                                    link.href = `https://fonts.googleapis.com/css2?family=${formatted}:wght@400;500;600;700&display=swap`;
+                                    document.head.appendChild(link);
+                                }
+                            };
+
                             return (
                                 <div className="grid grid-cols-2 gap-4">
-                                     <div>
+                                     <div className="space-y-2">
                                         <Label className="text-xs text-muted-foreground">Primary Font (Headline)</Label>
                                         <Select 
-                                            value={editingBrand.typography?.primaryFont || 'Inter'} 
-                                            onValueChange={val => setEditingBrand({...editingBrand, typography: { ...editingBrand.typography, primaryFont: val }})}
+                                            value={SUPPORTED_FONTS.includes(primaryFont) ? primaryFont : '__custom__'}
+                                            onValueChange={val => {
+                                                if (val === '__custom__') return;
+                                                loadGoogleFont(val);
+                                                setEditingBrand({...editingBrand, typography: { ...editingBrand.typography, primaryFont: val }});
+                                            }}
                                         >
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Pilih Font" />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {allPrimaryFonts.map(font => (
-                                                    <SelectItem key={font} value={font} style={{ fontFamily: font }}>
+                                                    <SelectItem key={font} value={font} style={{ fontFamily: `'${font}', Inter, sans-serif` }}>
                                                         {font}
                                                     </SelectItem>
                                                 ))}
+                                                <SelectItem value="__custom__" className="text-primary">+ Ketik font lain...</SelectItem>
                                             </SelectContent>
                                         </Select>
+                                        <Input
+                                            placeholder="Atau ketik nama Google Font..."
+                                            defaultValue={!SUPPORTED_FONTS.includes(primaryFont) ? primaryFont : ''}
+                                            onBlur={e => {
+                                                const val = e.target.value.trim();
+                                                if (!val) return;
+                                                loadGoogleFont(val);
+                                                setEditingBrand({...editingBrand, typography: { ...editingBrand.typography, primaryFont: val }});
+                                            }}
+                                            className="text-xs h-8"
+                                        />
+                                        <p className="text-xs text-muted-foreground px-1" style={{ fontFamily: `'${primaryFont}', Inter, sans-serif` }}>
+                                            Preview: <span className="font-semibold">{primaryFont}</span> — Aa Bb Cc 123
+                                        </p>
                                      </div>
-                                     <div>
+                                     <div className="space-y-2">
                                         <Label className="text-xs text-muted-foreground">Secondary Font (Body)</Label>
                                         <Select 
-                                            value={editingBrand.typography?.secondaryFont || 'Inter'} 
-                                            onValueChange={val => setEditingBrand({...editingBrand, typography: { ...editingBrand.typography, secondaryFont: val }})}
+                                            value={SUPPORTED_FONTS.includes(secondaryFont) ? secondaryFont : '__custom__'}
+                                            onValueChange={val => {
+                                                if (val === '__custom__') return;
+                                                loadGoogleFont(val);
+                                                setEditingBrand({...editingBrand, typography: { ...editingBrand.typography, secondaryFont: val }});
+                                            }}
                                         >
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Pilih Font" />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {allSecondaryFonts.map(font => (
-                                                    <SelectItem key={font} value={font} style={{ fontFamily: font }}>
+                                                    <SelectItem key={font} value={font} style={{ fontFamily: `'${font}', Inter, sans-serif` }}>
                                                         {font}
                                                     </SelectItem>
                                                 ))}
+                                                <SelectItem value="__custom__" className="text-primary">+ Ketik font lain...</SelectItem>
                                             </SelectContent>
                                         </Select>
+                                        <Input
+                                            placeholder="Atau ketik nama Google Font..."
+                                            defaultValue={!SUPPORTED_FONTS.includes(secondaryFont) ? secondaryFont : ''}
+                                            onBlur={e => {
+                                                const val = e.target.value.trim();
+                                                if (!val) return;
+                                                loadGoogleFont(val);
+                                                setEditingBrand({...editingBrand, typography: { ...editingBrand.typography, secondaryFont: val }});
+                                            }}
+                                            className="text-xs h-8"
+                                        />
+                                        <p className="text-xs text-muted-foreground px-1" style={{ fontFamily: `'${secondaryFont}', Inter, sans-serif` }}>
+                                            Preview: <span className="font-semibold">{secondaryFont}</span> — Aa Bb Cc 123
+                                        </p>
                                      </div>
                                 </div>
                             );

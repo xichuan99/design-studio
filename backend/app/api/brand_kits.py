@@ -426,7 +426,7 @@ async def upload_brand_guidelines(
     if not kit:
         raise NotFoundError(detail="Brand Kit not found.")
 
-    if file.content_type != "application/pdf":
+    if file.content_type not in ("application/pdf", "application/octet-stream"):
         raise ValidationError(detail="Only PDF files are supported currently.")
 
     try:

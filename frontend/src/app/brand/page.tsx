@@ -35,9 +35,9 @@ export default function BrandPage() {
     return (
         <div className="min-h-screen bg-background flex flex-col">
             <AppHeader />
-            <div className="flex-1 flex overflow-hidden">
+            <div className="flex-1 flex max-w-[1600px] w-full mx-auto">
                 {/* Sidebar Workspace */}
-                <div className="hidden md:block w-64 border-r border-border/50 shrink-0">
+                <div className="w-64 shrink-0 border-r border-border/50 p-6 hidden md:block">
                     <FolderSidebar
                         selectedFolderId={selectedFolderId}
                         onSelectFolder={setSelectedFolderId}
