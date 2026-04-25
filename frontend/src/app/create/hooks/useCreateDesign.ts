@@ -104,16 +104,7 @@ export function useCreateDesign() {
     // Load state from localStorage on mount
     useEffect(() => {
         const saved = localStorage.getItem('smartdesign_create_state');
-        const urlParams = window.location.search ? new URLSearchParams(window.location.search) : null;
-        const queryImageUrl = urlParams ? urlParams.get('imageUrl') : null;
-
-        if (queryImageUrl) {
-            setImageHistory([{ url: queryImageUrl, prompt: "Imported from AI Tools" }]);
-            setActiveImageIndex(0);
-            setCurrentStep('preview');
-            setParsedData(null);
-            setRawText("Imported from AI Tools");
-        } else if (saved) {
+        if (saved) {
             try {
                 const parsed: SavedCreateState = JSON.parse(saved);
                 setRawText(parsed.rawText || "");

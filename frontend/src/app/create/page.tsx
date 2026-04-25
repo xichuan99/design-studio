@@ -596,9 +596,8 @@ function CreatePageContent() {
     const { status } = useSession();
     const router = useRouter();
     const searchParams = useSearchParams();
-    const hasImageHandoff = Boolean(searchParams.get("imageUrl"));
     const legacyRequested = searchParams.get("legacy") === "1";
-    const shouldUseLegacyRoute = !INTENT_FIRST_ENTRY_ENABLED || hasImageHandoff || legacyRequested;
+    const shouldUseLegacyRoute = !INTENT_FIRST_ENTRY_ENABLED || legacyRequested;
 
     useEffect(() => {
         if (status !== "authenticated") return;

@@ -60,7 +60,7 @@ test.describe('AI Transform Pipeline Tool', () => {
   });
 
   test('submits image_bytes payload when starting transform pipeline job', async ({ page }) => {
-    let createPipelinePayload: Record<string, unknown> | null = null;
+    let createPipelinePayload: Record<string, unknown> = {};
 
     await page.route('**/tools/pipeline', async (route) => {
       createPipelinePayload = route.request().postDataJSON() as Record<string, unknown>;
@@ -123,14 +123,13 @@ test.describe('AI Transform Pipeline Tool', () => {
     await page.getByRole('button', { name: /Jalankan Pipeline/i }).click();
 
     await expect(page.getByRole('heading', { name: /Hasil pipeline siap/i })).toBeVisible({ timeout: 15000 });
-    expect(createPipelinePayload).not.toBeNull();
-    const submittedPipelinePayload = createPipelinePayload as Record<string, unknown>;
+    const submittedPipelinePayload = createPipelinePayload;
     expect(submittedPipelinePayload.image_bytes).toBeTruthy();
     expect(submittedPipelinePayload.image_url).toBeUndefined();
   });
 
   test('submits image_bytes payload when running synchronous preview', async ({ page }) => {
-    let previewPayload: Record<string, unknown> | null = null;
+    let previewPayload: Record<string, unknown> = {};
 
     await page.route('**/tools/pipeline/preview', async (route) => {
       previewPayload = route.request().postDataJSON() as Record<string, unknown>;
@@ -165,8 +164,7 @@ test.describe('AI Transform Pipeline Tool', () => {
     await page.getByRole('button', { name: /Preview Cepat/i }).click();
 
     await expect(page.getByRole('heading', { name: /Hasil pipeline siap/i })).toBeVisible({ timeout: 15000 });
-    expect(previewPayload).not.toBeNull();
-    const submittedPreviewPayload = previewPayload as Record<string, unknown>;
+    const submittedPreviewPayload = previewPayload;
     expect(submittedPreviewPayload.image_bytes).toBeTruthy();
     expect(submittedPreviewPayload.image_url).toBeUndefined();
   });
