@@ -26,7 +26,7 @@ async def test_process_single_image_unsupported():
 async def test_process_batch_remove_bg(mock_remove_bg, mock_files):
     mock_remove_bg.side_effect = [b"nobg_1", b"nobg_2"]
 
-    zip_bytes, errors = await process_batch(mock_files, "remove_bg")
+    zip_bytes, errors, item_results = await process_batch(mock_files, "remove_bg")
 
     assert len(errors) == 0
     assert isinstance(zip_bytes, bytes)
@@ -47,7 +47,7 @@ async def test_process_batch_watermark(mock_apply_watermark, mock_files):
     mock_apply_watermark.side_effect = [b"wm_1", b"wm_2"]
 
     # Fails if no logo_bytes
-    _, errors = await process_batch(mock_files, "watermark", {})
+    _, errors, _ = await process_batch(mock_files, "watermark", {})
     assert len(errors) == 2
     assert "Logo bytes are required" in errors[0]["error"]
 
@@ -59,7 +59,7 @@ async def test_process_batch_watermark(mock_apply_watermark, mock_files):
         "scale": 0.5,
         "visibility_preset": "protective",
     }
-    zip_bytes, errors = await process_batch(mock_files, "watermark", params)
+    zip_bytes, errors, _ = await process_batch(mock_files, "watermark", params)
 
     assert len(errors) == 0
     with zipfile.ZipFile(io.BytesIO(zip_bytes), "r") as zf:
@@ -93,7 +93,7 @@ async def test_process_batch_watermark_invalid_visibility_preset_falls_back(
         "visibility_preset": "invalid-preset",
     }
 
-    _, errors = await process_batch(mock_files, "watermark", params)
+    _, errors, _ = await process_batch(mock_files, "watermark", params)
 
     assert errors == []
     mock_apply_watermark.assert_called_with(
@@ -117,9 +117,10 @@ async def test_process_batch_product_scene(mock_generate, mock_files):
         "quality": "ultra",
         "composite_profile": "grounded",
     }
-    zip_bytes, errors = await process_batch(mock_files, "product_scene", params)
+    zip_bytes, errors, item_results = await process_batch(mock_files, "product_scene", params)
 
     assert len(errors) == 0
+    assert len(item_results) == 2
     with zipfile.ZipFile(io.BytesIO(zip_bytes), "r") as zf:
         names = zf.namelist()
         assert "image1_scene_minimalist.jpg" in names
@@ -147,7 +148,7 @@ async def test_process_batch_product_scene_invalid_params_fallback(
         "quality": "hd",
         "composite_profile": "wrong_profile",
     }
-    _, errors = await process_batch(mock_files, "product_scene", params)
+    _, errors, _ = await process_batch(mock_files, "product_scene", params)
 
     assert errors == []
     mock_generate.assert_called_with(
@@ -166,12 +167,13 @@ async def test_process_batch_partial_success(mock_remove_bg):
     mock_remove_bg.side_effect = [b"nobg_1", Exception("API Error")]
 
     files = [("success.jpg", b"1"), ("fail.jpg", b"2")]
-    zip_bytes, errors = await process_batch(files, "remove_bg")
+    zip_bytes, errors, item_results = await process_batch(files, "remove_bg")
 
     # We should have one error
     assert len(errors) == 1
     assert errors[0]["filename"] == "fail.jpg"
     assert "API Error" in errors[0]["error"]
+    assert len(item_results) == 1
 
     # And one successful file in the zip
     with zipfile.ZipFile(io.BytesIO(zip_bytes), "r") as zf:
@@ -187,7 +189,7 @@ async def test_process_batch_makes_duplicate_output_names_unique(mock_remove_bg)
     mock_remove_bg.side_effect = [b"nobg_1", b"nobg_2"]
 
     files = [("image.jpg", b"1"), ("image.jpg", b"2")]
-    zip_bytes, errors = await process_batch(files, "remove_bg")
+    zip_bytes, errors, item_results = await process_batch(files, "remove_bg")
 
     assert errors == []
 
@@ -214,7 +216,7 @@ async def test_process_batch_remove_bg_applies_edge_feathering(mock_remove_bg):
     files = [("img1.jpg", b"1"), ("img2.jpg", b"2")]
     params = {"quality": "standard"}
 
-    zip_bytes, errors = await process_batch(files, "remove_bg", params)
+    zip_bytes, errors, _ = await process_batch(files, "remove_bg", params)
 
     assert len(errors) == 0
     # Verify feathering was called (output should exist and be non-empty)
@@ -237,7 +239,7 @@ async def test_process_batch_remove_bg_with_quality_parameter(mock_remove_bg):
     files = [("image1.jpg", b"1"), ("image2.jpg", b"2")]
     params = {"quality": "ultra"}  # Quality parameter passed
 
-    zip_bytes, errors = await process_batch(files, "remove_bg", params)
+    zip_bytes, errors, _ = await process_batch(files, "remove_bg", params)
 
     assert len(errors) == 0
     with zipfile.ZipFile(io.BytesIO(zip_bytes), "r") as zf:
@@ -255,7 +257,7 @@ async def test_process_batch_remove_bg_with_invalid_quality_fallback(mock_remove
     files = [("image1.jpg", b"1"), ("image2.jpg", b"2")]
     params = {"quality": "invalid_quality"}  # Invalid quality value
 
-    zip_bytes, errors = await process_batch(files, "remove_bg", params)
+    zip_bytes, errors, _ = await process_batch(files, "remove_bg", params)
 
     assert len(errors) == 0  # Should not error, just fallback
     with zipfile.ZipFile(io.BytesIO(zip_bytes), "r") as zf:

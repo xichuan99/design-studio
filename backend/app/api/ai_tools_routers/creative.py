@@ -224,7 +224,7 @@ async def process_batch_images(
         start_time = time.time()
 
         # 1. Process batch
-        zip_bytes, errors = await batch_service.process_batch(
+        zip_bytes, errors, _item_results = await batch_service.process_batch(
             files=file_data, operation=operation, params=params
         )
 

@@ -444,7 +444,7 @@ async def execute_batch_tool_job(job_id: str):
         progress_percent=70,
     )
 
-    zip_bytes, errors = await batch_service.process_batch(
+    zip_bytes, errors, item_results = await batch_service.process_batch(
         files=files,
         operation=operation,
         params=params,
@@ -462,6 +462,17 @@ async def execute_batch_tool_job(job_id: str):
         content_type="application/zip",
         prefix="batch_async",
     )
+
+    # Upload individual items so the frontend can show a per-item gallery
+    uploaded_items = []
+    for filename, img_bytes in item_results:
+        try:
+            ext = filename.rsplit(".", 1)[-1].lower()
+            content_type = "image/png" if ext == "png" else "image/jpeg"
+            item_url = await upload_image(img_bytes, content_type=content_type, prefix="batch_item")
+            uploaded_items.append({"filename": filename, "result_url": item_url})
+        except Exception:
+            pass
 
     success_count = len(files) - len(errors)
     error_count = len(errors)
@@ -491,6 +502,7 @@ async def execute_batch_tool_job(job_id: str):
             "success_count": success_count,
             "error_count": error_count,
             "errors": errors,
+            "item_results": uploaded_items,
         }
         job.payload_json = payload
 

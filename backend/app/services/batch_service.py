@@ -199,7 +199,7 @@ async def process_single_image(
 
 async def process_batch(
     files: List[Tuple[str, bytes]], operation: str, params: Dict[str, Any] = None
-) -> Tuple[bytes, List[Dict[str, str]]]:
+) -> Tuple[bytes, List[Dict[str, str]], List[Tuple[str, bytes]]]:
     """
     Processes a batch of images concurrently and packs the successful ones into a ZIP.
 
@@ -209,9 +209,10 @@ async def process_batch(
         params (Dict[str, Any], optional): Additional parameters for the operation. Defaults to None.
 
     Returns:
-        Tuple[bytes, List[Dict[str, str]]]: A tuple containing:
+        Tuple[bytes, List[Dict[str, str]], List[Tuple[str, bytes]]]: A tuple containing:
             - zip_file_bytes (bytes): The raw bytes of the resulting ZIP file.
-            - errors (List[Dict[str, str]]): A list of dictionaries containing filename and error details for failed items.
+            - errors (List[Dict[str, str]]): A list of dictionaries with filename and error details for failed items.
+            - item_results (List[Tuple[str, bytes]]): Successful items as (new_filename, processed_bytes) pairs.
 
     Raises:
         Exception: Any unhandled exception during the batch processing.
@@ -234,6 +235,7 @@ async def process_batch(
     # Prepare ZIP in memory
     zip_buffer = io.BytesIO()
     errors = []
+    item_results: List[Tuple[str, bytes]] = []
     used_filenames = set()
 
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
@@ -254,6 +256,7 @@ async def process_batch(
             elif processed_bytes and new_filename:
                 unique_filename = _make_unique_filename(new_filename, used_filenames)
                 zip_file.writestr(unique_filename, processed_bytes)
+                item_results.append((unique_filename, processed_bytes))
 
     # Reset buffer pointer
     zip_buffer.seek(0)
@@ -261,4 +264,4 @@ async def process_batch(
     logger.info(
         f"Batch completed. {len(files) - len(errors)} successes, {len(errors)} failures."
     )
-    return zip_buffer.getvalue(), errors
+    return zip_buffer.getvalue(), errors, item_results
