@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Loader2 } from "lucide-react";
 import WebFont from 'webfontloader';
+import { toast } from "sonner";
 
 import { Undo as UndoIcon, Redo as RedoIcon } from 'lucide-react';
 import { EditorTopBar } from "@/components/editor/EditorTopBar";
@@ -32,7 +33,7 @@ const PRELOAD_FONTS = ['Inter', 'Poppins', 'Roboto', 'Playfair Display', 'Montse
 export default function EditorPage() {
     const { projectId } = useParams();
     const { status } = useSession();
-    const { getProject } = useProjectApi();
+    const { getProject, saveProject } = useProjectApi();
     const { loadState } = useCanvasStore();
 
     const [loadingStage, setLoadingStage] = useState<'project' | 'image' | 'ready' | 'error'>('project');
@@ -48,10 +49,22 @@ export default function EditorPage() {
     // Import queue dialog (from batch results)
     const [importQueue, setImportQueue] = useState<ImportQueueItem[]>([]);
     const [importQueueOpen, setImportQueueOpen] = useState(false);
+    const [loadedProjectMeta, setLoadedProjectMeta] = useState<{
+        title: string;
+        status: string;
+        aspectRatio?: string;
+        canvasSchemaVersion?: number;
+        canvasState: Record<string, unknown>;
+    } | null>(null);
+    const workflowHydrationSyncedRef = useRef(false);
     const { canvasWidth, canvasHeight } = useCanvasStore();
 
     // Initialize auto-save hook
     const { saveStatus, forceSave } = useAutoSave(projectId as string | undefined);
+
+    useEffect(() => {
+        workflowHydrationSyncedRef.current = false;
+    }, [projectId]);
 
     // Preload Google Fonts
     useEffect(() => {
@@ -96,6 +109,17 @@ export default function EditorPage() {
             try {
                 setLoadingStage('project');
                 const project = await getProjectRef.current(projectId as string);
+                const projectCanvasState = project.canvas_state && typeof project.canvas_state === "object"
+                    ? (project.canvas_state as Record<string, unknown>)
+                    : {};
+
+                setLoadedProjectMeta({
+                    title: project.title,
+                    status: project.status || "draft",
+                    aspectRatio: project.aspect_ratio,
+                    canvasSchemaVersion: project.canvas_schema_version,
+                    canvasState: projectCanvasState,
+                });
 
                 if (project.canvas_state) {
                     const canvasState = normalizeCanvasState(project.canvas_state);
@@ -138,6 +162,52 @@ export default function EditorPage() {
 
         loadProject();
     }, [status, projectId]);
+
+    // Consume workflow handoff metadata once on first editor load.
+    useEffect(() => {
+        if (loadingStage !== 'ready' || !projectId || !loadedProjectMeta || workflowHydrationSyncedRef.current) return;
+
+        const workflowRaw = loadedProjectMeta.canvasState.workflow;
+        if (!workflowRaw || typeof workflowRaw !== "object") {
+            workflowHydrationSyncedRef.current = true;
+            return;
+        }
+
+        const workflow = workflowRaw as Record<string, unknown>;
+        const sourceTool = typeof workflow.sourceTool === "string" ? workflow.sourceTool : null;
+        const hydratedAt = typeof workflow.hydratedAt === "string" ? workflow.hydratedAt : null;
+
+        const shownKey = `workflow_handoff_shown_${projectId}`;
+        if (sourceTool && !sessionStorage.getItem(shownKey)) {
+            toast.success(`Handoff dari ${sourceTool} berhasil. Anda bisa lanjut edit dari sini.`);
+            sessionStorage.setItem(shownKey, "1");
+        }
+
+        if (hydratedAt) {
+            workflowHydrationSyncedRef.current = true;
+            return;
+        }
+
+        workflowHydrationSyncedRef.current = true;
+        const nextWorkflow = {
+            ...workflow,
+            hydratedAt: new Date().toISOString(),
+        };
+
+        void saveProject({
+            id: projectId as string,
+            title: loadedProjectMeta.title,
+            status: loadedProjectMeta.status,
+            aspect_ratio: loadedProjectMeta.aspectRatio,
+            canvas_schema_version: loadedProjectMeta.canvasSchemaVersion,
+            canvas_state: {
+                ...loadedProjectMeta.canvasState,
+                workflow: nextWorkflow,
+            },
+        }).catch((err: unknown) => {
+            console.warn("Failed to persist workflow hydration state", err);
+        });
+    }, [loadingStage, projectId, loadedProjectMeta, saveProject]);
 
     // Safety timeout: if image takes more than 8 seconds, proceed anyway
     useEffect(() => {
