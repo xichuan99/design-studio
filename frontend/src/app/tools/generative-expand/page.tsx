@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, ArrowLeft, Download, PenSquare, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Maximize } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useToolHandoff } from "@/hooks/useToolHandoff";
 import { toast } from "sonner";
 import { useProjectApi } from "@/lib/api";
 import { useToolJobProgress } from "@/hooks/useToolJobProgress";
@@ -29,6 +30,7 @@ export default function GenerativeExpandPage() {
   const [previewOriginal, setPreviewOriginal] = useState<string>("");
   const [resultUrl, setResultUrl] = useState<string>("");
     const { loading, activeJob, startToolJob, cancelActiveJob } = useToolJobProgress();
+  const { openInEditor, isLoading: handoffLoading } = useToolHandoff();
   
   // Original dimensions
   const [origWidth, setOrigWidth] = useState(1024);
@@ -406,7 +408,7 @@ export default function GenerativeExpandPage() {
               <Button size="lg" className="gap-2 font-bold shadow-md" onClick={() => window.open(resultUrl, "_blank")}>
                 <Download className="w-5 h-5" /> Download Hasil
               </Button>
-              <Button size="lg" variant="secondary" className="gap-2 bg-primary/20 text-primary hover:bg-primary/30 border-primary/20" onClick={() => router.push(`/create?imageUrl=${encodeURIComponent(resultUrl)}`)}>
+              <Button size="lg" variant="secondary" className="gap-2 bg-primary/20 text-primary hover:bg-primary/30 border-primary/20" disabled={handoffLoading} onClick={() => openInEditor({ resultUrl, sourceTool: "generative-expand" })}>
                 <PenSquare className="w-5 h-5" /> Lanjut ke Editor
               </Button>
             </div>

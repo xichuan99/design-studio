@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { redirect, useRouter } from "next/navigation";
+import { redirect, useRouter, useSearchParams } from "next/navigation";
 import { Loader2, PanelLeftOpen, PanelLeftClose, ImagePlus, Wand2, Sparkles, Clock, Scissors, X, PanelsTopLeft, ChevronDown } from "lucide-react";
 import { usePostHog } from 'posthog-js/react';
 import { toast } from "sonner";
@@ -19,9 +19,9 @@ import { ErrorModal } from "@/components/feedback/ErrorModal";
 import { InlineErrorBanner } from "@/components/feedback/InlineErrorBanner";
 import { BrandSwitcher } from '@/components/editor/BrandSwitcher';
 import { useCreateDesign } from "./hooks/useCreateDesign";
-import { INTENT_FIRST_ENTRY_ENABLED } from "@/lib/feature-flags";
+import { INTENT_FIRST_ENTRY_ENABLED, START_HUB_ENABLED } from "@/lib/feature-flags";
 
-export default function CreatePage() {
+function LegacyCreatePage() {
     const { status } = useSession();
     const router = useRouter();
     const posthog = usePostHog();
@@ -590,4 +590,43 @@ export default function CreatePage() {
             />
         </div>
     );
+}
+
+export default function CreatePage() {
+    const { status } = useSession();
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const hasImageHandoff = Boolean(searchParams.get("imageUrl"));
+    const legacyRequested = searchParams.get("legacy") === "1";
+    const shouldUseLegacyRoute = !INTENT_FIRST_ENTRY_ENABLED || hasImageHandoff || legacyRequested;
+
+    useEffect(() => {
+        if (status !== "authenticated") return;
+        if (shouldUseLegacyRoute) return;
+        router.replace(START_HUB_ENABLED ? "/start" : "/design/new/interview");
+    }, [router, shouldUseLegacyRoute, status]);
+
+    if (status === "loading") {
+        return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin w-8 h-8 text-primary" /></div>;
+    }
+
+    if (status === "unauthenticated") {
+        redirect("/");
+    }
+
+    if (!shouldUseLegacyRoute) {
+        return (
+            <div className="flex h-screen items-center justify-center bg-background px-6">
+                <div className="text-center space-y-3">
+                    <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
+                    <h1 className="text-xl font-semibold text-foreground">Mengalihkan ke flow desain baru</h1>
+                    <p className="max-w-md text-sm text-muted-foreground">
+                        Route utama sekarang memakai jalur baru berbasis brief bertahap. Engine lama hanya dipakai untuk handoff gambar atau fallback transisi.
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
+    return <LegacyCreatePage />;
 }

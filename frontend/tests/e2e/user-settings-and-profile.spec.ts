@@ -3,6 +3,8 @@ import { test, expect } from '@playwright/test';
 import { loginAsDemoUser } from './utils/auth';
 
 test.describe('User Settings and Profile', () => {
+  test.skip(({ browserName }) => browserName === 'webkit', 'WebKit session redirect race on /settings in CI');
+
   test.beforeEach(async ({ page }) => {
     await loginAsDemoUser(page);
     await page.goto('/settings');

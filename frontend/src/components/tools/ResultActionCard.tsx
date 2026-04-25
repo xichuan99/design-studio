@@ -1,4 +1,4 @@
-import { ArrowLeft, Download, PenSquare, RotateCcw } from "lucide-react";
+import { ArrowLeft, Download, Loader2, PenSquare, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ResultActionCardProps {
@@ -12,6 +12,7 @@ interface ResultActionCardProps {
     downloadLabel?: string;
     retryLabel?: string;
     backLabel?: string;
+    continueLoading?: boolean;
 }
 
 export function ResultActionCard({
@@ -25,6 +26,7 @@ export function ResultActionCard({
     downloadLabel = "Download Hasil",
     retryLabel = "Coba Lagi",
     backLabel = "Kembali ke Tools",
+    continueLoading = false,
 }: ResultActionCardProps) {
     return (
         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
@@ -34,8 +36,8 @@ export function ResultActionCard({
             </div>
 
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <Button size="lg" className="gap-2 font-bold shadow-md" onClick={onContinue}>
-                    <PenSquare className="w-5 h-5" /> {continueLabel}
+                <Button size="lg" className="gap-2 font-bold shadow-md" disabled={continueLoading} onClick={onContinue}>
+                    {continueLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <PenSquare className="w-5 h-5" />} {continueLabel}
                 </Button>
                 <Button size="lg" variant="outline" className="gap-2" onClick={onDownload}>
                     <Download className="w-5 h-5" /> {downloadLabel}

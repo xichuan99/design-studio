@@ -9,3 +9,18 @@ export const INTENT_FIRST_ENTRY_ENABLED = (
   process.env.NEXT_PUBLIC_INTENT_FIRST_V1 ?? 
   "true"
 ).toLowerCase() === "true";
+
+export const START_HUB_ENABLED = (
+  process.env.NEXT_PUBLIC_START_HUB_V1 ??
+  "true"
+).toLowerCase() === "true";
+
+export const PREVIEW_REAL_GENERATION_ENABLED = (
+  process.env.NEXT_PUBLIC_PREVIEW_REAL_GENERATION_V1 ??
+  "true"
+).toLowerCase() === "true";
+
+export const IMPORT_QUEUE_ENABLED = (
+  process.env.NEXT_PUBLIC_IMPORT_QUEUE_V1 ??
+  "true"
+).toLowerCase() === "true";

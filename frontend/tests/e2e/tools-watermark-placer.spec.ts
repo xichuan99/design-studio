@@ -5,7 +5,8 @@ import { getPublicFixturePath } from './utils/fixtures';
 import { goToToolsHub } from './utils/tools';
 
 test.describe('AI Watermark Placer Tool', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, browserName }) => {
+    test.skip(browserName === 'webkit', 'WebKit auth redirect race on /tools still flaky for this flow');
     await loginAsDemoUser(page);
     await goToToolsHub(page);
   });

@@ -1,16 +1,21 @@
 "use client";
 
 import { useState } from "react";
+import { usePostHog } from "posthog-js/react";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { BatchImageDropzone } from "@/components/tools/BatchImageDropzone";
 import { ToolProcessingState } from "@/components/tools/ToolProcessingState";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, Download, Layers, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, ArrowLeft, Download, Layers, CheckCircle2, PenSquare, Import, SquareCheck } from "lucide-react";
+import { IMPORT_QUEUE_KEY, type ImportQueueItem } from "@/lib/import-queue";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { toast } from "sonner";
 import { useProjectApi } from "@/lib/api";
 import { useToolJobProgress } from "@/hooks/useToolJobProgress";
+import { useToolHandoff } from "@/hooks/useToolHandoff";
 import { QualityToggle } from "@/components/tools/QualityToggle";
+import { IMPORT_QUEUE_ENABLED } from "@/lib/feature-flags";
 
 const OPERATIONS = [
   { id: "remove_bg", name: "Hapus Latar Belakang", cost: 10, desc: "Hapus background foto produk secara otomatis" },
@@ -50,6 +55,7 @@ type VisibilityPreset = "subtle" | "balanced" | "protective";
 
 export default function BatchProcessPage() {
   const router = useRouter();
+  const posthog = usePostHog();
   const [step, setStep] = useState(1);
   const [files, setFiles] = useState<File[]>([]);
   const [operation, setOperation] = useState("remove_bg");
@@ -66,8 +72,10 @@ export default function BatchProcessPage() {
   const [watermarkVisibilityPreset, setWatermarkVisibilityPreset] = useState<VisibilityPreset>("balanced");
 
   const [resultUrl, setResultUrl] = useState<string>("");
-  const [batchResult, setBatchResult] = useState<{success: number, error: number, errors: Array<{filename: string, error: string}>}>({success: 0, error: 0, errors: []});
+  const [batchResult, setBatchResult] = useState<{success: number, error: number, errors: Array<{filename: string, error: string}>, itemResults: Array<{filename: string, result_url: string}>}>({success: 0, error: 0, errors: [], itemResults: []});
+  const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const { loading, activeJob, startToolJob, cancelActiveJob } = useToolJobProgress();
+  const { openInEditor, isLoading: handoffLoading } = useToolHandoff();
   const api = useProjectApi();
 
   const handleFilesSelect = (selectedFiles: File[]) => {
@@ -136,11 +144,13 @@ export default function BatchProcessPage() {
             success_count?: number;
             error_count?: number;
             errors?: Array<{ filename: string; error: string }>;
+            item_results?: Array<{ filename: string; result_url: string }>;
           };
           setBatchResult({
             success: meta.success_count ?? uploadedItems.length,
             error: meta.error_count ?? 0,
             errors: meta.errors ?? [],
+            itemResults: (meta.item_results as Array<{filename: string, result_url: string}>) ?? [],
           });
           setStep(3);
           toast.success("Batch processing selesai");
@@ -203,7 +213,7 @@ export default function BatchProcessPage() {
           <div className={`w-4 sm:w-8 h-[2px] ${step > 2 ? 'bg-primary/40' : 'bg-border'}`}></div>
           <div className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold flex items-center gap-1.5 sm:gap-2 transition-colors ${step === 3 ? 'bg-primary text-primary-foreground shadow-md' : 'bg-muted text-muted-foreground'}`}>
             <span className="flex items-center justify-center w-5 h-5 rounded-full text-[10px] bg-background/20 font-bold">3</span>
-            <span className="hidden sm:inline">Download ZIP</span>
+            <span className="hidden sm:inline">Hasil</span>
           </div>
         </div>
 
@@ -391,39 +401,143 @@ export default function BatchProcessPage() {
         )}
 
         {step === 3 && (
-          <div className="space-y-8 max-w-xl mx-auto text-center border p-12 rounded-2xl bg-card shadow-sm">
-            <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                <CheckCircle2 className="w-10 h-10" />
-            </div>
-            <h3 className="text-2xl font-bold">Proses Selesai!</h3>
-            
-            <div className="grid grid-cols-2 gap-4 text-left max-w-sm mx-auto p-4 bg-muted/50 rounded-xl my-6">
-                <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-green-600" />
-                    <span className="text-sm">Sukses: {batchResult.success}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                    {batchResult.error > 0 ? <XCircle className="w-4 h-4 text-red-600" /> : <CheckCircle2 className="w-4 h-4 text-green-600" />}
-                    <span className="text-sm text-muted-foreground">Gagal: {batchResult.error}</span>
-                </div>
+          <div className="space-y-8 max-w-4xl mx-auto">
+            {/* Summary header */}
+            <div className="flex items-center gap-4 p-5 rounded-2xl border bg-card shadow-sm">
+              <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center shrink-0">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-xl font-bold">Proses Selesai!</h3>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  {batchResult.success} foto berhasil
+                  {batchResult.error > 0 && `, ${batchResult.error} gagal`}
+                </p>
+              </div>
+              <Button size="sm" variant="outline" className="gap-2 shrink-0" onClick={() => window.open(resultUrl, "_blank")}>
+                <Download className="w-4 h-4" /> Download ZIP
+              </Button>
             </div>
 
+            {/* Error list */}
             {batchResult.errors.length > 0 && (
-                <div className="text-left bg-destructive/10 text-destructive p-4 rounded-xl text-sm mb-6 max-h-40 overflow-y-auto">
-                    <p className="font-bold mb-2">Beberapa file gagal diproses:</p>
-                    <ul className="list-disc pl-5 space-y-1">
-                        {batchResult.errors.map((e, i) => (
-                            <li key={i}>{e.filename}: {e.error}</li>
-                        ))}
-                    </ul>
-                </div>
+              <div className="bg-destructive/10 text-destructive p-4 rounded-xl text-sm max-h-40 overflow-y-auto">
+                <p className="font-bold mb-2">File yang gagal:</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  {batchResult.errors.map((e, i) => (
+                    <li key={i}>{e.filename}: {e.error}</li>
+                  ))}
+                </ul>
+              </div>
             )}
 
-            <div className="flex flex-col gap-4 justify-center">
-              <Button size="lg" className="gap-2 font-bold shadow-md w-full py-6 text-lg" onClick={() => window.open(resultUrl, "_blank")}>
-                <Download className="w-6 h-6" /> Download Semua Hasil (ZIP)
-              </Button>
-              <Button size="lg" variant="outline" className="w-full" onClick={() => { setStep(1); setFiles([]); }}>
+            {/* Per-item gallery */}
+            {batchResult.itemResults.length > 0 ? (
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-base font-semibold">Hasil Per Foto</h4>
+                  <div className="flex items-center gap-2">
+                    {IMPORT_QUEUE_ENABLED && selectedItems.size > 0 && (
+                      <Button
+                        size="sm"
+                        className="gap-2"
+                        disabled={handoffLoading}
+                        onClick={() => {
+                          const queue: ImportQueueItem[] = Array.from(selectedItems).map(i => ({
+                            url: batchResult.itemResults[i].result_url,
+                            filename: batchResult.itemResults[i].filename,
+                            sourceTool: "batch",
+                          }));
+                          localStorage.setItem(IMPORT_QUEUE_KEY, JSON.stringify(queue));
+                          posthog?.capture("batch_import_queue_continue_clicked", {
+                            selected_count: queue.length,
+                          });
+                          openInEditor({ resultUrl: queue[0].url, sourceTool: "batch", title: queue[0].filename });
+                        }}
+                      >
+                        {handoffLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Import className="w-4 h-4" />}
+                        Import ke Editor ({selectedItems.size})
+                      </Button>
+                    )}
+                    <button
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      onClick={() => {
+                        if (selectedItems.size === batchResult.itemResults.length) {
+                          setSelectedItems(new Set());
+                          posthog?.capture("batch_result_selection_cleared");
+                        } else {
+                          setSelectedItems(new Set(batchResult.itemResults.map((_, i) => i)));
+                          posthog?.capture("batch_result_selection_all", {
+                            item_count: batchResult.itemResults.length,
+                          });
+                        }
+                      }}
+                    >
+                      {selectedItems.size === batchResult.itemResults.length ? "Batal semua" : "Pilih semua"}
+                    </button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                  {batchResult.itemResults.map((item, i) => (
+                    <div
+                      key={i}
+                      className={`group relative rounded-xl overflow-hidden border bg-card shadow-sm hover:shadow-md transition-shadow cursor-pointer ${selectedItems.has(i) ? "ring-2 ring-primary" : ""}`}
+                      onClick={() => setSelectedItems(prev => {
+                        const next = new Set(prev);
+                        if (next.has(i)) next.delete(i); else next.add(i);
+                        posthog?.capture("batch_result_item_toggled", {
+                          index: i,
+                          selected: !prev.has(i),
+                        });
+                        return next;
+                      })}
+                    >
+                      <div className="aspect-square relative bg-muted">
+                        <Image src={item.result_url} alt={item.filename} fill className="object-cover" unoptimized />
+                        {selectedItems.has(i) && (
+                          <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-0.5">
+                            <SquareCheck className="w-4 h-4" />
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                          <button
+                            className="p-2 bg-white/90 rounded-full hover:bg-white transition-colors"
+                            title="Download"
+                            onClick={(e) => { e.stopPropagation(); window.open(item.result_url, "_blank"); }}
+                          >
+                            <Download className="w-4 h-4 text-foreground" />
+                          </button>
+                          <button
+                            className="p-2 bg-white/90 rounded-full hover:bg-white transition-colors"
+                            title="Buka di Editor"
+                            disabled={handoffLoading}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              posthog?.capture("batch_result_item_opened_in_editor", { index: i, filename: item.filename });
+                              openInEditor({ resultUrl: item.result_url, sourceTool: "batch", title: item.filename });
+                            }}
+                          >
+                            <PenSquare className="w-4 h-4 text-foreground" />
+                          </button>
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate px-2 py-1.5">{item.filename}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              /* Fallback when no per-item URLs (legacy jobs) */
+              <div className="text-center p-8 border rounded-2xl bg-card">
+                <p className="text-muted-foreground text-sm mb-4">Preview per-item tidak tersedia untuk job ini.</p>
+                <Button size="lg" className="gap-2 font-bold" onClick={() => window.open(resultUrl, "_blank")}>
+                  <Download className="w-5 h-5" /> Download Semua Hasil (ZIP)
+                </Button>
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-2 border-t">
+              <Button size="sm" variant="outline" onClick={() => { setStep(1); setFiles([]); }}>
                 Proses Foto Lainnya
               </Button>
             </div>

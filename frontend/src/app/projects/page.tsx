@@ -107,7 +107,7 @@ export default function ProjectsPage() {
         }
         
         // If pristine or no saved state, just proceed
-        router.push('/create');
+        router.push('/design/new/interview');
     };
 
     const confirmDeleteProject = (e: React.MouseEvent, projectId: string) => {
@@ -496,7 +496,7 @@ export default function ProjectsPage() {
                                 onClick={() => {
                                     localStorage.removeItem('smartdesign_create_state');
                                     setShowNewDesignDialog(false);
-                                    router.push('/create');
+                                    router.push('/design/new/interview');
                                 }}
                             >
                                 Buat Baru
@@ -504,7 +504,7 @@ export default function ProjectsPage() {
                             <Button 
                                 onClick={() => {
                                     setShowNewDesignDialog(false);
-                                    router.push('/create');
+                                    router.push('/create?legacy=1');
                                 }}
                             >
                                 Lanjutkan

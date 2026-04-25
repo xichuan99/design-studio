@@ -21,6 +21,11 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Layers, SlidersHorizontal, History as HistoryIcon, PanelLeft, PanelRight } from "lucide-react";
 import { EditorOnboardingTour } from "@/components/onboarding/EditorOnboardingTour";
+import { CopyChooserDialog } from "@/components/editor/CopyChooserDialog";
+import { ImportQueueDialog } from "@/components/editor/ImportQueueDialog";
+import { IMPORT_QUEUE_KEY, type ImportQueueItem } from "@/lib/import-queue";
+import { CopywritingVariation } from "@/lib/api";
+import { IMPORT_QUEUE_ENABLED } from "@/lib/feature-flags";
 
 const PRELOAD_FONTS = ['Inter', 'Poppins', 'Roboto', 'Playfair Display', 'Montserrat', 'Oswald'];
 
@@ -36,6 +41,14 @@ export default function EditorPage() {
     const [error, setError] = useState<string | null>(null);
     const [rightPanelOpen, setRightPanelOpen] = useState(false);
     const [leftPanelOpen, setLeftPanelOpen] = useState(false);
+
+    // AI Copy Chooser dialog
+    const [copyVariations, setCopyVariations] = useState<CopywritingVariation[]>([]);
+    const [copyDialogOpen, setCopyDialogOpen] = useState(false);
+    // Import queue dialog (from batch results)
+    const [importQueue, setImportQueue] = useState<ImportQueueItem[]>([]);
+    const [importQueueOpen, setImportQueueOpen] = useState(false);
+    const { canvasWidth, canvasHeight } = useCanvasStore();
 
     // Initialize auto-save hook
     const { saveStatus, forceSave } = useAutoSave(projectId as string | undefined);
@@ -134,6 +147,49 @@ export default function EditorPage() {
             }, 8000);
             return () => clearTimeout(timeout);
         }
+    }, [loadingStage]);
+
+    // Show AI copy chooser once when editor is ready (only if variations exist and not already shown)
+    useEffect(() => {
+        if (loadingStage !== 'ready' || !projectId) return;
+        let active = true;
+        const checkCopyVariations = async () => {
+            const shownKey = `copy_chooser_shown_${projectId}`;
+            if (sessionStorage.getItem(shownKey)) return;
+            try {
+                const saved = localStorage.getItem('designStudio_copyVariations');
+                if (!saved) return;
+                const parsed: CopywritingVariation[] = JSON.parse(saved);
+                if (!active || parsed.length === 0) return;
+                setCopyVariations(parsed);
+                setCopyDialogOpen(true);
+                sessionStorage.setItem(shownKey, '1');
+            } catch {
+                // ignore parse errors
+            }
+        };
+        checkCopyVariations();
+        return () => { active = false; };
+    }, [loadingStage, projectId]);
+
+    // Show import queue dialog once when editor is ready (batch multi-select handoff)
+    useEffect(() => {
+        if (!IMPORT_QUEUE_ENABLED || loadingStage !== 'ready') return;
+        let active = true;
+        const checkImportQueue = async () => {
+            try {
+                const saved = localStorage.getItem(IMPORT_QUEUE_KEY);
+                if (!saved) return;
+                const parsed: ImportQueueItem[] = JSON.parse(saved);
+                if (!active || parsed.length === 0) return;
+                setImportQueue(parsed);
+                setImportQueueOpen(true);
+            } catch {
+                // ignore
+            }
+        };
+        checkImportQueue();
+        return () => { active = false; };
     }, [loadingStage]);
 
     const isLoading = (loadingStage !== 'ready' && loadingStage !== 'error') || status === "loading";
@@ -276,6 +332,22 @@ export default function EditorPage() {
             )}
 
             <EditorOnboardingTour />
+
+            <CopyChooserDialog
+                open={copyDialogOpen}
+                variations={copyVariations}
+                canvasWidth={canvasWidth ?? 1080}
+                canvasHeight={canvasHeight ?? 1080}
+                onClose={() => setCopyDialogOpen(false)}
+            />
+
+            <ImportQueueDialog
+                open={importQueueOpen}
+                items={importQueue}
+                canvasWidth={canvasWidth ?? 1080}
+                canvasHeight={canvasHeight ?? 1080}
+                onClose={() => setImportQueueOpen(false)}
+            />
         </div>
     );
 }

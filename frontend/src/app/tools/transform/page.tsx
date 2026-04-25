@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Eraser, Layers, Scissors, Sparkles, Wand2, Workflow } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useToolHandoff } from "@/hooks/useToolHandoff";
 import { toast } from "sonner";
 import Image from "next/image";
 import { useProjectApi, type PipelineStageRequest } from "@/lib/api";
@@ -170,6 +171,7 @@ export default function TransformPipelinePage() {
   const router = useRouter();
   const api = useProjectApi();
   const { loading, activeJob, startPipelineJob, cancelActiveJob } = useToolJobProgress();
+  const { openInEditor, isLoading: handoffLoading } = useToolHandoff();
   const [previewLoading, setPreviewLoading] = useState(false);
 
   const [step, setStep] = useState(1);
@@ -789,7 +791,8 @@ export default function TransformPipelinePage() {
             <h3 className="text-xl font-bold text-center">Hasil pipeline siap</h3>
             <BeforeAfterSlider beforeImage={previewOriginal} afterImage={resultUrl} className="shadow-xl" />
             <ResultActionCard
-              onContinue={() => router.push(`/create?imageUrl=${encodeURIComponent(resultUrl)}`)}
+              onContinue={() => openInEditor({ resultUrl, sourceTool: "transform" })}
+              continueLoading={handoffLoading}
               onDownload={() => window.open(resultUrl, "_blank")}
               onRetry={() => setStep(2)}
               onBack={() => router.push("/tools")}

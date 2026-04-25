@@ -14,6 +14,7 @@ import Image from "next/image";
 import { toast } from "sonner";
 import { useProjectApi } from "@/lib/api";
 import { useToolJobProgress } from "@/hooks/useToolJobProgress";
+import { useToolHandoff } from "@/hooks/useToolHandoff";
 import { QualityToggle } from "@/components/tools/QualityToggle";
 
 type Suggestion = {
@@ -33,6 +34,7 @@ export default function BackgroundSwapPage() {
   const [prompt, setPrompt] = useState("");
   const [resultUrl, setResultUrl] = useState<string>("");
   const { loading, activeJob, startToolJob, cancelActiveJob } = useToolJobProgress();
+  const { openInEditor, isLoading: handoffLoading } = useToolHandoff();
 
   // Suggestion mode state
   const [promptMode, setPromptMode] = useState<"suggest" | "custom">("suggest");
@@ -407,7 +409,8 @@ export default function BackgroundSwapPage() {
             <ResultActionCard
               title="Pilih langkah berikutnya"
               description="Lanjutkan background ini ke editor, simpan hasilnya, ganti prompt, atau kembali ke tools lain."
-              onContinue={() => router.push(`/create?imageUrl=${encodeURIComponent(resultUrl)}`)}
+              onContinue={() => openInEditor({ resultUrl, sourceTool: "background-swap" })}
+              continueLoading={handoffLoading}
               onDownload={() => window.open(resultUrl, "_blank")}
               onRetry={() => setStep(2)}
               onBack={() => router.push("/tools")}

@@ -20,6 +20,8 @@ export const proxy = proxyHandler;
 export const config = {
   matcher: [
     "/projects/:path*",
+    "/start/:path*",
+    "/design/:path*",
     "/create/:path*",
     "/edit/:path*",
     "/settings/:path*",

@@ -12,6 +12,7 @@ import Image from "next/image";
 import { toast } from "sonner";
 import { useProjectApi } from "@/lib/api";
 import { useToolJobProgress } from "@/hooks/useToolJobProgress";
+import { useToolHandoff } from "@/hooks/useToolHandoff";
 
 export default function IdPhotoPage() {
   const router = useRouter();
@@ -28,6 +29,7 @@ export default function IdPhotoPage() {
   const [resultUrl, setResultUrl] = useState<string>("");
   const [printSheetUrl, setPrintSheetUrl] = useState<string | null>(null);
   const { loading, activeJob, startToolJob, cancelActiveJob } = useToolJobProgress();
+  const { openInEditor, isLoading: handoffLoading } = useToolHandoff();
 
   const handleFileSelect = (file: File) => {
     setOriginalFile(file);
@@ -254,7 +256,7 @@ export default function IdPhotoPage() {
                   <Button size="lg" className="gap-2 font-bold shadow-md w-full" onClick={() => window.open(resultUrl, "_blank")}>
                     <Download className="w-5 h-5" /> Download HD
                   </Button>
-                  <Button size="lg" variant="secondary" className="gap-2 w-full" onClick={() => router.push(`/create?imageUrl=${encodeURIComponent(resultUrl)}`)}>
+                  <Button size="lg" variant="secondary" className="gap-2 w-full" disabled={handoffLoading} onClick={() => openInEditor({ resultUrl, sourceTool: "id-photo" })}>
                     <PenSquare className="w-5 h-5" /> Lanjut ke Editor
                   </Button>
                 </div>

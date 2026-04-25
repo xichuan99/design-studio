@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Download, PenSquare } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useToolHandoff } from "@/hooks/useToolHandoff";
 import { toast } from "sonner";
 import { useProjectApi } from "@/lib/api";
 import { useToolJobProgress } from "@/hooks/useToolJobProgress";
@@ -26,6 +27,7 @@ export default function MagicEraserPage() {
   const [resultUrl, setResultUrl] = useState<string>("");
   const [erasePrompt, setErasePrompt] = useState<string>("");
   const { loading, activeJob, startToolJob, cancelActiveJob } = useToolJobProgress();
+  const { openInEditor, isLoading: handoffLoading } = useToolHandoff();
 
   const [modelQuality, setModelQuality] = useState<"standard" | "ultra">("standard");
 
@@ -198,7 +200,7 @@ export default function MagicEraserPage() {
               <Button size="lg" className="gap-2 font-bold shadow-md" onClick={() => window.open(resultUrl, "_blank")}>
                 <Download className="w-5 h-5" /> Download Hasil
               </Button>
-              <Button size="lg" variant="secondary" className="gap-2 bg-blue-100 text-blue-700 hover:bg-blue-200 border-blue-200" onClick={() => router.push(`/create?imageUrl=${encodeURIComponent(resultUrl)}`)}>
+              <Button size="lg" variant="secondary" className="gap-2 bg-blue-100 text-blue-700 hover:bg-blue-200 border-blue-200" disabled={handoffLoading} onClick={() => openInEditor({ resultUrl, sourceTool: "magic-eraser" })}>
                 <PenSquare className="w-5 h-5" /> Lanjut ke Editor
               </Button>
             </div>

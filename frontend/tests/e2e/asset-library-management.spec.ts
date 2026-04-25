@@ -11,29 +11,26 @@ test.describe('Asset Library Management', () => {
 
   test('shows asset page with correct heading and interactive controls', async ({ page }) => {
     await expect(page.getByRole('heading', { name: 'Aset AI Saya', exact: true })).toBeVisible();
-    // Tab filters should be visible
-    await expect(
-      page.getByRole('button', { name: /AI Tools/i }).or(page.getByText(/Hasil AI Tools Anda akan tersimpan/i))
-    ).toBeVisible({ timeout: 10000 });
+
+    const aiToolsTab = page.getByText(/^AI Tools\d+$/i).first();
+    await expect(aiToolsTab).toBeVisible({ timeout: 10000 });
   });
 
   test('can switch between asset tabs and filter chips', async ({ page }) => {
-    // Check tabs exist
-    const aiToolsTab = page.getByRole('button', { name: /AI Tools/i });
-    const hasTab = await aiToolsTab.isVisible().catch(() => false);
+    const aiToolsTab = page.getByText(/^AI Tools\d+$/i).first();
+    const hasTab = (await aiToolsTab.count()) > 0;
 
     if (hasTab) {
+      await aiToolsTab.scrollIntoViewIfNeeded();
       await aiToolsTab.click();
       await expect(aiToolsTab).toBeVisible();
 
-      // Filter chips
       const allChip = page.getByRole('button', { name: /^Semua$/i });
-      if (await allChip.isVisible().catch(() => false)) {
+      if ((await allChip.count()) > 0) {
         await allChip.click();
       }
     } else {
-      // Empty state — still a valid state to assert
-      await expect(page.getByText(/Belum ada aset|Hasil AI Tools Anda/i)).toBeVisible({ timeout: 10000 });
+      await expect(page.getByText(/Semua hasil dari AI Tools Anda tersimpan di sini|Belum ada aset|Hasil AI Tools Anda akan tersimpan/i)).toBeVisible({ timeout: 10000 });
     }
   });
 

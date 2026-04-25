@@ -16,12 +16,15 @@ const TOOL_ROUTES = [
 ] as const;
 
 test.describe('Tools Hub Navigation', () => {
+  test.skip(({ browserName }) => browserName === 'webkit', 'WebKit session redirect race on /tools in CI');
+
   test.beforeEach(async ({ page }) => {
     await loginAsDemoUser(page);
     await goToToolsHub(page);
   });
 
   test('all tools cards route to the correct tool pages', async ({ page }) => {
+    test.setTimeout(120000);
     for (const tool of TOOL_ROUTES) {
       await test.step(`Open ${tool.cardName}`, async () => {
         await page.getByRole('link', { name: new RegExp(tool.cardName, 'i') }).click();

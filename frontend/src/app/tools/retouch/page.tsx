@@ -9,6 +9,7 @@ import { ResultActionCard } from "@/components/tools/ResultActionCard";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useToolHandoff } from "@/hooks/useToolHandoff";
 import { toast } from "sonner";
 import { useProjectApi } from "@/lib/api";
 import { useToolJobProgress } from "@/hooks/useToolJobProgress";
@@ -54,6 +55,7 @@ export default function RetouchPage() {
   const [lightDirection, setLightDirection] = useState<LightDirection>("front");
   const [lightType, setLightType] = useState<LightType>("soft overcast daylight lighting");
   const { loading, activeJob, startToolJob, cancelActiveJob } = useToolJobProgress();
+  const { openInEditor, isLoading: handoffLoading } = useToolHandoff();
 
   const selectedLevel = RETOUCH_LEVELS.find((l) => l.id === retouchLevel)!;
 
@@ -264,7 +266,8 @@ export default function RetouchPage() {
             <ResultActionCard
               title="Lanjutkan foto ini"
               description="Buka di editor untuk menambah layout dan teks, simpan hasilnya, proses foto lain, atau kembali ke daftar tools."
-              onContinue={() => router.push(`/create?imageUrl=${encodeURIComponent(resultUrl)}`)}
+              onContinue={() => openInEditor({ resultUrl, sourceTool: "retouch" })}
+              continueLoading={handoffLoading}
               onDownload={() => window.open(resultUrl, "_blank")}
               onRetry={() => setStep(1)}
               onBack={() => router.push("/tools")}

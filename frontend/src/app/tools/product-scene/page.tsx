@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, ArrowLeft, Sparkles } from "lucide-react";
 import { QualityToggle } from "@/components/tools/QualityToggle";
 import { useRouter } from "next/navigation";
+import { useToolHandoff } from "@/hooks/useToolHandoff";
 import Image from "next/image";
 import { toast } from "sonner";
 import { useProjectApi } from "@/lib/api";
@@ -45,6 +46,7 @@ export default function ProductScenePage() {
   const [modelQuality, setModelQuality] = useState<"standard" | "ultra">("standard");
   const [resultUrl, setResultUrl] = useState<string>("");
   const { loading, activeJob, startToolJob, cancelActiveJob } = useToolJobProgress();
+  const { openInEditor, isLoading: handoffLoading } = useToolHandoff();
   const api = useProjectApi();
 
   const handleFileSelect = (file: File) => {
@@ -265,7 +267,8 @@ export default function ProductScenePage() {
             <ResultActionCard
               title="Pilih langkah berikutnya"
               description="Teruskan scene ini ke editor, simpan hasilnya, ubah tema, atau kembali ke tools lain."
-              onContinue={() => router.push(`/create?imageUrl=${encodeURIComponent(resultUrl)}`)}
+              onContinue={() => openInEditor({ resultUrl, sourceTool: "product-scene" })}
+              continueLoading={handoffLoading}
               onDownload={() => window.open(resultUrl, "_blank")}
               onRetry={() => setStep(2)}
               onBack={() => router.push("/tools")}
