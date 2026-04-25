@@ -31,6 +31,15 @@ const CHANNEL_LABEL_MAP: Record<string, string> = {
     ads: "Google / Meta Ads",
 };
 
+const PRODUCT_TYPE_LABEL_MAP: Record<string, string> = {
+    "Makanan & Minuman": "produk makanan/minuman",
+    Fashion: "produk fashion",
+    Beauty: "produk beauty",
+    Elektronik: "produk elektronik",
+    "Rumah Tangga": "produk rumah tangga",
+    Lainnya: "produk umum",
+};
+
 const GEN_STATUS_LABELS = [
     "Menyiapkan komposisi visual...",
     "Menentukan palet warna...",
@@ -42,11 +51,15 @@ const GEN_STATUS_LABELS = [
 function buildPrompt(brief: DesignBriefSessionState): string {
     const goalLabel = GOAL_LABEL_MAP[brief.goal] ?? brief.goal;
     const channelLabel = CHANNEL_LABEL_MAP[brief.channel] ?? brief.channel;
+    const productTypeLabel = PRODUCT_TYPE_LABEL_MAP[brief.productType] ?? brief.productType;
+    const noteLine = brief.notes ? `Catatan tambahan: ${brief.notes}.` : null;
     return [
-        `Buat desain ${goalLabel} untuk ${channelLabel}.`,
+        `Buat desain ${goalLabel} untuk ${channelLabel} dengan konteks ${productTypeLabel}.`,
         `Gaya visual: ${brief.style}.`,
+        `Tone copy: ${brief.copyTone}.`,
+        noteLine,
         "Gunakan komposisi visual yang bersih, hierarki teks yang jelas, dan siap diedit di editor.",
-    ].join(" ");
+    ].filter(Boolean).join(" ");
 }
 
 export default function DesignPreviewPage() {
@@ -98,7 +111,14 @@ export default function DesignPreviewPage() {
                 aspectRatio,
                 currentStep: "input",
                 createMode: "generate",
-                briefAnswers: { goal: brief.goal, style: brief.style, channel: brief.channel },
+                briefAnswers: {
+                    goal: brief.goal,
+                    productType: brief.productType,
+                    style: brief.style,
+                    channel: brief.channel,
+                    copyTone: brief.copyTone,
+                    notes: brief.notes,
+                },
             }));
         }
         router.push("/create?legacy=1");
@@ -108,8 +128,10 @@ export default function DesignPreviewPage() {
         if (!brief) return;
         posthog?.capture("design_brief_preview_generate_clicked", {
             goal: brief.goal,
+            productType: brief.productType,
             style: brief.style,
             channel: brief.channel,
+            copyTone: brief.copyTone,
             preview_real_generation_enabled: PREVIEW_REAL_GENERATION_ENABLED,
         });
         if (!PREVIEW_REAL_GENERATION_ENABLED) {
@@ -141,19 +163,29 @@ export default function DesignPreviewPage() {
             }
             if (!resultUrl) throw new Error("Generation timeout. Coba lagi.");
 
-            await openInEditor({ resultUrl, sourceTool: "design-brief", title: `Desain ${brief.goal} — ${brief.style}` });
+            await openInEditor({
+                resultUrl,
+                sourceTool: "design-brief",
+                title: `Desain ${brief.goal} — ${brief.style}`,
+                intent: "design_brief",
+                entryMode: "brief_preview",
+            });
             posthog?.capture("design_brief_preview_generate_success", {
                 goal: brief.goal,
+                productType: brief.productType,
                 style: brief.style,
                 channel: brief.channel,
+                copyTone: brief.copyTone,
             });
         } catch (err) {
             const message = err instanceof Error ? err.message : "Terjadi kesalahan. Coba lagi.";
             setGenError(message);
             posthog?.capture("design_brief_preview_generate_failed", {
                 goal: brief.goal,
+                productType: brief.productType,
                 style: brief.style,
                 channel: brief.channel,
+                copyTone: brief.copyTone,
                 error_message: message,
             });
         } finally {
@@ -167,8 +199,10 @@ export default function DesignPreviewPage() {
         if (status !== "authenticated" || !brief) return;
         posthog?.capture("design_brief_preview_viewed", {
             goal: brief.goal,
+            productType: brief.productType,
             style: brief.style,
             channel: brief.channel,
+            copyTone: brief.copyTone,
             preview_real_generation_enabled: PREVIEW_REAL_GENERATION_ENABLED,
         });
     }, [brief, posthog, status]);
@@ -227,10 +261,14 @@ export default function DesignPreviewPage() {
                             <CardDescription>Ini yang akan dikirim ke AI sebagai dasar pembuatan desain.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div className="grid gap-3 sm:grid-cols-3">
+                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                                 <div className="rounded-2xl border bg-muted/20 p-4">
                                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Goal</p>
                                     <p className="mt-2 text-sm font-semibold text-foreground capitalize">{brief.goal}</p>
+                                </div>
+                                <div className="rounded-2xl border bg-muted/20 p-4">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Product Type</p>
+                                    <p className="mt-2 text-sm font-semibold text-foreground">{brief.productType}</p>
                                 </div>
                                 <div className="rounded-2xl border bg-muted/20 p-4">
                                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Style</p>
@@ -240,7 +278,18 @@ export default function DesignPreviewPage() {
                                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Channel</p>
                                     <p className="mt-2 text-sm font-semibold text-foreground capitalize">{brief.channel}</p>
                                 </div>
+                                <div className="rounded-2xl border bg-muted/20 p-4">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Copy Tone</p>
+                                    <p className="mt-2 text-sm font-semibold text-foreground">{brief.copyTone}</p>
+                                </div>
                             </div>
+
+                            {brief.notes && (
+                                <div className="rounded-2xl border bg-muted/20 p-5">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Catatan tambahan</p>
+                                    <p className="mt-3 text-sm leading-7 text-foreground">{brief.notes}</p>
+                                </div>
+                            )}
 
                             <div className="rounded-2xl border bg-muted/20 p-5">
                                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Prompt yang akan digunakan</p>
