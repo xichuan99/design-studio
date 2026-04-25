@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { redirect, useRouter, useSearchParams } from "next/navigation";
 import { Loader2, PanelLeftOpen, PanelLeftClose, ImagePlus, Wand2, Sparkles, Clock, Scissors, X, PanelsTopLeft, ChevronDown } from "lucide-react";
@@ -592,7 +592,7 @@ function LegacyCreatePage() {
     );
 }
 
-export default function CreatePage() {
+function CreatePageContent() {
     const { status } = useSession();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -629,4 +629,16 @@ export default function CreatePage() {
     }
 
     return <LegacyCreatePage />;
+}
+
+function CreatePageFallback() {
+    return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin w-8 h-8 text-primary" /></div>;
+}
+
+export default function CreatePage() {
+    return (
+        <Suspense fallback={<CreatePageFallback />}>
+            <CreatePageContent />
+        </Suspense>
+    );
 }

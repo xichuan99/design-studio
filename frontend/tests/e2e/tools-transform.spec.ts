@@ -124,8 +124,9 @@ test.describe('AI Transform Pipeline Tool', () => {
 
     await expect(page.getByRole('heading', { name: /Hasil pipeline siap/i })).toBeVisible({ timeout: 15000 });
     expect(createPipelinePayload).not.toBeNull();
-    expect(createPipelinePayload?.image_bytes).toBeTruthy();
-    expect(createPipelinePayload?.image_url).toBeUndefined();
+    const submittedPipelinePayload = createPipelinePayload as Record<string, unknown>;
+    expect(submittedPipelinePayload.image_bytes).toBeTruthy();
+    expect(submittedPipelinePayload.image_url).toBeUndefined();
   });
 
   test('submits image_bytes payload when running synchronous preview', async ({ page }) => {
@@ -165,7 +166,8 @@ test.describe('AI Transform Pipeline Tool', () => {
 
     await expect(page.getByRole('heading', { name: /Hasil pipeline siap/i })).toBeVisible({ timeout: 15000 });
     expect(previewPayload).not.toBeNull();
-    expect(previewPayload?.image_bytes).toBeTruthy();
-    expect(previewPayload?.image_url).toBeUndefined();
+    const submittedPreviewPayload = previewPayload as Record<string, unknown>;
+    expect(submittedPreviewPayload.image_bytes).toBeTruthy();
+    expect(submittedPreviewPayload.image_url).toBeUndefined();
   });
 });
