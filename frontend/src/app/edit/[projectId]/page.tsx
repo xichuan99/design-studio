@@ -30,6 +30,32 @@ import { IMPORT_QUEUE_ENABLED } from "@/lib/feature-flags";
 
 const PRELOAD_FONTS = ['Inter', 'Poppins', 'Roboto', 'Playfair Display', 'Montserrat', 'Oswald'];
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === "object" && value !== null;
+}
+
+function parseCopyVariants(value: unknown): CopywritingVariation[] {
+    if (!Array.isArray(value)) return [];
+    return value.filter((item): item is CopywritingVariation => {
+        if (!isRecord(item)) return false;
+        return typeof item.style === "string"
+            && typeof item.headline === "string"
+            && typeof item.subline === "string"
+            && typeof item.cta === "string"
+            && typeof item.full_text === "string";
+    });
+}
+
+function parseImportQueue(value: unknown): ImportQueueItem[] {
+    if (!Array.isArray(value)) return [];
+    return value.filter((item): item is ImportQueueItem => {
+        if (!isRecord(item)) return false;
+        if (typeof item.url !== "string" || typeof item.filename !== "string") return false;
+        if (item.sourceTool !== undefined && typeof item.sourceTool !== "string") return false;
+        return true;
+    });
+}
+
 export default function EditorPage() {
     const { projectId } = useParams();
     const { status } = useSession();
@@ -167,44 +193,94 @@ export default function EditorPage() {
     useEffect(() => {
         if (loadingStage !== 'ready' || !projectId || !loadedProjectMeta || workflowHydrationSyncedRef.current) return;
 
-        const workflowRaw = loadedProjectMeta.canvasState.workflow;
-        if (!workflowRaw || typeof workflowRaw !== "object") {
+        const consumeHandoff = async () => {
+            const workflowRaw = loadedProjectMeta.canvasState.workflow;
+            const workflow = isRecord(workflowRaw) ? workflowRaw : null;
+            const sourceTool = workflow && typeof workflow.sourceTool === "string" ? workflow.sourceTool : null;
+            const hydratedAt = workflow && typeof workflow.hydratedAt === "string" ? workflow.hydratedAt : null;
+
+            const shownKey = `workflow_handoff_shown_${projectId}`;
+            if (sourceTool && !sessionStorage.getItem(shownKey)) {
+                toast.success(`Handoff dari ${sourceTool} berhasil. Anda bisa lanjut edit dari sini.`);
+                sessionStorage.setItem(shownKey, "1");
+            }
+
+            const copyShownKey = `copy_chooser_shown_${projectId}`;
+            const importShownKey = `import_queue_shown_${projectId}`;
+
+            const workflowCopyVariants = parseCopyVariants(workflow?.copyVariants);
+            if (workflowCopyVariants.length > 0 && !sessionStorage.getItem(copyShownKey)) {
+                setCopyVariations(workflowCopyVariants);
+                setCopyDialogOpen(true);
+                sessionStorage.setItem(copyShownKey, '1');
+                localStorage.removeItem('designStudio_copyVariations');
+            } else if (!sessionStorage.getItem(copyShownKey)) {
+                try {
+                    const saved = localStorage.getItem('designStudio_copyVariations');
+                    if (saved) {
+                        const parsed = parseCopyVariants(JSON.parse(saved));
+                        if (parsed.length > 0) {
+                            setCopyVariations(parsed);
+                            setCopyDialogOpen(true);
+                            sessionStorage.setItem(copyShownKey, '1');
+                        }
+                    }
+                } catch {
+                    // ignore parse errors
+                }
+            }
+
+            if (IMPORT_QUEUE_ENABLED && !sessionStorage.getItem(importShownKey)) {
+                const workflowImportQueue = parseImportQueue(workflow?.importQueue);
+                if (workflowImportQueue.length > 0) {
+                    setImportQueue(workflowImportQueue);
+                    setImportQueueOpen(true);
+                    sessionStorage.setItem(importShownKey, '1');
+                    localStorage.removeItem(IMPORT_QUEUE_KEY);
+                } else {
+                    try {
+                        const saved = localStorage.getItem(IMPORT_QUEUE_KEY);
+                        if (saved) {
+                            const parsed = parseImportQueue(JSON.parse(saved));
+                            if (parsed.length > 0) {
+                                setImportQueue(parsed);
+                                setImportQueueOpen(true);
+                                sessionStorage.setItem(importShownKey, '1');
+                            }
+                        }
+                    } catch {
+                        // ignore parse errors
+                    }
+                }
+            }
+
             workflowHydrationSyncedRef.current = true;
-            return;
-        }
 
-        const workflow = workflowRaw as Record<string, unknown>;
-        const sourceTool = typeof workflow.sourceTool === "string" ? workflow.sourceTool : null;
-        const hydratedAt = typeof workflow.hydratedAt === "string" ? workflow.hydratedAt : null;
+            if (!workflow || hydratedAt) {
+                return;
+            }
 
-        const shownKey = `workflow_handoff_shown_${projectId}`;
-        if (sourceTool && !sessionStorage.getItem(shownKey)) {
-            toast.success(`Handoff dari ${sourceTool} berhasil. Anda bisa lanjut edit dari sini.`);
-            sessionStorage.setItem(shownKey, "1");
-        }
+            const nextWorkflow: Record<string, unknown> = {
+                ...workflow,
+                hydratedAt: new Date().toISOString(),
+            };
+            delete nextWorkflow.copyVariants;
+            delete nextWorkflow.importQueue;
 
-        if (hydratedAt) {
-            workflowHydrationSyncedRef.current = true;
-            return;
-        }
-
-        workflowHydrationSyncedRef.current = true;
-        const nextWorkflow = {
-            ...workflow,
-            hydratedAt: new Date().toISOString(),
+            await saveProject({
+                id: projectId as string,
+                title: loadedProjectMeta.title,
+                status: loadedProjectMeta.status,
+                aspect_ratio: loadedProjectMeta.aspectRatio,
+                canvas_schema_version: loadedProjectMeta.canvasSchemaVersion,
+                canvas_state: {
+                    ...loadedProjectMeta.canvasState,
+                    workflow: nextWorkflow,
+                },
+            });
         };
 
-        void saveProject({
-            id: projectId as string,
-            title: loadedProjectMeta.title,
-            status: loadedProjectMeta.status,
-            aspect_ratio: loadedProjectMeta.aspectRatio,
-            canvas_schema_version: loadedProjectMeta.canvasSchemaVersion,
-            canvas_state: {
-                ...loadedProjectMeta.canvasState,
-                workflow: nextWorkflow,
-            },
-        }).catch((err: unknown) => {
+        void consumeHandoff().catch((err: unknown) => {
             console.warn("Failed to persist workflow hydration state", err);
         });
     }, [loadingStage, projectId, loadedProjectMeta, saveProject]);
@@ -217,49 +293,6 @@ export default function EditorPage() {
             }, 8000);
             return () => clearTimeout(timeout);
         }
-    }, [loadingStage]);
-
-    // Show AI copy chooser once when editor is ready (only if variations exist and not already shown)
-    useEffect(() => {
-        if (loadingStage !== 'ready' || !projectId) return;
-        let active = true;
-        const checkCopyVariations = async () => {
-            const shownKey = `copy_chooser_shown_${projectId}`;
-            if (sessionStorage.getItem(shownKey)) return;
-            try {
-                const saved = localStorage.getItem('designStudio_copyVariations');
-                if (!saved) return;
-                const parsed: CopywritingVariation[] = JSON.parse(saved);
-                if (!active || parsed.length === 0) return;
-                setCopyVariations(parsed);
-                setCopyDialogOpen(true);
-                sessionStorage.setItem(shownKey, '1');
-            } catch {
-                // ignore parse errors
-            }
-        };
-        checkCopyVariations();
-        return () => { active = false; };
-    }, [loadingStage, projectId]);
-
-    // Show import queue dialog once when editor is ready (batch multi-select handoff)
-    useEffect(() => {
-        if (!IMPORT_QUEUE_ENABLED || loadingStage !== 'ready') return;
-        let active = true;
-        const checkImportQueue = async () => {
-            try {
-                const saved = localStorage.getItem(IMPORT_QUEUE_KEY);
-                if (!saved) return;
-                const parsed: ImportQueueItem[] = JSON.parse(saved);
-                if (!active || parsed.length === 0) return;
-                setImportQueue(parsed);
-                setImportQueueOpen(true);
-            } catch {
-                // ignore
-            }
-        };
-        checkImportQueue();
-        return () => { active = false; };
     }, [loadingStage]);
 
     const isLoading = (loadingStage !== 'ready' && loadingStage !== 'error') || status === "loading";

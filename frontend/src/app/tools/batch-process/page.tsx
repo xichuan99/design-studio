@@ -7,7 +7,7 @@ import { BatchImageDropzone } from "@/components/tools/BatchImageDropzone";
 import { ToolProcessingState } from "@/components/tools/ToolProcessingState";
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowLeft, Download, Layers, CheckCircle2, PenSquare, Import, SquareCheck } from "lucide-react";
-import { IMPORT_QUEUE_KEY, type ImportQueueItem } from "@/lib/import-queue";
+import type { ImportQueueItem } from "@/lib/import-queue";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { toast } from "sonner";
@@ -448,11 +448,17 @@ export default function BatchProcessPage() {
                             filename: batchResult.itemResults[i].filename,
                             sourceTool: "batch",
                           }));
-                          localStorage.setItem(IMPORT_QUEUE_KEY, JSON.stringify(queue));
                           posthog?.capture("batch_import_queue_continue_clicked", {
                             selected_count: queue.length,
                           });
-                          openInEditor({ resultUrl: queue[0].url, sourceTool: "batch", title: queue[0].filename });
+                          openInEditor({
+                            resultUrl: queue[0].url,
+                            sourceTool: "batch",
+                            title: queue[0].filename,
+                            entryMode: "batch_import",
+                            primaryAsset: { url: queue[0].url, filename: queue[0].filename },
+                            importQueue: queue,
+                          });
                         }}
                       >
                         {handoffLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Import className="w-4 h-4" />}

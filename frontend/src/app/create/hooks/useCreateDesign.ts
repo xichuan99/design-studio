@@ -613,14 +613,15 @@ export function useCreateDesign() {
                 canvas_state: {
                     backgroundUrl: activeImageUrl || null,
                     elements: elements,
-                    originalPrompt: parsedData.visual_prompt || rawText
+                    originalPrompt: parsedData.visual_prompt || rawText,
+                    workflow: {
+                        sourceTool: "create",
+                        entryMode: createMode === "redesign" ? "legacy_redesign" : "legacy_create",
+                        intent: userIntent,
+                        copyVariants: copyVariations,
+                    }
                 }
             });
-
-            // Persist copyVariations before navigating
-            if (typeof window !== 'undefined') {
-                localStorage.setItem('designStudio_copyVariations', JSON.stringify(copyVariations));
-            }
 
             posthog?.capture('create_proceed_to_editor', { create_mode: createMode });
             router.push(`/edit/${newProject.id}`);
@@ -629,7 +630,7 @@ export function useCreateDesign() {
             toast.error('Gagal melanjutkan ke editor. Silakan coba lagi.');
             setIsSaving(false);
         }
-    }, [parsedData, imageHistory, activeImageIndex, aspectRatio, integratedText, rawText, generateProjectTitle, saveProject, router, copyVariations, createMode, posthog]);
+    }, [parsedData, imageHistory, activeImageIndex, aspectRatio, integratedText, rawText, generateProjectTitle, saveProject, router, copyVariations, createMode, posthog, userIntent]);
 
     return {
         rawText, setRawText,
