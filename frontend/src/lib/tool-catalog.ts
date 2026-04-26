@@ -26,19 +26,19 @@ export const toolSections: ToolSection[] = [
     {
         title: "Alat Cepat",
         items: [
-            { title: "AI Background Swap", href: "/tools/background-swap", description: "Ganti latar produk menjadi gaya studio.", Icon: Wand2, badge: "TOP" },
-            { title: "Quick Retouch", href: "/tools/retouch", description: "Cerahkan dan bersihkan foto otomatis.", Icon: Sparkles },
-            { title: "Magic Eraser", href: "/tools/magic-eraser", description: "Hapus objek mengganggu dari foto.", Icon: Eraser },
-            { title: "AI Watermark Placer", href: "/tools/watermark-placer", description: "Pasang watermark ke banyak foto.", Icon: ShieldCheck },
+            { title: "Ganti Latar Foto", href: "/tools/background-swap", description: "Ganti latar produk menjadi gaya studio.", Icon: Wand2, badge: "TOP" },
+            { title: "Percantik Foto", href: "/tools/retouch", description: "Cerahkan dan bersihkan foto otomatis.", Icon: Sparkles },
+            { title: "Hapus Objek", href: "/tools/magic-eraser", description: "Hapus objek mengganggu dari foto.", Icon: Eraser },
+            { title: "Pasang Logo / Watermark", href: "/tools/watermark-placer", description: "Pasang watermark ke banyak foto.", Icon: ShieldCheck },
         ],
     },
     {
-        title: "Alat Canggih",
+        title: "Fitur Spesial",
         items: [
-            { title: "AI Product Scene", href: "/tools/product-scene", description: "Ubah foto dengan fitur Product Scene agar siap jual.", Icon: Sparkles, badge: "TOP" },
-            { title: "Batch Photo Processor", href: "/tools/batch-process", description: "Proses puluhan foto sekaligus.", Icon: Layers },
-            { title: "ID Photo Maker", href: "/tools/id-photo", description: "Buat pas foto dari selfie.", Icon: Camera },
-            { title: "AI Transform Pipeline", href: "/tools/transform", description: "Gabungkan beberapa proses AI dalam alur.", Icon: Workflow, badge: "BARU" },
+            { title: "Ubah Suasana Foto", href: "/tools/product-scene", description: "Ubah suasana foto agar siap jual.", Icon: Sparkles, badge: "TOP" },
+            { title: "Proses Katalog Foto", href: "/tools/batch-process", description: "Proses puluhan foto sekaligus dalam sekejap.", Icon: Layers },
+            { title: "Buat Pas Foto", href: "/tools/id-photo", description: "Buat pas foto dari selfie secara otomatis.", Icon: Camera },
+            { title: "Edit Otomatis (Pro)", href: "/tools/transform", description: "Gabungkan beberapa proses edit dalam satu alur.", Icon: Workflow, badge: "BARU" },
         ],
     },
 ];

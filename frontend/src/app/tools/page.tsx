@@ -33,26 +33,26 @@ export default function ToolsHubPage() {
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 md:px-6 lg:px-8">
         <section className="rounded-3xl border bg-gradient-to-br from-background via-background to-muted/40 px-6 py-8 md:px-10 md:py-12">
           <div className="max-w-3xl space-y-4">
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-primary">AI Photo Tools</p>
-            <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-5xl">Pilih alur edit foto yang paling cocok.</h1>
+            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-primary">SmartDesign Tools</p>
+            <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-5xl">Alat Edit Foto Produk AI</h1>
             <p className="max-w-2xl text-sm leading-6 text-muted-foreground md:text-base">
-              Mulai dari satu foto untuk perbaikan cepat, atau langsung masuk ke batch processing untuk katalog yang lebih banyak. Hasil akhirnya akan diarahkan ke download atau lanjut ke canvas desain.
+              Perbaiki foto produk Anda agar lebih menarik dan profesional untuk jualan di marketplace atau media sosial.
             </p>
           </div>
         </section>
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          <Link href="/tools/background-swap" className="rounded-3xl border bg-card p-6 transition-colors hover:bg-muted/40" onClick={() => posthog?.capture("tools_hub_tool_clicked", { tool_name: "AI Background Swap", tool_href: "/tools/background-swap", section: "featured" })}>
-            <p className="text-sm font-semibold text-foreground">Single image flow</p>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">Upload satu foto, review before/after, lalu pilih download atau lanjut ke canvas.</p>
+          <Link href="/tools/background-swap" className="rounded-3xl border bg-card p-6 transition-colors hover:bg-muted/40" onClick={() => posthog?.capture("tools_hub_tool_clicked", { tool_name: "Edit Satu Foto", tool_href: "/tools/background-swap", section: "featured" })}>
+            <p className="text-sm font-semibold text-foreground">Edit Satu Foto</p>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">Upload satu foto produk untuk hasil instan dan cepat.</p>
           </Link>
-          <Link href="/tools/batch-process" className="rounded-3xl border bg-card p-6 transition-colors hover:bg-muted/40" onClick={() => posthog?.capture("tools_hub_tool_clicked", { tool_name: "Batch Photo Processor", tool_href: "/tools/batch-process", section: "featured" })}>
-            <p className="text-sm font-semibold text-foreground">Batch processing</p>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">Proses banyak file sekaligus, lihat progres per item, dan pilih hasil yang ingin diteruskan.</p>
+          <Link href="/tools/batch-process" className="rounded-3xl border bg-card p-6 transition-colors hover:bg-muted/40" onClick={() => posthog?.capture("tools_hub_tool_clicked", { tool_name: "Edit Banyak Foto (Katalog)", tool_href: "/tools/batch-process", section: "featured" })}>
+            <p className="text-sm font-semibold text-foreground">Edit Banyak Foto (Katalog)</p>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">Proses seluruh katalog produk Anda sekaligus dalam sekejap.</p>
           </Link>
           <Link href="/my-assets" className="rounded-3xl border bg-card p-6 transition-colors hover:bg-muted/40">
-            <p className="text-sm font-semibold text-foreground">Asset repository</p>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">Akses hasil yang sudah tersimpan dan bawa kembali ke editor kapan saja.</p>
+            <p className="text-sm font-semibold text-foreground">Galeri Saya</p>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">Lihat dan ambil kembali hasil edit foto yang pernah Anda buat.</p>
           </Link>
         </section>
 
@@ -61,7 +61,7 @@ export default function ToolsHubPage() {
             <Card key={section.title} className="border-border/80">
               <CardHeader>
                 <CardTitle className="text-xl">{section.title}</CardTitle>
-                <CardDescription>Pilih tool sesuai kebutuhan edit foto saat ini.</CardDescription>
+                <CardDescription>Pilih alat yang Anda butuhkan.</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-3">
                 {section.items.map((item) => (
