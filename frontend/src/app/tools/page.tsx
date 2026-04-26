@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useEffect } from "react";
 import { usePostHog } from "posthog-js/react";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowRight } from "lucide-react";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { badgeClassName, toolSections } from "@/lib/tool-catalog";
@@ -20,7 +20,7 @@ export default function ToolsHubPage() {
   }, [posthog, status]);
 
   if (status === "loading") {
-    return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+    return <div className="flex h-screen items-center justify-center bg-[#0e0e10]"><Loader2 className="h-8 w-8 animate-spin text-[#d095ff]" /></div>;
   }
 
   if (status === "unauthenticated") {
@@ -28,58 +28,83 @@ export default function ToolsHubPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#0e0e10] text-[#f9f5f8]">
       <AppHeader />
-      <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 md:px-6 lg:px-8">
-        <section className="rounded-3xl border bg-gradient-to-br from-background via-background to-muted/40 px-6 py-8 md:px-10 md:py-12">
-          <div className="max-w-3xl space-y-4">
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-primary">SmartDesign Tools</p>
-            <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-5xl">Alat Edit Foto Produk AI</h1>
-            <p className="max-w-2xl text-sm leading-6 text-muted-foreground md:text-base">
-              Perbaiki foto produk Anda agar lebih menarik dan profesional untuk jualan di marketplace atau media sosial.
-            </p>
-          </div>
+      <main className="mx-auto flex w-full max-w-7xl flex-col gap-12 px-6 py-12 md:py-20">
+        {/* Hero Section */}
+        <section className="text-center space-y-4">
+          <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#d095ff]">SmartDesign AI</p>
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-[#f9f5f8] to-[#adaaad]">
+            Alat Edit Foto Produk
+          </h1>
+          <p className="max-w-2xl mx-auto text-[#adaaad] text-lg">
+            Hasil profesional dalam hitungan detik. Tanpa ribet, langsung siap jualan.
+          </p>
         </section>
 
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          <Link href="/tools/background-swap" className="rounded-3xl border bg-card p-6 transition-colors hover:bg-muted/40" onClick={() => posthog?.capture("tools_hub_tool_clicked", { tool_name: "Edit Satu Foto", tool_href: "/tools/background-swap", section: "featured" })}>
-            <p className="text-sm font-semibold text-foreground">Edit Satu Foto</p>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">Upload satu foto produk untuk hasil instan dan cepat.</p>
+        {/* Quick Access Grid */}
+        <section className="grid gap-6 md:grid-cols-3">
+          <Link 
+            href="/tools/background-swap" 
+            className="group relative rounded-[2rem] glass-morphism p-8 transition-all duration-500 hover:scale-[1.02] hover:void-glow"
+            onClick={() => posthog?.capture("tools_hub_tool_clicked", { tool_name: "Edit Satu Foto", tool_href: "/tools/background-swap", section: "featured" })}
+          >
+            <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
+              Edit Satu Foto <ArrowRight className="h-4 w-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+            </h3>
+            <p className="text-[#adaaad]">Upload satu foto produk untuk hasil instan dan cepat.</p>
           </Link>
-          <Link href="/tools/batch-process" className="rounded-3xl border bg-card p-6 transition-colors hover:bg-muted/40" onClick={() => posthog?.capture("tools_hub_tool_clicked", { tool_name: "Edit Banyak Foto (Katalog)", tool_href: "/tools/batch-process", section: "featured" })}>
-            <p className="text-sm font-semibold text-foreground">Edit Banyak Foto (Katalog)</p>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">Proses seluruh katalog produk Anda sekaligus dalam sekejap.</p>
+          
+          <Link 
+            href="/tools/batch-process" 
+            className="group relative rounded-[2rem] glass-morphism p-8 transition-all duration-500 hover:scale-[1.02] hover:void-glow"
+            onClick={() => posthog?.capture("tools_hub_tool_clicked", { tool_name: "Edit Banyak Foto (Katalog)", tool_href: "/tools/batch-process", section: "featured" })}
+          >
+            <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
+              Edit Massal <ArrowRight className="h-4 w-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+            </h3>
+            <p className="text-[#adaaad]">Proses seluruh katalog produk Anda sekaligus dalam sekejap.</p>
           </Link>
-          <Link href="/my-assets" className="rounded-3xl border bg-card p-6 transition-colors hover:bg-muted/40">
-            <p className="text-sm font-semibold text-foreground">Galeri Saya</p>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">Lihat dan ambil kembali hasil edit foto yang pernah Anda buat.</p>
+
+          <Link 
+            href="/my-assets" 
+            className="group relative rounded-[2rem] glass-morphism p-8 transition-all duration-500 hover:scale-[1.02] hover:void-glow"
+          >
+            <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
+              Galeri Saya <ArrowRight className="h-4 w-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+            </h3>
+            <p className="text-[#adaaad]">Lihat dan ambil kembali hasil edit foto yang pernah Anda buat.</p>
           </Link>
         </section>
 
-        <section className="grid gap-6 xl:grid-cols-2">
+        {/* Detailed Tool Sections */}
+        <section className="grid gap-12 xl:grid-cols-2">
           {toolSections.map((section) => (
-            <Card key={section.title} className="border-border/80">
-              <CardHeader>
-                <CardTitle className="text-xl">{section.title}</CardTitle>
-                <CardDescription>Pilih alat yang Anda butuhkan.</CardDescription>
-              </CardHeader>
-              <CardContent className="grid gap-3">
+            <div key={section.title} className="space-y-6">
+              <h2 className="text-2xl font-bold px-2">{section.title}</h2>
+              <div className="grid gap-4">
                 {section.items.map((item) => (
-                  <Link key={item.href} href={item.href} className="flex items-start gap-4 rounded-2xl border bg-muted/20 px-4 py-4 transition-colors hover:bg-muted/50" onClick={() => posthog?.capture("tools_hub_tool_clicked", { tool_name: item.title, tool_href: item.href, section: section.title })}>
-                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-background shadow-sm">
-                      <item.Icon className="h-5 w-5 text-primary" />
+                  <Link 
+                    key={item.href} 
+                    href={item.href} 
+                    className="group flex items-center gap-6 rounded-[1.5rem] glass-morphism px-6 py-5 transition-all duration-300 hover:bg-white/[0.05]" 
+                    onClick={() => posthog?.capture("tools_hub_tool_clicked", { tool_name: item.title, tool_href: item.href, section: section.title })}
+                  >
+                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#d095ff]/10 text-[#d095ff] transition-transform group-hover:scale-110">
+                      <item.Icon className="h-6 w-6" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-foreground">{item.title}</p>
-                        {item.badge ? <span className={`px-1.5 py-0.5 rounded-sm text-[9px] uppercase tracking-wider font-bold leading-none ${badgeClassName[item.badge]}`}>{item.badge}</span> : null}
+                        <p className="text-lg font-bold">{item.title}</p>
+                        {item.badge ? <span className={`px-2 py-0.5 rounded-full text-[10px] font-black tracking-tighter ${badgeClassName[item.badge]}`}>{item.badge}</span> : null}
                       </div>
-                      <p className="mt-1 text-xs leading-5 text-muted-foreground">{item.description}</p>
+                      <p className="text-sm text-[#adaaad] line-clamp-1">{item.description}</p>
                     </div>
+                    <ArrowRight className="h-5 w-5 text-[#adaaad] opacity-0 group-hover:opacity-100 transition-all" />
                   </Link>
                 ))}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           ))}
         </section>
       </main>

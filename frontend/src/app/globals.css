@@ -53,6 +53,15 @@
   --color-itp-surface:       hsl(217.2 32.6% 12%);
   --color-itp-surface-raised:hsl(217.2 32.6% 17.5%);
 
+  /* ── Luminescent Void Design Tokens ───────────────────────────────────── */
+  --color-void-bg:           #0e0e10;
+  --color-void-primary:      #d095ff;
+  --color-void-secondary:    #00e3fd;
+  --color-void-surface:      #131315;
+  --color-void-surface-high: #262528;
+  --color-void-accent:       #9d4edd;
+  /* ─────────────────────────────────────────────────────────────────────── */
+
   /* Spacing aliases aligned to Stitch spacing scale */
   --spacing-itp-xs:  4px;
   --spacing-itp-sm:  8px;
@@ -161,5 +170,24 @@
   .no-scrollbar {
     -ms-overflow-style: none; /* IE and Edge */
     scrollbar-width: none; /* Firefox */
+  }
+
+  .glass-morphism {
+    background: rgba(38, 37, 40, 0.4);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .void-gradient-primary {
+    background: linear-gradient(135deg, #d095ff 0%, #9d4edd 100%);
+  }
+
+  .void-gradient-secondary {
+    background: linear-gradient(135deg, #00e3fd 0%, #00b8d4 100%);
+  }
+
+  .void-glow {
+    box-shadow: 0 0 40px rgba(208, 149, 255, 0.15);
   }
 }
