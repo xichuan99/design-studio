@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, Trash2, LinkIcon, Loader2, Check } from "lucide-react";
@@ -111,6 +112,14 @@ export function GenerationCard({
                     </button>
                 ) : (
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                        {isLinkedToProject && (
+                            <Button variant="secondary" size="sm" className="w-32 gap-2 text-xs" asChild>
+                                <Link href={`/edit/${generation.project_id}`}>
+                                    <LinkIcon className="w-3.5 h-3.5" />
+                                    Buka Project
+                                </Link>
+                            </Button>
+                        )}
                         <Button
                             variant="secondary"
                             size="sm"

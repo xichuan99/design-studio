@@ -11,7 +11,6 @@ import {
     X,
     Wand2,
     Palette,
-    Images,
     ChevronDown,
 } from "lucide-react";
 import { UserMenu } from "@/components/auth/user-menu";
@@ -30,6 +29,7 @@ export const AppHeader = ({ renderActions }: AppHeaderProps = {}) => {
     const closeMenuTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const isCreateFlowActive = pathname.startsWith("/start") || pathname.startsWith("/design") || pathname.startsWith("/create");
+    const isLibraryActive = pathname.startsWith("/library") || pathname.startsWith("/projects") || pathname.startsWith("/my-assets");
     const isActive = (path: string) => pathname.startsWith(path) ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground";
 
     const openToolsMenu = () => {
@@ -61,7 +61,7 @@ export const AppHeader = ({ renderActions }: AppHeaderProps = {}) => {
     return (
         <header className="h-14 border-b flex items-center justify-between px-4 md:px-6 shrink-0 z-50 bg-card shadow-sm">
             <div className="flex items-center gap-4 md:gap-6">
-                <Link href="/projects" className="flex items-center gap-2 group">
+                <Link href="/library" className="flex items-center gap-2 group">
                     <div className="size-8 rounded-lg bg-primary flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
                         <Brush className="text-primary-foreground h-5 w-5" />
                     </div>
@@ -74,9 +74,12 @@ export const AppHeader = ({ renderActions }: AppHeaderProps = {}) => {
                         <PlusCircle className="w-4 h-4" />
                         <span>Mulai</span>
                     </Link>
-                    <Link href="/projects" className={`flex items-center gap-1.5 transition-colors ${isActive('/projects')}`}>
+                    <Link
+                        href="/library"
+                        className={`flex items-center gap-1.5 transition-colors ${isLibraryActive ? 'text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
                         <LayoutDashboard className="w-4 h-4" />
-                        <span>Proyek</span>
+                        <span>Library</span>
                     </Link>
                     <Link href="/brand" className={`flex items-center gap-1.5 transition-colors ${isActive('/brand')}`}>
                         <Palette className="w-4 h-4" />
@@ -145,10 +148,6 @@ export const AppHeader = ({ renderActions }: AppHeaderProps = {}) => {
                             </div>
                         </div>
                     </div>
-                    <Link href="/my-assets" className={`flex items-center gap-1.5 transition-colors ${isActive('/my-assets')}`}>
-                        <Images className="w-4 h-4" />
-                        <span>Aset</span>
-                    </Link>
                 </nav>
             </div>
 
@@ -182,12 +181,12 @@ export const AppHeader = ({ renderActions }: AppHeaderProps = {}) => {
                             Mulai
                         </Link>
                         <Link
-                            href="/projects"
-                            className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm transition-colors ${isActive('/projects')} hover:bg-muted`}
+                            href="/library"
+                            className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm transition-colors ${isLibraryActive ? 'text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'} hover:bg-muted`}
                             onClick={() => setMobileMenuOpen(false)}
                         >
                             <LayoutDashboard className="w-4 h-4" />
-                            Proyek
+                            Library
                         </Link>
                         <Link
                             href="/brand"
@@ -221,14 +220,6 @@ export const AppHeader = ({ renderActions }: AppHeaderProps = {}) => {
                                 ) : null}
                             </Link>
                         ))}
-                        <Link
-                            href="/my-assets"
-                            className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm transition-colors ${isActive('/my-assets')} hover:bg-muted`}
-                            onClick={() => setMobileMenuOpen(false)}
-                        >
-                            <Images className="w-4 h-4" />
-                            Aset
-                        </Link>
                     </nav>
                 </div>
             )}

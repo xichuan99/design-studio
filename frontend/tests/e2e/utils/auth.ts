@@ -26,7 +26,7 @@ export async function loginAsDemoUser(page: Page) {
   const ensureProjectsAccess = async () => {
     await page.goto('/projects');
     await page.waitForLoadState('domcontentloaded');
-    return page.url().includes('/projects');
+    return page.url().includes('/projects') || page.url().includes('/library?tab=projects');
   };
 
   if (await ensureProjectsAccess()) {

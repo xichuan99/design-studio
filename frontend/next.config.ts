@@ -2,6 +2,20 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  async redirects() {
+    return [
+      {
+        source: "/projects",
+        destination: "/library?tab=projects",
+        permanent: false,
+      },
+      {
+        source: "/my-assets",
+        destination: "/library?tab=assets",
+        permanent: false,
+      },
+    ];
+  },
   generateBuildId: async () => {
     // Explicitly use static ID from Github Actions CI for cache consistency
     if (process.env.NEXT_PUBLIC_BUILD_ID) {

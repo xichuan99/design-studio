@@ -50,9 +50,21 @@ function LoadingState() {
     );
 }
 
-export function AssetGrid({ selectedFolderId }: { selectedFolderId?: string | null }) {
+interface AssetGridProps {
+    selectedFolderId?: string | null;
+    initialTab?: TabId;
+    projectFilterId?: string | null;
+    onClearProjectFilter?: () => void;
+}
+
+export function AssetGrid({
+    selectedFolderId,
+    initialTab = "tools",
+    projectFilterId,
+    onClearProjectFilter,
+}: AssetGridProps) {
     const { getMyToolResults, deleteToolResult, getMyGenerations, deleteGeneration } = useAiToolsEndpoints();
-    const [activeTab, setActiveTab] = useState<TabId>("tools");
+    const [activeTab, setActiveTab] = useState<TabId>(initialTab);
     const [toolResults, setToolResults] = useState<AiToolResult[]>([]);
     const [generations, setGenerations] = useState<AiGeneration[]>([]);
     const [loadingTools, setLoadingTools] = useState(true);
@@ -106,6 +118,10 @@ export function AssetGrid({ selectedFolderId }: { selectedFolderId?: string | nu
     }, [loadGenerations]);
 
     useEffect(() => {
+        setActiveTab(initialTab);
+    }, [initialTab]);
+
+    useEffect(() => {
         setIsSelectionMode(false);
         setSelectedToolIds(new Set());
         setSelectedGenerationIds(new Set());
@@ -146,7 +162,10 @@ export function AssetGrid({ selectedFolderId }: { selectedFolderId?: string | nu
     };
 
     const visibleToolIds = toolResults.map((item) => item.id);
-    const visibleGenerationIds = generations.map((item) => item.id);
+    const filteredGenerations = projectFilterId
+        ? generations.filter((item) => item.project_id === projectFilterId)
+        : generations;
+    const visibleGenerationIds = filteredGenerations.map((item) => item.id);
     const selectedCount = activeTab === "tools" ? selectedToolIds.size : selectedGenerationIds.size;
 
     const clearSelection = () => {
@@ -328,6 +347,18 @@ export function AssetGrid({ selectedFolderId }: { selectedFolderId?: string | nu
             {/* Design generations tab */}
             {activeTab === "generations" && (
                 <div className="space-y-5">
+                    {projectFilterId ? (
+                        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs">
+                            <span className="font-medium text-foreground">Filter project aktif</span>
+                            <span className="text-muted-foreground">{projectFilterId}</span>
+                            {onClearProjectFilter ? (
+                                <Button variant="outline" size="sm" className="h-7" onClick={onClearProjectFilter}>
+                                    Tampilkan Semua
+                                </Button>
+                            ) : null}
+                        </div>
+                    ) : null}
+
                     <div className="flex items-center justify-end">
                         <Button
                             variant={isSelectionMode ? "secondary" : "outline"}
@@ -367,11 +398,17 @@ export function AssetGrid({ selectedFolderId }: { selectedFolderId?: string | nu
 
                     {loadingGenerations ? (
                         <LoadingState />
-                    ) : generations.length === 0 ? (
-                        <EmptyState message="Desain yang Anda buat via AI akan muncul di sini." />
+                    ) : filteredGenerations.length === 0 ? (
+                        <EmptyState
+                            message={
+                                projectFilterId
+                                    ? "Belum ada hasil visual yang terhubung ke proyek ini."
+                                    : "Desain yang Anda buat via AI akan muncul di sini."
+                            }
+                        />
                     ) : (
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                            {generations.map((g) => (
+                            {filteredGenerations.map((g) => (
                                 <GenerationCard
                                     key={g.id}
                                     generation={g}
