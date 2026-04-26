@@ -224,9 +224,16 @@ async def process_batch_images(
         start_time = time.time()
 
         # 1. Process batch
-        zip_bytes, errors, _item_results = await batch_service.process_batch(
+        batch_result = await batch_service.process_batch(
             files=file_data, operation=operation, params=params
         )
+        if isinstance(batch_result, tuple) and len(batch_result) == 3:
+            zip_bytes, errors, _item_results = batch_result
+        elif isinstance(batch_result, tuple) and len(batch_result) == 2:
+            zip_bytes, errors = batch_result
+            _item_results = []
+        else:
+            raise ValueError("Invalid batch result format from process_batch")
 
         # 2. Upload ZIP result
         batch_id = str(uuid.uuid4())[:8]

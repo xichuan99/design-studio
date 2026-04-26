@@ -281,7 +281,7 @@ async def test_process_batch_watermark_still_applies_globally(mock_apply_waterma
         "visibility_preset": "balanced",
     }
 
-    zip_bytes, errors = await process_batch(files, "watermark", params)
+    zip_bytes, errors, _ = await process_batch(files, "watermark", params)
 
     assert len(errors) == 0
 

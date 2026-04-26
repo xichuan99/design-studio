@@ -599,7 +599,7 @@ def test_batch_endpoint_success():
             "app.api.ai_tools_routers.creative.upload_image", new_callable=AsyncMock
         ) as mock_upload,
     ):
-        mock_batch.return_value = (b"fake_zip_bytes", [])
+        mock_batch.return_value = (b"fake_zip_bytes", [], [])
         mock_upload.return_value = "http://storage.com/batch.zip"
 
         res = client.post("/api/tools/batch", data=data, files=files)
