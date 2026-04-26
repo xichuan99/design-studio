@@ -10,7 +10,7 @@ const faqs = [
   },
   {
     question: "Berapa lama proses edit fotonya?",
-    answer: "Proses edit umumnya terasa cepat untuk kebutuhan harian. Durasi tetap bisa berbeda tergantung kualitas file awal, antrean proses, dan jenis fitur yang dipakai."
+    answer: "Untuk edit standar, hasil biasanya selesai dalam beberapa menit. Waktu bisa lebih lama jika kualitas file awal rendah, antrean sedang tinggi, atau proses yang dipilih lebih kompleks."
   },
   {
     question: "Format file apa saja yang didukung?",

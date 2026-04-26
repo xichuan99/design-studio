@@ -70,7 +70,7 @@ export function ResultGallery() {
       <div className="text-center mb-10">
         <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Showcase Portofolio UMKM</h2>
         <p className="text-slate-400 max-w-2xl mx-auto">
-          Lihat bagaimana UMKM Indonesia mengubah foto HP biasa menjadi foto katalog profesional dan jernih menggunakan AI.
+          Lihat inspirasi bagaimana UMKM Indonesia mengolah foto produk dengan bantuan AI agar lebih siap untuk katalog dan materi promo.
         </p>
       </div>
 

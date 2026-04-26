@@ -101,7 +101,7 @@ export default function LandingPage() {
                   Dari Brief Singkat ke Desain yang Siap Dipakai
                 </h1>
                 <h2 className="text-slate-400 text-lg lg:text-xl font-normal leading-relaxed max-w-xl">
-                  Untuk UMKM yang sering bingung mulai dari mana, SmartDesign membantu memulai dari tujuan, foto, atau teks lalu membawa hasilnya ke preview, editor, dan ekspor tanpa memutus alur.
+                  Untuk UMKM yang sering bingung mulai, SmartDesign mengubah brief, foto, atau teks jadi desain siap pakai dalam satu alur.
                 </h2>
               </div>
               <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
@@ -272,7 +272,7 @@ export default function LandingPage() {
                   <div className="w-14 h-14 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-xl flex items-center justify-center mb-6">
                     <ImageOff className="w-7 h-7" />
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-3">Edit Foto Produk AI & Background Cleaner</h3>
+                  <h3 className="text-xl font-bold text-white mb-3">Edit Foto Produk AI & Penghapus Latar</h3>
                   <p className="text-slate-400 text-sm leading-relaxed">
                     Tingkatkan penjualan dengan foto produk yang lebih tajam, cerah, dan konsisten. Sekali edit, hasil siap untuk katalog Shopee, Tokopedia, dan etalase marketplace lain.
                   </p>
@@ -292,7 +292,7 @@ export default function LandingPage() {
                   <div className="w-14 h-14 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl flex items-center justify-center mb-6">
                     <Banknote className="w-7 h-7" />
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-3">Batch Editing Foto Produk (50 Foto)</h3>
+                  <h3 className="text-xl font-bold text-white mb-3">Edit Batch Foto Produk (50 Foto)</h3>
                   <p className="text-slate-400 text-sm leading-relaxed">
                     Punya banyak SKU baru? Edit foto produk sekaligus untuk kebutuhan katalog dan konten promo mingguan, tanpa proses manual satu per satu.
                   </p>

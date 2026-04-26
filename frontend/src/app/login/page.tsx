@@ -88,7 +88,7 @@ function LoginForm() {
             <div className="w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 flex flex-col gap-6 shadow-2xl">
                 <div className="text-center">
                     <h2 className="text-xl font-bold text-white mb-2">Selamat Datang Kembali</h2>
-                    <p className="text-slate-400 text-sm">Masuk untuk melanjutkan desainmu</p>
+                    <p className="text-slate-400 text-sm">Masuk untuk melanjutkan desain Anda</p>
                 </div>
 
                 {GOOGLE_OAUTH_ENABLED ? (

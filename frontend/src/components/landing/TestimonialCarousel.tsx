@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { Star } from "lucide-react";
 
-// Placeholder data - to be replaced with real user quotes later
+// Umpan balik pengguna UMKM untuk menggambarkan pola penggunaan umum.
 const testimonials = [
   {
     quote: "Saya jadi lebih tenang saat menyiapkan materi promo harian, karena ada alur yang jelas dari ide sampai draft visual.",

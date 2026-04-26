@@ -91,7 +91,7 @@ export default function RegisterPage() {
                 <div className="w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 flex flex-col gap-6 shadow-2xl">
                     <div className="text-center">
                         <h2 className="text-xl font-bold text-white mb-2">Buat Akun Baru</h2>
-                        <p className="text-slate-400 text-sm">Mulai kreasikan desain terbaikmu sekarang</p>
+                        <p className="text-slate-400 text-sm">Mulai buat desain terbaik Anda sekarang</p>
                     </div>
 
                     {error && (

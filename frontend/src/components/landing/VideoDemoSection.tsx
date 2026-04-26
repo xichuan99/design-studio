@@ -74,7 +74,7 @@ export function VideoDemoSection() {
 
             <div className="absolute bottom-6 left-0 right-0 flex justify-center z-20">
               <span className="px-4 py-2 rounded-full bg-black/50 backdrop-blur-md text-sm text-white font-medium">
-                Lihat Demo Singkat (0:45)
+                Lihat Demo Singkat (2:30)
               </span>
             </div>
           </div>

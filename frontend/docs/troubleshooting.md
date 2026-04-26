@@ -13,21 +13,21 @@ Berikut adalah daftar masalah umum yang sering dihadapi pengguna saat menggunaka
 **Gejala**: Memindahkan elemen teks atau stiker terasa berat, patah-patah, atau memori browser tersita penuh.
 **Solusi**:
 - Kurangi jumlah lapisan (*layers*). Editor SmartDesign dioptimalkan untuk performa web, tapi >20 layer berat (terutama gambar transparan beresolusi tinggi) akan menguras RAM.
-- Fitur *Remove Background* kadang memakan waktu. Tunggu icon *loading* selesai sebelum melakukan rotasi/scaling objek tersebut.
+- Fitur *Penghapus Latar* kadang memakan waktu. Tunggu ikon *loading* selesai sebelum melakukan rotasi/scaling objek tersebut.
 - Refresh halaman (F5). Proyek Anda selalu otomatis tersimpan (Auto-save) setiap beberapa detik.
 
 ## 3. Template Tidak Sesuai Atau Terlalu Berantakan
 **Gejala**: Anda memilih template promo "Flash Sale", tapi saat gambar produk masuk, teksnya tertutup atau layout berantakan.
 **Solusi**:
 - Gunakan fitur **Arahkan Ulang (Layer Forward / Layer Backward)** di panel sebelah kanan untuk membawa teks ke atas produk.
-- Sesuaikan warna kontras teks terhadap background secara manual menggunakan fitur palet. Kadang AI mengambil dominasi warna gelap yang menenggelamkan teks Anda.
+- Sesuaikan warna kontras teks terhadap latar secara manual menggunakan fitur palet. Kadang AI mengambil dominasi warna gelap yang menenggelamkan teks Anda.
 
 ## 4. Ekspor Gambar Gagal ('Tainted Canvas' Error)
 **Gejala**: Saat menekan tombol **Unduh / Ekspor**, tidak ada file PNG/JPG yang tersimpan, atau konsol browser menunjukkan error `Tainted Canvas`.
 **Solusi**:
 - Ini terjadi jika Anda mengimpor gambar dari luar web tanpa proxy CORS. Pastikan gambar diunggah melalui tombol resmi "Upload" atau menggunakan aset galeri di dalam platform kami.
 
-## 5. Storage (Penyimpanan) Penuh
+## 5. Penyimpanan (Storage) Penuh
 **Gejala**: Muncul pesan "Kuota Penyimpanan Habis" atau "413 Payload Too Large".
 **Solusi**:
 - Paket Free memiliki batasan penyimpanan maksimal 100MB per akun pengguna.

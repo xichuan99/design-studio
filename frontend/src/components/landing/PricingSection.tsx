@@ -16,7 +16,7 @@ export function PricingSection() {
           <span className="text-purple-400 font-semibold tracking-wider uppercase text-sm">Harga Kredit</span>
           <h2 className="text-4xl md:text-5xl font-bold text-white mt-4 mb-6">Bayar Sesuai Kebutuhan</h2>
           <p className="text-slate-400 max-w-2xl mx-auto text-lg">
-            Mulai gratis, lalu lanjut sesuai ritme bisnis Anda. Tanpa komitmen langganan bulanan, jadi pengeluaran konten terasa lebih terkontrol. <strong className="text-white">1 Kredit = 1x Proses AI.</strong>
+            Mulai gratis, lalu lanjut sesuai ritme bisnis Anda. Tanpa komitmen langganan bulanan, jadi pengeluaran konten terasa lebih terkontrol. <strong className="text-white">1 kredit dihitung per langkah proses AI. Rata-rata 1 hasil visual membutuhkan sekitar 40 kredit.</strong>
           </p>
         </div>
 
@@ -54,7 +54,7 @@ export function PricingSection() {
               onClick={() => setCreditsSelected(500)}
             >
               <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg">
-                Sering Dipilih
+                Rekomendasi UMKM Aktif
               </div>
               <div className="text-slate-200 font-medium mb-2 mt-2">Paket Pro</div>
               <div className="flex items-baseline gap-2 mb-4">

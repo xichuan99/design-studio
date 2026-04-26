@@ -11,11 +11,11 @@ import { toast } from "sonner";
 
 const TOOL_FILTERS = [
     { label: "Semua", value: "" },
-    { label: "BG Swap", value: "background_swap" },
+    { label: "Ganti Latar", value: "background_swap" },
     { label: "Retouch", value: "retouch" },
-    { label: "Pasfoto", value: "id_photo" },
+    { label: "Pas Foto", value: "id_photo" },
     { label: "Magic Eraser", value: "magic_eraser" },
-    { label: "Expand", value: "generative_expand" },
+    { label: "Perluas Gambar", value: "generative_expand" },
     { label: "Watermark", value: "watermark" },
     { label: "Product Scene", value: "product_scene" },
 ];

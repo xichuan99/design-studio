@@ -11,9 +11,9 @@
 - **Visual**: Klik "Generate dari Teks" -> Sidebar input muncul. Mengetik deskripsi (contoh: "Botol parfum elegan di atas marmer dengan bunga mawar").
 - **Narator**: "Langkah pertama, tentukan apa yang ingin Anda buat. Ketik deskripsi sejelas mungkin. Anda juga bisa menentukan ukuran hasil foto (1:1, 9:16, atau 16:9) sesuai kebutuhan platform Anda. Jika Anda ingin menyertakan gambar produk referensi, letakkan di kolom unggah. Klik 'Lanjut'."
 
-## 🗣️ Scene 3: Tahap 2 - Interviu Briefing (0:45 - 1:15)
+## 🗣️ Scene 3: Tahap 2 - Interview Briefing (0:45 - 1:15)
 - **Visual**: Layar memunculkan pertanyaan tambahan dari AI untuk memperjelas konteks desain. Menjawab pertanyaan "Warna dominan apa yang diinginkan?".
-- **Narator**: "Jangan khawatir jika deskripsi Anda kurang lengkap. AI pintar kami akan mengajukan 1-2 pertanyaan cepat agar desain semakin sesuai dengan ekspektasi. Begitu selesai, klik 'Generate Prompt'.
+- **Narator**: "Jangan khawatir jika deskripsi Anda kurang lengkap. AI pintar kami akan mengajukan 1-2 pertanyaan cepat agar desain semakin sesuai dengan ekspektasi. Begitu selesai, klik 'Generate Prompt'."
 
 ## ✨ Scene 4: Tahap 3 & 4 - Hasil Prompt & Generating (1:15 - 1:45)
 - **Visual**: Menampilkan layar konfirmasi Prompt (Visual Prompt Builder) hasil racikan AI, lalu proses loading generasi foto.
