@@ -59,7 +59,6 @@ export const AppHeader = ({ renderActions }: AppHeaderProps = {}) => {
     }, []);
 
     return (
-    return (
         <header className="h-20 flex items-center justify-between px-6 md:px-10 shrink-0 z-50 bg-[#0e0e10]/80 backdrop-blur-xl sticky top-0 transition-all duration-300">
             <div className="flex items-center gap-4 md:gap-6">
                 <Link href="/library" className="flex items-center gap-4 group">
