@@ -74,10 +74,9 @@ export default function StartPage() {
             <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 md:px-6 lg:px-8">
                 <section className="rounded-3xl border bg-gradient-to-br from-background via-background to-muted/40 px-6 py-8 md:px-10 md:py-12">
                     <div className="max-w-3xl space-y-4">
-                        <p className="text-sm font-semibold uppercase tracking-[0.24em] text-primary">Intent-first workspace</p>
-                        <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-5xl">Apa yang ingin Anda lakukan hari ini?</h1>
+                        <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-5xl">Apa yang ingin Anda buat hari ini?</h1>
                         <p className="max-w-2xl text-sm leading-6 text-muted-foreground md:text-base">
-                            Pilih jalur kerja yang paling sesuai. Flow desain baru dimulai dari brief visual, sedangkan flow edit foto langsung membawa Anda ke tools yang paling relevan.
+                            Pilih layanan yang Anda butuhkan untuk membuat visual produk yang menarik.
                         </p>
                     </div>
                 </section>
@@ -89,31 +88,15 @@ export default function StartPage() {
                                 <Sparkles className="h-6 w-6" />
                             </div>
                             <div className="space-y-2">
-                                <CardTitle className="text-2xl">Mulai Desain Baru</CardTitle>
+                                <CardTitle className="text-2xl">Buat Desain Promosi</CardTitle>
                                 <CardDescription className="max-w-lg text-sm leading-6">
-                                    Masuk ke flow desain bertahap: pilih tujuan, gaya visual, dan channel promosi sebelum lanjut ke preview dan editor.
+                                    Buat materi promosi dan banner media sosial secara otomatis dengan bantuan AI, cukup ceritakan kebutuhan Anda.
                                 </CardDescription>
                             </div>
                         </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex flex-wrap gap-2 text-xs font-medium text-muted-foreground">
-                                <span className="rounded-full bg-muted px-3 py-1">Brief visual</span>
-                                <span className="rounded-full bg-muted px-3 py-1">Pilihan bergambar</span>
-                                <span className="rounded-full bg-muted px-3 py-1">Flow tanpa sidebar statis</span>
-                            </div>
-                            <div className="grid gap-3 rounded-2xl border bg-muted/30 p-4 text-sm text-muted-foreground md:grid-cols-3">
-                                <div>
-                                    <p className="font-semibold text-foreground">1. Interview</p>
-                                    <p className="mt-1">Pilih objective, style, dan channel.</p>
-                                </div>
-                                <div>
-                                    <p className="font-semibold text-foreground">2. Preview</p>
-                                    <p className="mt-1">Review arah visual sebelum generate lanjut.</p>
-                                </div>
-                                <div>
-                                    <p className="font-semibold text-foreground">3. Canvas</p>
-                                    <p className="mt-1">Masuk editor dengan konteks yang lebih rapi.</p>
-                                </div>
+                        <CardContent className="min-h-[100px] flex items-center">
+                            <div className="rounded-2xl border bg-muted/30 p-4 text-sm text-muted-foreground w-full">
+                                <p>Sistem AI akan membantu Anda menentukan konsep, gaya visual, hingga ukuran yang pas untuk marketplace atau media sosial.</p>
                             </div>
                         </CardContent>
                         <CardFooter className="pt-0">
@@ -137,21 +120,11 @@ export default function StartPage() {
                             <div className="space-y-2">
                                 <CardTitle className="text-2xl">Edit Foto Produk</CardTitle>
                                 <CardDescription className="max-w-lg text-sm leading-6">
-                                    Masuk ke galeri AI Photo Tools untuk merapikan satu foto, memproses batch, atau menyiapkan hasil yang siap diteruskan ke canvas desain.
+                                    Perbaiki kualitas foto, hapus background, atau hilangkan objek mengganggu dalam hitungan detik.
                                 </CardDescription>
                             </div>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div className="grid gap-3 sm:grid-cols-2">
-                                <div className="rounded-2xl border bg-muted/30 p-4">
-                                    <p className="text-sm font-semibold text-foreground">1 Foto</p>
-                                    <p className="mt-1 text-sm text-muted-foreground">Before/after slider, hasil cepat, dan lanjut ke canvas.</p>
-                                </div>
-                                <div className="rounded-2xl border bg-muted/30 p-4">
-                                    <p className="text-sm font-semibold text-foreground">Batch</p>
-                                    <p className="mt-1 text-sm text-muted-foreground">Galeri hasil per item, status progres, dan detail compare.</p>
-                                </div>
-                            </div>
                             <div className="flex flex-wrap gap-2 text-xs font-medium text-muted-foreground">
                                 {featuredToolItems.map((tool) => (
                                     <span key={tool.href} className="rounded-full bg-muted px-3 py-1">{tool.title}</span>
@@ -176,7 +149,7 @@ export default function StartPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle className="text-xl">Lanjutkan pekerjaan terakhir</CardTitle>
-                            <CardDescription>Project terbaru tetap bisa dibuka dari sini tanpa kembali ke dashboard proyek.</CardDescription>
+                            <CardDescription>Lanjutkan desain terakhir Anda.</CardDescription>
                         </CardHeader>
                         <CardContent>
                             {loadingProjects ? (
@@ -211,7 +184,7 @@ export default function StartPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-xl"><Layers className="h-5 w-5 text-primary" /> Quick tools</CardTitle>
-                            <CardDescription>Shortcut ke tools yang paling sering dipakai untuk katalog dan foto produk.</CardDescription>
+                            <CardDescription>Akses cepat ke alat edit foto yang sering digunakan.</CardDescription>
                         </CardHeader>
                         <CardContent className="grid gap-3">
                             {featuredToolItems.map((tool) => (
