@@ -36,6 +36,13 @@ class Settings(BaseSettings):
     STORAGE_CHECKOUT_URL_BASE: str = ""
     STORAGE_ADDON_CATALOG_JSON: str = ""
 
+    # Midtrans payment provider
+    MIDTRANS_SERVER_KEY: str = ""
+    MIDTRANS_IS_PRODUCTION: bool = False
+
+    # Feature flag: enable paid storage upgrade flow
+    STORAGE_PAYMENT_ENABLED: bool = True
+
     # Optional extra CA bundle for internal HTTPS assets/services.
     INTERNAL_CA_BUNDLE_PATH: str = ""
 

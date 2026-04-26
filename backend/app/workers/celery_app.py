@@ -1,6 +1,7 @@
 """Celery app instance configured with Redis broker."""
 
 from celery import Celery
+from celery.schedules import crontab
 from app.core.config import settings
 
 celery_app = Celery(
@@ -18,6 +19,12 @@ celery_app.conf.update(
     task_track_started=True,
     task_acks_late=True,
     worker_prefetch_multiplier=1,
+    beat_schedule={
+        "reconcile-storage-every-10-min": {
+            "task": "app.workers.storage_reconcile.reconcile_pending_storage_purchases",
+            "schedule": crontab(minute="*/10"),
+        },
+    },
 )
 
 # Auto-discover tasks module

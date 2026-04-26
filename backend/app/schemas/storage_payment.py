@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field, UUID4
 
 
 StoragePurchaseStatus = Literal["pending", "paid", "failed", "expired", "canceled"]
-StorageProvider = Literal["manual"]
+StorageProvider = Literal["manual", "midtrans"]
 StorageAddonCode = Literal["storage_plus_5gb", "storage_plus_20gb"]
 
 
@@ -66,3 +66,15 @@ class StorageWebhookResponse(BaseModel):
     already_processed: bool = False
     purchase_id: UUID4
     status: str
+
+
+# Midtrans payment notification payload
+class MidtransNotification(BaseModel):
+    order_id: str
+    status_code: str
+    gross_amount: str
+    signature_key: str
+    transaction_status: str
+    transaction_id: str
+    payment_type: Optional[str] = None
+    fraud_status: Optional[str] = None

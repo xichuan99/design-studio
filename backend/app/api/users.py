@@ -221,7 +221,11 @@ async def create_my_storage_purchase_intent(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    from app.core.config import settings as _settings
     from app.services.storage_payment_service import create_purchase_intent
+
+    if not _settings.STORAGE_PAYMENT_ENABLED:
+        raise AppException(status_code=503, detail="Storage upgrade is temporarily unavailable.")
 
     purchase = await create_purchase_intent(
         user_id=current_user.id,
