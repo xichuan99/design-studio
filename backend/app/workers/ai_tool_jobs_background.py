@@ -12,7 +12,6 @@ from app.services import (
     bg_removal_service,
     id_photo_service,
     inpaint_service,
-    outpaint_service,
 )
 from app.services.storage_service import download_image, upload_image
 from app.workers.ai_tool_jobs_common import (
@@ -156,91 +155,6 @@ async def execute_background_swap_tool_job(job_id: str):
             input_summary=str(prompt)[:200],
         )
         session.add(result_row)
-
-        job.status = "completed"
-        job.result_url = result_url
-        job.phase_message = "Selesai"
-        job.progress_percent = 100
-        job.finished_at = datetime.now(timezone.utc)
-        session.add(job)
-        await session.commit()
-
-
-async def execute_generative_expand_tool_job(job_id: str):
-    async with AsyncSessionLocal() as session:
-        job = await session.get(AiToolJob, job_id)
-        if not job:
-            raise RuntimeError("AI tool job not found")
-
-        payload = job.payload_json or {}
-        image_url = payload.get("image_url")
-        direction = payload.get("direction")
-        pixels = payload.get("pixels")
-        target_width = payload.get("target_width")
-        target_height = payload.get("target_height")
-        prompt = payload.get("prompt")
-
-        if not image_url:
-            raise ValueError("Missing image_url in job payload")
-
-        if job.cancel_requested:
-            await set_ai_tool_job_canceled(session, job, "Refund: job generative expand dibatalkan")
-            await session.commit()
-            return
-
-        job.status = "processing"
-        job.phase_message = "AI sedang memperluas gambar"
-        job.progress_percent = 65
-        job.started_at = datetime.now(timezone.utc)
-        session.add(job)
-        await session.commit()
-
-    result_data = await outpaint_service.outpaint_image(
-        image_url=str(image_url),
-        direction=str(direction) if direction else None,
-        pixels=int(pixels) if pixels is not None else None,
-        target_width=int(target_width) if target_width is not None else None,
-        target_height=int(target_height) if target_height is not None else None,
-        prompt=str(prompt) if prompt else None,
-    )
-
-    outpainted_url = result_data.get("url")
-    if not outpainted_url:
-        raise RuntimeError("Generative expand model returned invalid URL")
-
-    await update_ai_tool_job(
-        job_id,
-        status="saving",
-        phase_message="Menyimpan hasil generative expand",
-        progress_percent=90,
-    )
-
-    final_bytes = await download_image(outpainted_url)
-    result_url = await upload_image(
-        final_bytes,
-        content_type="image/jpeg",
-        prefix="generative_expand_async",
-    )
-
-    async with AsyncSessionLocal() as session:
-        job = await session.get(AiToolJob, job_id)
-        if not job:
-            return
-
-        if job.cancel_requested:
-            await set_ai_tool_job_canceled(session, job, "Refund: job generative expand dibatalkan")
-            await session.commit()
-            return
-
-        session.add(
-            AiToolResult(
-                user_id=job.user_id,
-                tool_name="generative_expand",
-                result_url=result_url,
-                file_size=len(final_bytes),
-                input_summary=(str(prompt) if prompt else f"Expand {direction or 'all'}")[:200],
-            )
-        )
 
         job.status = "completed"
         job.result_url = result_url

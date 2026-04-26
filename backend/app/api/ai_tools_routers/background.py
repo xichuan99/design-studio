@@ -10,7 +10,7 @@ import uuid
 from typing import Optional
 from fastapi import APIRouter, Depends, UploadFile, File, Form, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.services import bg_removal_service, inpaint_service, outpaint_service
+from app.services import bg_removal_service, inpaint_service
 from app.api.deps import get_db
 from app.api.rate_limit import rate_limit_dependency
 from app.models.user import User
@@ -287,99 +287,3 @@ async def magic_eraser(
         raise InternalServerError(detail=f"Failed to process image: {str(e)}")
 
 
-@router.post(
-    "/generative-expand",
-    response_model=dict,
-    status_code=status.HTTP_200_OK,
-    summary="Generative Expand",
-    description="Expands the borders of an image using AI outpainting.",
-    responses=ERROR_RESPONSES,
-)
-async def generative_expand(
-    file: UploadFile = File(...),
-    direction: Optional[str] = Form(None),
-    pixels: Optional[int] = Form(None),
-    target_width: Optional[int] = Form(None),
-    target_height: Optional[int] = Form(None),
-    prompt: Optional[str] = Form(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(rate_limit_dependency),
-):
-    """
-    1. Uploads original image
-    2. Calls outpaint_service
-    3. Returns resulting image
-    """
-    from app.core.credit_costs import COST_GENERATIVE_EXPAND
-
-    if current_user.credits_remaining < COST_GENERATIVE_EXPAND:
-        raise InsufficientCreditsError(detail="Insufficient credits")
-
-    content = await file.read()
-    if len(content) > 10 * 1024 * 1024:
-        raise ValidationError(detail="Image size exceeds 10MB limit")
-
-    from app.services.file_validation import validate_uploaded_image
-    await validate_uploaded_image(content, user_id=current_user.id, db=db)
-
-    from app.services.credit_service import log_credit_change
-
-    await log_credit_change(
-        db, current_user, -COST_GENERATIVE_EXPAND, "Generative Expand"
-    )
-    await db.commit()
-
-    try:
-        start_time = time.time()
-
-        # 1. Upload input image to generate URL
-        base_id = str(uuid.uuid4())[:8]
-        image_url = await upload_image(
-            content, content_type="image/png", prefix=f"outpaint_input_{base_id}"
-        )
-
-        # 2. Call Fal Service
-        result_data = await outpaint_service.outpaint_image(
-            image_url=image_url,
-            direction=direction,
-            pixels=pixels,
-            target_width=target_width,
-            target_height=target_height,
-            prompt=prompt,
-        )
-
-        # Save to AI tool results gallery
-        from app.api.ai_tools_routers.results import save_tool_result
-
-        expand_url = result_data.get("url", "")
-        result_id = await save_tool_result(
-            db,
-            current_user.id,
-            "generative_expand",
-            expand_url,
-            0,
-            (prompt or f"Expand {direction or 'all'}")[:200],
-        )
-        await db.commit()
-
-        logger.info(f"Generative Expand logic took {time.time() - start_time:.2f}s")
-        result_data["result_id"] = result_id
-        return result_data
-
-    except Exception as e:
-        logger.exception("Generative Expand failed")
-        try:
-            from app.services.credit_service import log_credit_change
-
-            await log_credit_change(
-                db,
-                current_user,
-                COST_GENERATIVE_EXPAND,
-                "Refund: gagal generative expand",
-            )
-            await db.commit()
-        except Exception as refund_err:
-            logger.error(
-                f"CRITICAL: Failed to refund user {current_user.id}: {str(refund_err)}"
-            )
-        raise InternalServerError(detail=f"Failed to process image: {str(e)}")

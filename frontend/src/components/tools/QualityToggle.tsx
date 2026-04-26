@@ -16,7 +16,6 @@ import {
 export const ULTRA_SUPPORTED_TOOLS = new Set([
   'background_swap',
   'product_scene',
-  'generative_expand',
   'magic_eraser',
 ]);
 

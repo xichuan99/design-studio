@@ -13,7 +13,6 @@ const capabilities = [
   { name: "Magic Eraser", icon: Sparkles },
   { name: "Product Scene", icon: Layers },
   { name: "Auto-Resize Sosmed", icon: MoveHorizontal },
-  { name: "Generative Expand", icon: MoveHorizontal },
   { name: "Foto Pas / KTP", icon: Crop },
 ];
 

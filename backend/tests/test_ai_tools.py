@@ -419,77 +419,6 @@ def test_magic_eraser_without_prompt_uses_magic_eraser_mode():
         )
 
 
-def test_generative_expand_directional_success():
-    files = {"file": ("test.png", b"fake_image", "image/png")}
-    data = {"direction": "left", "pixels": "100", "prompt": "forest"}
-
-    with (
-        patch(
-            "app.services.outpaint_service.outpaint_image", new_callable=AsyncMock
-        ) as mock_outpaint,
-        patch(
-            "app.api.ai_tools_routers.background.upload_image", new_callable=AsyncMock
-        ) as mock_upload,
-    ):
-        mock_upload.return_value = "http://storage.com/input.jpg"
-        mock_outpaint.return_value = {
-            "url": "http://storage.com/expanded.jpg",
-            "width": 1124,
-            "height": 1024,
-        }
-
-        res = client.post("/api/tools/generative-expand", data=data, files=files)
-
-        assert res.status_code == 200
-        data = res.json()
-        assert data["url"] == "http://storage.com/expanded.jpg"
-        assert data["width"] == 1124
-        assert data["height"] == 1024
-        assert "result_id" in data
-        mock_upload.assert_called_once()
-        mock_outpaint.assert_called_once_with(
-            image_url="http://storage.com/input.jpg",
-            direction="left",
-            pixels=100,
-            target_width=None,
-            target_height=None,
-            prompt="forest",
-        )
-
-
-def test_generative_expand_target_dims_success():
-    files = {"file": ("test.png", b"fake_image", "image/png")}
-    data = {"target_width": "1920", "target_height": "1080"}
-
-    with (
-        patch(
-            "app.services.outpaint_service.outpaint_image", new_callable=AsyncMock
-        ) as mock_outpaint,
-        patch(
-            "app.api.ai_tools_routers.background.upload_image", new_callable=AsyncMock
-        ) as mock_upload,
-    ):
-        mock_upload.return_value = "http://storage.com/input.jpg"
-        mock_outpaint.return_value = {
-            "url": "http://storage.com/expanded.jpg",
-            "width": 1920,
-            "height": 1080,
-        }
-
-        res = client.post("/api/tools/generative-expand", data=data, files=files)
-
-        assert res.status_code == 200
-        assert mock_outpaint.call_count == 1
-        mock_outpaint.assert_called_once_with(
-            image_url="http://storage.com/input.jpg",
-            direction=None,
-            pixels=None,
-            target_width=1920,
-            target_height=1080,
-            prompt=None,
-        )
-
-
 def test_ai_tools_oversized_files():
     large_content = b"0" * (11 * 1024 * 1024)
 
@@ -500,11 +429,6 @@ def test_ai_tools_oversized_files():
     }
     res = client.post("/api/tools/magic-eraser", files=files)
     assert res.status_code == 422
-
-    # Generative Expand
-    files2 = {"file": ("test.png", large_content, "image/png")}
-    res2 = client.post("/api/tools/generative-expand", files=files2)
-    assert res2.status_code == 422
 
 
 def test_watermark_endpoint_success():

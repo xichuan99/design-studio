@@ -26,8 +26,6 @@ from app.services.credit_service import log_credit_change
 from app.core.credit_costs import (
     COST_BG_SWAP,
     COST_BG_SWAP_ULTRA,
-    COST_GENERATIVE_EXPAND,
-    COST_GENERATIVE_EXPAND_ULTRA,
     COST_ID_PHOTO,
     COST_MAGIC_ERASER,
     COST_MAGIC_ERASER_ULTRA,
@@ -43,7 +41,6 @@ SUPPORTED_TOOL_NAMES = {
     "retouch",
     "background_swap",
     "product_scene",
-    "generative_expand",
     "batch",
     "id_photo",
     "magic_eraser",
@@ -58,7 +55,6 @@ _TOOL_CREDIT_COST_STANDARD = {
     "retouch": COST_RETOUCH,
     "background_swap": COST_BG_SWAP,
     "product_scene": COST_PRODUCT_SCENE,
-    "generative_expand": COST_GENERATIVE_EXPAND,
     "id_photo": COST_ID_PHOTO,
     "magic_eraser": COST_MAGIC_ERASER,
 }
@@ -66,7 +62,6 @@ _TOOL_CREDIT_COST_STANDARD = {
 _TOOL_CREDIT_COST_ULTRA = {
     "background_swap": COST_BG_SWAP_ULTRA,
     "product_scene": COST_PRODUCT_SCENE_ULTRA,
-    "generative_expand": COST_GENERATIVE_EXPAND_ULTRA,
     "magic_eraser": COST_MAGIC_ERASER_ULTRA,
 }
 
@@ -101,7 +96,6 @@ class CreateToolJobRequest(BaseModel):
         "retouch",
         "background_swap",
         "product_scene",
-        "generative_expand",
         "batch",
         "id_photo",
         "magic_eraser",

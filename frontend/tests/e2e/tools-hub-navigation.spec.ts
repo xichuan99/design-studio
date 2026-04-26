@@ -10,7 +10,6 @@ const TOOL_ROUTES = [
   { cardName: 'Batch Photo Processor', expectedHeading: 'Batch Photo Processor', expectedPath: '/tools/batch-process' },
   { cardName: 'ID Photo Maker', expectedHeading: 'ID Photo (Pasfoto) Maker', expectedPath: '/tools/id-photo' },
   { cardName: 'Magic Eraser', expectedHeading: 'Magic Eraser', expectedPath: '/tools/magic-eraser' },
-  { cardName: 'Generative Expand', expectedHeading: 'Generative Expand', expectedPath: '/tools/generative-expand' },
   { cardName: 'AI Transform Pipeline', expectedHeading: 'AI Transform Pipeline', expectedPath: '/tools/transform' },
   { cardName: 'AI Watermark Placer', expectedHeading: 'AI Watermark Placer', expectedPath: '/tools/watermark-placer' },
 ] as const;

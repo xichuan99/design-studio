@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, UUID4
 
@@ -44,7 +44,7 @@ class StoragePurchaseResponse(BaseModel):
     provider: str
     status: str
     created_at: datetime
-    paid_at: datetime | None = None
+    paid_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -58,7 +58,7 @@ class StorageWebhookRequest(BaseModel):
     event_id: str = Field(..., description="Unique payment event id from provider")
     purchase_id: UUID4
     status: Literal["paid", "failed", "expired", "canceled"]
-    provider_txn_id: str | None = None
+    provider_txn_id: Optional[str] = None
 
 
 class StorageWebhookResponse(BaseModel):

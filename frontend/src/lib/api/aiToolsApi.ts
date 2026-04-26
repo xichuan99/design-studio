@@ -371,36 +371,6 @@ export function useAiToolsEndpoints() {
             return response.json();
         }, [API_BASE_URL, getHeaders]);
 
-    const generativeExpand = useCallback(async (
-            file: File,
-            direction?: string,
-            pixels?: number,
-            targetWidth?: number,
-            targetHeight?: number,
-            prompt?: string
-        ): Promise<{ url: string, width?: number, height?: number }> => {
-            const formData = new FormData();
-            formData.append('file', file);
-            
-            if (direction) formData.append('direction', direction);
-            if (pixels !== undefined) formData.append('pixels', pixels.toString());
-            if (targetWidth !== undefined) formData.append('target_width', targetWidth.toString());
-            if (targetHeight !== undefined) formData.append('target_height', targetHeight.toString());
-            if (prompt) formData.append('prompt', prompt);
-    
-            const response = await fetch(`${API_BASE_URL}/tools/generative-expand`, {
-                method: 'POST',
-                headers: getHeaders(true),
-                body: formData,
-            });
-            
-            if (!response.ok) {
-                const errBase = await response.json().catch(() => ({}));
-                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to apply Generative Expand');
-            }
-            return response.json();
-        }, [API_BASE_URL, getHeaders]);
-
     const backgroundSwap = useCallback(async (
             file: File,
             prompt?: string,
@@ -609,7 +579,6 @@ export function useAiToolsEndpoints() {
         retouchImage,
         generateIdPhoto,
         magicEraser,
-        generativeExpand,
         backgroundSwap,
         suggestBackgrounds,
         productScene,

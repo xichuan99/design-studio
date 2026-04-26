@@ -98,7 +98,7 @@ npx playwright show-report                   # View last HTML report
   - Adds: `critical-journey.spec.ts`, `intent-first-entry.spec.ts`, `asset-library-management.spec.ts`, `session-expiry-and-reauth.spec.ts`
 
 - **AI-Heavy Tools** (Manual/Nightly, requires Celery worker + Redis):
-  - `tools-retouch.spec.ts`, `tools-product-scene.spec.ts`, `tools-batch-process.spec.ts`, `tools-magic-eraser.spec.ts`, `tools-generative-expand.spec.ts`, `tools-watermark-placer.spec.ts`
+  - `tools-retouch.spec.ts`, `tools-product-scene.spec.ts`, `tools-batch-process.spec.ts`, `tools-magic-eraser.spec.ts`, `tools-watermark-placer.spec.ts`
   - **Prerequisites**: Backend + Celery worker at `localhost:6380` + demo user with sufficient credits
 
 - **Mobile & Cross-Browser** (Optional nightly):

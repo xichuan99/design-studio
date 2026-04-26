@@ -9,7 +9,6 @@ from app.models.ai_tool_job import AiToolJob
 from app.services.ai_tool_job_service import fail_ai_tool_job
 from app.workers.ai_tool_jobs_background import (
     execute_background_swap_tool_job,
-    execute_generative_expand_tool_job,
     execute_id_photo_tool_job,
     execute_magic_eraser_tool_job,
 )
@@ -30,7 +29,6 @@ AiToolExecutor = Callable[[str], Awaitable[None]]
 AI_TOOL_EXECUTORS: dict[str, AiToolExecutor] = {
     "retouch": execute_retouch_tool_job,
     "background_swap": execute_background_swap_tool_job,
-    "generative_expand": execute_generative_expand_tool_job,
     "id_photo": execute_id_photo_tool_job,
     "magic_eraser": execute_magic_eraser_tool_job,
     "product_scene": execute_product_scene_tool_job,
