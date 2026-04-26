@@ -66,11 +66,11 @@ export default function DesignInterviewPage() {
     const { status } = useSession();
     const router = useRouter();
     const posthog = usePostHog();
-    const [goal, setGoal] = useState("promo");
-    const [productType, setProductType] = useState("Makanan & Minuman");
-    const [style, setStyle] = useState("Minimal clean");
-    const [channel, setChannel] = useState("instagram");
-    const [copyTone, setCopyTone] = useState("Friendly");
+    const [goal, setGoal] = useState("");
+    const [productType, setProductType] = useState("");
+    const [style, setStyle] = useState("");
+    const [channel, setChannel] = useState("");
+    const [copyTone, setCopyTone] = useState("");
     const [notes, setNotes] = useState("");
 
     const progress = useMemo(() => {
@@ -83,23 +83,30 @@ export default function DesignInterviewPage() {
         return Math.round((filled / 5) * 100);
     }, [channel, copyTone, goal, productType, style]);
 
-    const handleContinue = () => {
+    const handleContinue = (isSkip = false) => {
+        const finalGoal = (isSkip && !goal) ? "promo" : goal;
+        const finalProductType = (isSkip && !productType) ? "Makanan & Minuman" : productType;
+        const finalStyle = (isSkip && !style) ? "Minimal clean" : style;
+        const finalChannel = (isSkip && !channel) ? "instagram" : channel;
+        const finalCopyTone = (isSkip && !copyTone) ? "Friendly" : copyTone;
+
         posthog?.capture("design_brief_interview_continue", {
-            goal,
-            productType,
-            style,
-            channel,
-            copyTone,
+            goal: finalGoal,
+            productType: finalProductType,
+            style: finalStyle,
+            channel: finalChannel,
+            copyTone: finalCopyTone,
             hasNotes: notes.trim().length > 0,
+            isSkip,
         });
         window.sessionStorage.setItem(
             DESIGN_BRIEF_SESSION_KEY,
             JSON.stringify({
-                goal,
-                productType,
-                style,
-                channel,
-                copyTone,
+                goal: finalGoal,
+                productType: finalProductType,
+                style: finalStyle,
+                channel: finalChannel,
+                copyTone: finalCopyTone,
                 notes: notes.trim(),
                 updatedAt: new Date().toISOString(),
             })
@@ -171,9 +178,11 @@ export default function DesignInterviewPage() {
                                 <p className="mt-4 text-sm font-semibold text-foreground">{item.label}</p>
                             </button>
                         ))}
-                        <p className="md:col-span-3 rounded-xl border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
-                            {goalExamples[goal]}
-                        </p>
+                        {goal && (
+                            <p className="md:col-span-3 rounded-xl border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+                                {goalExamples[goal]}
+                            </p>
+                        )}
                     </CardContent>
                 </Card>
 
@@ -199,9 +208,11 @@ export default function DesignInterviewPage() {
                                 {item}
                             </button>
                         ))}
-                        <p className="w-full rounded-xl border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
-                            {productTypeExamples[productType]}
-                        </p>
+                        {productType && (
+                            <p className="w-full rounded-xl border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+                                {productTypeExamples[productType]}
+                            </p>
+                        )}
                     </CardContent>
                 </Card>
 
@@ -235,9 +246,11 @@ export default function DesignInterviewPage() {
                                 </div>
                             </button>
                         ))}
-                        <p className="sm:col-span-2 rounded-xl border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
-                            {styleExamples[style]}
-                        </p>
+                        {style && (
+                            <p className="sm:col-span-2 rounded-xl border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+                                {styleExamples[style]}
+                            </p>
+                        )}
                     </CardContent>
                 </Card>
 
@@ -264,9 +277,11 @@ export default function DesignInterviewPage() {
                                 <p className="mt-4 text-sm font-semibold text-foreground">{item.label}</p>
                             </button>
                         ))}
-                        <p className="md:col-span-3 rounded-xl border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
-                            {channelExamples[channel]}
-                        </p>
+                        {channel && (
+                            <p className="md:col-span-3 rounded-xl border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+                                {channelExamples[channel]}
+                            </p>
+                        )}
                     </CardContent>
                 </Card>
 
@@ -292,9 +307,11 @@ export default function DesignInterviewPage() {
                                 {item}
                             </button>
                         ))}
-                        <p className="w-full rounded-xl border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
-                            {copyToneExamples[copyTone]}
-                        </p>
+                        {copyTone && (
+                            <p className="w-full rounded-xl border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+                                {copyToneExamples[copyTone]}
+                            </p>
+                        )}
                     </CardContent>
                 </Card>
 
@@ -319,10 +336,10 @@ export default function DesignInterviewPage() {
                             Lanjutkan ke preview bertahap baru. Halaman berikutnya akan merangkum brief ini sebelum masuk ke engine desain existing sebagai fallback transisi.
                         </p>
                         <div className="flex items-center gap-2">
-                            <Button variant="ghost" onClick={handleContinue} className="rounded-xl">
+                            <Button variant="ghost" onClick={() => handleContinue(true)} className="rounded-xl">
                                 Skip
                             </Button>
-                            <Button onClick={handleContinue} size="lg" className="gap-2 rounded-xl">
+                            <Button onClick={() => handleContinue(false)} size="lg" className="gap-2 rounded-xl" disabled={progress < 100}>
                                 Lanjut ke Preview
                                 <ArrowRight className="h-4 w-4" />
                             </Button>
