@@ -65,7 +65,7 @@ export const AppHeader = ({ renderActions }: AppHeaderProps = {}) => {
                     <div className="size-10 rounded-xl bg-[#d095ff] flex items-center justify-center shadow-[0_0_20px_rgba(208,149,255,0.3)] group-hover:scale-105 transition-all duration-500">
                         <Brush className="text-[#0e0e10] h-6 w-6" />
                     </div>
-                    <h1 className="font-black tracking-tighter text-2xl hidden sm:block uppercase">SmartDesign</h1>
+                    <h1 className="font-bold text-lg hidden sm:block">SmartDesign</h1>
                 </Link>
 
                 {/* Desktop nav */}
@@ -126,11 +126,11 @@ export const AppHeader = ({ renderActions }: AppHeaderProps = {}) => {
                                                         </div>
                                                         <div className="min-w-0">
                                                             <div className="flex items-center gap-2">
-                                                                <p className="text-sm font-bold tracking-tight text-[#f9f5f8]">
+                                                                <p className="text-sm font-semibold text-[#f9f5f8]">
                                                                     {item.title}
                                                                 </p>
                                                                 {item.badge ? (
-                                                                    <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-tighter ${badgeClassName[item.badge]}`}>
+                                                                    <span className={`px-2 py-0.5 rounded-sm text-[9px] font-bold uppercase tracking-wider ${badgeClassName[item.badge]}`}>
                                                                         {item.badge}
                                                                     </span>
                                                                 ) : null}

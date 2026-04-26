@@ -41,8 +41,8 @@ export default function StartPage() {
                     <div className="inline-block px-3 py-1 rounded-full border border-[#d095ff]/20 bg-[#d095ff]/5 text-[10px] font-bold uppercase tracking-[0.4em] text-[#d095ff] mb-2">
                         Studio Kreatif
                     </div>
-                    <h1 className="text-5xl md:text-8xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-[#f9f5f8] via-[#f9f5f8] to-[#adaaad] leading-[0.9]">
-                        Apa yang ingin <br className="hidden md:block" /> Anda buat hari ini?
+                    <h1 className="text-4xl md:text-6xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-[#f9f5f8] to-[#adaaad]">
+                        Apa yang ingin Anda buat hari ini?
                     </h1>
                     <p className="max-w-2xl mx-auto text-[#adaaad] text-lg md:text-xl font-medium">
                         Wujudkan ide bisnis Anda dengan desain promosi <br className="hidden md:block" /> dan editing produk berbasis AI tingkat tinggi.
@@ -76,11 +76,11 @@ export default function StartPage() {
                             </div>
                             
                             <div className="space-y-4">
-                                <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase leading-none">Buat Desain <br /> Promosi</h2>
+                                <h2 className="text-2xl font-bold">Buat Desain Promosi</h2>
                                 <p className="text-[#adaaad] text-lg font-medium max-w-[320px] leading-relaxed">
                                     Banner media sosial otomatis hanya dengan menceritakan produk Anda.
                                 </p>
-                                <div className="pt-6 flex items-center gap-3 text-[#d095ff] font-black text-sm uppercase tracking-widest transition-all">
+                                <div className="pt-6 flex items-center gap-3 text-[#d095ff] font-medium transition-all">
                                     Mulai Sekarang <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-2" />
                                 </div>
                             </div>
@@ -115,11 +115,11 @@ export default function StartPage() {
                             </div>
                             
                             <div className="space-y-4">
-                                <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase leading-none">Edit Foto <br /> Produk</h2>
+                                <h2 className="text-2xl font-bold">Edit Foto Produk</h2>
                                 <p className="text-[#adaaad] text-lg font-medium max-w-[320px] leading-relaxed">
                                     Hapus background, perbaiki kualitas, atau ubah suasana foto secara instan.
                                 </p>
-                                <div className="pt-6 flex items-center gap-3 text-[#00e3fd] font-black text-sm uppercase tracking-widest transition-all">
+                                <div className="pt-6 flex items-center gap-3 text-[#00e3fd] font-medium transition-all">
                                     Buka Alat AI <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-2" />
                                 </div>
                             </div>

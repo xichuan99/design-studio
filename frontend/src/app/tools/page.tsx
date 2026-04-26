@@ -35,8 +35,8 @@ export default function ToolsHubPage() {
           <div className="inline-block px-3 py-1 rounded-full border border-[#d095ff]/20 bg-[#d095ff]/5 text-[10px] font-bold uppercase tracking-[0.4em] text-[#d095ff] mb-4">
             AI Atelier
           </div>
-          <h1 className="text-5xl md:text-8xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-[#f9f5f8] via-[#f9f5f8] to-[#adaaad] leading-[0.9]">
-            Alat Edit <br className="hidden md:block" /> Foto Produk
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-[#f9f5f8] to-[#adaaad]">
+            Alat Edit Foto Produk
           </h1>
           <p className="max-w-xl mx-auto text-[#adaaad] text-lg md:text-xl font-medium">
             Transformasi katalog Anda dengan kecerdasan buatan. Cepat, presisi, dan memukau.
@@ -53,7 +53,7 @@ export default function ToolsHubPage() {
             <div className="absolute inset-0 bg-gradient-to-br from-[#d095ff]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
             <div className="absolute inset-0 bg-[url('/images/photo-hero.png')] bg-cover bg-center opacity-20 group-hover:opacity-40 transition-opacity duration-700 scale-110 group-hover:scale-100" />
             <div className="relative h-full p-10 flex flex-col justify-end z-10">
-              <h3 className="text-3xl font-bold mb-3 tracking-tight">Edit Satu Foto</h3>
+              <h3 className="text-2xl font-semibold mb-2">Edit Satu Foto</h3>
               <p className="text-[#adaaad] text-sm leading-relaxed max-w-[240px]">Upload satu foto produk untuk hasil instan dan cepat.</p>
               <div className="mt-6 flex items-center gap-2 text-[#d095ff] font-bold text-sm">
                 Mulai Sekarang <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -69,7 +69,7 @@ export default function ToolsHubPage() {
             <div className="absolute inset-0 bg-gradient-to-br from-[#00e3fd]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
             <div className="absolute inset-0 bg-[url('/images/promo-hero.png')] bg-cover bg-center opacity-20 group-hover:opacity-40 transition-opacity duration-700 scale-110 group-hover:scale-100" />
             <div className="relative h-full p-10 flex flex-col justify-end z-10">
-              <h3 className="text-3xl font-bold mb-3 tracking-tight">Edit Massal</h3>
+              <h3 className="text-2xl font-semibold mb-2">Edit Massal</h3>
               <p className="text-[#adaaad] text-sm leading-relaxed max-w-[240px]">Proses seluruh katalog produk Anda sekaligus dalam sekejap.</p>
               <div className="mt-6 flex items-center gap-2 text-[#00e3fd] font-bold text-sm">
                 Buka Katalog <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -83,7 +83,7 @@ export default function ToolsHubPage() {
           >
             <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
             <div className="relative h-full p-10 flex flex-col justify-end z-10 border border-white/5 rounded-[2.5rem]">
-              <h3 className="text-3xl font-bold mb-3 tracking-tight">Galeri Saya</h3>
+              <h3 className="text-2xl font-semibold mb-2">Galeri Saya</h3>
               <p className="text-[#adaaad] text-sm leading-relaxed max-w-[240px]">Lihat dan ambil kembali hasil edit foto yang pernah Anda buat.</p>
               <div className="mt-6 flex items-center gap-2 text-[#f9f5f8] font-bold text-sm">
                 Lihat Galeri <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -97,7 +97,7 @@ export default function ToolsHubPage() {
           {toolSections.map((section) => (
             <div key={section.title} className="space-y-10">
               <div className="flex items-center gap-4 px-2">
-                <h2 className="text-3xl font-black tracking-tighter uppercase">{section.title}</h2>
+                <h2 className="text-2xl font-bold">{section.title}</h2>
                 <div className="h-[1px] flex-1 bg-gradient-to-r from-white/10 to-transparent" />
               </div>
               <div className="grid gap-6">
@@ -113,8 +113,8 @@ export default function ToolsHubPage() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-3">
-                        <p className="text-xl font-bold tracking-tight">{item.title}</p>
-                        {item.badge ? <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-tighter ${badgeClassName[item.badge]}`}>{item.badge}</span> : null}
+                        <p className="font-semibold text-foreground">{item.title}</p>
+                        {item.badge ? <span className={`px-2 py-0.5 rounded-sm text-[10px] font-semibold tracking-wider uppercase ${badgeClassName[item.badge]}`}>{item.badge}</span> : null}
                       </div>
                       <p className="text-[#adaaad] mt-1 line-clamp-1 font-medium">{item.description}</p>
                     </div>
