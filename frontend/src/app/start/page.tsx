@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { redirect } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -8,7 +9,7 @@ import { usePostHog } from "posthog-js/react";
 import { ArrowRight, Layers, Loader2, Sparkles, Wand2 } from "lucide-react";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useProjectApi } from "@/lib/api";
 import { START_HUB_ENABLED } from "@/lib/feature-flags";
 import { featuredToolItems } from "@/lib/tool-catalog";
@@ -82,9 +83,19 @@ export default function StartPage() {
                 </section>
 
                 <section className="grid gap-4 lg:grid-cols-2">
-                    <Card className="overflow-hidden border-primary/20 bg-card shadow-sm">
-                        <CardHeader className="gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                    <Card className="group relative overflow-hidden border-primary/20 bg-card shadow-sm hover:border-primary/50 transition-all duration-500 hover:shadow-md flex flex-col">
+                        <div className="relative aspect-[16/9] w-full overflow-hidden shrink-0">
+                            <Image 
+                                src="/images/promo-hero.png" 
+                                alt="Buat Desain Promosi" 
+                                fill 
+                                className="object-cover transition-transform duration-700 group-hover:scale-105 opacity-90"
+                                priority
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent" />
+                        </div>
+                        <CardHeader className="relative -mt-16 gap-3 z-10 pb-4">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/20 text-primary backdrop-blur-md border border-primary/20 shadow-sm">
                                 <Sparkles className="h-6 w-6" />
                             </div>
                             <div className="space-y-2">
@@ -94,13 +105,11 @@ export default function StartPage() {
                                 </CardDescription>
                             </div>
                         </CardHeader>
-                        <CardContent className="min-h-[100px] flex items-center">
-                            <div className="rounded-2xl border bg-muted/30 p-4 text-sm text-muted-foreground w-full">
+                        <CardContent className="flex-1 flex flex-col justify-end">
+                            <div className="rounded-2xl border bg-muted/30 p-4 text-sm text-muted-foreground w-full mb-6">
                                 <p>Sistem AI akan membantu Anda menentukan konsep, gaya visual, hingga ukuran yang pas untuk marketplace atau media sosial.</p>
                             </div>
-                        </CardContent>
-                        <CardFooter className="pt-0">
-                            <Button asChild size="lg" className="w-full justify-between rounded-xl md:w-auto">
+                            <Button asChild size="lg" className="w-full justify-between rounded-xl">
                                 <Link
                                     href="/design/new/interview"
                                     onClick={() => posthog?.capture("start_hub_intent_selected", { intent: "design_brief" })}
@@ -109,12 +118,22 @@ export default function StartPage() {
                                     <ArrowRight className="h-4 w-4" />
                                 </Link>
                             </Button>
-                        </CardFooter>
+                        </CardContent>
                     </Card>
 
-                    <Card className="overflow-hidden border-border bg-card shadow-sm">
-                        <CardHeader className="gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                    <Card className="group relative overflow-hidden border-border bg-card shadow-sm hover:border-emerald-500/50 transition-all duration-500 hover:shadow-md flex flex-col">
+                        <div className="relative aspect-[16/9] w-full overflow-hidden shrink-0">
+                            <Image 
+                                src="/images/photo-hero.png" 
+                                alt="Edit Foto Produk" 
+                                fill 
+                                className="object-cover transition-transform duration-700 group-hover:scale-105 opacity-90"
+                                priority
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent" />
+                        </div>
+                        <CardHeader className="relative -mt-16 gap-3 z-10 pb-4">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 backdrop-blur-md border border-emerald-500/20 shadow-sm">
                                 <Wand2 className="h-6 w-6" />
                             </div>
                             <div className="space-y-2">
@@ -124,15 +143,13 @@ export default function StartPage() {
                                 </CardDescription>
                             </div>
                         </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex flex-wrap gap-2 text-xs font-medium text-muted-foreground">
+                        <CardContent className="flex-1 flex flex-col justify-end">
+                            <div className="flex flex-wrap gap-2 text-xs font-medium text-muted-foreground mb-6">
                                 {featuredToolItems.map((tool) => (
-                                    <span key={tool.href} className="rounded-full bg-muted px-3 py-1">{tool.title}</span>
+                                    <span key={tool.href} className="rounded-full bg-muted/50 border px-3 py-1.5">{tool.title}</span>
                                 ))}
                             </div>
-                        </CardContent>
-                        <CardFooter className="pt-0">
-                            <Button asChild size="lg" variant="outline" className="w-full justify-between rounded-xl md:w-auto">
+                            <Button asChild size="lg" variant="outline" className="w-full justify-between rounded-xl">
                                 <Link
                                     href="/tools"
                                     onClick={() => posthog?.capture("start_hub_intent_selected", { intent: "photo_tools" })}
@@ -141,7 +158,7 @@ export default function StartPage() {
                                     <ArrowRight className="h-4 w-4" />
                                 </Link>
                             </Button>
-                        </CardFooter>
+                        </CardContent>
                     </Card>
                 </section>
 
