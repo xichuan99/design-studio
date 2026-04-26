@@ -59,13 +59,14 @@ export const AppHeader = ({ renderActions }: AppHeaderProps = {}) => {
     }, []);
 
     return (
-        <header className="h-14 border-b flex items-center justify-between px-4 md:px-6 shrink-0 z-50 bg-card shadow-sm">
+    return (
+        <header className="h-20 flex items-center justify-between px-6 md:px-10 shrink-0 z-50 bg-[#0e0e10]/80 backdrop-blur-xl sticky top-0 transition-all duration-300">
             <div className="flex items-center gap-4 md:gap-6">
-                <Link href="/library" className="flex items-center gap-2 group">
-                    <div className="size-8 rounded-lg bg-primary flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
-                        <Brush className="text-primary-foreground h-5 w-5" />
+                <Link href="/library" className="flex items-center gap-4 group">
+                    <div className="size-10 rounded-xl bg-[#d095ff] flex items-center justify-center shadow-[0_0_20px_rgba(208,149,255,0.3)] group-hover:scale-105 transition-all duration-500">
+                        <Brush className="text-[#0e0e10] h-6 w-6" />
                     </div>
-                    <h1 className="font-jakarta font-bold text-lg hidden sm:block">SmartDesign</h1>
+                    <h1 className="font-black tracking-tighter text-2xl hidden sm:block uppercase">SmartDesign</h1>
                 </Link>
 
                 {/* Desktop nav */}
@@ -105,9 +106,9 @@ export const AppHeader = ({ renderActions }: AppHeaderProps = {}) => {
                         </button>
 
                         <div
-                            className={`absolute left-0 top-full pt-3 transition-all duration-200 z-50 ${toolsMenuOpen ? "opacity-100 visible translate-y-0 pointer-events-auto" : "opacity-0 invisible translate-y-1 pointer-events-none"}`}
+                            className={`absolute left-0 top-full pt-4 transition-all duration-500 z-50 ${toolsMenuOpen ? "opacity-100 visible translate-y-0" : "opacity-0 invisible -translate-y-2 pointer-events-none"}`}
                         >
-                            <div className="w-[760px] rounded-2xl border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/85 shadow-2xl p-4">
+                            <div className="w-[840px] rounded-[2.5rem] bg-[#131315]/95 backdrop-blur-2xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] p-8 border border-white/5">
                                 <div className="grid grid-cols-2 gap-4">
                                     {toolSections.map((section) => (
                                         <div key={section.title} className="min-w-0">
@@ -119,23 +120,23 @@ export const AppHeader = ({ renderActions }: AppHeaderProps = {}) => {
                                                     <Link
                                                         key={item.href}
                                                         href={item.href}
-                                                        className="flex items-start gap-3 rounded-xl px-2.5 py-2.5 hover:bg-muted/70 transition-colors"
+                                                        className="flex items-start gap-4 rounded-2xl px-3 py-3 hover:bg-white/5 transition-all duration-300 group/item"
                                                     >
-                                                        <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center mt-0.5">
-                                                            <item.Icon className="w-4 h-4 text-primary" />
+                                                        <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mt-0.5 transition-colors group-hover/item:bg-[#d095ff]/10">
+                                                            <item.Icon className="w-5 h-5 text-[#d095ff]" />
                                                         </div>
                                                         <div className="min-w-0">
                                                             <div className="flex items-center gap-2">
-                                                                <p className="text-sm font-semibold leading-tight text-foreground">
+                                                                <p className="text-sm font-bold tracking-tight text-[#f9f5f8]">
                                                                     {item.title}
                                                                 </p>
                                                                 {item.badge ? (
-                                                                    <span className={`px-1.5 py-0.5 rounded-sm text-[9px] uppercase tracking-wider font-bold leading-none ${badgeClassName[item.badge]}`}>
+                                                                    <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-tighter ${badgeClassName[item.badge]}`}>
                                                                         {item.badge}
                                                                     </span>
                                                                 ) : null}
                                                             </div>
-                                                            <p className="text-xs text-muted-foreground mt-0.5 leading-snug line-clamp-2">
+                                                            <p className="text-xs text-[#adaaad] mt-1 leading-relaxed line-clamp-2">
                                                                 {item.description}
                                                             </p>
                                                         </div>

@@ -32,88 +32,110 @@ export default function StartPage() {
     }
 
     return (
-        <div className="min-h-screen bg-[#0e0e10] text-[#f9f5f8] selection:bg-[#d095ff]/30">
+        <div className="min-h-screen bg-[#0e0e10] text-[#f9f5f8] selection:bg-[#d095ff]/30 overflow-x-hidden">
             <AppHeader />
             
-            <main className="mx-auto flex w-full max-w-6xl flex-col items-center gap-12 px-6 py-16 md:py-24">
-                {/* Hero Section */}
-                <div className="text-center space-y-6">
-                    <h1 className="text-4xl md:text-6xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-[#f9f5f8] to-[#adaaad]">
-                        Apa yang ingin Anda buat hari ini?
+            <main className="mx-auto flex w-full max-w-[1440px] flex-col gap-20 px-6 py-12 md:py-24">
+                {/* Editorial Hero Section */}
+                <section className="relative text-center space-y-8">
+                    <div className="inline-block px-3 py-1 rounded-full border border-[#d095ff]/20 bg-[#d095ff]/5 text-[10px] font-bold uppercase tracking-[0.4em] text-[#d095ff] mb-2">
+                        Studio Kreatif
+                    </div>
+                    <h1 className="text-5xl md:text-8xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-[#f9f5f8] via-[#f9f5f8] to-[#adaaad] leading-[0.9]">
+                        Apa yang ingin <br className="hidden md:block" /> Anda buat hari ini?
                     </h1>
-                    <p className="max-w-xl mx-auto text-lg text-[#adaaad]">
-                        Pilih langkah awal untuk memajukan bisnis UMKM Anda dengan desain premium berbasis AI.
+                    <p className="max-w-2xl mx-auto text-[#adaaad] text-lg md:text-xl font-medium">
+                        Wujudkan ide bisnis Anda dengan desain promosi <br className="hidden md:block" /> dan editing produk berbasis AI tingkat tinggi.
                     </p>
-                </div>
+                </section>
 
-                {/* Intent Cards */}
-                <div className="grid w-full gap-8 md:grid-cols-2">
+                {/* Intent Hub - Two Dominant Options */}
+                <section className="grid w-full gap-10 md:grid-cols-2">
                     {/* Promotion Design Card */}
                     <Link 
                         href="/design/new/interview"
                         onClick={() => posthog?.capture("start_hub_intent_selected", { intent: "design_brief" })}
-                        className="group relative flex flex-col overflow-hidden rounded-[2rem] glass-morphism transition-all duration-500 hover:scale-[1.02] hover:void-glow"
+                        className="group relative flex flex-col h-[520px] overflow-hidden rounded-[3rem] bg-[#131315] transition-all duration-700 hover:scale-[1.01] hover:bg-[#19191c]"
                     >
-                        <div className="relative aspect-[16/10] w-full overflow-hidden">
+                        <div className="absolute inset-0 z-0">
                             <Image 
                                 src="/images/promo-hero.png" 
                                 alt="Buat Desain Promosi" 
                                 fill 
-                                className="object-cover transition-transform duration-700 group-hover:scale-110 opacity-80"
+                                className="object-cover transition-transform duration-1000 group-hover:scale-110 opacity-30 group-hover:opacity-50"
                                 priority
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-[#0e0e10] via-transparent to-transparent opacity-60" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#0e0e10] via-transparent to-transparent opacity-80" />
                         </div>
                         
-                        <div className="flex flex-1 flex-col p-8 space-y-4">
-                            <div className="flex items-center gap-3">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#d095ff]/10 text-[#d095ff]">
-                                    <Sparkles className="h-5 w-5" />
+                        <div className="relative z-10 flex h-full flex-col p-12 md:p-16">
+                            <div className="mb-auto">
+                                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#d095ff]/10 text-[#d095ff] transition-all duration-500 group-hover:bg-[#d095ff] group-hover:text-[#0e0e10] group-hover:rotate-6">
+                                    <Sparkles className="h-7 w-7" />
                                 </div>
-                                <h2 className="text-2xl font-bold">Buat Desain Promosi</h2>
                             </div>
-                            <p className="text-[#adaaad] leading-relaxed">
-                                Buat banner media sosial dan materi promosi otomatis hanya dengan menceritakan produk Anda.
-                            </p>
-                            <div className="mt-auto flex items-center gap-2 text-[#d095ff] font-medium group-hover:gap-4 transition-all">
-                                Mulai Desain Baru <ArrowRight className="h-4 w-4" />
+                            
+                            <div className="space-y-4">
+                                <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase leading-none">Buat Desain <br /> Promosi</h2>
+                                <p className="text-[#adaaad] text-lg font-medium max-w-[320px] leading-relaxed">
+                                    Banner media sosial otomatis hanya dengan menceritakan produk Anda.
+                                </p>
+                                <div className="pt-6 flex items-center gap-3 text-[#d095ff] font-black text-sm uppercase tracking-widest transition-all">
+                                    Mulai Sekarang <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-2" />
+                                </div>
                             </div>
                         </div>
+                        
+                        {/* Glow effect */}
+                        <div className="absolute -inset-px rounded-[3rem] border border-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
                     </Link>
 
                     {/* Photo Edit Card */}
                     <Link 
                         href="/tools"
                         onClick={() => posthog?.capture("start_hub_intent_selected", { intent: "photo_tools" })}
-                        className="group relative flex flex-col overflow-hidden rounded-[2rem] glass-morphism transition-all duration-500 hover:scale-[1.02] hover:void-glow"
+                        className="group relative flex flex-col h-[520px] overflow-hidden rounded-[3rem] bg-[#131315] transition-all duration-700 hover:scale-[1.01] hover:bg-[#19191c]"
                     >
-                        <div className="relative aspect-[16/10] w-full overflow-hidden">
+                        <div className="absolute inset-0 z-0">
                             <Image 
                                 src="/images/photo-hero.png" 
                                 alt="Edit Foto Produk" 
                                 fill 
-                                className="object-cover transition-transform duration-700 group-hover:scale-110 opacity-80"
+                                className="object-cover transition-transform duration-1000 group-hover:scale-110 opacity-30 group-hover:opacity-50"
                                 priority
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-[#0e0e10] via-transparent to-transparent opacity-60" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#0e0e10] via-transparent to-transparent opacity-80" />
                         </div>
                         
-                        <div className="flex flex-1 flex-col p-8 space-y-4">
-                            <div className="flex items-center gap-3">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#00e3fd]/10 text-[#00e3fd]">
-                                    <Wand2 className="h-5 w-5" />
+                        <div className="relative z-10 flex h-full flex-col p-12 md:p-16">
+                            <div className="mb-auto">
+                                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#00e3fd]/10 text-[#00e3fd] transition-all duration-500 group-hover:bg-[#00e3fd] group-hover:text-[#0e0e10] group-hover:rotate-6">
+                                    <Wand2 className="h-7 w-7" />
                                 </div>
-                                <h2 className="text-2xl font-bold">Edit Foto Produk</h2>
                             </div>
-                            <p className="text-[#adaaad] leading-relaxed">
-                                Percantik foto produk Anda: hapus background, perbaiki kualitas, atau ubah suasana foto secara instan.
-                            </p>
-                            <div className="mt-auto flex items-center gap-2 text-[#00e3fd] font-medium group-hover:gap-4 transition-all">
-                                Buka AI Photo Tools <ArrowRight className="h-4 w-4" />
+                            
+                            <div className="space-y-4">
+                                <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase leading-none">Edit Foto <br /> Produk</h2>
+                                <p className="text-[#adaaad] text-lg font-medium max-w-[320px] leading-relaxed">
+                                    Hapus background, perbaiki kualitas, atau ubah suasana foto secara instan.
+                                </p>
+                                <div className="pt-6 flex items-center gap-3 text-[#00e3fd] font-black text-sm uppercase tracking-widest transition-all">
+                                    Buka Alat AI <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-2" />
+                                </div>
                             </div>
                         </div>
+
+                        {/* Glow effect */}
+                        <div className="absolute -inset-px rounded-[3rem] border border-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
                     </Link>
-                </div>
+                </section>
+
+                {/* Footer Insight (Subtle) */}
+                <section className="text-center">
+                    <p className="text-[#adaaad]/40 text-xs font-bold uppercase tracking-[0.5em]">
+                        Powered by Advanced AI Atelier
+                    </p>
+                </section>
             </main>
         </div>
     );
