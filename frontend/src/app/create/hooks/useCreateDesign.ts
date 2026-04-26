@@ -485,10 +485,10 @@ export function useCreateDesign() {
                     title: "Penyimpanan Penuh",
                     description: "Kuota penyimpanan Anda sudah penuh. Hapus file lama di pengaturan untuk menambah ruang.",
                     type: "storage",
-                    actionLabel: "Kelola Penyimpanan",
+                    actionLabel: "Upgrade Storage",
                     onAction: () => {
                         setErrorModalState(prev => ({ ...prev, isOpen: false }));
-                        router.push('/settings');
+                        router.push('/settings?upgrade=storage');
                     }
                 });
             } else if (errorMessage.toLowerCase().includes("kredit") || errorMessage.toLowerCase().includes("credit")) {

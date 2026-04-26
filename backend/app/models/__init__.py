@@ -17,3 +17,5 @@ from app.models.template_usage_stat import TemplateUsageStat as TemplateUsageSta
 from app.models.folder import Folder as Folder
 from app.models.project_version import ProjectVersion as ProjectVersion
 from app.models.brand_memory import BrandMemory as BrandMemory
+from app.models.storage_purchase import StoragePurchase as StoragePurchase
+from app.models.storage_quota_ledger import StorageQuotaLedger as StorageQuotaLedger

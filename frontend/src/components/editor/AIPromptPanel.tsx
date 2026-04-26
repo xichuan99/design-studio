@@ -108,6 +108,8 @@ export const AIPromptPanel: React.FC = () => {
         type: ErrorModalType;
         title?: string;
         description?: string;
+        actionLabel?: string;
+        onAction?: () => void;
     }>({ open: false, type: 'system' });
 
     const handleGenerate = async (retryPrompt?: string) => {
@@ -184,6 +186,10 @@ export const AIPromptPanel: React.FC = () => {
                     type: 'storage',
                     title: 'Penyimpanan Penuh',
                     description: 'Kuota penyimpanan Anda sudah penuh. Hapus file lama di pengaturan untuk menambah ruang.',
+                    actionLabel: 'Upgrade Storage',
+                    onAction: () => {
+                        window.location.href = '/settings?upgrade=storage';
+                    },
                 });
             } else if (msg.toLowerCase().includes("kredit") || msg.toLowerCase().includes("credit")) {
                 setErrorModal({
@@ -742,6 +748,8 @@ export const AIPromptPanel: React.FC = () => {
                 type={errorModal.type}
                 title={errorModal.title}
                 description={errorModal.description}
+                actionLabel={errorModal.actionLabel}
+                onAction={errorModal.onAction}
             />
         </div>
     );

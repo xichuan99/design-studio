@@ -31,6 +31,11 @@ class Settings(BaseSettings):
     # Backend public base URL (used for local-storage fallback URLs)
     BACKEND_BASE_URL: str = "http://localhost:8000"
 
+    # Storage paid upgrade
+    STORAGE_WEBHOOK_SECRET: str = ""
+    STORAGE_CHECKOUT_URL_BASE: str = ""
+    STORAGE_ADDON_CATALOG_JSON: str = ""
+
     # Optional extra CA bundle for internal HTTPS assets/services.
     INTERNAL_CA_BUNDLE_PATH: str = ""
 

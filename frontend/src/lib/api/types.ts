@@ -203,6 +203,51 @@ export interface StorageUsage {
     quota_mb: number;
 }
 
+export type StorageAddonCode = 'storage_plus_5gb' | 'storage_plus_20gb';
+
+export interface StoragePurchaseIntentRequest {
+    addon_code: StorageAddonCode;
+}
+
+export interface StoragePurchaseIntentResponse {
+    purchase_id: string;
+    status: 'pending' | 'paid' | 'failed' | 'expired' | 'canceled';
+    checkout_url: string;
+    addon_code: StorageAddonCode;
+    bytes_added: number;
+    amount: number;
+    currency: string;
+}
+
+export interface StoragePurchaseItem {
+    id: string;
+    addon_code: string;
+    bytes_added: number;
+    amount: number;
+    currency: string;
+    provider: string;
+    status: string;
+    created_at: string;
+    paid_at?: string | null;
+}
+
+export interface StoragePurchaseListResponse {
+    items: StoragePurchaseItem[];
+    total_count: number;
+}
+
+export interface StorageAddon {
+    code: StorageAddonCode;
+    label: string;
+    bytes_added: number;
+    amount: number;
+    currency: string;
+}
+
+export interface StorageAddonListResponse {
+    items: StorageAddon[];
+}
+
 // --- Copywriting Types ---
 export interface CopywritingClarifyRequest {
     product_description: string;

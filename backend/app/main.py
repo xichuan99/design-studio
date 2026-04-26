@@ -21,6 +21,7 @@ from app.api.ad_creator import router as ad_creator_router
 from app.api.template_marketplace import router as template_marketplace_router
 from app.api.folders import router as folders_router
 from app.api.carousel import router as carousel_router
+from app.api.storage_payments import router as storage_payments_router
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -211,6 +212,7 @@ app.include_router(history_router, prefix="/api/history", tags=["History"])
 app.include_router(brand_kits_router, prefix="/api/brand-kits", tags=["Brand Kits"])
 app.include_router(ai_tools_router, prefix="/api/tools", tags=["AI Tools"])
 app.include_router(carousel_router, prefix="/api/carousel", tags=["Carousel"])
+app.include_router(storage_payments_router, prefix="/api/payments", tags=["Storage Payments"])
 app.include_router(ad_creator_router, prefix="/api/ad-creator", tags=["Ad Creator"])
 app.include_router(template_marketplace_router, prefix="/api", tags=["Template Marketplace"])
 app.include_router(folders_router, prefix="/api/folders", tags=["Folders"])

@@ -1,15 +1,35 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useProjectApi, StorageUsage } from "@/lib/api";
+import { useProjectApi, StorageAddon, StorageUsage } from "@/lib/api";
 import { SettingsSection } from "./SettingsSection";
 import { Card, CardContent } from "@/components/ui/card";
 import { HardDrive, Loader2, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 export function StorageSection() {
     const api = useProjectApi();
     const [storageInfo, setStorageInfo] = useState<StorageUsage | null>(null);
+    const [storageAddons, setStorageAddons] = useState<StorageAddon[]>([]);
     const [storageError, setStorageError] = useState<string | null>(null);
+    const [isProcessingUpgrade, setIsProcessingUpgrade] = useState<string | null>(null);
+    const fallbackAddons: StorageAddon[] = [
+        {
+            code: "storage_plus_5gb",
+            label: "Tambah 5 GB",
+            bytes_added: 5 * 1024 * 1024 * 1024,
+            amount: 49000,
+            currency: "IDR",
+        },
+        {
+            code: "storage_plus_20gb",
+            label: "Tambah 20 GB",
+            bytes_added: 20 * 1024 * 1024 * 1024,
+            amount: 149000,
+            currency: "IDR",
+        },
+    ];
 
     const fetchStorageInfo = useCallback(async () => {
         setStorageError(null);
@@ -26,6 +46,33 @@ export function StorageSection() {
     useEffect(() => {
         fetchStorageInfo();
     }, [fetchStorageInfo]);
+
+    useEffect(() => {
+        const fetchStorageAddons = async () => {
+            try {
+                const data = await api.getStorageAddons();
+                setStorageAddons(data.items);
+            } catch (err) {
+                console.error("Failed to load storage addon catalog", err);
+            }
+        };
+
+        fetchStorageAddons();
+    }, [api]);
+
+    const handleUpgrade = useCallback(async (addonCode: string) => {
+        setIsProcessingUpgrade(addonCode);
+        try {
+            const intent = await api.createStoragePurchaseIntent({ addon_code: addonCode as "storage_plus_5gb" | "storage_plus_20gb" });
+            toast.success("Checkout siap. Mengarahkan ke halaman pembayaran...");
+            window.location.href = intent.checkout_url;
+        } catch (err) {
+            const message = err instanceof Error ? err.message : "Gagal membuat sesi pembayaran storage.";
+            toast.error(message);
+        } finally {
+            setIsProcessingUpgrade(null);
+        }
+    }, [api]);
 
     return (
         <SettingsSection
@@ -101,6 +148,27 @@ export function StorageSection() {
                                         : "💡 Penyimpanan mulai penuh. Pertimbangkan untuk menghapus file yang tidak dipakai."}
                                 </div>
                             )}
+
+                            <div className="rounded-lg border border-teal-200 dark:border-teal-900 p-4 bg-white/70 dark:bg-zinc-950/40">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+                                    <p className="text-sm font-semibold text-foreground">Upgrade Storage</p>
+                                    <p className="text-xs text-muted-foreground">Aktif segera setelah pembayaran terkonfirmasi.</p>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    {(storageAddons.length > 0 ? storageAddons : fallbackAddons).map((addon, index) => (
+                                        <Button
+                                            key={addon.code}
+                                            variant={index === 0 ? "outline" : "default"}
+                                            disabled={isProcessingUpgrade !== null}
+                                            onClick={() => handleUpgrade(addon.code)}
+                                        >
+                                            {isProcessingUpgrade === addon.code
+                                                ? "Memproses..."
+                                                : `${addon.label} - ${addon.currency} ${addon.amount.toLocaleString("id-ID")}`}
+                                        </Button>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                     ) : (
                         <div className="flex justify-center items-center py-8">

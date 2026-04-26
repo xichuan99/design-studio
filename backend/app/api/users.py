@@ -11,6 +11,13 @@ from app.core.database import get_db
 from app.models.credit_transaction import CreditTransaction
 from app.models.user import User
 from app.schemas.credit import CreditHistoryResponse
+from app.schemas.storage_payment import (
+    StorageAddon,
+    StorageAddonListResponse,
+    StoragePurchaseIntentRequest,
+    StoragePurchaseIntentResponse,
+    StoragePurchaseListResponse,
+)
 from app.schemas.user import UserUpdate, UserResponse
 
 logger = logging.getLogger(__name__)
@@ -170,3 +177,90 @@ async def recalculate_my_storage(
 
     await recalculate_storage(current_user.id, db)
     return await get_storage_stats(current_user.id, db)
+
+
+@router.get(
+    "/me/storage/addons",
+    response_model=StorageAddonListResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get Storage Addon Catalog",
+    description="Returns available storage addon packages for the current user.",
+    responses=ERROR_RESPONSES,
+)
+async def get_my_storage_addons(
+    current_user: User = Depends(get_current_user),
+):
+    from app.services.storage_payment_service import get_addon_catalog
+
+    _ = current_user
+    catalog = get_addon_catalog()
+    items = [
+        StorageAddon(
+            code=code,
+            label=str(data.get("label", code)),
+            bytes_added=int(data.get("bytes_added", 0)),
+            amount=int(data.get("amount", 0)),
+            currency=str(data.get("currency", "IDR")),
+        )
+        for code, data in catalog.items()
+    ]
+
+    return StorageAddonListResponse(items=items)
+
+
+@router.post(
+    "/me/storage/purchase-intent",
+    response_model=StoragePurchaseIntentResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create Storage Purchase Intent",
+    description="Creates a pending storage addon purchase and returns checkout URL.",
+    responses=ERROR_RESPONSES,
+)
+async def create_my_storage_purchase_intent(
+    payload: StoragePurchaseIntentRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.services.storage_payment_service import create_purchase_intent
+
+    purchase = await create_purchase_intent(
+        user_id=current_user.id,
+        addon_code=payload.addon_code,
+        db=db,
+    )
+
+    return StoragePurchaseIntentResponse(
+        purchase_id=purchase.id,
+        status=purchase.status,
+        checkout_url=purchase.checkout_url or "/settings?upgrade=storage",
+        addon_code=purchase.addon_code,
+        bytes_added=purchase.bytes_added,
+        amount=purchase.amount,
+        currency=purchase.currency,
+    )
+
+
+@router.get(
+    "/me/storage/purchases",
+    response_model=StoragePurchaseListResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get Storage Purchase History",
+    description="Returns the current user's storage purchase history.",
+    responses=ERROR_RESPONSES,
+)
+async def get_my_storage_purchases(
+    limit: int = 20,
+    offset: int = 0,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.services.storage_payment_service import list_purchases
+
+    items, total_count = await list_purchases(
+        user_id=current_user.id,
+        db=db,
+        limit=limit,
+        offset=offset,
+    )
+
+    return StoragePurchaseListResponse(items=items, total_count=total_count)

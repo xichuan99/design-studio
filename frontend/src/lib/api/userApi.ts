@@ -64,5 +64,60 @@ export function useUserEndpoints() {
             return res.json();
         }, [API_BASE_URL, getHeaders]);
 
-    return { getUserProfile, updateProfile, deleteAccount, getCreditHistory, getStorageUsage };
+    const getStorageAddons = useCallback(async (): Promise<Types.StorageAddonListResponse> => {
+            const res = await fetch(`${API_BASE_URL}/users/me/storage/addons`, {
+                headers: getHeaders(),
+            });
+            if (!res.ok) {
+                const errBody = await res.json().catch(() => ({}));
+                throw new Error(errBody.detail || 'Failed to fetch storage addon catalog');
+            }
+            return res.json();
+        }, [API_BASE_URL, getHeaders]);
+
+    const createStoragePurchaseIntent = useCallback(
+        async (payload: Types.StoragePurchaseIntentRequest): Promise<Types.StoragePurchaseIntentResponse> => {
+            const res = await fetch(`${API_BASE_URL}/users/me/storage/purchase-intent`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(payload),
+            });
+            if (!res.ok) {
+                const errBody = await res.json().catch(() => ({}));
+                throw new Error(errBody.detail || 'Failed to create storage purchase intent');
+            }
+            return res.json();
+        },
+        [API_BASE_URL, getHeaders]
+    );
+
+    const getStoragePurchases = useCallback(
+        async (limit: number = 20, offset: number = 0): Promise<Types.StoragePurchaseListResponse> => {
+            const qs = new URLSearchParams({
+                limit: limit.toString(),
+                offset: offset.toString(),
+            }).toString();
+
+            const res = await fetch(`${API_BASE_URL}/users/me/storage/purchases?${qs}`, {
+                headers: getHeaders(),
+            });
+            if (!res.ok) {
+                const errBody = await res.json().catch(() => ({}));
+                throw new Error(errBody.detail || 'Failed to fetch storage purchases');
+            }
+            return res.json();
+        },
+        [API_BASE_URL, getHeaders]
+    );
+
+    return {
+        getUserProfile,
+        updateProfile,
+        deleteAccount,
+        getCreditHistory,
+        getStorageUsage,
+        getStorageAddons,
+        createStoragePurchaseIntent,
+        getStoragePurchases,
+    };
 }
