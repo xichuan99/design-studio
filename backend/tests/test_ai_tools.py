@@ -381,6 +381,7 @@ def test_magic_eraser_success():
             mask_url="http://storage.com/mask.jpg",
             prompt="remove object",
             magic_eraser_mode=True,
+            strict_mode=True,
         )
 
 
@@ -416,6 +417,7 @@ def test_magic_eraser_without_prompt_uses_magic_eraser_mode():
             mask_url="http://storage.com/mask.jpg",
             prompt=None,
             magic_eraser_mode=True,
+            strict_mode=True,
         )
 
 
