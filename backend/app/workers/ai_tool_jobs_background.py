@@ -306,6 +306,19 @@ async def execute_magic_eraser_tool_job(job_id: str):
     # Normalize/clean mask before sending to inpaint model to improve fill quality.
     raw_mask_bytes = await download_image(str(mask_url))
     prepared_mask_bytes = inpaint_service.prepare_magic_eraser_mask(raw_mask_bytes)
+
+    if not inpaint_service.validate_mask_has_content(prepared_mask_bytes):
+        async with AsyncSessionLocal() as session:
+            job = await session.get(AiToolJob, job_id)
+            if job:
+                await refund_ai_tool_job_if_needed(session, job, "Refund: mask tidak memiliki area untuk dierase")
+                job.status = "failed"
+                job.error_message = "Mask kosong — tidak ada area yang ditandai untuk dihapus."
+                job.finished_at = datetime.now(timezone.utc)
+                session.add(job)
+                await session.commit()
+        return
+
     prepared_mask_url = await upload_image(
         prepared_mask_bytes,
         content_type="image/png",

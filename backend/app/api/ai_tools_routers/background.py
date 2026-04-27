@@ -203,6 +203,9 @@ async def magic_eraser(
 
     mask_content = inpaint_service.prepare_magic_eraser_mask(mask_content)
 
+    if not inpaint_service.validate_mask_has_content(mask_content):
+        raise ValidationError(detail="Mask tidak memiliki area untuk dierase. Silakan tandai objek yang ingin dihapus.")
+
     from app.services.file_validation import validate_uploaded_image
     await validate_uploaded_image(content, user_id=current_user.id, db=db)
     await validate_uploaded_image(mask_content, user_id=current_user.id, db=db)

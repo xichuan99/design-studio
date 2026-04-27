@@ -431,6 +431,31 @@ def test_ai_tools_oversized_files():
     assert res.status_code == 422
 
 
+def test_magic_eraser_all_black_mask_returns_validation_error():
+    """An all-black mask (no marked area) should be rejected before credits are charged."""
+    import io
+    from PIL import Image
+
+    black_mask = Image.new("L", (64, 64), color=0)
+    buf = io.BytesIO()
+    black_mask.save(buf, format="PNG")
+    buf.seek(0)
+
+    black_img = Image.new("RGB", (64, 64), color=(100, 100, 100))
+    img_buf = io.BytesIO()
+    black_img.save(img_buf, format="PNG")
+    img_buf.seek(0)
+
+    files = {
+        "file": ("image.png", img_buf.read(), "image/png"),
+        "mask": ("mask.png", buf.read(), "image/png"),
+    }
+
+    res = client.post("/api/tools/magic-eraser", files=files)
+    assert res.status_code == 422
+    assert "Mask" in res.json().get("error", {}).get("detail", "")
+
+
 def test_watermark_endpoint_success():
     """Test /watermark endpoint"""
     files = {

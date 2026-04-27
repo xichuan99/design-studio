@@ -9,6 +9,7 @@ from app.services.inpaint_service import (
     build_magic_eraser_prompt,
     inpaint_image,
     prepare_magic_eraser_mask,
+    validate_mask_has_content,
 )
 
 
@@ -167,3 +168,40 @@ def test_build_magic_eraser_prompt_appends_guardrails_to_custom_prompt():
     built = build_magic_eraser_prompt("hapus botol di meja")
     assert built.startswith("hapus botol di meja.")
     assert "Only continue existing background context in the masked region." in built
+
+
+# --- validate_mask_has_content ---
+
+def test_validate_mask_has_content_returns_true_when_white_pixels_present():
+    img = Image.new("L", (32, 32), color=0)
+    img.putpixel((10, 10), 255)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    assert validate_mask_has_content(buf.getvalue()) is True
+
+
+def test_validate_mask_has_content_returns_false_for_all_black_mask():
+    img = Image.new("L", (32, 32), color=0)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    assert validate_mask_has_content(buf.getvalue()) is False
+
+
+def test_validate_mask_has_content_is_permissive_on_invalid_bytes():
+    # Should not raise; returns True so downstream handles it
+    assert validate_mask_has_content(b"not-an-image") is True
+
+
+def test_prepare_magic_eraser_mask_dilates_and_blurs_mask():
+    """After preprocessing, a small white area should expand due to dilation."""
+    img = Image.new("L", (64, 64), color=0)
+    img.putpixel((32, 32), 255)  # single white pixel
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+
+    result_bytes = prepare_magic_eraser_mask(buf.getvalue())
+    result_img = Image.open(io.BytesIO(result_bytes)).convert("L")
+
+    # Dilation (MaxFilter 9) should have spread the pixel to neighbours
+    white_pixels = sum(1 for px in result_img.getdata() if px > 10)
+    assert white_pixels > 1

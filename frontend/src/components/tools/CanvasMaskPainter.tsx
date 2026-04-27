@@ -214,7 +214,13 @@ export function CanvasMaskPainter({ imageUrl, onMaskComplete, className = "" }: 
 
   const handleDone = () => {
     if (!canvasRef.current) return;
-    
+    if (!imgRef.current) return;
+
+    if (paths.length === 0) {
+      import('sonner').then(({ toast }) => toast.error('Silakan tandai area yang ingin dihapus terlebih dahulu'));
+      return;
+    }
+
     // Create a new canvas strictly for the black/white mask
     // Fal.ai requires white (255) for the area to fill, and black (0) for the area to keep
     const maskCanvas = document.createElement('canvas');
@@ -227,28 +233,36 @@ export function CanvasMaskPainter({ imageUrl, onMaskComplete, className = "" }: 
     maskCtx.fillStyle = '#000000';
     maskCtx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
 
-    if (paths.length > 0) {
-        if (!imgRef.current) return;
-        const img = imgRef.current;
-        const rect = img.getBoundingClientRect();
-        const scaleX = img.naturalWidth / rect.width;
-        const scaleY = img.naturalHeight / rect.height;
+    const img = imgRef.current;
+    const rect = img.getBoundingClientRect();
+    const scaleX = img.naturalWidth / rect.width;
+    const scaleY = img.naturalHeight / rect.height;
 
-        maskCtx.lineCap = "round";
-        maskCtx.lineJoin = "round";
-        maskCtx.strokeStyle = "#FFFFFF"; // Fill area
+    maskCtx.lineCap = "round";
+    maskCtx.lineJoin = "round";
+    maskCtx.strokeStyle = "#FFFFFF"; // Fill area
 
-        // Draw paths in white
-        paths.forEach(path => {
-            if (path.points.length === 0) return;
-            maskCtx.lineWidth = path.size * scaleX;
-            maskCtx.beginPath();
-            maskCtx.moveTo(path.points[0].x * scaleX, path.points[0].y * scaleY);
-            path.points.forEach(p => {
-                maskCtx.lineTo(p.x * scaleX, p.y * scaleY);
-            });
-            maskCtx.stroke();
+    // Draw paths in white
+    paths.forEach(path => {
+        if (path.points.length === 0) return;
+        maskCtx.lineWidth = path.size * scaleX;
+        maskCtx.beginPath();
+        maskCtx.moveTo(path.points[0].x * scaleX, path.points[0].y * scaleY);
+        path.points.forEach(p => {
+            maskCtx.lineTo(p.x * scaleX, p.y * scaleY);
         });
+        maskCtx.stroke();
+    });
+
+    // Verify mask has white pixels before sending
+    const checkCtx = maskCanvas.getContext('2d');
+    if (checkCtx) {
+      const imageData = checkCtx.getImageData(0, 0, maskCanvas.width, maskCanvas.height);
+      const hasWhitePixels = imageData.data.some((v, i) => i % 4 === 0 && v > 127);
+      if (!hasWhitePixels) {
+        import('sonner').then(({ toast }) => toast.error('Area yang ditandai terlalu kecil. Coba perbesar ukuran kuas.'));
+        return;
+      }
     }
 
     maskCanvas.toBlob((blob) => {

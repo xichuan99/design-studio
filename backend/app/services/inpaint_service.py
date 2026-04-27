@@ -28,18 +28,29 @@ def build_magic_eraser_prompt(prompt: Optional[str] = None) -> str:
 
 
 def prepare_magic_eraser_mask(mask_bytes: bytes) -> bytes:
-    """Improve mask usability by thresholding, slight dilation, and soft edge blending."""
+    """Improve mask usability by thresholding, dilation, and soft edge blending."""
     try:
         mask = Image.open(io.BytesIO(mask_bytes)).convert("L")
         mask = mask.point(lambda px: 255 if px > 10 else 0)
-        mask = mask.filter(ImageFilter.MaxFilter(5))
-        mask = mask.filter(ImageFilter.GaussianBlur(radius=1.2))
+        # Increased dilation (5→9) for better edge coverage on boundary objects
+        mask = mask.filter(ImageFilter.MaxFilter(9))
+        # Increased blur (1.2→2.0) for smoother transitions and less seam artifact
+        mask = mask.filter(ImageFilter.GaussianBlur(radius=2.0))
 
         out = io.BytesIO()
         mask.save(out, format="PNG")
         return out.getvalue()
     except Exception:
         return mask_bytes
+
+
+def validate_mask_has_content(mask_bytes: bytes) -> bool:
+    """Return True if the mask contains at least one white (>127) pixel."""
+    try:
+        mask = Image.open(io.BytesIO(mask_bytes)).convert("L")
+        return any(px > 127 for px in mask.getdata())
+    except Exception:
+        return True  # Be permissive on parse failure — let downstream handle it
 
 
 async def inpaint_image(
