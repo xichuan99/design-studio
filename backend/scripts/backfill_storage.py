@@ -18,14 +18,12 @@ import asyncio
 import os
 import sys
 import logging
-from sqlalchemy import select, func
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
 
 from app.models.user import User
-from app.models.job import Job
-from app.models.ai_tool_result import AiToolResult
 from app.services.storage_quota_service import recalculate_storage
 
 # Setup logging
@@ -39,7 +37,7 @@ logger = logging.getLogger(__name__)
 async def backfill_storage(verbose: bool = False, limit: int = None):
     """
     Recalculate and update storage_used for all users.
-    
+
     Args:
         verbose: If True, print detailed logs per user
         limit: Maximum number of users to process (for testing)

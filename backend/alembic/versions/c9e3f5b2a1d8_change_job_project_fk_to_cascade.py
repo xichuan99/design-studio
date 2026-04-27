@@ -20,10 +20,10 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Change Job.project_id FK from SET NULL to CASCADE.
-    
+
     After this migration, deleting a project will automatically delete
     all associated jobs. This prevents orphaned jobs from accumulating.
-    
+
     Existing orphaned jobs (with project_id=NULL) are unaffected.
     """
     # Drop the existing foreign key constraint

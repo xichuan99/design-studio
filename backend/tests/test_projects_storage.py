@@ -125,10 +125,8 @@ async def test_recalculate_storage_sums_multiple_sources():
     mock_db.commit = AsyncMock()
 
     with patch("app.services.storage_quota_service.select"):
-        total = await recalculate_storage("user-123", mock_db)
+        await recalculate_storage("user-123", mock_db)
 
-        # Should sum to 70 MB (50 + 20 + 0)
-        expected_total = 70 * 1024 * 1024
         # Note: The actual function returns the new storage value
         # We're verifying the logic flow
         assert mock_db.commit.call_count == 1
@@ -143,9 +141,9 @@ async def test_decrement_usage_prevents_negative():
     # If current storage is 100 bytes and we try to decrement by 1000
     current_storage = 100
     decrement_amount = 1000
-    
+
     # The floor at zero means result should be 0
     new_storage = max(0, current_storage - decrement_amount)
-    
+
     assert new_storage == 0
     assert new_storage >= 0  # Never negative
