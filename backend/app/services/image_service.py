@@ -30,6 +30,7 @@ ASPECT_RATIO_MAP = {
 async def generate_background(
     visual_prompt: str,
     reference_image_url: str | None = None,
+    reference_focus: str = "auto",
     style: str = "auto",
     aspect_ratio: str = "1:1",
     integrated_text: bool = False,
@@ -62,13 +63,36 @@ async def generate_background(
     # Set the key in the environment for fal_client
     os.environ["FAL_KEY"] = settings.FAL_KEY
 
+    focus = (reference_focus or "auto").strip().lower()
+    if focus not in {"auto", "human", "object"}:
+        focus = "auto"
+
+    focus_instruction = ""
+    if reference_image_url and focus == "human":
+        focus_instruction = (
+            "prioritize preserving the person as the main subject from the reference image, "
+            "preserve facial identity and pose consistency, background and styling may adapt"
+        )
+    elif reference_image_url and focus == "object":
+        focus_instruction = (
+            "prioritize preserving the primary object from the reference image, "
+            "keep object shape and visual identity consistent, background may adapt"
+        )
+
     # Assemble the enhanced prompt via the modular PromptBuilder
     if integrated_text:
         # User wants text rendered into the image itself
         enhanced_prompt = PromptBuilder.build(
             visual_prompt=visual_prompt,
             style_key=style,
-            text_instruction="high quality typography, readable text, clear lettering, professional graphic design",
+            text_instruction=", ".join(
+                part
+                for part in [
+                    "high quality typography, readable text, clear lettering, professional graphic design",
+                    focus_instruction,
+                ]
+                if part
+            ),
             preserve_product=preserve_product,
         )
         actual_negative_prompt = PromptBuilder.build_negative_prompt(
@@ -80,7 +104,14 @@ async def generate_background(
         enhanced_prompt = PromptBuilder.build(
             visual_prompt=visual_prompt,
             style_key=style,
-            text_instruction="copy space area for text overlay, empty background for product placement",
+            text_instruction=", ".join(
+                part
+                for part in [
+                    "copy space area for text overlay, empty background for product placement",
+                    focus_instruction,
+                ]
+                if part
+            ),
             preserve_product=preserve_product,
         )
         actual_negative_prompt = PromptBuilder.build_negative_prompt(style_key=style)
@@ -111,7 +142,12 @@ async def generate_background(
             }
             if reference_image_url:
                 fal_args["image_url"] = reference_image_url
-                fal_args["strength"] = 0.70
+                if focus == "human":
+                    fal_args["strength"] = 0.50
+                elif focus == "object":
+                    fal_args["strength"] = 0.74
+                else:
+                    fal_args["strength"] = 0.62
 
             if seed:
                 try:

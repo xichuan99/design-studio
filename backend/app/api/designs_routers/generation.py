@@ -256,12 +256,20 @@ async def generate_design(
 
     await log_credit_change(db, current_user, -COST_GENERATE_DESIGN, "Generate desain")
 
+    # Catalog flow may upload the image as product_image_url without remove_product_bg.
+    # Treat it as reference image so i2i path can follow the real subject.
+    effective_reference_image_url = (
+        getattr(request, "reference_image_url", None)
+        or getattr(request, "product_image_url", None)
+    )
+    reference_focus = getattr(request, "reference_focus", "auto")
+
     # Create a job record in the database
     job = Job(
         raw_text=request.raw_text,
         aspect_ratio=request.aspect_ratio,
         style_preference=request.style_preference,
-        reference_image_url=getattr(request, "reference_image_url", None),
+        reference_image_url=effective_reference_image_url,
         user_id=current_user.id,
         seed=getattr(request, "seed", None),
         status="queued",
@@ -354,7 +362,8 @@ async def generate_design(
                 raw_text=request.raw_text,
                 aspect_ratio=request.aspect_ratio,
                 style=request.style_preference,
-                reference_url=getattr(request, "reference_image_url", None),
+                reference_url=effective_reference_image_url,
+                reference_focus=reference_focus,
                 integrated_text=request.integrated_text,
                 brand_colors=brand_colors,
                 brand_typography=brand_typography,
@@ -477,7 +486,8 @@ async def generate_design(
         else:
             fal_result = await generate_background(
                 visual_prompt=enhanced_prompt,
-                reference_image_url=getattr(request, "reference_image_url", None),
+                reference_image_url=effective_reference_image_url,
+                reference_focus=reference_focus,
                 style=style_key,
                 aspect_ratio=request.aspect_ratio,
                 integrated_text=request.integrated_text,

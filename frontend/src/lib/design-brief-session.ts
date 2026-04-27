@@ -9,5 +9,6 @@ export interface DesignBriefSessionState {
     copyTone: string;
     notes?: string;
     productImageUrl?: string;
+    referenceFocus?: "auto" | "human" | "object";
     updatedAt: string;
 }

@@ -33,6 +33,7 @@ async def _execute_pipeline(
     style: str,
     reference_url: str | None,
     integrated_text: bool,
+    reference_focus: str = "auto",
     brand_colors: list | None = None,
     brand_typography: dict | None = None,
     seed: str | None = None,
@@ -90,6 +91,7 @@ async def _execute_pipeline(
         result = await generate_background(
             visual_prompt=visual_prompt_final,
             reference_image_url=upload_ref_url,
+            reference_focus=reference_focus,
             style=style,
             aspect_ratio=aspect_ratio,
             integrated_text=integrated_text,
@@ -140,7 +142,7 @@ async def _execute_pipeline(
         raise
 
 
-@celery_app.task(bind=True, name="generate_design", time_limit=300, soft_time_limit=270, max_retries=3)
+@celery_app.task(bind=True, name="generate_design", time_limit=600, soft_time_limit=540, max_retries=3)
 def generate_design_task(
     self,
     job_id: str,
@@ -148,6 +150,7 @@ def generate_design_task(
     aspect_ratio: str = "1:1",
     style: str = "auto",
     reference_url: str | None = None,
+    reference_focus: str = "auto",
     integrated_text: bool = False,
     brand_colors: list | None = None,
     brand_typography: dict | None = None,
@@ -162,6 +165,7 @@ def generate_design_task(
                 aspect_ratio,
                 style,
                 reference_url,
+                reference_focus,
                 integrated_text,
                 brand_colors,
                 brand_typography,

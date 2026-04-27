@@ -22,6 +22,12 @@ class ImageProviderPreference(str, Enum):
     AUTO = "auto"
 
 
+class ReferenceFocusPreference(str, Enum):
+    AUTO = "auto"
+    HUMAN = "human"
+    OBJECT = "object"
+
+
 class DesignGenerationRequest(BaseModel):
     raw_text: str = Field(
         ...,
@@ -33,6 +39,10 @@ class DesignGenerationRequest(BaseModel):
     )
     reference_image_url: Optional[str] = Field(
         None, description="URL to a reference image"
+    )
+    reference_focus: ReferenceFocusPreference = Field(
+        ReferenceFocusPreference.AUTO,
+        description="Reference subject focus for i2i guidance: auto, human, or object",
     )
     template_id: Optional[str] = Field(None, description="ID of the starting template")
     aspect_ratio: AspectRatio = Field(

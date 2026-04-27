@@ -406,6 +406,7 @@ export interface GenerateDesignRequest {
     raw_text: string;
     mode?: string;
     reference_image_url?: string;
+    reference_focus?: 'auto' | 'human' | 'object';
     template_id?: string;
     aspect_ratio: string;
     style_preference?: string;

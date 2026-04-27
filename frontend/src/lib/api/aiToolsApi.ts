@@ -24,7 +24,7 @@ export function useAiToolsEndpoints() {
                     method: 'POST',
                     headers: getHeaders(),
                     body: JSON.stringify(payload),
-                    timeout: 125000 // 125 seconds, allowing Nginx 120s to trigger first or taking over if it hangs
+                    timeout: 240000 // 4 minutes to tolerate slower generation on busy providers
                 });
                 if (!res.ok) {
                     const errBase = await res.json().catch(() => ({}));

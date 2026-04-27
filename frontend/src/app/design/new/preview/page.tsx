@@ -75,6 +75,8 @@ export default function DesignPreviewPage() {
     const [genStatusIdx, setGenStatusIdx] = useState(0);
     const [genError, setGenError] = useState<string | null>(null);
     const [skipAiGenerate, setSkipAiGenerate] = useState(false);
+    const [referenceFocus, setReferenceFocus] = useState<"auto" | "human" | "object">("auto");
+    const [showLongRunningHint, setShowLongRunningHint] = useState(false);
 
     useEffect(() => {
         const frame = window.requestAnimationFrame(() => {
@@ -91,7 +93,19 @@ export default function DesignPreviewPage() {
 
     useEffect(() => {
         setSkipAiGenerate(!!brief?.productImageUrl);
-    }, [brief?.productImageUrl]);
+        setReferenceFocus(brief?.referenceFocus ?? "auto");
+    }, [brief?.productImageUrl, brief?.referenceFocus]);
+
+    useEffect(() => {
+        if (!generating) {
+            setShowLongRunningHint(false);
+            return;
+        }
+        const timer = setTimeout(() => {
+            setShowLongRunningHint(true);
+        }, 45000);
+        return () => clearTimeout(timer);
+    }, [generating]);
 
     // Cycle through status labels while generating
     useEffect(() => {
@@ -126,6 +140,7 @@ export default function DesignPreviewPage() {
                     copyTone: brief.copyTone,
                     notes: brief.notes,
                     productImageUrl: brief.productImageUrl,
+                    referenceFocus,
                 },
             }));
         }
@@ -142,6 +157,7 @@ export default function DesignPreviewPage() {
             copyTone: brief.copyTone,
             hasProductImage: !!brief.productImageUrl,
             skipAiGenerate,
+            referenceFocus,
             preview_real_generation_enabled: PREVIEW_REAL_GENERATION_ENABLED,
         });
         if (!PREVIEW_REAL_GENERATION_ENABLED) {
@@ -181,6 +197,8 @@ export default function DesignPreviewPage() {
             const jobData = await generateDesign({
                 raw_text: draftPrompt,
                 aspect_ratio: aspectRatio,
+                reference_image_url: brief.productImageUrl,
+                reference_focus: referenceFocus,
                 product_image_url: brief.productImageUrl,
             });
             const jobId = jobData.job_id;
@@ -195,13 +213,13 @@ export default function DesignPreviewPage() {
             // If already done synchronously
             let resultUrl = await fetchResult();
             if (!resultUrl) {
-                const maxAttempts = 90;
+                const maxAttempts = 180;
                 for (let i = 0; i < maxAttempts && !resultUrl; i++) {
                     await new Promise<void>(resolve => setTimeout(resolve, 2000));
                     resultUrl = await fetchResult();
                 }
             }
-            if (!resultUrl) throw new Error("Generation timeout. Coba lagi.");
+            if (!resultUrl) throw new Error("Generation masih berjalan lebih lama dari biasanya. Coba cek lagi beberapa saat atau ulangi dengan prompt yang lebih ringkas.");
 
             await openInEditor({
                 resultUrl,
@@ -217,6 +235,7 @@ export default function DesignPreviewPage() {
                 channel: brief.channel,
                 copyTone: brief.copyTone,
                 skipAiGenerate,
+                referenceFocus,
             });
         } catch (err) {
             const message = err instanceof Error ? err.message : "Terjadi kesalahan. Coba lagi.";
@@ -228,6 +247,7 @@ export default function DesignPreviewPage() {
                 channel: brief.channel,
                 copyTone: brief.copyTone,
                 skipAiGenerate,
+                referenceFocus,
                 error_message: message,
             });
         } finally {
@@ -247,9 +267,10 @@ export default function DesignPreviewPage() {
             copyTone: brief.copyTone,
             hasProductImage: !!brief.productImageUrl,
             skipAiGenerate,
+            referenceFocus,
             preview_real_generation_enabled: PREVIEW_REAL_GENERATION_ENABLED,
         });
-    }, [brief, posthog, skipAiGenerate, status]);
+    }, [brief, posthog, referenceFocus, skipAiGenerate, status]);
 
     if (status === "loading" || brief === undefined) {
         return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
@@ -378,6 +399,34 @@ export default function DesignPreviewPage() {
                                             Pakai foto produk langsung (tanpa AI)
                                         </button>
                                     </div>
+                                    {!skipAiGenerate && (
+                                        <div className="space-y-2 pt-2">
+                                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Fokus referensi</p>
+                                            <div className="grid gap-2 sm:grid-cols-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setReferenceFocus("auto")}
+                                                    className={`rounded-xl border px-3 py-2 text-left text-sm transition-colors ${referenceFocus === "auto" ? "border-primary bg-primary/10 text-primary" : "bg-background hover:bg-muted/60"}`}
+                                                >
+                                                    Auto
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setReferenceFocus("human")}
+                                                    className={`rounded-xl border px-3 py-2 text-left text-sm transition-colors ${referenceFocus === "human" ? "border-primary bg-primary/10 text-primary" : "bg-background hover:bg-muted/60"}`}
+                                                >
+                                                    Orang
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setReferenceFocus("object")}
+                                                    className={`rounded-xl border px-3 py-2 text-left text-sm transition-colors ${referenceFocus === "object" ? "border-primary bg-primary/10 text-primary" : "bg-background hover:bg-muted/60"}`}
+                                                >
+                                                    Objek
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
@@ -422,6 +471,9 @@ export default function DesignPreviewPage() {
                                 {handoffLoading ? "Membuka editor..." : GEN_STATUS_LABELS[genStatusIdx]}
                             </p>
                             <p className="text-xs text-muted-foreground">Jangan tutup halaman ini</p>
+                            {showLongRunningHint && (
+                                <p className="mt-1 text-xs text-muted-foreground">Proses lebih lama dari biasanya karena render detail referensi. Sistem tetap melanjutkan generate.</p>
+                            )}
                         </div>
                     </div>
                 )}
