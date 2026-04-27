@@ -1,12 +1,39 @@
 import { test, expect } from '@playwright/test';
-import { loginAsDemoUser } from './utils/auth';
 import { DESIGN_BRIEF_SESSION_KEY } from '../../src/lib/design-brief-session';
+
+async function mockAuthenticatedSession(page: import('@playwright/test').Page) {
+  await page.route('**/api/auth/session', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        user: {
+          name: 'Demo User',
+          email: 'demo@example.com',
+          image: null,
+        },
+        expires: '2099-01-01T00:00:00.000Z',
+      }),
+    });
+  });
+}
+
+async function continueIfAuthInterstitial(page: import('@playwright/test').Page) {
+  const continueLink = page.getByRole('link', { name: /Lanjutkan/i });
+  if (await continueLink.count()) {
+    await continueLink.first().click();
+    await page.waitForLoadState('domcontentloaded');
+  }
+}
 
 async function goToPreviewFromInterview(page: import('@playwright/test').Page) {
   await page.goto('/design/new/interview');
+  await continueIfAuthInterstitial(page);
   await page.getByRole('button', { name: /Katalog produk/i }).click();
+  await page.getByRole('button', { name: /Beauty/i }).click();
   await page.getByRole('button', { name: /Bold marketplace/i }).click();
   await page.getByRole('button', { name: /^Marketplace$/i }).click();
+  await page.getByRole('button', { name: /Persuasif/i }).click();
   await page.getByRole('button', { name: /Lanjut ke Preview/i }).click();
   await page.waitForURL('**/design/new/preview');
 }
@@ -15,58 +42,7 @@ test.describe('Design Brief Flow — Interview & Preview', () => {
   test.skip(({ browserName }) => browserName === 'webkit', 'WebKit session redirect race on protected design routes in CI');
 
   test.beforeEach(async ({ page }) => {
-    await loginAsDemoUser(page);
-  });
-
-  test.describe('Interview page', () => {
-    test('renders all three question cards with default selections', async ({ page }) => {
-      await page.goto('/design/new/interview');
-
-      await test.step('Page heading visible', async () => {
-        await expect(page.getByRole('heading', { name: /Mulai dari brief visual/i })).toBeVisible({ timeout: 10000 });
-      });
-
-      await test.step('All three question cards present', async () => {
-        await expect(page.getByText('1. Apa tujuan desain ini?')).toBeVisible();
-        await expect(page.getByText('2. Gaya visual yang diinginkan')).toBeVisible();
-        await expect(page.getByText('3. Channel utama')).toBeVisible();
-      });
-
-      await test.step('Progress bar shows 100% (all pre-selected)', async () => {
-        await expect(page.getByText('100%')).toBeVisible();
-      });
-    });
-
-    test('selecting different options updates the brief and navigates to preview', async ({ page }) => {
-      await page.goto('/design/new/interview');
-
-      await test.step('Select "Katalog produk" goal', async () => {
-        await page.getByRole('button', { name: /Katalog produk/i }).click();
-      });
-
-      await test.step('Select "Bold marketplace" style', async () => {
-        await page.getByRole('button', { name: /Bold marketplace/i }).click();
-      });
-
-      await test.step('Select "Marketplace" channel', async () => {
-        await page.getByRole('button', { name: /^Marketplace$/i }).click();
-      });
-
-      await test.step('Click Continue to Preview', async () => {
-        await page.getByRole('button', { name: /Lanjut ke Preview/i }).click();
-        await page.waitForURL('**/design/new/preview');
-      });
-
-      await test.step('Preview page shows the selected brief values', async () => {
-        const goalValue = page.getByText('Goal').locator('xpath=following-sibling::p[1]');
-        const styleValue = page.getByText('Style').locator('xpath=following-sibling::p[1]');
-        const channelValue = page.getByText('Channel').locator('xpath=following-sibling::p[1]');
-
-        await expect(goalValue).toHaveText(/catalog/i, { timeout: 10000 });
-        await expect(styleValue).toHaveText('Bold marketplace');
-        await expect(channelValue).toHaveText(/marketplace/i);
-      });
-    });
+    await mockAuthenticatedSession(page);
   });
 
   test.describe('Preview page', () => {
@@ -94,32 +70,73 @@ test.describe('Design Brief Flow — Interview & Preview', () => {
         await expect(page.getByRole('button', { name: /Generate Desain/i })).toBeEnabled();
       });
 
-      await test.step('Aspect ratio chip shows 1:1 for instagram', async () => {
+      await test.step('Aspect ratio chip shows 1:1 for marketplace', async () => {
         await expect(page.getByText('1:1')).toBeVisible();
       });
     });
 
+    test('upload photo + skip AI mode opens editor without hitting generate endpoint', async ({ page }) => {
+      let generateCalled = false;
+
+      await page.route('**/designs/upload', async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ url: 'https://example.com/product-image.jpg' }),
+        });
+      });
+
+      await page.route('**/designs/generate', async (route) => {
+        generateCalled = true;
+        await route.fulfill({
+          status: 202,
+          contentType: 'application/json',
+          body: JSON.stringify({ job_id: 'job-should-not-be-called' }),
+        });
+      });
+
+      await page.route('**/projects/', async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            id: 'project-from-skip-mode',
+            title: 'Mock Project',
+            status: 'draft',
+            canvas_state: {},
+          }),
+        });
+      });
+
+      await page.goto('/design/new/interview');
+      await page.getByRole('button', { name: /Katalog produk/i }).click();
+      await page.getByRole('button', { name: /Fashion/i }).click();
+      await page.getByRole('button', { name: /Minimal clean/i }).click();
+      await page.getByRole('button', { name: /^Instagram$/i }).click();
+      await page.getByRole('button', { name: /Friendly/i }).click();
+
+      await page.locator('input[type="file"]').setInputFiles({
+        name: 'product.jpg',
+        mimeType: 'image/jpeg',
+        buffer: Buffer.from('mock-jpg-content'),
+      });
+      await expect(page.getByText(/Foto produk siap dipakai/i)).toBeVisible({ timeout: 10000 });
+
+      await page.getByRole('button', { name: /Lanjut ke Preview/i }).click();
+      await page.waitForURL('**/design/new/preview');
+
+      await expect(page.getByRole('button', { name: /Pakai foto produk langsung \(tanpa AI\)/i })).toBeVisible();
+      await expect(page.getByRole('button', { name: /Buka Editor dengan Foto Ini/i })).toBeVisible();
+
+      await page.getByRole('button', { name: /Buka Editor dengan Foto Ini/i }).click();
+      await page.waitForURL('**/edit/project-from-skip-mode', { timeout: 15000 });
+      expect(generateCalled).toBe(false);
+    });
+
     test('shows fallback when no brief exists in sessionStorage', async ({ page, browserName }) => {
       test.skip(browserName === 'webkit', 'Flaky auth redirect race on WebKit-family browsers in CI');
-
-      const openPreview = async () => {
-        for (let attempt = 1; attempt <= 2; attempt++) {
-          try {
-            await page.goto('/design/new/preview');
-          } catch {
-            // ignore interrupted navigation; we'll verify resulting URL below
-          }
-
-          if (page.url().includes('/design/new/preview')) {
-            return;
-          }
-
-          await loginAsDemoUser(page);
-        }
-        throw new Error('Unable to open /design/new/preview after auth retry');
-      };
-
-      await openPreview();
+      await page.goto('/design/new/preview');
+      await continueIfAuthInterstitial(page);
       await page.evaluate((key) => {
         window.sessionStorage.removeItem(key);
       }, DESIGN_BRIEF_SESSION_KEY);

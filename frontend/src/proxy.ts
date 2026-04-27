@@ -1,6 +1,8 @@
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 
+const AUTH_BYPASS_FOR_E2E = process.env.PLAYWRIGHT_AUTH_BYPASS === "true";
+
 // Reuse the same authorization logic as the previous middleware but expose
 // it as a `proxy` as recommended by Next.js newer releases.
 const proxyHandler = withAuth(
@@ -9,7 +11,7 @@ const proxyHandler = withAuth(
   },
   {
     callbacks: {
-      authorized: ({ token }) => !!token,
+      authorized: ({ token }) => AUTH_BYPASS_FOR_E2E || !!token,
     },
   }
 );

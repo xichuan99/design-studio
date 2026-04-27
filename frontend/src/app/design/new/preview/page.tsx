@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { redirect, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -51,7 +52,7 @@ const GEN_STATUS_LABELS = [
 function buildPrompt(brief: DesignBriefSessionState): string {
     const goalLabel = GOAL_LABEL_MAP[brief.goal] ?? brief.goal;
     const channelLabel = CHANNEL_LABEL_MAP[brief.channel] ?? brief.channel;
-    const productTypeLabel = PRODUCT_TYPE_LABEL_MAP[brief.productType] ?? brief.productType;
+    const productTypeLabel = brief.customProductType ?? PRODUCT_TYPE_LABEL_MAP[brief.productType] ?? brief.productType;
     const noteLine = brief.notes ? `Catatan tambahan: ${brief.notes}.` : null;
     return [
         `Buat desain ${goalLabel} untuk ${channelLabel} dengan konteks ${productTypeLabel}.`,
@@ -73,6 +74,7 @@ export default function DesignPreviewPage() {
     const [generating, setGenerating] = useState(false);
     const [genStatusIdx, setGenStatusIdx] = useState(0);
     const [genError, setGenError] = useState<string | null>(null);
+    const [skipAiGenerate, setSkipAiGenerate] = useState(false);
 
     useEffect(() => {
         const frame = window.requestAnimationFrame(() => {
@@ -86,6 +88,10 @@ export default function DesignPreviewPage() {
         });
         return () => window.cancelAnimationFrame(frame);
     }, []);
+
+    useEffect(() => {
+        setSkipAiGenerate(!!brief?.productImageUrl);
+    }, [brief?.productImageUrl]);
 
     // Cycle through status labels while generating
     useEffect(() => {
@@ -114,10 +120,12 @@ export default function DesignPreviewPage() {
                 briefAnswers: {
                     goal: brief.goal,
                     productType: brief.productType,
+                    customProductType: brief.customProductType,
                     style: brief.style,
                     channel: brief.channel,
                     copyTone: brief.copyTone,
                     notes: brief.notes,
+                    productImageUrl: brief.productImageUrl,
                 },
             }));
         }
@@ -132,17 +140,49 @@ export default function DesignPreviewPage() {
             style: brief.style,
             channel: brief.channel,
             copyTone: brief.copyTone,
+            hasProductImage: !!brief.productImageUrl,
+            skipAiGenerate,
             preview_real_generation_enabled: PREVIEW_REAL_GENERATION_ENABLED,
         });
         if (!PREVIEW_REAL_GENERATION_ENABLED) {
             openLegacyEngine();
             return;
         }
+
+        if (skipAiGenerate && brief.productImageUrl) {
+            try {
+                await openInEditor({
+                    resultUrl: brief.productImageUrl,
+                    sourceTool: "design-brief",
+                    title: `Desain ${brief.goal} — ${brief.style}`,
+                    intent: "design_brief",
+                    entryMode: "brief_preview",
+                    primaryAsset: {
+                        url: brief.productImageUrl,
+                        filename: "uploaded-product-image",
+                    },
+                });
+                posthog?.capture("design_brief_preview_open_editor_from_product_image", {
+                    goal: brief.goal,
+                    style: brief.style,
+                    channel: brief.channel,
+                });
+            } catch (err) {
+                const message = err instanceof Error ? err.message : "Gagal membuka editor.";
+                setGenError(message);
+            }
+            return;
+        }
+
         setGenError(null);
         setGenerating(true);
         setGenStatusIdx(0);
         try {
-            const jobData = await generateDesign({ raw_text: draftPrompt, aspect_ratio: aspectRatio });
+            const jobData = await generateDesign({
+                raw_text: draftPrompt,
+                aspect_ratio: aspectRatio,
+                product_image_url: brief.productImageUrl,
+            });
             const jobId = jobData.job_id;
 
             const fetchResult = async () => {
@@ -176,6 +216,7 @@ export default function DesignPreviewPage() {
                 style: brief.style,
                 channel: brief.channel,
                 copyTone: brief.copyTone,
+                skipAiGenerate,
             });
         } catch (err) {
             const message = err instanceof Error ? err.message : "Terjadi kesalahan. Coba lagi.";
@@ -186,6 +227,7 @@ export default function DesignPreviewPage() {
                 style: brief.style,
                 channel: brief.channel,
                 copyTone: brief.copyTone,
+                skipAiGenerate,
                 error_message: message,
             });
         } finally {
@@ -203,9 +245,11 @@ export default function DesignPreviewPage() {
             style: brief.style,
             channel: brief.channel,
             copyTone: brief.copyTone,
+            hasProductImage: !!brief.productImageUrl,
+            skipAiGenerate,
             preview_real_generation_enabled: PREVIEW_REAL_GENERATION_ENABLED,
         });
-    }, [brief, posthog, status]);
+    }, [brief, posthog, skipAiGenerate, status]);
 
     if (status === "loading" || brief === undefined) {
         return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
@@ -268,7 +312,7 @@ export default function DesignPreviewPage() {
                                 </div>
                                 <div className="rounded-2xl border bg-muted/20 p-4">
                                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Product Type</p>
-                                    <p className="mt-2 text-sm font-semibold text-foreground">{brief.productType}</p>
+                                    <p className="mt-2 text-sm font-semibold text-foreground">{brief.customProductType ?? brief.productType}</p>
                                 </div>
                                 <div className="rounded-2xl border bg-muted/20 p-4">
                                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Style</p>
@@ -295,6 +339,47 @@ export default function DesignPreviewPage() {
                                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Prompt yang akan digunakan</p>
                                 <p className="mt-3 text-sm leading-7 text-foreground">{draftPrompt}</p>
                             </div>
+
+                            {brief.productImageUrl && (
+                                <div className="space-y-3 rounded-2xl border bg-muted/20 p-5">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Foto produk</p>
+                                        <span className="rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground">Diunggah</span>
+                                    </div>
+                                    <div className="relative h-40 w-full overflow-hidden rounded-xl border bg-background">
+                                        <Image
+                                            src={brief.productImageUrl}
+                                            alt="Foto produk yang diunggah"
+                                            fill
+                                            sizes="(max-width: 1024px) 100vw, 600px"
+                                            className="object-cover"
+                                            unoptimized
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            {brief.productImageUrl && (
+                                <div className="space-y-2 rounded-2xl border bg-muted/20 p-5">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Mode visual</p>
+                                    <div className="grid gap-2 sm:grid-cols-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setSkipAiGenerate(false)}
+                                            className={`rounded-xl border px-3 py-2 text-left text-sm transition-colors ${!skipAiGenerate ? "border-primary bg-primary/10 text-primary" : "bg-background hover:bg-muted/60"}`}
+                                        >
+                                            Generate gambar AI
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setSkipAiGenerate(true)}
+                                            className={`rounded-xl border px-3 py-2 text-left text-sm transition-colors ${skipAiGenerate ? "border-primary bg-primary/10 text-primary" : "bg-background hover:bg-muted/60"}`}
+                                        >
+                                            Pakai foto produk langsung (tanpa AI)
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                 <span className="rounded-md border bg-muted/30 px-2 py-0.5 font-mono">{aspectRatio}</span>
@@ -372,7 +457,7 @@ export default function DesignPreviewPage() {
                         </div>
                         <Button size="lg" className="gap-2 rounded-xl" onClick={handleGenerate} disabled={isWorking}>
                             {isWorking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-                            {isWorking ? "Sedang generate..." : "Generate Desain"}
+                            {isWorking ? "Sedang generate..." : (skipAiGenerate && brief.productImageUrl ? "Buka Editor dengan Foto Ini" : "Generate Desain")}
                         </Button>
                     </div>
                 </div>
