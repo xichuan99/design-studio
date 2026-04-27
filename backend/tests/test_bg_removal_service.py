@@ -124,6 +124,13 @@ def test_build_background_swap_standard_prompt_has_quality_guardrails():
     assert "no random text" in enhanced
     assert "no blurry letters" in enhanced
     assert "no gibberish typography" in enhanced
+    assert "keep foreground object unchanged" in enhanced
+    assert "background-only edit focused on requested visual elements" in enhanced
+    assert "no letters" in enhanced
+    assert "no words" in enhanced
+    assert "no signage" in enhanced
+    assert "no numbers" in enhanced
+    assert "no symbols" in enhanced
 
 
 @pytest.mark.asyncio

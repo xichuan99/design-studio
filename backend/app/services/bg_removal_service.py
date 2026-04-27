@@ -23,8 +23,11 @@ logger = logging.getLogger(__name__)
 _BG_SWAP_STANDARD_QUALITY_GUARDRAILS = (
     "photorealistic, high quality, studio-grade lighting, "
     "sharp focus on subject, cinematic depth of field, "
-    "clean background details, no random text, no blurry letters, "
-    "no gibberish typography, no watermark, no logo"
+    "clean background details, keep foreground object unchanged, "
+    "background-only edit focused on requested visual elements, "
+    "no random text, no blurry letters, no gibberish typography, "
+    "no letters, no words, no signage, no labels, no numbers, no symbols, "
+    "no watermark, no logo"
 )
 
 _SHADOW_PROFILE_SETTINGS = {

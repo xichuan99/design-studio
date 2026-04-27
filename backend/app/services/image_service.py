@@ -230,7 +230,9 @@ def build_background_swap_ultra_prompt(prompt: str) -> str:
         f"Professional product photography background replacement, {base_prompt}, "
         "ultra-detailed, photorealistic, seamless edge blending, "
         "natural lighting continuity, clean background details, "
+        "keep foreground object unchanged, background-only edit focused on requested visual elements, "
         "no random text, no blurry letters, no gibberish typography, "
+        "no letters, no words, no signage, no labels, no numbers, no symbols, "
         "no watermark, no logo"
     )
 
