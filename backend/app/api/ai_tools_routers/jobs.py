@@ -2,6 +2,7 @@
 
 from typing import Any, Literal, Optional
 import asyncio
+import logging
 import os
 from uuid import UUID
 
@@ -23,6 +24,11 @@ from app.services.ai_tool_job_service import (
 )
 from app.core.config import settings
 from app.services.credit_service import log_credit_change
+from app.services.storage_service import download_image
+from app.services.subject_classifier_service import (
+    build_product_scene_policy_result,
+    classify_subject_for_product_scene,
+)
 from app.core.credit_costs import (
     COST_BG_SWAP,
     COST_BG_SWAP_ULTRA,
@@ -36,6 +42,7 @@ from app.core.credit_costs import (
 )
 
 router = APIRouter(tags=["AI Tools"])
+logger = logging.getLogger(__name__)
 
 SUPPORTED_TOOL_NAMES = {
     "retouch",
@@ -91,6 +98,31 @@ def get_credit_cost(
     return _TOOL_CREDIT_COST_STANDARD.get(tool_name)
 
 
+async def _preflight_product_scene_payload(payload: Optional[dict[str, Any]]) -> Optional[str]:
+    """Return blocking reason if product-scene async payload is not eligible."""
+    image_url = str((payload or {}).get("image_url", "")).strip()
+    if not image_url:
+        return None
+
+    try:
+        image_bytes = await download_image(image_url)
+        classification = classify_subject_for_product_scene(image_bytes)
+        policy = build_product_scene_policy_result(classification)
+        logger.info(
+            "product_scene_jobs_preflight: subject_type=%s action=%s confidence=%.2f",
+            policy.get("subject_type"),
+            policy.get("policy_action"),
+            float(policy.get("confidence", 0.0)),
+        )
+        if policy.get("policy_action") == "block":
+            return str(policy.get("reason", "Image is not eligible for product scene"))
+    except Exception as exc:
+        # Keep backward compatibility: if preflight fails, worker-level enforcement still applies.
+        logger.warning("Async product-scene preflight skipped due to error: %s", exc)
+
+    return None
+
+
 class CreateToolJobRequest(BaseModel):
     tool_name: Literal[
         "retouch",
@@ -134,6 +166,14 @@ async def create_tool_job(
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Advanced relight is currently disabled.",
+            )
+
+    if request.tool_name == "product_scene":
+        blocked_reason = await _preflight_product_scene_payload(request.payload)
+        if blocked_reason:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=blocked_reason,
             )
 
     # Merge model quality into payload so the worker can read it.

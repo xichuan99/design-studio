@@ -10,13 +10,16 @@ import { Button } from "@/components/ui/button";
 import { Loader2, ArrowLeft, Sparkles } from "lucide-react";
 import { QualityToggle } from "@/components/tools/QualityToggle";
 import { useRouter } from "next/navigation";
+import { usePostHog } from "posthog-js/react";
 import { useToolHandoff } from "@/hooks/useToolHandoff";
 import Image from "next/image";
 import { toast } from "sonner";
 import { useProjectApi } from "@/lib/api";
+import type { ProductScenePreflightResponse } from "@/lib/api";
 import { useToolJobProgress } from "@/hooks/useToolJobProgress";
 import { CreditCostBadge } from "@/components/credits/CreditCostBadge";
 import { CreditConfirmDialog } from "@/components/credits/CreditConfirmDialog";
+import { PRODUCT_SCENE_REDIRECT_ENABLED, PRODUCT_SCENE_REDIRECT_HANDOFF_ENABLED } from "@/lib/feature-flags";
 
 const THEMES = [
   { id: "studio", name: "Studio Profesional", emoji: "📸" },
@@ -35,6 +38,14 @@ const COMPOSITE_PROFILES = [
   { id: "soft", name: "Soft Shadow" },
 ] as const;
 
+const PRODUCT_SCENE_REDIRECT_FILE_KEY = "product_scene_redirect_file_v1";
+
+type RedirectHandoffFile = {
+  name: string;
+  type: string;
+  data_url: string;
+};
+
 export default function ProductScenePage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
@@ -45,21 +56,122 @@ export default function ProductScenePage() {
   const [compositeProfile, setCompositeProfile] = useState<"grounded" | "default" | "soft">("grounded");
   const [modelQuality, setModelQuality] = useState<"standard" | "ultra">("standard");
   const [resultUrl, setResultUrl] = useState<string>("");
+  const [preflightResult, setPreflightResult] = useState<ProductScenePreflightResponse | null>(null);
+  const [preflightLoading, setPreflightLoading] = useState(false);
   const { loading, activeJob, startToolJob, cancelActiveJob } = useToolJobProgress();
   const { openInEditor, isLoading: handoffLoading } = useToolHandoff();
+  const posthog = usePostHog();
   const api = useProjectApi();
+
+  const fileToDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => reject(new Error("Gagal membaca file untuk handoff"));
+      reader.readAsDataURL(file);
+    });
+
+  const saveRedirectHandoffFile = async (file: File): Promise<void> => {
+    if (!PRODUCT_SCENE_REDIRECT_HANDOFF_ENABLED) return;
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      const payload: RedirectHandoffFile = {
+        name: file.name,
+        type: file.type || "image/jpeg",
+        data_url: dataUrl,
+      };
+      sessionStorage.setItem(PRODUCT_SCENE_REDIRECT_FILE_KEY, JSON.stringify(payload));
+    } catch {
+      // Best-effort UX helper; generation policy remains protected by backend.
+    }
+  };
+
+  const redirectToBackgroundSwap = async (trigger: "generate" | "manual") => {
+    if (!originalFile) return;
+
+    posthog?.capture("product_scene_redirect_background_swap", {
+      subject_type: preflightResult?.subject_type,
+      trigger,
+    });
+
+    if (!PRODUCT_SCENE_REDIRECT_ENABLED) {
+      return;
+    }
+
+    await saveRedirectHandoffFile(originalFile);
+    router.push("/tools/background-swap?source=product-scene-policy");
+  };
 
   const handleFileSelect = (file: File) => {
     if (previewOriginal) URL.revokeObjectURL(previewOriginal);
     setOriginalFile(file);
     setPreviewOriginal(URL.createObjectURL(file));
+    setPreflightResult(null);
     setStep(2);
+    void runPreflight(file).catch(() => {
+      setPreflightResult(null);
+    });
+  };
+
+  const runPreflight = async (file: File): Promise<ProductScenePreflightResponse> => {
+    setPreflightLoading(true);
+    posthog?.capture("product_scene_preflight_started", {
+      file_size: file.size,
+      file_type: file.type,
+    });
+    try {
+      const policy = await api.preflightProductScene(file);
+      setPreflightResult(policy);
+      posthog?.capture("product_scene_classified", {
+        subject_type: policy.subject_type,
+        policy_action: policy.policy_action,
+        reason_code: policy.reason_code,
+        recommended_tool: policy.recommended_tool,
+        confidence: policy.confidence,
+      });
+      if (policy.policy_action === "block") {
+        posthog?.capture("product_scene_blocked", {
+          subject_type: policy.subject_type,
+          confidence: policy.confidence,
+          reason_code: policy.reason_code,
+          reason: policy.reason,
+          trigger: "preflight",
+        });
+      }
+      posthog?.capture(`product_scene_classified_${policy.subject_type}`, {
+        confidence: policy.confidence,
+        reason_code: policy.reason_code,
+      });
+      return policy;
+    } finally {
+      setPreflightLoading(false);
+    }
   };
 
   const handleGenerate = async () => {
     if (!originalFile || !theme) return;
 
     try {
+      const policy = preflightResult ?? await runPreflight(originalFile);
+      if (policy.policy_action === "block") {
+        posthog?.capture("product_scene_blocked", {
+          subject_type: policy.subject_type,
+          confidence: policy.confidence,
+          reason_code: policy.reason_code,
+          reason: policy.reason,
+        });
+        toast.error(policy.reason);
+        await redirectToBackgroundSwap("generate");
+        return;
+      }
+
+      posthog?.capture("product_scene_generation_started", {
+        quality: modelQuality,
+        aspect_ratio: aspectRatio,
+        composite_profile: compositeProfile,
+        theme,
+      });
+
       const uploaded = await api.uploadImage(originalFile);
       await startToolJob({
         toolName: "product_scene",
@@ -73,12 +185,27 @@ export default function ProductScenePage() {
         idempotencyKey: `${originalFile.name}:${originalFile.size}:${originalFile.lastModified}:${theme}:${aspectRatio}:${modelQuality}:${compositeProfile}`,
         onCompleted: (job) => {
           if (job.result_url) {
+            posthog?.capture("product_scene_generation_completed", {
+              quality: modelQuality,
+              theme,
+            });
             setResultUrl(job.result_url);
             setStep(3);
             toast.success("Product scene selesai");
           }
         },
         onFailed: (job) => {
+          const reason = job.error_message || "unknown";
+          if (reason.includes("PS_VALIDATION_")) {
+            posthog?.capture("product_scene_validation_failed", {
+              reason,
+              quality: modelQuality,
+            });
+          }
+          posthog?.capture("product_scene_generation_failed", {
+            quality: modelQuality,
+            reason,
+          });
           toast.error(job.error_message || "Proses product scene gagal");
         },
         onCanceled: () => {
@@ -93,6 +220,17 @@ export default function ProductScenePage() {
         },
       });
     } catch (err: unknown) {
+      const reason = err instanceof Error ? err.message : String(err);
+      if (reason.includes("PS_VALIDATION_")) {
+        posthog?.capture("product_scene_validation_failed", {
+          reason,
+          quality: modelQuality,
+        });
+      }
+      posthog?.capture("product_scene_generation_failed", {
+        quality: modelQuality,
+        reason,
+      });
       if (err instanceof Error) {
         toast.error(err.message);
       } else {
@@ -144,7 +282,7 @@ export default function ProductScenePage() {
         <div className="mb-8 flex justify-between items-start">
           <div>
             <h1 className="text-3xl font-jakarta font-bold text-foreground">AI Product Scene</h1>
-            <p className="text-muted-foreground mt-2">Tidak perlu sewa studio. Upload foto produk Anda, pilih suasana, dan langsung dapat foto profesional.</p>
+            <p className="text-muted-foreground mt-2">Khusus foto produk tanpa manusia. Untuk portrait atau foto manusia, gunakan Background Swap agar hasil lebih natural.</p>
           </div>
           <CreditCostBadge cost={creditCost} className="mt-2" />
         </div>
@@ -240,19 +378,41 @@ export default function ProductScenePage() {
                 onCancel={handleCancel}
               />
 
+              {preflightResult?.policy_action === "block" && (
+                <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+                  <p>{preflightResult.reason}</p>
+                  <Button
+                    className="mt-3"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      void redirectToBackgroundSwap("manual");
+                    }}
+                  >
+                    Lanjut ke Background Swap
+                  </Button>
+                </div>
+              )}
+
+              {preflightResult?.policy_action === "warn" && (
+                <div className="rounded-lg border border-amber-400/40 bg-amber-50 p-3 text-sm text-amber-800">
+                  {preflightResult.reason}
+                </div>
+              )}
+
               <CreditConfirmDialog
                 title="AI Product Scene"
                 description={`AI akan membuat latar belakang produk baru dengan tema dan blend profile yang dipilih (${modelQuality === "ultra" ? "gpt-image-2 Ultra ✨" : "Standard"}). Ini akan memotong ${creditCost} kredit.`}
                 cost={creditCost}
                 onConfirm={handleGenerate}
-                disabled={loading || !originalFile}
+                disabled={loading || preflightLoading || !originalFile}
               >
                 <Button
                   className="w-full font-bold shadow-md hover:shadow-lg transition-transform active:scale-95 py-6 text-base"
                   size="lg"
-                  disabled={loading || !originalFile}
+                  disabled={loading || preflightLoading || !originalFile}
                 >
-                  {loading ? <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Memproses dengan AI (30s)...</> : <><Sparkles className="w-5 h-5 mr-2" /> Buat Foto Produk</>}
+                  {loading ? <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Memproses dengan AI (30s)...</> : preflightLoading ? <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Memeriksa kecocokan gambar...</> : <><Sparkles className="w-5 h-5 mr-2" /> Buat Foto Produk</>}
                 </Button>
               </CreditConfirmDialog>
             </div>

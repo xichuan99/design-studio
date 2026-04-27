@@ -505,6 +505,55 @@ def test_product_scene_endpoint_success():
         mock_upload.assert_called_once()
 
 
+def test_product_scene_preflight_blocks_human_subject():
+    files = {"file": ("person.png", b"fake_person", "image/png")}
+
+    with patch(
+        "app.api.ai_tools_routers.creative.classify_subject_for_product_scene"
+    ) as mock_classify:
+        mock_classify.return_value = {
+            "subject_type": "human",
+            "confidence": 0.98,
+            "reason": "Terdeteksi wajah manusia pada gambar.",
+            "face_count": 1,
+            "person_count": 1,
+        }
+
+        res = client.post("/api/tools/product-scene/preflight", files=files)
+
+        assert res.status_code == 200
+        body = res.json()
+        assert body["subject_type"] == "human"
+        assert body["policy_action"] == "block"
+        assert body["recommended_tool"] == "background_swap"
+
+
+def test_product_scene_endpoint_blocks_human_subject():
+    files = {"file": ("person.png", b"fake_person", "image/png")}
+    data = {
+        "theme": "studio",
+        "aspect_ratio": "1:1",
+        "quality": "standard",
+        "composite_profile": "grounded",
+    }
+
+    with patch(
+        "app.api.ai_tools_routers.creative.classify_subject_for_product_scene"
+    ) as mock_classify:
+        mock_classify.return_value = {
+            "subject_type": "human",
+            "confidence": 0.98,
+            "reason": "Terdeteksi wajah manusia pada gambar.",
+            "face_count": 1,
+            "person_count": 1,
+        }
+
+        res = client.post("/api/tools/product-scene", data=data, files=files)
+
+        assert res.status_code == 422
+        assert "hanya untuk foto produk" in str(res.json()).lower()
+
+
 def test_product_scene_endpoint_normalizes_quality_and_profile():
     files = {"file": ("test.png", b"fake_product", "image/png")}
     data = {
@@ -618,3 +667,48 @@ def test_batch_endpoint_success():
         assert kwargs["files"][0][0] == "image1.jpg"
         assert kwargs["files"][0][1] == b"fake1"
         assert kwargs["operation"] == "remove_bg"
+
+
+def test_batch_endpoint_product_scene_partial_refund_for_policy_block():
+    files = [
+        ("files", ("image1.jpg", b"fake1", "image/jpeg")),
+        ("files", ("image2.jpg", b"fake2", "image/jpeg")),
+    ]
+    data = {"operation": "product_scene", "params_json": "{}"}
+
+    with (
+        patch(
+            "app.services.batch_service.process_batch", new_callable=AsyncMock
+        ) as mock_batch,
+        patch(
+            "app.api.ai_tools_routers.creative.upload_image", new_callable=AsyncMock
+        ) as mock_upload,
+        patch(
+            "app.services.credit_service.log_credit_change", new_callable=AsyncMock
+        ) as mock_credit,
+    ):
+        mock_batch.return_value = (
+            b"fake_zip_bytes",
+            [
+                {
+                    "filename": "image2.jpg",
+                    "error": "AI Product Scene hanya untuk foto produk tanpa manusia. Gunakan Background Swap untuk foto manusia atau portrait.",
+                }
+            ],
+            [("image1_scene_studio.jpg", b"scene")],
+        )
+        mock_upload.return_value = "http://storage.com/batch.zip"
+
+        res = client.post("/api/tools/batch", data=data, files=files)
+
+        assert res.status_code == 200
+        body = res.json()
+        assert body["success_count"] == 1
+        assert body["error_count"] == 1
+
+        # First call: initial charge for 2 files, second call: partial refund for 1 blocked file.
+        assert mock_credit.await_count == 2
+        first_call = mock_credit.await_args_list[0].args
+        second_call = mock_credit.await_args_list[1].args
+        assert first_call[2] == -80
+        assert second_call[2] == 40

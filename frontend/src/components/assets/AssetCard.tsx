@@ -23,7 +23,7 @@ const TOOL_LABELS: Record<string, string> = {
     magic_eraser: "Magic Eraser",
     generative_expand: "Expand",
     watermark: "Watermark",
-    product_scene: "Product Scene",
+    product_scene: "Product Scene (Produk)",
     text_banner: "Text Banner",
     batch: "Batch",
 };

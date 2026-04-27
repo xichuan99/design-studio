@@ -161,6 +161,36 @@ async def test_process_batch_product_scene_invalid_params_fallback(
 
 
 @pytest.mark.asyncio
+@patch("app.services.batch_service.classify_subject_for_product_scene")
+@patch("app.services.batch_service.product_scene_service.generate_product_scene")
+async def test_process_batch_product_scene_blocks_human_subject(
+    mock_generate,
+    mock_classify,
+    mock_files,
+):
+    mock_classify.return_value = {
+        "subject_type": "human",
+        "confidence": 0.97,
+        "reason": "Terdeteksi wajah manusia pada gambar.",
+        "face_count": 1,
+        "person_count": 1,
+    }
+
+    params = {
+        "theme": "studio",
+        "aspect_ratio": "1:1",
+        "quality": "standard",
+        "composite_profile": "grounded",
+    }
+    _, errors, item_results = await process_batch(mock_files, "product_scene", params)
+
+    assert len(errors) == 2
+    assert len(item_results) == 0
+    assert "hanya untuk foto produk" in errors[0]["error"].lower()
+    mock_generate.assert_not_called()
+
+
+@pytest.mark.asyncio
 @patch("app.services.batch_service.bg_removal_service.remove_background")
 async def test_process_batch_partial_success(mock_remove_bg):
     # One succeeds, one fails

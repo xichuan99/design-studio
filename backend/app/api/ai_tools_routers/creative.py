@@ -16,6 +16,11 @@ from app.api.deps import get_db
 from app.api.rate_limit import rate_limit_dependency
 from app.models.user import User
 from app.services.storage_service import upload_image
+from app.services.subject_classifier_service import (
+    build_product_scene_policy_result,
+    classify_subject_for_product_scene,
+    is_product_scene_policy_block_reason,
+)
 
 router = APIRouter(tags=["AI Tools"])
 logger = logging.getLogger(__name__)
@@ -23,6 +28,51 @@ logger = logging.getLogger(__name__)
 _SUPPORTED_PRODUCT_SCENE_ASPECT_RATIO = {"1:1", "4:5", "16:9", "9:16"}
 _SUPPORTED_PRODUCT_SCENE_QUALITY = {"standard", "ultra"}
 _SUPPORTED_PRODUCT_SCENE_PROFILE = {"default", "grounded", "soft"}
+
+
+def _enforce_product_scene_subject_policy(image_bytes: bytes) -> dict:
+    classification = classify_subject_for_product_scene(image_bytes)
+    policy = build_product_scene_policy_result(classification)
+    logger.info(
+        "product_scene_subject_policy sync: subject_type=%s action=%s confidence=%.2f",
+        policy.get("subject_type"),
+        policy.get("policy_action"),
+        float(policy.get("confidence", 0.0)),
+    )
+    if policy.get("policy_action") == "block":
+        raise ValidationError(detail=str(policy.get("reason", "Image is not eligible for product scene")))
+    return policy
+
+
+@router.post(
+    "/product-scene/preflight",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="Product Scene Preflight",
+    description="Analyze whether an image is eligible for Product Scene (non-human subject only).",
+    responses=ERROR_RESPONSES,
+)
+async def preflight_product_scene(
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(rate_limit_dependency),
+):
+    content = await file.read()
+    if len(content) > 10 * 1024 * 1024:
+        raise ValidationError(detail="Image size exceeds 10MB limit")
+
+    from app.services.file_validation import validate_uploaded_image
+    await validate_uploaded_image(content, user_id=current_user.id, db=db)
+
+    classification = classify_subject_for_product_scene(content)
+    policy = build_product_scene_policy_result(classification)
+    logger.info(
+        "product_scene_preflight: subject_type=%s action=%s confidence=%.2f",
+        policy.get("subject_type"),
+        policy.get("policy_action"),
+        float(policy.get("confidence", 0.0)),
+    )
+    return policy
 
 
 @router.post(
@@ -84,6 +134,7 @@ async def create_product_scene(
 
     from app.services.file_validation import validate_uploaded_image
     await validate_uploaded_image(content, user_id=current_user.id, db=db)
+    _enforce_product_scene_subject_policy(content)
 
     from app.services.credit_service import log_credit_change
 
@@ -234,6 +285,23 @@ async def process_batch_images(
             _item_results = []
         else:
             raise ValueError("Invalid batch result format from process_batch")
+
+        if operation == "product_scene" and per_file_cost > 0 and errors:
+            blocked_count = sum(
+                1
+                for error in errors
+                if is_product_scene_policy_block_reason(str(error.get("error", "")))
+            )
+            if blocked_count > 0:
+                refund_amount = blocked_count * per_file_cost
+                if refund_amount > 0:
+                    await log_credit_change(
+                        db,
+                        current_user,
+                        refund_amount,
+                        f"Refund parsial: batch product_scene blocked ({blocked_count} file)",
+                    )
+                    await db.commit()
 
         # 2. Upload ZIP result
         batch_id = str(uuid.uuid4())[:8]

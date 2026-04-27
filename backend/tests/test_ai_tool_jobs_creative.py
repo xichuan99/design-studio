@@ -141,3 +141,57 @@ async def test_execute_product_scene_tool_job_invalid_profile_falls_back_to_defa
         phase_message="Menyimpan hasil product scene",
         progress_percent=90,
     )
+
+
+@pytest.mark.asyncio
+@patch("app.workers.ai_tool_jobs_creative.set_ai_tool_job_canceled", new_callable=AsyncMock)
+@patch("app.workers.ai_tool_jobs_creative.download_image", new_callable=AsyncMock)
+@patch("app.workers.ai_tool_jobs_creative.classify_subject_for_product_scene")
+@patch("app.workers.ai_tool_jobs_creative.AsyncSessionLocal")
+async def test_execute_product_scene_tool_job_blocks_human_subject(
+    mock_session_local,
+    mock_classify,
+    mock_download_image,
+    mock_set_canceled,
+):
+    job = SimpleNamespace(
+        payload_json={
+            "image_url": "https://example.com/person.jpg",
+            "theme": "studio",
+            "aspect_ratio": "1:1",
+            "_model_quality": "standard",
+            "composite_profile": "default",
+        },
+        cancel_requested=False,
+        status="queued",
+        phase_message="",
+        progress_percent=0,
+        started_at=None,
+        finished_at=None,
+        user_id="user-1",
+        result_url=None,
+    )
+
+    session1 = _build_session(job)
+    session2 = _build_session(job)
+    mock_session_local.side_effect = [
+        _FakeSessionContext(session1),
+        _FakeSessionContext(session2),
+    ]
+
+    mock_download_image.return_value = b"original"
+    mock_classify.return_value = {
+        "subject_type": "human",
+        "confidence": 0.99,
+        "reason": "Terdeteksi wajah manusia pada gambar.",
+        "face_count": 1,
+        "person_count": 1,
+    }
+
+    await execute_product_scene_tool_job("job-3")
+
+    mock_set_canceled.assert_awaited_once()
+    result_meta = job.payload_json.get("_result_meta")
+    assert isinstance(result_meta, dict)
+    assert result_meta.get("reason_code") == "PS_BLOCK_HUMAN_OR_MIXED"
+    assert result_meta.get("subject_type") == "human"

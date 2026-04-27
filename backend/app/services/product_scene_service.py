@@ -5,6 +5,7 @@ import logging
 import httpx
 from PIL import Image
 from typing import Dict, Any, Tuple, Optional
+from PIL import ImageStat
 
 from app.services import bg_removal_service
 from app.services.image_service import generate_background
@@ -13,6 +14,10 @@ logger = logging.getLogger(__name__)
 
 _AUTO_PAD_RATIO = 0.15
 _SPARSE_NORMALIZE_THRESHOLD = 0.38
+
+VALIDATION_REASON_SURFACE_TOO_FLAT = "PS_VALIDATION_SURFACE_TOO_FLAT"
+VALIDATION_REASON_LOW_DETAIL = "PS_VALIDATION_LOW_DETAIL"
+VALIDATION_REASON_OUTPUT_TOO_SMALL = "PS_VALIDATION_OUTPUT_TOO_SMALL"
 
 _LIGHTING_BY_THEME = {
     "studio": "three-point studio lighting with key light from left-front and soft fill from right",
@@ -122,6 +127,29 @@ def _pick_offset_y_ratio(area_ratio: float) -> float:
         return 0.58
     return 0.62
 
+
+def _validate_scene_output_bytes(result_bytes: bytes) -> Optional[str]:
+    """Return reason code when output looks obviously invalid, else None."""
+    try:
+        out_img = Image.open(io.BytesIO(result_bytes)).convert("L")
+    except Exception:
+        return VALIDATION_REASON_LOW_DETAIL
+
+    width, height = out_img.size
+    if width < 512 or height < 512:
+        return VALIDATION_REASON_OUTPUT_TOO_SMALL
+
+    overall_stddev = float(ImageStat.Stat(out_img).stddev[0])
+    if overall_stddev < 8.0:
+        return VALIDATION_REASON_LOW_DETAIL
+
+    bottom_band = out_img.crop((0, int(height * 0.78), width, height))
+    bottom_stddev = float(ImageStat.Stat(bottom_band).stddev[0])
+    if bottom_stddev < 5.0:
+        return VALIDATION_REASON_SURFACE_TOO_FLAT
+
+    return None
+
 # Predefined themes to make it easy for UMKM users without requiring complex prompting
 SCENE_THEMES = {
     "studio": {
@@ -161,6 +189,7 @@ def _build_scene_prompt(theme: str, visual_prompt: str, include_placement: bool 
     return (
         f"{visual_prompt}, {lighting}{placement}, "
         "maintain realistic contact shadows under the subject, "
+        "preserve product shape, label readability, and branding details, "
         "harmonize subject color temperature with environment, "
         "photorealistic commercial product photography"
     )
@@ -173,6 +202,7 @@ def _build_scene_prompt_lite(theme: str, visual_prompt: str) -> str:
     return (
         f"{visual_prompt}, {lighting}, {hint}, "
         "natural grounding and realistic surface contact, "
+        "preserve product shape and label readability, "
         "photorealistic product photography"
     )
 
@@ -336,6 +366,35 @@ async def generate_product_scene(
                 transparent_png_bytes=inpaint_mask,
                 prompt=scene_prompt,
             )
+            reason_code = _validate_scene_output_bytes(result_bytes)
+            if reason_code:
+                logger.warning(
+                    "product_scene_validation_failed: reason_code=%s quality=%s theme=%s",
+                    reason_code,
+                    quality,
+                    theme,
+                )
+                # Retry ultra once with stronger grounding guidance.
+                retry_prompt = (
+                    f"{scene_prompt}, explicit table or floor plane under product, "
+                    "clear contact shadow and realistic scene depth"
+                )
+                result_bytes = await bg_removal_service.inpaint_background(
+                    original_bytes=inpaint_orig,
+                    transparent_png_bytes=inpaint_mask,
+                    prompt=retry_prompt,
+                )
+                retry_reason = _validate_scene_output_bytes(result_bytes)
+                if retry_reason:
+                    logger.warning(
+                        "product_scene_validation_failed: reason_code=%s quality=%s theme=%s retry=1",
+                        retry_reason,
+                        quality,
+                        theme,
+                    )
+                    raise RuntimeError(
+                        f"Validasi output scene gagal ({retry_reason})"
+                    )
             logger.info("Product scene generation complete (object-aware ultra)")
             return result_bytes
         except Exception as e:
@@ -356,6 +415,15 @@ async def generate_product_scene(
             transparent_png_bytes=inpaint_mask,
             prompt=scene_prompt_lite,
         )
+        reason_code = _validate_scene_output_bytes(result_bytes)
+        if reason_code:
+            logger.warning(
+                "product_scene_validation_failed: reason_code=%s quality=%s theme=%s",
+                reason_code,
+                quality,
+                theme,
+            )
+            raise RuntimeError(f"Validasi output scene gagal ({reason_code})")
         logger.info("Product scene generation complete (hybrid inpaint-lite)")
         return result_bytes
     except Exception as e:

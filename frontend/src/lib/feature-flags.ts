@@ -24,3 +24,13 @@ export const IMPORT_QUEUE_ENABLED = (
   process.env.NEXT_PUBLIC_IMPORT_QUEUE_V1 ??
   "true"
 ).toLowerCase() === "true";
+
+export const PRODUCT_SCENE_REDIRECT_ENABLED = (
+  process.env.NEXT_PUBLIC_PRODUCT_SCENE_REDIRECT_V1 ??
+  "true"
+).toLowerCase() === "true";
+
+export const PRODUCT_SCENE_REDIRECT_HANDOFF_ENABLED = (
+  process.env.NEXT_PUBLIC_PRODUCT_SCENE_REDIRECT_HANDOFF_V1 ??
+  "true"
+).toLowerCase() === "true";

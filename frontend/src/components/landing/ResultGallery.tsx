@@ -19,7 +19,7 @@ const galleryItems = [
     category: "Fashion",
     image: "/images/showcase/batik_model.png", 
     title: "Kemeja Batik Modern",
-    tags: ["Product Scene", "AI Shadows"],
+    tags: ["Background Swap", "Preserve Pose"],
     aspectRatio: "aspect-[16/9]"
   },
   {
@@ -35,7 +35,7 @@ const galleryItems = [
     category: "Makanan & Minuman",
     image: "/images/showcase/es_kopi_susu.png", 
     title: "Es Kopi Susu Aren",
-    tags: ["Scene Generator", "Retouch"],
+    tags: ["Product Scene", "Ecommerce Lighting"],
     aspectRatio: "aspect-square"
   },
   {
@@ -51,7 +51,7 @@ const galleryItems = [
     category: "Aksesoris & Lainnya",
     image: "/images/showcase/skincare_alami.png",
     title: "Skincare Alami",
-    tags: ["Studio Lighting AI", "Batch Process"],
+    tags: ["Product Scene", "Batch Process"],
     aspectRatio: "aspect-square"
   }
 ];

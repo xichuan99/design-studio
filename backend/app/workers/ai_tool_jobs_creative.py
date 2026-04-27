@@ -9,7 +9,14 @@ import logging
 from app.core.database import AsyncSessionLocal
 from app.models.ai_tool_job import AiToolJob
 from app.models.ai_tool_result import AiToolResult
+from app.models.user import User
 from app.services import batch_service, product_scene_service, watermark_service
+from app.services.subject_classifier_service import (
+    build_product_scene_policy_result,
+    classify_subject_for_product_scene,
+    is_product_scene_policy_block_reason,
+)
+from app.services.credit_service import log_credit_change
 from app.services.storage_service import download_image, upload_image
 from app.workers.ai_tool_jobs_common import (
     set_ai_tool_job_canceled,
@@ -192,6 +199,37 @@ async def execute_product_scene_tool_job(job_id: str):
         return
 
     # Execute product scene pipeline with step tracking
+    policy = build_product_scene_policy_result(
+        classify_subject_for_product_scene(original_bytes)
+    )
+    logger.info(
+        "[product_scene:%s] worker_policy subject_type=%s action=%s confidence=%.2f",
+        job_id,
+        policy.get("subject_type"),
+        policy.get("policy_action"),
+        float(policy.get("confidence", 0.0)),
+    )
+    if policy.get("policy_action") == "block":
+        async with AsyncSessionLocal() as session:
+            job = await session.get(AiToolJob, job_id)
+            if job:
+                payload = dict(job.payload_json or {})
+                payload["_result_meta"] = {
+                    "outcome": "blocked",
+                    "reason_code": policy.get("reason_code", "PS_BLOCK_HUMAN_OR_MIXED"),
+                    "policy_action": policy.get("policy_action"),
+                    "subject_type": policy.get("subject_type"),
+                }
+                job.payload_json = payload
+                session.add(job)
+                await set_ai_tool_job_canceled(
+                    session,
+                    job,
+                    f"Refund: {policy.get('reason', 'Input tidak sesuai untuk product scene')}",
+                )
+                await session.commit()
+        return
+
     try:
         final_bytes = await _execute_product_scene_pipeline(
             job_id=job_id,
@@ -207,6 +245,22 @@ async def execute_product_scene_tool_job(job_id: str):
             job = await session.get(AiToolJob, job_id)
             if job:
                 error_msg = str(e)
+                if "PS_VALIDATION_" in error_msg:
+                    payload = dict(job.payload_json or {})
+                    start_idx = error_msg.find("PS_VALIDATION_")
+                    end_idx = error_msg.find(")", start_idx)
+                    reason_code = (
+                        error_msg[start_idx:end_idx]
+                        if start_idx >= 0 and end_idx > start_idx
+                        else "PS_VALIDATION_FAILED"
+                    )
+                    payload["_result_meta"] = {
+                        "outcome": "validation_failed",
+                        "reason_code": reason_code,
+                        "tool": "product_scene",
+                    }
+                    job.payload_json = payload
+                    session.add(job)
                 if "cancelled" in error_msg.lower():
                     await set_ai_tool_job_canceled(session, job, f"Refund: {error_msg}")
                 else:
@@ -476,6 +530,29 @@ async def execute_batch_tool_job(job_id: str):
 
     success_count = len(files) - len(errors)
     error_count = len(errors)
+
+    if operation == "product_scene" and errors:
+        blocked_count = sum(
+            1
+            for error in errors
+            if is_product_scene_policy_block_reason(str(error.get("error", "")))
+        )
+        if blocked_count > 0:
+            per_file_cost = 80 if model_quality == "ultra" else 40
+            refund_amount = blocked_count * per_file_cost
+            if refund_amount > 0:
+                async with AsyncSessionLocal() as session:
+                    job_for_refund = await session.get(AiToolJob, job_id)
+                    if job_for_refund:
+                        user = await session.get(User, job_for_refund.user_id)
+                        if user:
+                            await log_credit_change(
+                                session,
+                                user,
+                                refund_amount,
+                                f"Refund parsial: batch product_scene blocked ({blocked_count} file)",
+                            )
+                            await session.commit()
 
     async with AsyncSessionLocal() as session:
         job = await session.get(AiToolJob, job_id)

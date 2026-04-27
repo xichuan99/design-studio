@@ -447,6 +447,25 @@ export function useAiToolsEndpoints() {
             return response.json();
         }, [API_BASE_URL, getHeaders]);
 
+    const preflightProductScene = useCallback(async (
+            file: File,
+        ): Promise<Types.ProductScenePreflightResponse> => {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const response = await fetch(`${API_BASE_URL}/tools/product-scene/preflight`, {
+                method: 'POST',
+                headers: getHeaders(true),
+                body: formData,
+            });
+
+            if (!response.ok) {
+                const errBase = await response.json().catch(() => ({}));
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to preflight product scene');
+            }
+            return response.json();
+        }, [API_BASE_URL, getHeaders]);
+
     const batchProcess = useCallback(async (
             files: File[],
             operation: string,
@@ -582,6 +601,7 @@ export function useAiToolsEndpoints() {
         backgroundSwap,
         suggestBackgrounds,
         productScene,
+        preflightProductScene,
         batchProcess,
         applyWatermark,
         getMyToolResults,

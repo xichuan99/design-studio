@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { ImageDropzone } from "@/components/tools/ImageDropzone";
 import { BeforeAfterSlider } from "@/components/tools/BeforeAfterSlider";
@@ -16,6 +16,7 @@ import { useProjectApi } from "@/lib/api";
 import { useToolJobProgress } from "@/hooks/useToolJobProgress";
 import { useToolHandoff } from "@/hooks/useToolHandoff";
 import { QualityToggle } from "@/components/tools/QualityToggle";
+import { PRODUCT_SCENE_REDIRECT_HANDOFF_ENABLED } from "@/lib/feature-flags";
 
 type Suggestion = {
   title: string;
@@ -24,6 +25,14 @@ type Suggestion = {
   rationale?: string;
   best_for?: string;
   risk_note?: string;
+};
+
+const PRODUCT_SCENE_REDIRECT_FILE_KEY = "product_scene_redirect_file_v1";
+
+type RedirectHandoffFile = {
+  name: string;
+  type: string;
+  data_url: string;
 };
 
 export default function BackgroundSwapPage() {
@@ -49,6 +58,43 @@ export default function BackgroundSwapPage() {
   const [priceTier, setPriceTier] = useState("");
 
   const api = useProjectApi();
+
+  useEffect(() => {
+    if (!PRODUCT_SCENE_REDIRECT_HANDOFF_ENABLED) return;
+    if (step !== 1) return;
+
+    const raw = sessionStorage.getItem(PRODUCT_SCENE_REDIRECT_FILE_KEY);
+    if (!raw) return;
+
+    try {
+      const payload = JSON.parse(raw) as RedirectHandoffFile;
+      if (!payload?.data_url || !payload?.name) {
+        sessionStorage.removeItem(PRODUCT_SCENE_REDIRECT_FILE_KEY);
+        return;
+      }
+
+      const dataUrlToFile = (dataUrl: string, fileName: string, mimeType: string): File => {
+        const parts = dataUrl.split(",");
+        if (parts.length !== 2) {
+          throw new Error("Invalid data URL for redirected file");
+        }
+        const binary = atob(parts[1]);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i += 1) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+        return new File([bytes], fileName, { type: mimeType || "image/jpeg" });
+      };
+
+      const redirectedFile = dataUrlToFile(payload.data_url, payload.name, payload.type);
+      handleFileSelect(redirectedFile);
+      toast.message("File dari Product Scene sudah dipindahkan ke Background Swap");
+    } catch {
+      // Ignore malformed handoff and keep normal upload flow.
+    } finally {
+      sessionStorage.removeItem(PRODUCT_SCENE_REDIRECT_FILE_KEY);
+    }
+  }, [step]);
 
   const handleFileSelect = (file: File) => {
     setOriginalFile(file);
@@ -180,7 +226,7 @@ export default function BackgroundSwapPage() {
 
         <div className="mb-8">
           <h1 className="text-3xl font-jakarta font-bold text-foreground">AI Background Swap</h1>
-          <p className="text-muted-foreground mt-2">Foto produk pakai HP? Ganti backgroundnya jadi studio profesional dalam satu klik.</p>
+          <p className="text-muted-foreground mt-2">Cocok untuk foto manusia maupun produk saat Anda ingin mengganti latar tanpa mengubah komposisi utama.</p>
         </div>
 
         {step === 1 && (

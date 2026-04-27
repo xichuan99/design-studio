@@ -433,6 +433,19 @@ export interface UploadImageResponse {
     url: string;
 }
 
+export type ProductSceneSubjectType = 'product' | 'human' | 'mixed' | 'uncertain';
+export type ProductScenePolicyAction = 'allow' | 'block' | 'warn';
+
+export interface ProductScenePreflightResponse {
+    subject_type: ProductSceneSubjectType;
+    confidence: number;
+    policy_action: ProductScenePolicyAction;
+    reason_code: string;
+    recommended_tool: 'product_scene' | 'background_swap';
+    allowed_tools: Array<'product_scene' | 'background_swap'>;
+    reason: string;
+}
+
 // --- AI Tool Jobs Types ---
 export type AiToolJobStatus =
     | 'queued'

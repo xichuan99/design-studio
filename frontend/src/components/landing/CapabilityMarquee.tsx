@@ -3,15 +3,15 @@
 import { Sparkles, Trash2, Maximize, Crop, Layers, Paintbrush, Stamp, MoveHorizontal } from "lucide-react";
 
 const capabilities = [
-  { name: "Penghapus Latar", icon: Trash2 },
+  { name: "Background Swap (Manusia & Produk)", icon: Trash2 },
   { name: "Peningkat Resolusi Gambar", icon: Maximize },
   { name: "AI Retouch", icon: Paintbrush },
-  { name: "Scene Generator", icon: Layers },
+  { name: "Scene Generator Produk", icon: Layers },
   { name: "Proses Batch", icon: Layers },
   { name: "Pembuat Pas Foto", icon: Crop },
   { name: "Watermark Otomatis", icon: Stamp },
   { name: "Magic Eraser", icon: Sparkles },
-  { name: "Product Scene", icon: Layers },
+  { name: "Product Scene (Produk Saja)", icon: Layers },
   { name: "Resize Otomatis Media Sosial", icon: MoveHorizontal },
   { name: "Pas Foto / Foto KTP", icon: Crop },
 ];

@@ -12,6 +12,10 @@ from PIL import Image, ImageFilter
 from app.services import bg_removal_service
 from app.services import watermark_service
 from app.services import product_scene_service
+from app.services.subject_classifier_service import (
+    build_product_scene_policy_result,
+    classify_subject_for_product_scene,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -149,6 +153,12 @@ async def process_single_image(
             aspect_ratio = str(params.get("aspect_ratio", "1:1"))
             quality = str(params.get("quality", "standard"))
             composite_profile = str(params.get("composite_profile", "default"))
+
+            policy = build_product_scene_policy_result(
+                classify_subject_for_product_scene(image_bytes)
+            )
+            if policy.get("policy_action") == "block":
+                return None, None, str(policy.get("reason", "Input tidak sesuai untuk product scene"))
 
             if aspect_ratio not in _SUPPORTED_ASPECT_RATIO:
                 logger.warning(

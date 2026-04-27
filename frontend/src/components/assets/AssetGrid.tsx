@@ -17,7 +17,7 @@ const TOOL_FILTERS = [
     { label: "Magic Eraser", value: "magic_eraser" },
     { label: "Perluas Gambar", value: "generative_expand" },
     { label: "Watermark", value: "watermark" },
-    { label: "Product Scene", value: "product_scene" },
+    { label: "Product Scene (Produk)", value: "product_scene" },
 ];
 
 const TABS = [

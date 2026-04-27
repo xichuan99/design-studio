@@ -55,6 +55,7 @@ def mock_no_bg_closeup_bytes():
 @pytest.mark.asyncio
 @patch("app.services.product_scene_service.bg_removal_service.remove_background")
 @patch("app.services.product_scene_service.bg_removal_service.inpaint_background")
+@patch("app.services.product_scene_service._validate_scene_output_bytes")
 @patch("app.services.product_scene_service.generate_background")
 @patch("app.services.product_scene_service.httpx.AsyncClient.get")
 @patch("app.services.product_scene_service.bg_removal_service.composite_with_shadow")
@@ -62,6 +63,7 @@ async def test_generate_product_scene_success(
     mock_composite,
     mock_get,
     mock_generate,
+    mock_validate,
     mock_inpaint,
     mock_remove_bg,
     mock_image_bytes,
@@ -71,6 +73,7 @@ async def test_generate_product_scene_success(
 ):
     # Setup mocks
     mock_remove_bg.return_value = mock_no_bg_bytes
+    mock_validate.return_value = None
     mock_generate.return_value = {"image_url": "https://fake-fal-url.com/scene.jpg"}
 
     # Mock httpx response
@@ -181,6 +184,7 @@ async def test_generate_product_scene_closeup_uses_grounded_scale_and_offset(
 @pytest.mark.asyncio
 @patch("app.services.product_scene_service.bg_removal_service.remove_background")
 @patch("app.services.product_scene_service.bg_removal_service.inpaint_background")
+@patch("app.services.product_scene_service._validate_scene_output_bytes")
 @patch("app.services.product_scene_service.generate_background")
 @patch("app.services.product_scene_service.httpx.AsyncClient.get")
 @patch("app.services.product_scene_service.bg_removal_service.composite_with_shadow")
@@ -188,6 +192,7 @@ async def test_generate_product_scene_standard_inpaint_lite_fallbacks_to_composi
     mock_composite,
     mock_get,
     mock_generate,
+    mock_validate,
     mock_inpaint,
     mock_remove_bg,
     mock_image_bytes,
@@ -196,7 +201,8 @@ async def test_generate_product_scene_standard_inpaint_lite_fallbacks_to_composi
     mock_composite_bytes,
 ):
     mock_remove_bg.return_value = mock_no_bg_bytes
-    mock_inpaint.side_effect = RuntimeError("inpaint unavailable")
+    mock_inpaint.return_value = b"inpainted-but-invalid"
+    mock_validate.return_value = "PS_VALIDATION_SURFACE_TOO_FLAT"
     mock_generate.return_value = {"image_url": "https://fake-fal-url.com/scene.jpg"}
 
     mock_response = MagicMock()
@@ -213,6 +219,7 @@ async def test_generate_product_scene_standard_inpaint_lite_fallbacks_to_composi
     )
 
     mock_inpaint.assert_called_once()
+    mock_validate.assert_called_once()
     mock_generate.assert_called_once()
     mock_get.assert_called_once_with("https://fake-fal-url.com/scene.jpg", timeout=30.0)
     mock_composite.assert_called_once()
@@ -220,6 +227,7 @@ async def test_generate_product_scene_standard_inpaint_lite_fallbacks_to_composi
 
 
 @pytest.mark.asyncio
+@patch("app.services.product_scene_service._validate_scene_output_bytes")
 @patch("app.services.product_scene_service.bg_removal_service.inpaint_background")
 @patch("app.services.product_scene_service.bg_removal_service.remove_background")
 @patch("app.services.product_scene_service.generate_background")
@@ -229,11 +237,13 @@ async def test_generate_product_scene_ultra_uses_object_aware_inpaint(
     mock_generate,
     mock_remove_bg,
     mock_inpaint,
+    mock_validate,
     mock_image_bytes,
     mock_no_bg_bytes,
 ):
     mock_remove_bg.return_value = mock_no_bg_bytes
     mock_inpaint.return_value = b"inpainted_result"
+    mock_validate.return_value = None
 
     result = await generate_product_scene(
         image_bytes=mock_image_bytes,
@@ -251,6 +261,7 @@ async def test_generate_product_scene_ultra_uses_object_aware_inpaint(
     assert "cozy cafe setting" in inpaint_kwargs["prompt"]
     assert "contact shadows" in inpaint_kwargs["prompt"]
     assert "table surface" in inpaint_kwargs["prompt"]  # placement hint for cafe theme
+    assert "label readability" in inpaint_kwargs["prompt"]
 
     # Ultra route should skip background-generation and composite path.
     mock_generate.assert_not_called()

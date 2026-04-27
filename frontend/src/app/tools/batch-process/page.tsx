@@ -19,7 +19,7 @@ import { IMPORT_QUEUE_ENABLED } from "@/lib/feature-flags";
 
 const OPERATIONS = [
   { id: "remove_bg", name: "Hapus Latar Belakang", cost: 10, desc: "Hapus background foto produk secara otomatis" },
-  { id: "product_scene", name: "AI Product Scene", cost: 40, desc: "Ganti dengan background studio/alam" },
+  { id: "product_scene", name: "AI Product Scene", cost: 40, desc: "Khusus foto produk non-manusia, dengan scene e-commerce yang lebih realistis" },
   { id: "watermark", name: "Watermark (Logo)", cost: 0, desc: "Tambahkan logo Anda ke semua foto" },
 ];
 
