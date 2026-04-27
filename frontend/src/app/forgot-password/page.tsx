@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Mail, Loader2, ArrowLeft, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { Brush } from "lucide-react";
+import { API_BASE_URL } from "@/lib/api/coreApi";
 
 export default function ForgotPasswordPage() {
     const [email, setEmail] = useState("");
@@ -17,8 +18,7 @@ export default function ForgotPasswordPage() {
         setErrorMsg("");
 
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_INTERNAL_API_URL || 'http://localhost:8000/api';
-            const res = await fetch(`${apiUrl}/auth/forgot-password`, {
+            const res = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email })
@@ -32,7 +32,9 @@ export default function ForgotPasswordPage() {
 
             setSuccess(true);
         } catch (err: unknown) {
-            if (err instanceof Error) {
+            if (err instanceof TypeError && err.message === "Failed to fetch") {
+                setErrorMsg("Tidak dapat terhubung ke server. Periksa koneksi internet kamu atau coba lagi nanti.");
+            } else if (err instanceof Error) {
                 setErrorMsg(err.message || "Terjadi kesalahan sistem.");
             } else {
                 setErrorMsg("Terjadi kesalahan sistem.");

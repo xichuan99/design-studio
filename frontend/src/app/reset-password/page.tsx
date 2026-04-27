@@ -5,6 +5,7 @@ import { Lock, Loader2, CheckCircle2, AlertCircle, Eye, EyeOff } from "lucide-re
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Brush } from "lucide-react";
+import { API_BASE_URL } from "@/lib/api/coreApi";
 
 function ResetPasswordForm() {
     const searchParams = useSearchParams();
@@ -45,8 +46,7 @@ function ResetPasswordForm() {
         setErrorMsg("");
 
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_INTERNAL_API_URL || 'http://localhost:8000/api';
-            const res = await fetch(`${apiUrl}/auth/reset-password`, {
+            const res = await fetch(`${API_BASE_URL}/auth/reset-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ token, new_password: password })
@@ -62,7 +62,9 @@ function ResetPasswordForm() {
                 router.push("/login");
             }, 3000);
         } catch (err: unknown) {
-            if (err instanceof Error) {
+            if (err instanceof TypeError && err.message === "Failed to fetch") {
+                setErrorMsg("Tidak dapat terhubung ke server. Periksa koneksi internet kamu atau coba lagi nanti.");
+            } else if (err instanceof Error) {
                 setErrorMsg(err.message || "Terjadi kesalahan sistem.");
             } else {
                 setErrorMsg("Terjadi kesalahan sistem.");

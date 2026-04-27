@@ -195,7 +195,9 @@ async def forgot_password(data: ForgotPasswordRequest, db: AsyncSession = Depend
         reset_link = f"{frontend_url}/reset-password?token={reset_token}"
 
         from app.utils.email import send_reset_password_email
-        await send_reset_password_email(user.email, reset_link)
+        email_sent = await send_reset_password_email(user.email, reset_link)
+        if not email_sent:
+            logger.warning(f"[forgot-password] Failed to send reset email to {user.email}. Token was saved but email not delivered.")
 
     # Always return success to prevent email enumeration
     return {"message": "If that email address exists in our system, a password reset link has been sent."}
