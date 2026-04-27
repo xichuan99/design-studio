@@ -1,6 +1,7 @@
 from app.core.exceptions import NotFoundError
 from app.schemas.error import ERROR_RESPONSES
 from typing import List, Optional
+import logging
 
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,6 +18,7 @@ from app.schemas.project import ProjectResponse, ProjectUpdate
 from app.schemas.project_version import ProjectVersionCreate, ProjectVersionResponse
 
 router = APIRouter(tags=["Projects"])
+logger = logging.getLogger(__name__)
 
 
 @router.get(
@@ -145,7 +147,7 @@ async def update_project(
     "/{project_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete Project",
-    description="Permanently delete a saved project.",
+    description="Permanently delete a saved project and reclaim storage.",
     responses=ERROR_RESPONSES,
 )
 async def delete_project(
@@ -153,7 +155,7 @@ async def delete_project(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> None:
-    """Delete a saved project."""
+    """Delete a saved project and reclaim associated storage."""
     result = await db.execute(
         select(Project).where(
             Project.id == project_id, Project.user_id == current_user.id
@@ -164,6 +166,37 @@ async def delete_project(
     if not project:
         raise NotFoundError(detail="Project not found")
 
+    # Find all jobs associated with this project and sum their file sizes
+    from app.models.job import Job
+
+    jobs_result = await db.execute(
+        select(Job).where(Job.project_id == project_id)
+    )
+    jobs = jobs_result.scalars().all()
+
+    total_file_size = sum(job.file_size or 0 for job in jobs)
+
+    # Reclaim storage for all associated jobs
+    if total_file_size > 0:
+        from app.services.storage_quota_service import decrement_usage
+
+        await decrement_usage(current_user.id, total_file_size, db)
+        logger.info(
+            f"Project {project_id}: reclaimed {total_file_size} bytes from user {current_user.id}"
+        )
+
+    # Delete associated job result files from storage
+    from app.services.storage_service import delete_image
+
+    for job in jobs:
+        if job.result_url:
+            try:
+                await delete_image(job.result_url)
+                logger.debug(f"Deleted job result file: {job.result_url}")
+            except Exception as e:
+                logger.warning(f"Failed to delete job result file {job.result_url}: {e}")
+
+    # Delete the project (cascade will handle ProjectVersions)
     await db.delete(project)
     await db.commit()
     return None
@@ -245,7 +278,7 @@ async def list_project_versions(
     "/{project_id}/versions/{version_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete Project Version",
-    description="Permanently delete a saved project version.",
+    description="Permanently delete a saved project version and reconcile storage.",
     responses=ERROR_RESPONSES,
 )
 async def delete_project_version(
@@ -254,7 +287,7 @@ async def delete_project_version(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> None:
-    """Delete a saved project version."""
+    """Delete a saved project version and reconcile storage quota."""
     result = await db.execute(
         select(ProjectVersion).where(
             ProjectVersion.id == version_id,
@@ -267,6 +300,19 @@ async def delete_project_version(
     if not version:
         raise NotFoundError(detail="Project version not found")
 
+    # Delete the version
     await db.delete(version)
     await db.commit()
+
+    # Reconcile storage after deleting version (in case any associated jobs were affected)
+    from app.services.storage_quota_service import recalculate_storage
+
+    try:
+        new_storage = await recalculate_storage(current_user.id, db)
+        logger.info(
+            f"Version {version_id}: reconciled storage for user {current_user.id} to {new_storage} bytes"
+        )
+    except Exception as e:
+        logger.warning(f"Failed to reconcile storage after version deletion: {e}")
+
     return None

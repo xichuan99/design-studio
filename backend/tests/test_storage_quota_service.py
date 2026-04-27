@@ -194,3 +194,58 @@ async def test_recalculate_storage_includes_brand_kit_logos(mock_db):
 
     assert total == 1024 + 2048 + 300
     assert mock_db.commit.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_recalculate_storage_with_orphaned_jobs(mock_db):
+    """Test that orphaned jobs (project_id=NULL) are still counted in storage."""
+    ai_sum_result = MagicMock()
+    ai_sum_result.scalar.return_value = 5 * 1024 * 1024  # 5 MB from AiToolResult
+
+    job_sum_result = MagicMock()
+    job_sum_result.scalar.return_value = 3 * 1024 * 1024  # 3 MB from Job (including orphans)
+
+    kits_result = MagicMock()
+    kits_result.scalars.return_value.all.return_value = []
+
+    mock_db.execute.side_effect = [ai_sum_result, job_sum_result, kits_result, MagicMock()]
+
+    total = await recalculate_storage("user_123", mock_db)
+
+    # Total should be 5 + 3 = 8 MB
+    assert total == 8 * 1024 * 1024
+    assert mock_db.commit.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_recalculate_storage_zero_files(mock_db):
+    """Test reconciliation when user has no files."""
+    ai_sum_result = MagicMock()
+    ai_sum_result.scalar.return_value = 0
+
+    job_sum_result = MagicMock()
+    job_sum_result.scalar.return_value = 0
+
+    kits_result = MagicMock()
+    kits_result.scalars.return_value.all.return_value = []
+
+    mock_db.execute.side_effect = [ai_sum_result, job_sum_result, kits_result, MagicMock()]
+
+    total = await recalculate_storage("user_123", mock_db)
+
+    assert total == 0
+    assert mock_db.commit.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_decrement_usage_after_project_deletion(mock_db, test_user):
+    """Test that decrement_usage is called correctly after project deletion."""
+    test_user.storage_used = 10 * 1024 * 1024  # Start at 10 MB
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = test_user
+    mock_db.execute.return_value = mock_result
+
+    # Decrement by 5 MB
+    await decrement_usage("user_123", 5 * 1024 * 1024, mock_db)
+
+    assert mock_db.commit.call_count == 1
