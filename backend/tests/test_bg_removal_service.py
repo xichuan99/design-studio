@@ -5,6 +5,7 @@ import base64
 from PIL import Image
 
 from app.services.bg_removal_service import (
+    build_background_swap_standard_prompt,
     remove_background,
     remove_background_from_url,
     inpaint_background,
@@ -109,6 +110,20 @@ async def test_inpaint_background_reuses_original_url(mock_upload, mock_fal_run,
     mock_upload.assert_called_once()
     assert mock_upload.call_args.kwargs["prefix"].startswith("bgswap_mask_")
     assert mock_fal_run.call_args.kwargs["arguments"]["image_url"] == "http://storage.local/original.jpg"
+    sent_prompt = mock_fal_run.call_args.kwargs["arguments"]["prompt"]
+    assert "clean studio background" in sent_prompt
+    assert "no random text" in sent_prompt
+    assert "no blurry letters" in sent_prompt
+
+
+def test_build_background_swap_standard_prompt_has_quality_guardrails():
+    enhanced = build_background_swap_standard_prompt("minimalist white studio")
+
+    assert "minimalist white studio" in enhanced
+    assert "Professional product photography" in enhanced
+    assert "no random text" in enhanced
+    assert "no blurry letters" in enhanced
+    assert "no gibberish typography" in enhanced
 
 
 @pytest.mark.asyncio

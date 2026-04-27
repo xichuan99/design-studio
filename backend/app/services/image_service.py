@@ -223,6 +223,18 @@ def build_gpt2_image_edit_args(
     return args
 
 
+def build_background_swap_ultra_prompt(prompt: str) -> str:
+    """Build a constrained prompt tuned for gpt-image-2 background replacement."""
+    base_prompt = (prompt or "").strip()
+    return (
+        f"Professional product photography background replacement, {base_prompt}, "
+        "ultra-detailed, photorealistic, seamless edge blending, "
+        "natural lighting continuity, clean background details, "
+        "no random text, no blurry letters, no gibberish typography, "
+        "no watermark, no logo"
+    )
+
+
 def _is_not_found_endpoint_error(exc: Exception) -> bool:
     """Return True when fal endpoint path/model is unavailable (404/path not found)."""
     msg = str(exc).lower()

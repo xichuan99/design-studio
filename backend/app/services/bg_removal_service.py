@@ -20,6 +20,13 @@ from app.services.storage_service import upload_image
 
 logger = logging.getLogger(__name__)
 
+_BG_SWAP_STANDARD_QUALITY_GUARDRAILS = (
+    "photorealistic, high quality, studio-grade lighting, "
+    "sharp focus on subject, cinematic depth of field, "
+    "clean background details, no random text, no blurry letters, "
+    "no gibberish typography, no watermark, no logo"
+)
+
 _SHADOW_PROFILE_SETTINGS = {
     "default": {
         "alpha": 150,
@@ -167,7 +174,7 @@ def _extract_inpaint_mask(transparent_png_bytes: bytes) -> bytes:
 
     # Slight dilation + blur on edges so the inpaint blends cleanly at seams
     inverted = inverted.filter(ImageFilter.MaxFilter(3))
-    inverted = inverted.filter(ImageFilter.GaussianBlur(radius=2))
+    inverted = inverted.filter(ImageFilter.GaussianBlur(radius=1.2))
 
     output = io.BytesIO()
     inverted.save(output, format="PNG")
@@ -239,12 +246,8 @@ async def inpaint_background(
             ),
         )
 
-    # 3. Enhance prompt for professional product photography
-    enhanced_prompt = (
-        f"Professional product photography, {prompt}, "
-        "photorealistic, high quality, studio-grade lighting, "
-        "sharp focus on subject, cinematic depth of field"
-    )
+    # 3. Enhance prompt for professional product photography.
+    enhanced_prompt = build_background_swap_standard_prompt(prompt)
 
     # 4. Inpaint via flux-pro/v1/fill
     #    white mask = generate new background, black mask = preserve subject
@@ -272,6 +275,15 @@ async def inpaint_background(
 
     # 5. Download and return result
     return await _download_result_bytes(output_url, timeout=90.0)
+
+
+def build_background_swap_standard_prompt(prompt: str) -> str:
+    """Build a quality-guarded prompt for standard background swap generation."""
+    base_prompt = (prompt or "").strip()
+    return (
+        f"Professional product photography, {base_prompt}, "
+        f"{_BG_SWAP_STANDARD_QUALITY_GUARDRAILS}"
+    )
 
 
 async def composite_product_on_background(

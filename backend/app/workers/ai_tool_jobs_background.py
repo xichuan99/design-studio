@@ -91,14 +91,19 @@ async def execute_background_swap_tool_job(job_id: str):
         # gpt-image-2 image editing — superior edge blending and background realism
         import os
         from app.core.config import settings
-        from app.services.image_service import build_gpt2_image_edit_args, run_gpt2_image_edit
+        from app.services.image_service import (
+            build_background_swap_ultra_prompt,
+            build_gpt2_image_edit_args,
+            run_gpt2_image_edit,
+        )
         from app.services.storage_service import upload_image as _upload
 
         os.environ["FAL_KEY"] = settings.FAL_KEY
         # Upload transparent PNG as mask — white=area to fill, black=keep
         mask_url = await _upload(no_bg_bytes, content_type="image/png", prefix="bgswap_mask_ultra")
+        enhanced_prompt = build_background_swap_ultra_prompt(str(prompt))
         gpt2_args = build_gpt2_image_edit_args(
-            prompt=prompt,
+            prompt=enhanced_prompt,
             image_urls=[source_image_url],
             mask_image_url=mask_url,
         )

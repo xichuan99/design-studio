@@ -109,3 +109,20 @@ async def test_run_bria_fibo_edit_endpoint_fallback(monkeypatch):
         result = await image_service.run_bria_fibo_edit(args)
 
         assert result["url"] == "http://example.com/fallback-bria.png"
+
+
+def test_build_background_swap_ultra_prompt_includes_guardrails():
+    enhanced = image_service.build_background_swap_ultra_prompt("sunset beach scene")
+
+    assert "sunset beach scene" in enhanced
+    assert "Professional product photography background replacement" in enhanced
+    assert "no random text" in enhanced
+    assert "no blurry letters" in enhanced
+    assert "no gibberish typography" in enhanced
+
+
+def test_build_background_swap_ultra_prompt_handles_empty_prompt():
+    enhanced = image_service.build_background_swap_ultra_prompt("   ")
+
+    assert "Professional product photography background replacement" in enhanced
+    assert "no watermark" in enhanced
