@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { ImageDropzone } from "@/components/tools/ImageDropzone";
 import { CanvasMaskPainter } from "@/components/tools/CanvasMaskPainter";
+import type { MagicEraserIntentMode } from "@/components/tools/CanvasMaskPainter";
 import { BeforeAfterSlider } from "@/components/tools/BeforeAfterSlider";
 import { ToolProcessingState } from "@/components/tools/ToolProcessingState";
 import { Button } from "@/components/ui/button";
@@ -37,7 +38,7 @@ export default function MagicEraserPage() {
     setStep(2);
   };
 
-  const handleMaskComplete = async (maskBlob: Blob) => {
+  const handleMaskComplete = async (maskBlob: Blob, intentMode: MagicEraserIntentMode) => {
     if (!originalFile) return;
     
     setStep(3); // Loading state
@@ -60,10 +61,11 @@ export default function MagicEraserPage() {
         payload: {
           image_url: uploadedOriginal.url,
           mask_url: uploadedMask.url,
+          strict_mode: intentMode === "strict",
           ...(erasePrompt.trim() ? { prompt: erasePrompt.trim() } : {}),
         },
         quality: modelQuality,
-        idempotencyKey: `${originalFile.name}:${originalFile.size}:${originalFile.lastModified}:${modelQuality}:${erasePrompt.trim()}:${maskHash}`,
+        idempotencyKey: `${originalFile.name}:${originalFile.size}:${originalFile.lastModified}:${modelQuality}:${intentMode}:${erasePrompt.trim()}:${maskHash}`,
         onCompleted: (job) => {
           if (job.result_url) {
             setResultUrl(job.result_url);

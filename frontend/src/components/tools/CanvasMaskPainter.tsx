@@ -5,12 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Undo2, Eraser, Trash2 } from "lucide-react";
 import { CreditConfirmDialog } from "@/components/credits/CreditConfirmDialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface CanvasMaskPainterProps {
   imageUrl: string;
-  onMaskComplete: (maskBlob: Blob) => void;
+  onMaskComplete: (maskBlob: Blob, intentMode: MagicEraserIntentMode) => void;
   className?: string;
 }
+
+export type MagicEraserIntentMode = "strict" | "creative";
 
 interface Point {
   x: number;
@@ -34,6 +37,7 @@ export function CanvasMaskPainter({ imageUrl, onMaskComplete, className = "" }: 
   const [imageLoaded, setImageLoaded] = useState(false);
   const [cursorPos, setCursorPos] = useState<Point | null>(null);
   const [isHovering, setIsHovering] = useState(false);
+  const [intentMode, setIntentMode] = useState<MagicEraserIntentMode>("strict");
   
   const getCoordinates = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent): Point | null => {
     if (!canvasRef.current) return null;
@@ -212,7 +216,7 @@ export function CanvasMaskPainter({ imageUrl, onMaskComplete, className = "" }: 
     setPaths([]);
   };
 
-  const handleDone = () => {
+  const handleDone = useCallback(() => {
     if (!canvasRef.current) return;
     if (!imgRef.current) return;
 
@@ -267,10 +271,10 @@ export function CanvasMaskPainter({ imageUrl, onMaskComplete, className = "" }: 
 
     maskCanvas.toBlob((blob) => {
       if (blob) {
-        onMaskComplete(blob);
+        onMaskComplete(blob, intentMode);
       }
     }, 'image/png');
-  };
+  }, [intentMode, onMaskComplete, paths]);
 
   return (
     <div className={`space-y-4 ${className}`}>
@@ -366,10 +370,34 @@ export function CanvasMaskPainter({ imageUrl, onMaskComplete, className = "" }: 
       <div className="flex justify-end pt-4">
         <CreditConfirmDialog
           title="Magic Eraser"
-          description={`AI akan menghapus objek yang ditandai dan mengisi kekosongan secara natural. Ini akan memotong 20 kredit.`}
+          description={`AI akan menghapus objek yang ditandai. Pilih mode agar hasil sesuai intent kamu. Ini akan memotong 20 kredit.`}
           cost={20}
           onConfirm={handleDone}
           disabled={paths.length === 0}
+          confirmLabel="Mulai Erase"
+          extraContent={(
+            <div className="space-y-2 rounded-md border border-border bg-muted/30 p-3">
+              <p className="text-sm font-medium text-foreground">Konfirmasi hasil yang diinginkan</p>
+              <RadioGroup
+                value={intentMode}
+                onValueChange={(value) => setIntentMode(value as MagicEraserIntentMode)}
+                className="space-y-2"
+              >
+                <label htmlFor="erase-intent-strict" className="flex cursor-pointer items-start gap-2 rounded-md border border-border bg-background p-2">
+                  <RadioGroupItem value="strict" id="erase-intent-strict" className="mt-0.5" />
+                  <span className="text-sm text-foreground">
+                    <strong>Strict Erase</strong>: lanjutkan tekstur sekitar (misal piring/nasi) tanpa objek baru.
+                  </span>
+                </label>
+                <label htmlFor="erase-intent-creative" className="flex cursor-pointer items-start gap-2 rounded-md border border-border bg-background p-2">
+                  <RadioGroupItem value="creative" id="erase-intent-creative" className="mt-0.5" />
+                  <span className="text-sm text-foreground">
+                    <strong>Creative Fill</strong>: isi area lebih fleksibel dengan variasi generatif.
+                  </span>
+                </label>
+              </RadioGroup>
+            </div>
+          )}
         >
           <Button 
             size="lg" 

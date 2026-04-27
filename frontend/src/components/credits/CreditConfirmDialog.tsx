@@ -20,6 +20,8 @@ interface CreditConfirmDialogProps {
   onConfirm: () => void;
   children: ReactNode;
   disabled?: boolean;
+  extraContent?: ReactNode;
+  confirmLabel?: string;
 }
 
 export function CreditConfirmDialog({ 
@@ -28,7 +30,9 @@ export function CreditConfirmDialog({
   description, 
   onConfirm, 
   children,
-  disabled = false
+  disabled = false,
+  extraContent,
+  confirmLabel = 'Lanjutkan',
 }: CreditConfirmDialogProps) {
   const { creditsRemaining } = useCredits();
   const hasEnoughCredits = creditsRemaining !== null && creditsRemaining >= cost;
@@ -75,6 +79,12 @@ export function CreditConfirmDialog({
           </div>
         )}
 
+        {extraContent && (
+          <div className="mt-3">
+            {extraContent}
+          </div>
+        )}
+
         <AlertDialogFooter className="mt-4">
           <AlertDialogCancel>Batal</AlertDialogCancel>
           <AlertDialogAction 
@@ -82,7 +92,7 @@ export function CreditConfirmDialog({
             disabled={!hasEnoughCredits}
             className="flex items-center gap-2"
           >
-            Lanjutkan <Zap className="h-3.5 w-3.5 fill-current" />
+            {confirmLabel} <Zap className="h-3.5 w-3.5 fill-current" />
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

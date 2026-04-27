@@ -183,6 +183,7 @@ async def magic_eraser(
     file: UploadFile = File(...),
     mask: UploadFile = File(...),
     prompt: Optional[str] = Form(None),
+    strict_mode: bool = Form(True),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(rate_limit_dependency),
 ):
@@ -201,7 +202,10 @@ async def magic_eraser(
     if len(content) > 10 * 1024 * 1024 or len(mask_content) > 10 * 1024 * 1024:
         raise ValidationError(detail="Image or mask size exceeds 10MB limit")
 
-    mask_content = inpaint_service.prepare_magic_eraser_mask(mask_content)
+    mask_content = inpaint_service.prepare_magic_eraser_mask(
+        mask_content,
+        strict_mode=strict_mode,
+    )
 
     if not inpaint_service.validate_mask_has_content(mask_content):
         raise ValidationError(detail="Mask tidak memiliki area untuk dierase. Silakan tandai objek yang ingin dihapus.")
@@ -228,7 +232,10 @@ async def magic_eraser(
         )
 
         # 2. Call Fal service (default: BRIA FIBO edit, rollback fallback: flux fill)
-        erase_prompt = inpaint_service.build_magic_eraser_prompt(prompt)
+        erase_prompt = inpaint_service.build_magic_eraser_prompt(
+            prompt,
+            strict_mode=strict_mode,
+        )
         try:
             from app.services.image_service import build_bria_fibo_edit_args, run_bria_fibo_edit
 
@@ -246,6 +253,7 @@ async def magic_eraser(
                 mask_url=mask_url,
                 prompt=prompt,
                 magic_eraser_mode=True,
+                strict_mode=strict_mode,
             )
 
         # If Fal returns a URL directly, we can either return it or download+upload to our storage.

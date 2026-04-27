@@ -79,7 +79,7 @@ async def test_inpaint_image_magic_eraser_uses_default_prompt(mock_fal_run):
             "mask_url": "http://mask.url",
             "sync_mode": True,
             "output_format": "jpeg",
-            "prompt": "Remove the masked object and reconstruct the original background naturally. Preserve original scene, lighting, and perspective. Do not add new objects, people, masks, text, logos, labels, or extra decorations. Only continue existing background context in the masked region.",
+            "prompt": "Remove the masked object and reconstruct the original background naturally. Preserve original scene, lighting, and perspective. Do not add new objects, people, masks, text, logos, labels, or extra decorations. Continue only nearby existing textures and surfaces in the masked region.",
         },
     )
 
@@ -108,7 +108,7 @@ async def test_inpaint_image_magic_eraser_appends_guardrails_to_custom_prompt(
             "mask_url": "http://mask.url",
             "sync_mode": True,
             "output_format": "jpeg",
-            "prompt": "hapus objek donat. Preserve original scene, lighting, and perspective. Do not add new objects, people, masks, text, logos, labels, or extra decorations. Only continue existing background context in the masked region.",
+            "prompt": "hapus objek donat. Preserve original scene, lighting, and perspective. Do not add new objects, people, masks, text, logos, labels, or extra decorations. Continue only nearby existing textures and surfaces in the masked region.",
         },
     )
 
@@ -167,7 +167,13 @@ def test_build_magic_eraser_prompt_uses_default_when_empty():
 def test_build_magic_eraser_prompt_appends_guardrails_to_custom_prompt():
     built = build_magic_eraser_prompt("hapus botol di meja")
     assert built.startswith("hapus botol di meja.")
-    assert "Only continue existing background context in the masked region." in built
+    assert "Continue only nearby existing textures and surfaces in the masked region." in built
+
+
+def test_build_magic_eraser_prompt_creative_mode_uses_creative_guardrails():
+    built = build_magic_eraser_prompt("hapus botol di meja", strict_mode=False)
+    assert built.startswith("hapus botol di meja.")
+    assert "Prefer realistic continuity with nearby context and avoid jarring artifacts." in built
 
 
 # --- validate_mask_has_content ---
@@ -193,7 +199,7 @@ def test_validate_mask_has_content_is_permissive_on_invalid_bytes():
 
 
 def test_prepare_magic_eraser_mask_dilates_and_blurs_mask():
-    """After preprocessing, a small white area should expand due to dilation."""
+    """After preprocessing, a small white area should still expand beyond one pixel."""
     img = Image.new("L", (64, 64), color=0)
     img.putpixel((32, 32), 255)  # single white pixel
     buf = io.BytesIO()
@@ -202,6 +208,19 @@ def test_prepare_magic_eraser_mask_dilates_and_blurs_mask():
     result_bytes = prepare_magic_eraser_mask(buf.getvalue())
     result_img = Image.open(io.BytesIO(result_bytes)).convert("L")
 
-    # Dilation (MaxFilter 9) should have spread the pixel to neighbours
     white_pixels = sum(1 for px in result_img.getdata() if px > 10)
     assert white_pixels > 1
+
+
+def test_prepare_magic_eraser_mask_creative_mode_expands_more_than_strict():
+    img = Image.new("L", (64, 64), color=0)
+    img.putpixel((32, 32), 255)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+
+    strict_img = Image.open(io.BytesIO(prepare_magic_eraser_mask(buf.getvalue(), strict_mode=True))).convert("L")
+    creative_img = Image.open(io.BytesIO(prepare_magic_eraser_mask(buf.getvalue(), strict_mode=False))).convert("L")
+
+    strict_white_pixels = sum(1 for px in strict_img.getdata() if px > 10)
+    creative_white_pixels = sum(1 for px in creative_img.getdata() if px > 10)
+    assert creative_white_pixels >= strict_white_pixels

@@ -14,28 +14,46 @@ import fal_client
 
 DEFAULT_INPAINT_PROMPT = "Improve visual quality"
 DEFAULT_MAGIC_ERASER_PROMPT = "Remove the masked object and reconstruct the original background naturally"
-MAGIC_ERASER_GUARDRAILS = (
+MAGIC_ERASER_STRICT_GUARDRAILS = (
     "Preserve original scene, lighting, and perspective. "
     "Do not add new objects, people, masks, text, logos, labels, or extra decorations. "
-    "Only continue existing background context in the masked region."
+    "Continue only nearby existing textures and surfaces in the masked region."
+)
+MAGIC_ERASER_CREATIVE_GUARDRAILS = (
+    "Preserve original scene, lighting, and perspective. "
+    "Prefer realistic continuity with nearby context and avoid jarring artifacts."
 )
 
 
-def build_magic_eraser_prompt(prompt: Optional[str] = None) -> str:
+def build_magic_eraser_prompt(
+    prompt: Optional[str] = None,
+    *,
+    strict_mode: bool = True,
+) -> str:
     """Build a constrained prompt for object removal without introducing new elements."""
     base_prompt = (prompt or "").strip() or DEFAULT_MAGIC_ERASER_PROMPT
-    return f"{base_prompt}. {MAGIC_ERASER_GUARDRAILS}"
+    guardrails = (
+        MAGIC_ERASER_STRICT_GUARDRAILS
+        if strict_mode
+        else MAGIC_ERASER_CREATIVE_GUARDRAILS
+    )
+    return f"{base_prompt}. {guardrails}"
 
 
-def prepare_magic_eraser_mask(mask_bytes: bytes) -> bytes:
+def prepare_magic_eraser_mask(
+    mask_bytes: bytes,
+    *,
+    strict_mode: bool = True,
+) -> bytes:
     """Improve mask usability by thresholding, dilation, and soft edge blending."""
     try:
         mask = Image.open(io.BytesIO(mask_bytes)).convert("L")
         mask = mask.point(lambda px: 255 if px > 10 else 0)
-        # Increased dilation (5→9) for better edge coverage on boundary objects
-        mask = mask.filter(ImageFilter.MaxFilter(9))
-        # Increased blur (1.2→2.0) for smoother transitions and less seam artifact
-        mask = mask.filter(ImageFilter.GaussianBlur(radius=2.0))
+        dilation = 5 if strict_mode else 9
+        blur_radius = 1.0 if strict_mode else 2.0
+        # Strict mode keeps edits tighter to avoid replacing nearby context.
+        mask = mask.filter(ImageFilter.MaxFilter(dilation))
+        mask = mask.filter(ImageFilter.GaussianBlur(radius=blur_radius))
 
         out = io.BytesIO()
         mask.save(out, format="PNG")
@@ -59,6 +77,7 @@ async def inpaint_image(
     prompt: Optional[str] = None,
     *,
     magic_eraser_mode: bool = False,
+    strict_mode: bool = True,
 ) -> dict:
     """
     Inpaints an image using the fal-ai/flux-pro/v1/fill model.
@@ -84,7 +103,10 @@ async def inpaint_image(
                 else DEFAULT_INPAINT_PROMPT
             )
         if magic_eraser_mode:
-            resolved_prompt = build_magic_eraser_prompt(resolved_prompt)
+            resolved_prompt = build_magic_eraser_prompt(
+                resolved_prompt,
+                strict_mode=strict_mode,
+            )
 
         arguments = {
             "image_url": image_url,

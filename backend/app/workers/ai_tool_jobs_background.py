@@ -285,6 +285,7 @@ async def execute_magic_eraser_tool_job(job_id: str):
         mask_url = payload.get("mask_url")
         prompt = payload.get("prompt")
         model_quality = str(payload.get("_model_quality", "standard"))
+        strict_mode = bool(payload.get("strict_mode", True))
 
         if not image_url:
             raise ValueError("Missing image_url in job payload")
@@ -305,7 +306,10 @@ async def execute_magic_eraser_tool_job(job_id: str):
 
     # Normalize/clean mask before sending to inpaint model to improve fill quality.
     raw_mask_bytes = await download_image(str(mask_url))
-    prepared_mask_bytes = inpaint_service.prepare_magic_eraser_mask(raw_mask_bytes)
+    prepared_mask_bytes = inpaint_service.prepare_magic_eraser_mask(
+        raw_mask_bytes,
+        strict_mode=strict_mode,
+    )
 
     if not inpaint_service.validate_mask_has_content(prepared_mask_bytes):
         async with AsyncSessionLocal() as session:
@@ -326,7 +330,8 @@ async def execute_magic_eraser_tool_job(job_id: str):
     )
 
     erase_prompt = inpaint_service.build_magic_eraser_prompt(
-        str(prompt) if prompt else None
+        str(prompt) if prompt else None,
+        strict_mode=strict_mode,
     )
 
     if model_quality == "ultra":
@@ -369,6 +374,7 @@ async def execute_magic_eraser_tool_job(job_id: str):
                 mask_url=prepared_mask_url,
                 prompt=str(prompt) if prompt else None,
                 magic_eraser_mode=True,
+                strict_mode=strict_mode,
             )
             inpainted_url = result_data.get("url")
     if not inpainted_url:
