@@ -77,24 +77,40 @@ def _apply_openrouter_generation_defaults(
 
 def get_genai_client() -> genai.Client:
     """
-    Returns a configured Gemini client with finite retry settings.
-    This prevents the app from hanging indefinitely during High Demand (503) errors.
+    Returns a configured OpenRouter-proxied Gemini client.
     """
-    if not settings.OPENROUTER_API_KEY:
-        # Client will fail on generation, but initializing might not if mocked elsewhere
-        pass
-
     retry_config = types.HttpOptions(
         retry_options=types.HttpRetryOptions(
-            attempts=1,  # Fail fast! Only try once, do not retry
+            attempts=1,
             initial_delay=1.0,
             max_delay=5.0,
         ),
-        timeout=20000, # 20 seconds timeout for httpx (fail fast on high demand)
+        timeout=20000,
     )
 
     return genai.Client(
         api_key=settings.OPENROUTER_API_KEY,
+        http_options=retry_config
+    )
+
+def get_direct_gemini_client() -> genai.Client:
+    """
+    Returns a direct Google Gemini client (bypassing OpenRouter).
+    """
+    if not settings.GEMINI_API_KEY:
+        raise ValueError("GEMINI_API_KEY is not set for direct fallback")
+    
+    retry_config = types.HttpOptions(
+        retry_options=types.HttpRetryOptions(
+            attempts=2, # Allow 1 retry for direct stable provider
+            initial_delay=1.0,
+            max_delay=5.0,
+        ),
+        timeout=30000,
+    )
+
+    return genai.Client(
+        api_key=settings.GEMINI_API_KEY,
         http_options=retry_config
     )
 
@@ -252,57 +268,35 @@ def call_gemini_with_fallback(
     config: types.GenerateContentConfig,
 ):
     """
-    Calls the primary model and retries with OpenRouter fallback when needed.
+    Calls the primary model and retries with fallback when needed.
+    Supports OpenRouter and Direct Gemini based on model prefix.
     """
-    if primary_model.startswith("openrouter/"):
-        actual_model = primary_model.replace("openrouter/", "", 1)
-        logger.info(f"🧠 [DEV INFO] Resolving prompt via PRIMARY LLM (OpenRouter direct routing): {actual_model}")
-        try:
-            return call_openrouter(
-                model_id=actual_model,
-                contents=contents,
-                config=config
-            )
-        except Exception as e:
-            logger.error(f"OpenRouter primary failed: {str(e)}. Moving to OpenRouter fallback ({fallback_model}).")
-    else:
-        try:
-            # Layer 1: direct primary model invocation
-            logger.info(f"🧠 [DEV INFO] Resolving prompt via PRIMARY LLM: {primary_model}")
-            response = client.models.generate_content(
-                model=primary_model,
-                contents=contents,
-                config=config,
-            )
-            if hasattr(response, "usage_metadata") and response.usage_metadata:
-                tokens = getattr(response.usage_metadata, "total_token_count", "unknown")
-                logger.info(f"🪙 [DEV INFO] Primary LLM Tokens Used: {tokens}")
-            return response
-        except Exception as e:
-            # Check for 503 Service Unavailable or other transient errors
-            is_503 = hasattr(e, "code") and e.code == 503
+    def _do_call(model_id: str, is_fallback: bool = False):
+        label = "FALLBACK" if is_fallback else "PRIMARY"
+        
+        if model_id.startswith("openrouter/"):
+            actual_id = model_id.replace("openrouter/", "", 1)
+            logger.info(f"🧠 [DEV INFO] Resolving prompt via {label} LLM (OpenRouter): {actual_id}")
+            return call_openrouter(model_id=actual_id, contents=contents, config=config)
+        
+        elif model_id.startswith("google/"):
+            actual_id = model_id.replace("google/", "", 1)
+            logger.info(f"🧠 [DEV INFO] Resolving prompt via {label} LLM (Direct Gemini): {actual_id}")
+            direct_client = get_direct_gemini_client()
+            return direct_client.models.generate_content(model=actual_id, contents=contents, config=config)
+        
+        else:
+            # Legacy/default handling (usually OpenRouter via the passed client)
+            logger.info(f"🧠 [DEV INFO] Resolving prompt via {label} LLM (Default Client): {model_id}")
+            return client.models.generate_content(model=model_id, contents=contents, config=config)
 
-            if is_503:
-                logger.warning(
-                    f"Primary model {primary_model} overloaded (503). "
-                    f"Falling back to OpenRouter ({fallback_model})."
-                )
-            else:
-                logger.error(f"Primary model failed: {str(e)}. Moving to OpenRouter ({fallback_model}).")
-
-    # Layer 2: OpenRouter (e.g. Qwen 3.5 9B) as last resort
-    logger.warning(f"Attempting final fallback via OpenRouter ({fallback_model})")
     try:
-        # Ensure prefix is stripped for the final fallback as well
-        actual_fallback_model = fallback_model
-        if fallback_model.startswith("openrouter/"):
-            actual_fallback_model = fallback_model.replace("openrouter/", "", 1)
-
-        return call_openrouter(
-            model_id=actual_fallback_model,
-            contents=contents,
-            config=config
-        )
-    except Exception as e3:
-        logger.critical(f"All LLM providers failed! Last error: {str(e3)}")
-        raise e3
+        return _do_call(primary_model)
+    except Exception as e:
+        logger.error(f"Primary LLM ({primary_model}) failed: {str(e)}. Moving to Fallback ({fallback_model}).")
+        
+        try:
+            return _do_call(fallback_model, is_fallback=True)
+        except Exception as e_fb:
+            logger.critical(f"All LLM providers failed! Last error: {str(e_fb)}")
+            raise e_fb

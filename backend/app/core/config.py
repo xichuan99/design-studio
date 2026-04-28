@@ -13,6 +13,7 @@ class Settings(BaseSettings):
 
     # LLM
     OPENROUTER_API_KEY: str = ""
+    GEMINI_API_KEY: str = ""
 
     # Email
     RESEND_API_KEY: str = ""
