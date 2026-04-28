@@ -33,9 +33,8 @@ async def send_reset_password_email(to_email: str, reset_link: str) -> bool:
         </div>
         """
 
-        # Resend SDK call (can be synchronous but wrapped here, usually it's fine for low volume or we can use anyio.to_thread)
         response = resend.Emails.send({
-            "from": "SmartDesign <onboarding@resend.dev>",
+            "from": "SmartDesign <system@nugrohopramono.my.id>",
             "to": [to_email],
             "subject": "Reset Kata Sandi Anda - SmartDesign",
             "html": html_content
@@ -75,7 +74,7 @@ async def send_google_account_notice_email(to_email: str) -> bool:
         """
 
         response = resend.Emails.send({
-            "from": "SmartDesign <onboarding@resend.dev>",
+            "from": "SmartDesign <system@nugrohopramono.my.id>",
             "to": [to_email],
             "subject": "Informasi Akun Anda - SmartDesign",
             "html": html_content

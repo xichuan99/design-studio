@@ -184,29 +184,22 @@ async def forgot_password(data: ForgotPasswordRequest, db: AsyncSession = Depend
     user = result.scalar_one_or_none()
 
     if user:
-        if user.provider == "credentials":
-            reset_token = secrets.token_urlsafe(32)
-            user.reset_token = reset_token
-            user.reset_token_expires = datetime.now(timezone.utc) + timedelta(hours=1)
+        reset_token = secrets.token_urlsafe(32)
+        user.reset_token = reset_token
+        user.reset_token_expires = datetime.now(timezone.utc) + timedelta(hours=1)
 
-            await db.commit()
+        await db.commit()
 
-            # Send reset email
-            frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
-            reset_link = f"{frontend_url}/reset-password?token={reset_token}"
+        # Send reset email
+        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+        reset_link = f"{frontend_url}/reset-password?token={reset_token}"
 
-            from app.utils.email import send_reset_password_email
-            email_sent = await send_reset_password_email(user.email, reset_link)
-            if email_sent:
-                logger.info(f"[forgot-password] Reset email sent to {user.email}")
-            else:
-                logger.warning(f"[forgot-password] Failed to send reset email to {user.email}. Token was saved but email not delivered.")
-
-        elif user.provider == "google":
-            # Notify user that their account uses Google Sign-In (no enumeration risk as user provided their own email)
-            logger.info(f"[forgot-password] Google account attempted password reset: {user.email}")
-            from app.utils.email import send_google_account_notice_email
-            await send_google_account_notice_email(user.email)
+        from app.utils.email import send_reset_password_email
+        email_sent = await send_reset_password_email(user.email, reset_link)
+        if email_sent:
+            logger.info(f"[forgot-password] Reset email sent to {user.email} (Provider: {user.provider})")
+        else:
+            logger.warning(f"[forgot-password] Failed to send reset email to {user.email}. Token was saved but email not delivered.")
     else:
         logger.info(f"[forgot-password] No account found for email: {data.email}")
 
