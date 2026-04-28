@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { redirect, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { usePostHog } from "posthog-js/react";
@@ -445,11 +446,15 @@ export default function DesignInterviewPage() {
 
                         {productPreview && (
                             <div className="relative w-full overflow-hidden rounded-2xl border bg-muted/20 p-2">
-                                <img
-                                    src={productPreview}
-                                    alt="Preview foto produk"
-                                    className="h-52 w-full rounded-xl object-cover"
-                                />
+                                <div className="relative h-52 w-full">
+                                    <Image
+                                        src={productPreview}
+                                        alt="Preview foto produk"
+                                        fill
+                                        className="rounded-xl object-cover"
+                                        unoptimized
+                                    />
+                                </div>
                                 <button
                                     type="button"
                                     onClick={handleRemoveProductFile}

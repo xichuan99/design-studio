@@ -99,7 +99,7 @@ def get_direct_gemini_client() -> genai.Client:
     """
     if not settings.GEMINI_API_KEY:
         raise ValueError("GEMINI_API_KEY is not set for direct fallback")
-    
+
     retry_config = types.HttpOptions(
         retry_options=types.HttpRetryOptions(
             attempts=2, # Allow 1 retry for direct stable provider
@@ -273,18 +273,18 @@ def call_gemini_with_fallback(
     """
     def _do_call(model_id: str, is_fallback: bool = False):
         label = "FALLBACK" if is_fallback else "PRIMARY"
-        
+
         if model_id.startswith("openrouter/"):
             actual_id = model_id.replace("openrouter/", "", 1)
             logger.info(f"🧠 [DEV INFO] Resolving prompt via {label} LLM (OpenRouter): {actual_id}")
             return call_openrouter(model_id=actual_id, contents=contents, config=config)
-        
+
         elif model_id.startswith("google/"):
             actual_id = model_id.replace("google/", "", 1)
             logger.info(f"🧠 [DEV INFO] Resolving prompt via {label} LLM (Direct Gemini): {actual_id}")
             direct_client = get_direct_gemini_client()
             return direct_client.models.generate_content(model=actual_id, contents=contents, config=config)
-        
+
         else:
             # Legacy/default handling (usually OpenRouter via the passed client)
             logger.info(f"🧠 [DEV INFO] Resolving prompt via {label} LLM (Default Client): {model_id}")
@@ -294,7 +294,7 @@ def call_gemini_with_fallback(
         return _do_call(primary_model)
     except Exception as e:
         logger.error(f"Primary LLM ({primary_model}) failed: {str(e)}. Moving to Fallback ({fallback_model}).")
-        
+
         try:
             return _do_call(fallback_model, is_fallback=True)
         except Exception as e_fb:
