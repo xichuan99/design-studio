@@ -298,5 +298,15 @@ def call_gemini_with_fallback(
         try:
             return _do_call(fallback_model, is_fallback=True)
         except Exception as e_fb:
+            # Emergency direct fallback to ensure stability if OpenRouter (primary/fallback) is down
+            emergency_model = "google/gemini-2.5-flash"
+            if fallback_model != emergency_model:
+                logger.warning(f"Secondary Fallback ({fallback_model}) also failed. Attempting EMERGENCY direct fallback: {emergency_model}")
+                try:
+                    return _do_call(emergency_model, is_fallback=True)
+                except Exception as e_em:
+                    logger.critical(f"CRITICAL: All LLM providers including EMERGENCY failed! {str(e_em)}")
+                    raise e_em
+
             logger.critical(f"All LLM providers failed! Last error: {str(e_fb)}")
             raise e_fb

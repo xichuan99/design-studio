@@ -30,7 +30,7 @@ LLM_VISION_FALLBACK = _env(
 # ═══════════════════════════════════════════════════════════════
 LLM_BG_SUGGEST_PRIMARY = _env(
     "AI_MODEL_LLM_BG_SUGGEST_PRIMARY",
-    "openrouter/deepseek/deepseek-v4-flash",
+    "openrouter/openai/gpt-5-nano",
 )
 
 # ═══════════════════════════════════════════════════════════════
@@ -38,11 +38,11 @@ LLM_BG_SUGGEST_PRIMARY = _env(
 # ═══════════════════════════════════════════════════════════════
 LLM_BRAND_KIT_PRIMARY = _env(
     "AI_MODEL_LLM_BRAND_KIT_PRIMARY",
-    "openrouter/deepseek/deepseek-v4-flash",
+    "openrouter/openai/gpt-5-nano",
 )
 LLM_BRAND_KIT_FALLBACK = _env(
     "AI_MODEL_LLM_BRAND_KIT_FALLBACK",
-    "google/gemini-2.5-flash",
+    "openrouter/qwen/qwen3.6-flash",
 )
 
 # ═══════════════════════════════════════════════════════════════
@@ -50,11 +50,11 @@ LLM_BRAND_KIT_FALLBACK = _env(
 # ═══════════════════════════════════════════════════════════════
 LLM_REASONING_PRIMARY = _env(
     "AI_MODEL_LLM_REASONING_PRIMARY",
-    "openrouter/deepseek/deepseek-v4-flash",
+    "openrouter/openai/gpt-5-nano",
 )
 LLM_REASONING_FALLBACK = _env(
     "AI_MODEL_LLM_REASONING_FALLBACK",
-    "google/gemini-2.5-flash",
+    "openrouter/qwen/qwen3.6-flash",
 )
 
 
