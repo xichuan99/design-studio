@@ -22,7 +22,7 @@ LLM_VISION_PRIMARY = _env(
 )
 LLM_VISION_FALLBACK = _env(
     "AI_MODEL_LLM_VISION_FALLBACK",
-    "google/gemini-2.0-flash-001",
+    "google/gemini-2.5-flash",
 )
 
 # ═══════════════════════════════════════════════════════════════
@@ -42,7 +42,7 @@ LLM_BRAND_KIT_PRIMARY = _env(
 )
 LLM_BRAND_KIT_FALLBACK = _env(
     "AI_MODEL_LLM_BRAND_KIT_FALLBACK",
-    "google/gemini-2.0-flash-001",
+    "google/gemini-2.5-flash",
 )
 
 # ═══════════════════════════════════════════════════════════════
@@ -54,7 +54,7 @@ LLM_REASONING_PRIMARY = _env(
 )
 LLM_REASONING_FALLBACK = _env(
     "AI_MODEL_LLM_REASONING_FALLBACK",
-    "google/gemini-2.0-flash-001",
+    "google/gemini-2.5-flash",
 )
 
 
