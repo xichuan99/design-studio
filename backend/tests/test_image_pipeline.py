@@ -138,6 +138,20 @@ def test_resize_to_aspect_story():
     assert result.size == (768, 1344)
 
 
+def test_resize_to_aspect_4_5():
+    """resize_to_aspect produces correct dimensions for 4:5 (was missing from RESOLUTIONS)."""
+    from PIL import Image
+    import io
+
+    img = Image.new("RGB", (300, 300), color="green")
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG")
+
+    resized_bytes = resize_to_aspect(buf.getvalue(), "4:5")
+    result = Image.open(io.BytesIO(resized_bytes))
+    assert result.size == (896, 1120)
+
+
 def test_extract_dominant_colors():
     """extract_dominant_colors returns correct number of hex colors."""
     from PIL import Image

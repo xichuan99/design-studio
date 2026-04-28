@@ -119,16 +119,39 @@ export const SmartAdPanel: React.FC = () => {
         // 1. Set Background
         setBackgroundUrl(concept.image_url);
 
-        // 2. Add Foreground Product
-        addElement({
-            type: 'image',
-            url: result.foreground_url,
-            x: 340,
-            y: 340,
-            width: 400,
-            height: 400,
-            rotation: 0
-        });
+        // 2. Add Foreground Product — compute proportional dimensions from actual image
+        const MAX_SIDE = 400;
+        const img = new window.Image();
+        img.onload = () => {
+            const naturalW = img.naturalWidth || MAX_SIDE;
+            const naturalH = img.naturalHeight || MAX_SIDE;
+            const scale = Math.min(MAX_SIDE / naturalW, MAX_SIDE / naturalH, 1);
+            const w = Math.round(naturalW * scale);
+            const h = Math.round(naturalH * scale);
+            // Center the product on a 1080x1080 canvas
+            addElement({
+                type: 'image',
+                url: result.foreground_url,
+                x: Math.round((1080 - w) / 2),
+                y: Math.round((1080 - h) / 2),
+                width: w,
+                height: h,
+                rotation: 0
+            });
+        };
+        img.onerror = () => {
+            // Fallback: use square placeholder if image fails to load
+            addElement({
+                type: 'image',
+                url: result.foreground_url,
+                x: 340,
+                y: 340,
+                width: MAX_SIDE,
+                height: MAX_SIDE,
+                rotation: 0
+            });
+        };
+        img.src = result.foreground_url;
 
         // 3. Add Texts (Basic layout, user can adjust)
         addElement({

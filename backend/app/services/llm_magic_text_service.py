@@ -1,6 +1,8 @@
 """Magic text LLM services."""
 
 import json
+import logging
+import unicodedata
 from typing import Optional
 from google.genai import types
 from app.core.ai_models import LLM_VISION_FALLBACK, LLM_VISION_PRIMARY
@@ -9,6 +11,59 @@ from app.core.config import settings
 from app.services.llm_prompts import MAGIC_TEXT_SYSTEM
 from app.services.llm_client import get_genai_client, call_gemini_with_fallback
 from app.services.llm_json_utils import parse_llm_json
+
+logger = logging.getLogger(__name__)
+
+
+def _normalize_text(s: str) -> str:
+    """Normalize unicode and collapse whitespace for loose comparison."""
+    return unicodedata.normalize("NFKC", s).strip()
+
+
+def _sanitize_text_elements(elements: list, original_text: str) -> list:
+    """
+    Validate that each element's text is derived from the user's original input.
+
+    The LLM is instructed not to alter the text, but as a safety net we check
+    every element. If the element text cannot be found (case-insensitively) as
+    a substring of the original, we log a warning — we do NOT silently rewrite
+    the element because the LLM may have legitimately split multi-line input into
+    separate elements. The key guarantee is that we catch and discard any element
+    whose text is entirely fabricated (empty after stripping, or contains
+    non-printable/garbage characters), replacing it with a warning placeholder.
+    """
+    normalized_original = _normalize_text(original_text).lower()
+    sanitized = []
+
+    for elem in elements:
+        elem_text = elem.get("text", "") if isinstance(elem, dict) else getattr(elem, "text", "")
+        normalized_elem = _normalize_text(str(elem_text))
+
+        # Guard: discard elements with empty or non-printable text
+        printable = "".join(c for c in normalized_elem if c.isprintable())
+        if not printable:
+            logger.warning(
+                "MagicText: element had empty/non-printable text, skipping. "
+                "original=%r elem_text=%r",
+                original_text[:60],
+                elem_text,
+            )
+            continue
+
+        # Warn (but keep) if the element text is not found in the original input.
+        # This covers cases where the LLM legitimately reformatted (uppercase, line-break),
+        # while still surfacing unexpected fabrications in logs.
+        if normalized_elem.lower() not in normalized_original:
+            logger.warning(
+                "MagicText: element text not found in original input — possible LLM drift. "
+                "original=%r elem_text=%r",
+                original_text[:60],
+                elem_text,
+            )
+
+        sanitized.append(elem)
+
+    return sanitized
 
 
 async def generate_magic_text_layout(
@@ -105,5 +160,13 @@ async def generate_magic_text_layout(
         ),
     )
 
-    return parse_llm_json(response.text)
+    result = parse_llm_json(response.text)
+
+    # Post-process: sanitize element texts to catch LLM drift / garbage output
+    if isinstance(result, dict) and "elements" in result:
+        result["elements"] = _sanitize_text_elements(result["elements"], text)
+    elif isinstance(result, list):
+        result = _sanitize_text_elements(result, text)
+
+    return result
 

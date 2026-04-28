@@ -70,8 +70,10 @@ async def generate_background(
     focus_instruction = ""
     if reference_image_url and focus == "human":
         focus_instruction = (
-            "prioritize preserving the person as the main subject from the reference image, "
-            "preserve facial identity and pose consistency, background and styling may adapt"
+            "prioritize preserving the exact person as the main subject from the reference image, "
+            "preserve facial identity, facial features, skin tone, and likeness exactly as in the reference, "
+            "do not alter face structure, facial expression, or any facial detail, "
+            "pose and styling may adapt but the face must remain recognizable"
         )
     elif reference_image_url and focus == "object":
         focus_instruction = (
@@ -143,7 +145,8 @@ async def generate_background(
             if reference_image_url:
                 fal_args["image_url"] = reference_image_url
                 if focus == "human":
-                    fal_args["strength"] = 0.50
+                    # Low strength to preserve facial identity — higher values cause face drift
+                    fal_args["strength"] = 0.30
                 elif focus == "object":
                     fal_args["strength"] = 0.74
                 else:
