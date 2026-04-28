@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { DESIGN_BRIEF_SESSION_KEY } from "@/lib/design-brief-session";
 import { useProjectApi } from "@/lib/api";
+import type { CatalogGoal } from "@/lib/api/types";
 
 const MAX_UPLOAD_SIZE = 10 * 1024 * 1024;
 
@@ -190,6 +191,7 @@ export default function DesignInterviewPage() {
         const finalCopyTone = (isSkip && !copyTone) ? "Friendly" : copyTone;
         const finalCatalogType = catalogType;
         const finalCatalogTotalPages = Number.isFinite(catalogTotalPages) ? Math.min(Math.max(catalogTotalPages, 3), 24) : 5;
+        const catalogGoal: CatalogGoal = finalCatalogType === "service" ? "showcasing" : "selling";
 
         let catalogSuggestedStructure;
         let catalogStyleOptions;
@@ -206,7 +208,7 @@ export default function DesignInterviewPage() {
                 const basics = {
                     catalog_type: finalCatalogType,
                     total_pages: finalCatalogTotalPages,
-                    goal: (finalCatalogType === "service" ? "showcasing" : "selling") as const,
+                    goal: catalogGoal,
                     tone: mapCopyToneToCatalogTone(finalCopyTone),
                     target_audience: finalChannel === "marketplace" ? "pembeli aktif marketplace" : undefined,
                     language: "id",
