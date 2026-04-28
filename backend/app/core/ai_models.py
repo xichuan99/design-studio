@@ -18,7 +18,7 @@ def _env(name: str, default: str) -> str:
 # ═══════════════════════════════════════════════════════════════
 LLM_VISION_PRIMARY = _env(
     "AI_MODEL_LLM_VISION_PRIMARY",
-    "openrouter/qwen/qwen3.5-flash-02-23",
+    "openrouter/google/gemma-4-31b-it",
 )
 LLM_VISION_FALLBACK = _env(
     "AI_MODEL_LLM_VISION_FALLBACK",
