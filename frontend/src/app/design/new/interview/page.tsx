@@ -67,11 +67,32 @@ const copyToneExamples: Record<string, string> = {
     Edukatif: "Contoh: jelaskan value produk dengan poin informatif.",
 };
 
+const catalogTypes = [
+    { id: "product", label: "Product catalog" },
+    { id: "service", label: "Service catalog" },
+] as const;
+
+const catalogPageOptions = [3, 5, 10] as const;
+
+function mapCopyToneToCatalogTone(copyTone: string): "formal" | "fun" | "premium" | "soft_selling" {
+    if (copyTone === "Premium") return "premium";
+    if (copyTone === "Friendly") return "fun";
+    if (copyTone === "Edukatif") return "formal";
+    return "soft_selling";
+}
+
 export default function DesignInterviewPage() {
     const { status } = useSession();
     const router = useRouter();
     const posthog = usePostHog();
-    const { uploadImage } = useProjectApi();
+    const {
+        uploadImage,
+        planCatalogStructure,
+        suggestCatalogStyles,
+        mapCatalogImages,
+        generateCatalogCopy,
+        finalizeCatalogPlan,
+    } = useProjectApi();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [goal, setGoal] = useState("");
     const [productType, setProductType] = useState("");
@@ -85,6 +106,10 @@ export default function DesignInterviewPage() {
     const [isUploading, setIsUploading] = useState(false);
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [notes, setNotes] = useState("");
+    const [catalogType, setCatalogType] = useState<"product" | "service">("product");
+    const [catalogTotalPages, setCatalogTotalPages] = useState(5);
+    const [isCatalogPlanning, setIsCatalogPlanning] = useState(false);
+    const [catalogPlanningError, setCatalogPlanningError] = useState<string | null>(null);
     const normalizedCustomProductType = customProductType.trim();
     const isOtherProductType = productType === "Lainnya";
 
@@ -155,7 +180,7 @@ export default function DesignInterviewPage() {
         }
     };
 
-    const handleContinue = (isSkip = false) => {
+    const handleContinue = async (isSkip = false) => {
         const finalGoal = (isSkip && !goal) ? "promo" : goal;
         const selectedProductType = (isSkip && !productType) ? "Makanan & Minuman" : productType;
         const finalCustomProductType = selectedProductType === "Lainnya" ? normalizedCustomProductType : "";
@@ -163,6 +188,83 @@ export default function DesignInterviewPage() {
         const finalStyle = (isSkip && !style) ? "Minimal clean" : style;
         const finalChannel = (isSkip && !channel) ? "instagram" : channel;
         const finalCopyTone = (isSkip && !copyTone) ? "Friendly" : copyTone;
+        const finalCatalogType = catalogType;
+        const finalCatalogTotalPages = Number.isFinite(catalogTotalPages) ? Math.min(Math.max(catalogTotalPages, 3), 24) : 5;
+
+        let catalogSuggestedStructure;
+        let catalogStyleOptions;
+        let catalogSelectedStyle;
+        let catalogImageMapping;
+        let catalogGeneratedPages;
+        let catalogFinalPlan;
+
+        setCatalogPlanningError(null);
+
+        if (finalGoal === "catalog") {
+            setIsCatalogPlanning(true);
+            try {
+                const basics = {
+                    catalog_type: finalCatalogType,
+                    total_pages: finalCatalogTotalPages,
+                    goal: (finalCatalogType === "service" ? "showcasing" : "selling") as const,
+                    tone: mapCopyToneToCatalogTone(finalCopyTone),
+                    target_audience: finalChannel === "marketplace" ? "pembeli aktif marketplace" : undefined,
+                    language: "id",
+                    business_context: notes.trim() || undefined,
+                };
+                const planned = await planCatalogStructure(basics);
+                const suggested = await suggestCatalogStyles({
+                    basics,
+                    structure: planned.suggested_structure,
+                });
+                catalogSuggestedStructure = planned.suggested_structure;
+                catalogStyleOptions = suggested.style_options;
+                catalogSelectedStyle = suggested.style_options[0]?.style;
+
+                if (productImageUrl) {
+                    const mappedImages = await mapCatalogImages({
+                        basics,
+                        structure: planned.suggested_structure,
+                        images: [
+                            {
+                                image_id: "uploaded_product_image",
+                                filename: productFile?.name,
+                                description: `${finalProductType} ${notes.trim()}`.trim() || undefined,
+                            },
+                        ],
+                    });
+                    catalogImageMapping = mappedImages.image_mapping;
+                }
+
+                const generatedCopy = await generateCatalogCopy({
+                    basics,
+                    selected_style: catalogSelectedStyle || finalStyle,
+                    pages: planned.suggested_structure,
+                    business_data: {
+                        business_name: finalProductType,
+                        target_audience: finalChannel === "marketplace" ? "pembeli aktif marketplace" : "audiens visual digital",
+                        category: finalProductType,
+                        notes: notes.trim() || undefined,
+                    },
+                });
+                catalogGeneratedPages = generatedCopy.pages;
+
+                catalogFinalPlan = await finalizeCatalogPlan({
+                    basics,
+                    selected_style: catalogSelectedStyle || finalStyle,
+                    structure: planned.suggested_structure,
+                    image_mapping: catalogImageMapping || [],
+                    page_copy: generatedCopy.pages,
+                });
+            } catch (error) {
+                console.error(error);
+                setCatalogPlanningError("Gagal menyiapkan struktur katalog awal. Coba lagi.");
+                setIsCatalogPlanning(false);
+                return;
+            } finally {
+                setIsCatalogPlanning(false);
+            }
+        }
 
         posthog?.capture("design_brief_interview_continue", {
             goal: finalGoal,
@@ -174,6 +276,8 @@ export default function DesignInterviewPage() {
             copyTone: finalCopyTone,
             hasNotes: notes.trim().length > 0,
             hasProductImage: !!productImageUrl,
+            catalogType: finalGoal === "catalog" ? finalCatalogType : undefined,
+            catalogTotalPages: finalGoal === "catalog" ? finalCatalogTotalPages : undefined,
             isSkip,
         });
         window.sessionStorage.setItem(
@@ -187,6 +291,15 @@ export default function DesignInterviewPage() {
                 copyTone: finalCopyTone,
                 notes: notes.trim(),
                 productImageUrl: productImageUrl ?? undefined,
+                productImageFilename: productFile?.name,
+                catalogType: finalGoal === "catalog" ? finalCatalogType : undefined,
+                catalogTotalPages: finalGoal === "catalog" ? finalCatalogTotalPages : undefined,
+                catalogSuggestedStructure,
+                catalogStyleOptions,
+                catalogSelectedStyle,
+                catalogImageMapping,
+                catalogGeneratedPages,
+                catalogFinalPlan,
                 updatedAt: new Date().toISOString(),
             })
         );
@@ -308,6 +421,61 @@ export default function DesignInterviewPage() {
                         )}
                     </CardContent>
                 </Card>
+
+                {goal === "catalog" && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-xl">2A. Pengaturan katalog</CardTitle>
+                            <CardDescription>Tentukan tipe katalog dan jumlah halaman. Struktur awal akan disiapkan otomatis.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <p className="text-sm font-medium text-foreground">Catalog type</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {catalogTypes.map((item) => (
+                                        <button
+                                            key={item.id}
+                                            type="button"
+                                            onClick={() => setCatalogType(item.id)}
+                                            className={`rounded-full border px-4 py-2 text-sm transition-colors ${catalogType === item.id ? "border-primary bg-primary/10 text-primary" : "bg-muted/20 hover:bg-muted/50"}`}
+                                        >
+                                            {item.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <p className="text-sm font-medium text-foreground">Jumlah halaman</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {catalogPageOptions.map((pageCount) => (
+                                        <button
+                                            key={pageCount}
+                                            type="button"
+                                            onClick={() => setCatalogTotalPages(pageCount)}
+                                            className={`rounded-full border px-4 py-2 text-sm transition-colors ${catalogTotalPages === pageCount ? "border-primary bg-primary/10 text-primary" : "bg-muted/20 hover:bg-muted/50"}`}
+                                        >
+                                            {pageCount} halaman
+                                        </button>
+                                    ))}
+                                </div>
+                                <Input
+                                    type="number"
+                                    min={3}
+                                    max={24}
+                                    value={catalogTotalPages}
+                                    onChange={(event) => setCatalogTotalPages(Number(event.target.value) || 5)}
+                                    aria-label="Jumlah halaman katalog"
+                                />
+                                <p className="text-xs text-muted-foreground">Di preview, sistem akan menyiapkan structure awal dan 3 arah style yang bisa Anda evaluasi.</p>
+                            </div>
+
+                            {catalogPlanningError && (
+                                <p className="text-xs text-destructive">{catalogPlanningError}</p>
+                            )}
+                        </CardContent>
+                    </Card>
+                )}
 
                 <Card>
                     <CardHeader>
@@ -500,8 +668,9 @@ export default function DesignInterviewPage() {
                             <Button variant="ghost" onClick={() => handleContinue(true)} className="rounded-xl">
                                 Skip
                             </Button>
-                            <Button onClick={() => handleContinue(false)} size="lg" className="gap-2 rounded-xl" disabled={progress < 100}>
-                                Lanjut ke Preview
+                            <Button onClick={() => void handleContinue(false)} size="lg" className="gap-2 rounded-xl" disabled={progress < 100 || isCatalogPlanning}>
+                                {isCatalogPlanning ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                                {isCatalogPlanning ? "Menyiapkan katalog..." : "Lanjut ke Preview"}
                                 <ArrowRight className="h-4 w-4" />
                             </Button>
                         </div>

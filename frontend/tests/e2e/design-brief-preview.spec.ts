@@ -26,6 +26,77 @@ async function continueIfAuthInterstitial(page: import('@playwright/test').Page)
   }
 }
 
+async function mockCatalogBuilderEndpoints(page: import('@playwright/test').Page) {
+  await page.route('**/catalog/plan-structure', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        suggested_structure: [
+          { page_number: 1, type: 'cover', layout: 'hero', content: { title: 'Beauty Catalog 2026' } },
+          { page_number: 2, type: 'brand_story', layout: 'text-image', content: { title: 'Kenapa Kami Dipilih' } },
+          { page_number: 3, type: 'product_list', layout: 'grid', content: { title: 'Produk Pilihan' } },
+          { page_number: 4, type: 'product_list', layout: 'grid', content: { title: 'Produk Best Seller' } },
+          { page_number: 5, type: 'cta', layout: 'contact-cta', content: { title: 'Siap Order' } },
+        ],
+        missing_data: [],
+        warnings: [],
+      }),
+    });
+  });
+
+  await page.route('**/catalog/suggest-styles', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        style_options: [
+          { style: 'Minimalist Clean', description: 'Ruang putih lega.', use_case: 'Premium catalog', layout: 'Grid modular' },
+          { style: 'Editorial Confidence', description: 'Narasi tegas.', use_case: 'Brand storytelling', layout: 'Split layout' },
+          { style: 'Commercial Impact', description: 'CTA konversi.', use_case: 'Fast-selling catalog', layout: 'Card layout' },
+        ],
+      }),
+    });
+  });
+
+  await page.route('**/catalog/generate-copy', async (route) => {
+    const body = {
+      pages: [
+        { page_number: 1, type: 'cover', layout: 'hero', content: { title: 'Beauty Catalog 2026', subtitle: 'Pilihan produk unggulan' } },
+        { page_number: 2, type: 'brand_story', layout: 'text-image', content: { title: 'Kenapa Kami Dipilih', description: 'Formula lembut dan terpercaya.' } },
+        { page_number: 3, type: 'product_list', layout: 'grid', content: { title: 'Produk Pilihan' } },
+        { page_number: 4, type: 'product_list', layout: 'grid', content: { title: 'Produk Best Seller' } },
+        { page_number: 5, type: 'cta', layout: 'contact-cta', content: { title: 'Siap Order', cta: 'Hubungi Sekarang' } },
+      ],
+      missing_data: [],
+      warnings: [],
+    };
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
+  });
+
+  await page.route('**/catalog/finalize-plan', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_version: 'catalog.plan.v1',
+        catalog_type: 'product',
+        total_pages: 5,
+        tone: 'soft_selling',
+        style: 'Minimalist Clean',
+        pages: [
+          { page_number: 1, type: 'cover', layout: 'hero', content: { title: 'Beauty Catalog 2026' } },
+          { page_number: 2, type: 'brand_story', layout: 'text-image', content: { title: 'Kenapa Kami Dipilih' } },
+          { page_number: 3, type: 'product_list', layout: 'grid', content: { title: 'Produk Pilihan' } },
+          { page_number: 4, type: 'product_list', layout: 'grid', content: { title: 'Produk Best Seller' } },
+          { page_number: 5, type: 'cta', layout: 'contact-cta', content: { title: 'Siap Order' } },
+        ],
+        missing_data: [],
+      }),
+    });
+  });
+}
+
 async function goToPreviewFromInterview(page: import('@playwright/test').Page) {
   await page.goto('/design/new/interview');
   await continueIfAuthInterstitial(page);
@@ -43,6 +114,7 @@ test.describe('Design Brief Flow — Interview & Preview', () => {
 
   test.beforeEach(async ({ page }) => {
     await mockAuthenticatedSession(page);
+    await mockCatalogBuilderEndpoints(page);
   });
 
   test.describe('Preview page', () => {
@@ -64,6 +136,7 @@ test.describe('Design Brief Flow — Interview & Preview', () => {
       await test.step('Generated prompt includes all brief fields', async () => {
         await expect(page.getByText(/katalog produk/i)).toBeVisible();
         await expect(page.getByText(/Gaya visual:\s*Bold marketplace\./i)).toBeVisible();
+        await expect(page.getByText(/Rancang sebagai katalog product dengan 5 halaman\./i)).toBeVisible();
       });
 
       await test.step('Generate Desain button is enabled', async () => {
@@ -72,6 +145,19 @@ test.describe('Design Brief Flow — Interview & Preview', () => {
 
       await test.step('Aspect ratio chip shows 1:1 for marketplace', async () => {
         await expect(page.getByText('1:1')).toBeVisible();
+      });
+
+      await test.step('Catalog structure, styles, and final plan are visible', async () => {
+        await expect(page.getByText(/Struktur katalog awal/i)).toBeVisible();
+        await expect(page.getByText(/Beauty Catalog 2026/i)).toBeVisible();
+        await expect(page.getByText(/Arah style yang disarankan AI/i)).toBeVisible();
+        await expect(page.getByText(/Minimalist Clean/i)).toBeVisible();
+        await expect(page.getByText(/Override image mapping/i)).toBeVisible();
+        await expect(page.getByText(/editable role \+ pages/i)).toBeVisible();
+        await expect(page.getByText(/Override halaman katalog/i)).toBeVisible();
+        await expect(page.getByRole('button', { name: /Refresh Final Plan/i })).toBeVisible();
+        await expect(page.getByText(/Final JSON plan/i)).toBeVisible();
+        await expect(page.getByText(/catalog\.plan\.v1/i)).toBeVisible();
       });
     });
 

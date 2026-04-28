@@ -9,6 +9,7 @@ import { AlertCircle, ArrowLeft, ArrowRight, CheckCircle2, Loader2, Sparkles, Wa
 import { AppHeader } from "@/components/layout/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { useProjectApi } from "@/lib/api";
 import { useToolHandoff } from "@/hooks/useToolHandoff";
 import { PREVIEW_REAL_GENERATION_ENABLED } from "@/lib/feature-flags";
@@ -49,13 +50,24 @@ const GEN_STATUS_LABELS = [
     "Hampir selesai...",
 ];
 
+function mapCopyToneToCatalogTone(copyTone: string): "formal" | "fun" | "premium" | "soft_selling" {
+    if (copyTone === "Premium") return "premium";
+    if (copyTone === "Friendly") return "fun";
+    if (copyTone === "Edukatif") return "formal";
+    return "soft_selling";
+}
+
 function buildPrompt(brief: DesignBriefSessionState): string {
     const goalLabel = GOAL_LABEL_MAP[brief.goal] ?? brief.goal;
     const channelLabel = CHANNEL_LABEL_MAP[brief.channel] ?? brief.channel;
     const productTypeLabel = brief.customProductType ?? PRODUCT_TYPE_LABEL_MAP[brief.productType] ?? brief.productType;
     const noteLine = brief.notes ? `Catatan tambahan: ${brief.notes}.` : null;
+    const catalogLine = brief.goal === "catalog" && brief.catalogTotalPages
+        ? `Rancang sebagai katalog ${brief.catalogType ?? "product"} dengan ${brief.catalogTotalPages} halaman.`
+        : null;
     return [
         `Buat desain ${goalLabel} untuk ${channelLabel} dengan konteks ${productTypeLabel}.`,
+        catalogLine,
         `Gaya visual: ${brief.style}.`,
         `Tone copy: ${brief.copyTone}.`,
         noteLine,
@@ -67,7 +79,7 @@ export default function DesignPreviewPage() {
     const { status } = useSession();
     const router = useRouter();
     const posthog = usePostHog();
-    const { generateDesign, getJobStatus } = useProjectApi();
+    const { generateDesign, getJobStatus, finalizeCatalogPlan } = useProjectApi();
     const { openInEditor, isLoading: handoffLoading } = useToolHandoff();
 
     const [brief, setBrief] = useState<DesignBriefSessionState | null | undefined>(undefined);
@@ -77,6 +89,12 @@ export default function DesignPreviewPage() {
     const [skipAiGenerate, setSkipAiGenerate] = useState(false);
     const [referenceFocus, setReferenceFocus] = useState<"auto" | "human" | "object">("auto");
     const [showLongRunningHint, setShowLongRunningHint] = useState(false);
+    const [catalogSelectedStyle, setCatalogSelectedStyle] = useState<string>("");
+    const [catalogEditablePages, setCatalogEditablePages] = useState<DesignBriefSessionState["catalogGeneratedPages"]>([]);
+    const [catalogEditableMappings, setCatalogEditableMappings] = useState<DesignBriefSessionState["catalogImageMapping"]>([]);
+    const [catalogMappingValidation, setCatalogMappingValidation] = useState<Record<string, string>>({});
+    const [catalogRefreshError, setCatalogRefreshError] = useState<string | null>(null);
+    const [isRefreshingCatalogPlan, setIsRefreshingCatalogPlan] = useState(false);
 
     useEffect(() => {
         const frame = window.requestAnimationFrame(() => {
@@ -95,6 +113,18 @@ export default function DesignPreviewPage() {
         setSkipAiGenerate(!!brief?.productImageUrl);
         setReferenceFocus(brief?.referenceFocus ?? "auto");
     }, [brief?.productImageUrl, brief?.referenceFocus]);
+
+    useEffect(() => {
+        setCatalogSelectedStyle(brief?.catalogSelectedStyle || brief?.catalogStyleOptions?.[0]?.style || "");
+        setCatalogEditablePages(
+            brief?.catalogGeneratedPages
+            || brief?.catalogFinalPlan?.pages
+            || brief?.catalogSuggestedStructure
+            || []
+        );
+        setCatalogEditableMappings(brief?.catalogImageMapping || []);
+        setCatalogMappingValidation({});
+    }, [brief?.catalogFinalPlan?.pages, brief?.catalogGeneratedPages, brief?.catalogImageMapping, brief?.catalogSelectedStyle, brief?.catalogStyleOptions, brief?.catalogSuggestedStructure]);
 
     useEffect(() => {
         if (!generating) {
@@ -118,6 +148,131 @@ export default function DesignPreviewPage() {
 
     const draftPrompt = useMemo(() => (brief ? buildPrompt(brief) : ""), [brief]);
     const aspectRatio = brief ? (ASPECT_RATIO_MAP[brief.channel] ?? "1:1") : "1:1";
+    const hasCatalogPlan = !!brief?.catalogSuggestedStructure?.length;
+    const hasCatalogFinalPlan = !!brief?.catalogFinalPlan;
+    const mappingPageUpperBound = brief?.catalogTotalPages || 0;
+    const hasInvalidMapping = useMemo(() => {
+        if (!catalogEditableMappings?.length) return false;
+        if (Object.keys(catalogMappingValidation).length > 0) return true;
+        return catalogEditableMappings.some((mapping) => !mapping.recommended_pages?.length);
+    }, [catalogEditableMappings, catalogMappingValidation]);
+
+    const persistBriefState = (nextBrief: DesignBriefSessionState) => {
+        setBrief(nextBrief);
+        window.sessionStorage.setItem(DESIGN_BRIEF_SESSION_KEY, JSON.stringify(nextBrief));
+    };
+
+    const handleCatalogPageTitleChange = (pageNumber: number, nextTitle: string) => {
+        setCatalogEditablePages((prevPages = []) => prevPages.map((page) => {
+            if (page.page_number !== pageNumber) return page;
+            return {
+                ...page,
+                content: {
+                    ...page.content,
+                    title: nextTitle,
+                },
+            };
+        }));
+    };
+
+    const handleCatalogMappingCategoryChange = (imageId: string, nextCategory: string) => {
+        setCatalogEditableMappings((prevMappings = []) => prevMappings.map((mapping) => {
+            if (mapping.image_id !== imageId) return mapping;
+            return {
+                ...mapping,
+                category: nextCategory,
+            };
+        }));
+    };
+
+    const handleCatalogMappingPagesChange = (imageId: string, nextPagesRaw: string) => {
+        const chunks = nextPagesRaw
+            .split(",")
+            .map((part) => part.trim())
+            .filter(Boolean);
+
+        const invalid = chunks.filter((chunk) => {
+            const value = Number(chunk);
+            if (!Number.isInteger(value)) return true;
+            if (value < 1) return true;
+            if (mappingPageUpperBound > 0 && value > mappingPageUpperBound) return true;
+            return false;
+        });
+
+        setCatalogMappingValidation((prev) => {
+            const next = { ...prev };
+            if (invalid.length > 0) {
+                next[imageId] = mappingPageUpperBound > 0
+                    ? `Halaman harus berada di rentang 1-${mappingPageUpperBound}.`
+                    : "Format halaman tidak valid.";
+            } else {
+                delete next[imageId];
+            }
+            return next;
+        });
+
+        const nextPages = chunks
+            .map((chunk) => Number(chunk))
+            .filter((value) => Number.isInteger(value) && value > 0 && (mappingPageUpperBound <= 0 || value <= mappingPageUpperBound));
+
+        setCatalogEditableMappings((prevMappings = []) => prevMappings.map((mapping) => {
+            if (mapping.image_id !== imageId) return mapping;
+            return {
+                ...mapping,
+                recommended_pages: nextPages,
+            };
+        }));
+    };
+
+    const handleRefreshCatalogPlan = async () => {
+        if (!brief || brief.goal !== "catalog" || !brief.catalogType || !brief.catalogTotalPages) {
+            return;
+        }
+
+        if (hasInvalidMapping) {
+            setCatalogRefreshError("Periksa kembali halaman target image mapping sebelum refresh final plan.");
+            return;
+        }
+
+        setCatalogRefreshError(null);
+        setIsRefreshingCatalogPlan(true);
+        try {
+            const refreshedPlan = await finalizeCatalogPlan({
+                basics: {
+                    catalog_type: brief.catalogType,
+                    total_pages: brief.catalogTotalPages,
+                    goal: brief.catalogType === "service" ? "showcasing" : "selling",
+                    tone: brief.catalogFinalPlan?.tone || mapCopyToneToCatalogTone(brief.copyTone),
+                    language: "id",
+                    business_name: brief.customProductType || brief.productType,
+                    business_context: brief.notes,
+                },
+                selected_style: catalogSelectedStyle || brief.catalogSelectedStyle || brief.style,
+                structure: brief.catalogSuggestedStructure || [],
+                image_mapping: catalogEditableMappings || [],
+                page_copy: catalogEditablePages || [],
+            });
+
+            const nextBrief: DesignBriefSessionState = {
+                ...brief,
+                catalogSelectedStyle: catalogSelectedStyle || brief.catalogSelectedStyle,
+                catalogImageMapping: catalogEditableMappings,
+                catalogGeneratedPages: catalogEditablePages,
+                catalogFinalPlan: refreshedPlan,
+                updatedAt: new Date().toISOString(),
+            };
+            persistBriefState(nextBrief);
+            posthog?.capture("design_brief_catalog_plan_refreshed", {
+                total_pages: refreshedPlan.total_pages,
+                selected_style: nextBrief.catalogSelectedStyle,
+            });
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "Gagal memperbarui final plan katalog.";
+            setCatalogRefreshError(message);
+        } finally {
+            setIsRefreshingCatalogPlan(false);
+        }
+    };
 
     const openLegacyEngine = () => {
         if (brief) {
@@ -313,7 +468,9 @@ export default function DesignPreviewPage() {
                             AI akan membuat desain awal langsung dari brief ini.
                         </h1>
                         <p className="text-sm leading-6 text-muted-foreground md:text-base">
-                            Ringkasan brief di bawah sudah cukup untuk menghasilkan desain awal. Setelah selesai, desain langsung terbuka di editor untuk Anda poles lebih lanjut.
+                            {brief.goal === "catalog"
+                                ? "Ringkasan brief katalog di bawah sudah memuat struktur awal dan arah style dari AI. Ini menjadi pijakan sebelum masuk ke tahap render atau editor berikutnya."
+                                : "Ringkasan brief di bawah sudah cukup untuk menghasilkan desain awal. Setelah selesai, desain langsung terbuka di editor untuk Anda poles lebih lanjut."}
                         </p>
                     </div>
                 </section>
@@ -347,6 +504,18 @@ export default function DesignPreviewPage() {
                                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Copy Tone</p>
                                     <p className="mt-2 text-sm font-semibold text-foreground">{brief.copyTone}</p>
                                 </div>
+                                {brief.goal === "catalog" && brief.catalogType && (
+                                    <div className="rounded-2xl border bg-muted/20 p-4">
+                                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Catalog Type</p>
+                                        <p className="mt-2 text-sm font-semibold text-foreground capitalize">{brief.catalogType}</p>
+                                    </div>
+                                )}
+                                {brief.goal === "catalog" && brief.catalogTotalPages && (
+                                    <div className="rounded-2xl border bg-muted/20 p-4">
+                                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Total Pages</p>
+                                        <p className="mt-2 text-sm font-semibold text-foreground">{brief.catalogTotalPages}</p>
+                                    </div>
+                                )}
                             </div>
 
                             {brief.notes && (
@@ -360,6 +529,141 @@ export default function DesignPreviewPage() {
                                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Prompt yang akan digunakan</p>
                                 <p className="mt-3 text-sm leading-7 text-foreground">{draftPrompt}</p>
                             </div>
+
+                            {brief.goal === "catalog" && hasCatalogPlan && (
+                                <div className="space-y-3 rounded-2xl border bg-muted/20 p-5">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Struktur katalog awal</p>
+                                        <span className="rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground">{brief.catalogSuggestedStructure?.length} halaman</span>
+                                    </div>
+                                    <div className="grid gap-3">
+                                        {brief.catalogSuggestedStructure?.map((page) => (
+                                            <div key={page.page_number} className="rounded-xl border bg-background p-4">
+                                                <div className="flex items-center justify-between gap-3">
+                                                    <p className="text-sm font-semibold text-foreground">Halaman {page.page_number}</p>
+                                                    <span className="rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground">{page.layout}</span>
+                                                </div>
+                                                <p className="mt-2 text-sm text-foreground">{String(page.content.title ?? page.type)}</p>
+                                                <p className="mt-1 text-xs text-muted-foreground">{page.type}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {brief.goal === "catalog" && !!brief.catalogStyleOptions?.length && (
+                                <div className="space-y-3 rounded-2xl border bg-muted/20 p-5">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Arah style yang disarankan AI</p>
+                                        <span className="rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground">overrideable</span>
+                                    </div>
+                                    <div className="grid gap-3">
+                                        {brief.catalogStyleOptions?.map((option) => (
+                                            <button
+                                                key={option.style}
+                                                type="button"
+                                                onClick={() => setCatalogSelectedStyle(option.style)}
+                                                className={`rounded-xl border p-4 text-left ${catalogSelectedStyle === option.style ? "border-primary bg-primary/5" : "bg-background"}`}
+                                            >
+                                                <p className="text-sm font-semibold text-foreground">{option.style}</p>
+                                                <p className="mt-1 text-xs text-muted-foreground">{option.description}</p>
+                                                <p className="mt-2 text-xs text-muted-foreground">Use case: {option.use_case}</p>
+                                                <p className="mt-1 text-xs text-muted-foreground">Layout: {option.layout}</p>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {brief.goal === "catalog" && !!brief.catalogImageMapping?.length && (
+                                <div className="space-y-3 rounded-2xl border bg-muted/20 p-5">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Override image mapping</p>
+                                        <span className="rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground">editable role + pages</span>
+                                    </div>
+                                    <div className="grid gap-3">
+                                        {(catalogEditableMappings || []).map((mapping) => (
+                                            <div key={mapping.image_id} className="rounded-xl border bg-background p-4">
+                                                <div className="flex items-center justify-between gap-3">
+                                                    <p className="text-sm font-semibold text-foreground">{mapping.image_id}</p>
+                                                    <span className="rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground">{Math.round(mapping.confidence * 100)}%</span>
+                                                </div>
+                                                <div className="mt-3 flex flex-wrap gap-2">
+                                                    {[
+                                                        "cover_image",
+                                                        "product_image",
+                                                        "service_image",
+                                                        "detail_image",
+                                                        "supporting_image",
+                                                    ].map((option) => (
+                                                        <button
+                                                            key={`${mapping.image_id}-${option}`}
+                                                            type="button"
+                                                            onClick={() => handleCatalogMappingCategoryChange(mapping.image_id, option)}
+                                                            className={`rounded-full border px-3 py-1 text-xs ${mapping.category === option ? "border-primary bg-primary/10 text-primary" : "bg-muted/20 hover:bg-muted/50"}`}
+                                                        >
+                                                            {option}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                                <div className="mt-3">
+                                                    <Input
+                                                        value={mapping.recommended_pages.join(", ")}
+                                                        onChange={(event) => handleCatalogMappingPagesChange(mapping.image_id, event.target.value)}
+                                                        aria-label={`Halaman target untuk ${mapping.image_id}`}
+                                                    />
+                                                    <p className="mt-1 text-xs text-muted-foreground">Isi daftar halaman dengan format koma, contoh: 1, 3, 5</p>
+                                                    {catalogMappingValidation[mapping.image_id] && (
+                                                        <p className="mt-1 text-xs text-destructive">{catalogMappingValidation[mapping.image_id]}</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {brief.goal === "catalog" && !!brief.catalogGeneratedPages?.length && (
+                                <div className="space-y-3 rounded-2xl border bg-muted/20 p-5">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Override halaman katalog</p>
+                                        <span className="rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground">edit title + refresh</span>
+                                    </div>
+                                    <div className="grid gap-3">
+                                        {catalogEditablePages?.map((page) => (
+                                            <div key={`editable-${page.page_number}`} className="rounded-xl border bg-background p-4">
+                                                <div className="flex items-center justify-between gap-3">
+                                                    <p className="text-sm font-semibold text-foreground">Halaman {page.page_number}</p>
+                                                    <span className="rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground">{page.type}</span>
+                                                </div>
+                                                <Input
+                                                    className="mt-3"
+                                                    value={String(page.content.title ?? "")}
+                                                    onChange={(event) => handleCatalogPageTitleChange(page.page_number, event.target.value)}
+                                                    aria-label={`Judul halaman katalog ${page.page_number}`}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {catalogRefreshError && <p className="text-xs text-destructive">{catalogRefreshError}</p>}
+                                    <Button type="button" variant="outline" onClick={handleRefreshCatalogPlan} disabled={isRefreshingCatalogPlan || hasInvalidMapping}>
+                                        {isRefreshingCatalogPlan ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                        {isRefreshingCatalogPlan ? "Memperbarui final plan..." : "Refresh Final Plan"}
+                                    </Button>
+                                </div>
+                            )}
+
+                            {brief.goal === "catalog" && hasCatalogFinalPlan && (
+                                <div className="space-y-3 rounded-2xl border bg-muted/20 p-5">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Final JSON plan</p>
+                                        <span className="rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground">{brief.catalogFinalPlan?.schema_version}</span>
+                                    </div>
+                                    <div className="rounded-xl border bg-background p-4">
+                                        <pre className="overflow-x-auto whitespace-pre-wrap break-words text-xs leading-6 text-foreground">{JSON.stringify(brief.catalogFinalPlan, null, 2)}</pre>
+                                    </div>
+                                </div>
+                            )}
 
                             {brief.productImageUrl && (
                                 <div className="space-y-3 rounded-2xl border bg-muted/20 p-5">
@@ -448,11 +752,11 @@ export default function DesignPreviewPage() {
                         <CardContent className="space-y-3 text-sm text-muted-foreground">
                             <div className="flex gap-3 rounded-2xl border bg-muted/20 p-4">
                                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                                <p>AI membuat desain berdasarkan goal, style, dan channel yang dipilih.</p>
+                                <p>{brief.goal === "catalog" ? "AI sudah menyiapkan struktur, style, mapping gambar, dan final JSON plan untuk dievaluasi sebelum render." : "AI membuat desain berdasarkan goal, style, dan channel yang dipilih."}</p>
                             </div>
                             <div className="flex gap-3 rounded-2xl border bg-muted/20 p-4">
                                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                                <p>Hasil langsung tersimpan sebagai project draft dan terbuka di editor.</p>
+                                <p>{brief.goal === "catalog" ? "Tahap berikutnya bisa menyambungkan rencana katalog ini ke renderer atau editor multi-page." : "Hasil langsung tersimpan sebagai project draft dan terbuka di editor."}</p>
                             </div>
                             <div className="flex gap-3 rounded-2xl border bg-muted/20 p-4">
                                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />

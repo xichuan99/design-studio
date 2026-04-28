@@ -359,6 +359,108 @@ export interface CarouselExportRequest {
     slides: CarouselSlide[];
 }
 
+// --- Catalog Builder Types ---
+export type CatalogType = 'product' | 'service';
+export type CatalogGoal = 'selling' | 'showcasing' | 'promo';
+export type CatalogTone = 'formal' | 'fun' | 'premium' | 'soft_selling';
+
+export interface CatalogBasicsRequest {
+    catalog_type: CatalogType;
+    total_pages: number;
+    goal: CatalogGoal;
+    tone: CatalogTone;
+    target_audience?: string;
+    language?: string;
+    business_name?: string;
+    business_context?: string;
+}
+
+export interface CatalogPagePlan {
+    page_number: number;
+    type: string;
+    layout: string;
+    content: Record<string, unknown>;
+}
+
+export interface CatalogPlanStructureResponse {
+    suggested_structure: CatalogPagePlan[];
+    missing_data: string[];
+    warnings: string[];
+}
+
+export interface CatalogSuggestStylesRequest {
+    basics: CatalogBasicsRequest;
+    structure: CatalogPagePlan[];
+}
+
+export interface CatalogStyleOption {
+    style: string;
+    description: string;
+    use_case: string;
+    layout: string;
+}
+
+export interface CatalogSuggestStylesResponse {
+    style_options: CatalogStyleOption[];
+}
+
+export interface CatalogImageInput {
+    image_id: string;
+    filename?: string;
+    description?: string;
+}
+
+export interface CatalogImageMappingRequest {
+    basics: CatalogBasicsRequest;
+    structure: CatalogPagePlan[];
+    images: CatalogImageInput[];
+}
+
+export interface CatalogImageMapping {
+    image_id: string;
+    category: string;
+    confidence: number;
+    recommended_pages: number[];
+}
+
+export interface CatalogImageMappingResponse {
+    image_mapping: CatalogImageMapping[];
+    unassigned_images: string[];
+    warnings: string[];
+}
+
+export interface CatalogGenerateCopyRequest {
+    basics: CatalogBasicsRequest;
+    selected_style: string;
+    pages: CatalogPagePlan[];
+    business_data?: Record<string, unknown>;
+}
+
+export interface CatalogGenerateCopyResponse {
+    pages: CatalogPagePlan[];
+    missing_data: string[];
+    warnings: string[];
+}
+
+export interface CatalogFinalizePlanRequest {
+    basics: CatalogBasicsRequest;
+    selected_style: string;
+    structure: CatalogPagePlan[];
+    image_mapping?: CatalogImageMapping[];
+    page_copy?: CatalogPagePlan[];
+    overrides?: Record<string, unknown>;
+}
+
+export interface CatalogFinalizePlanResponse {
+    schema_version: string;
+    catalog_type: CatalogType;
+    total_pages: number;
+    tone: CatalogTone;
+    style: string;
+    pages: CatalogPagePlan[];
+    missing_data: string[];
+}
+
 export interface ParseDesignTextRequest {
     raw_text: string;
     aspect_ratio?: string;
