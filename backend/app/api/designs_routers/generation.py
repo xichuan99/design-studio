@@ -18,6 +18,7 @@ from app.core.exceptions import (
     InsufficientCreditsError,
     AppException,
 )
+from app.core.config import settings
 from uuid import UUID
 import re
 import httpx
@@ -422,13 +423,14 @@ async def generate_design(
         job.status = "processing"
 
         # Step 2.5: Quantum Layout Optimization (Synchronous Fallback route)
-        from app.services.quantum_service import optimize_quantum_layout
+        if settings.QUANTUM_LAYOUT_ENABLED:
+            from app.services.quantum_service import optimize_quantum_layout
 
-        quantum_layout = await optimize_quantum_layout(
-            parsed.headline, parsed.sub_headline, parsed.cta
-        )
-        if quantum_layout:
-            job.quantum_layout = quantum_layout
+            quantum_layout = await optimize_quantum_layout(
+                parsed.headline, parsed.sub_headline, parsed.cta
+            )
+            if quantum_layout:
+                job.quantum_layout = quantum_layout
 
         await db.commit()
 

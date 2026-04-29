@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     # LLM
     OPENROUTER_API_KEY: str = ""
     GEMINI_API_KEY: str = ""
+    QUANTUM_LAYOUT_ENABLED: bool = True
 
     # Email
     RESEND_API_KEY: str = ""

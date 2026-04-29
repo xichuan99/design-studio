@@ -10,7 +10,9 @@ logger = logging.getLogger(__name__)
 from sqlalchemy import update
 
 from app.core.database import AsyncSessionLocal
+from app.core.config import settings
 from app.models.job import Job
+from app.services.llm_client import LLMRateLimitError
 from app.services.image_service import generate_background
 from app.services.llm_service import parse_design_text
 from app.services.preprocess import prepare_reference
@@ -72,13 +74,14 @@ async def _execute_pipeline(
             visual_prompt=visual_prompt_final,
         )
 
-        from app.services.quantum_service import optimize_quantum_layout
+        if settings.QUANTUM_LAYOUT_ENABLED:
+            from app.services.quantum_service import optimize_quantum_layout
 
-        quantum_layout = await optimize_quantum_layout(
-            parsed.headline, parsed.sub_headline, parsed.cta
-        )
-        if quantum_layout:
-            await _update_job_status(job_id, quantum_layout=quantum_layout)
+            quantum_layout = await optimize_quantum_layout(
+                parsed.headline, parsed.sub_headline, parsed.cta
+            )
+            if quantum_layout:
+                await _update_job_status(job_id, quantum_layout=quantum_layout)
 
         upload_ref_url = reference_url
         if reference_url:
@@ -178,6 +181,17 @@ def generate_design_task(
         if self.request.retries >= self.max_retries:
             logger.error(f"Task for design job {job_id} failed after {self.max_retries} retries: {exc}")
             return
+
+        if isinstance(exc, LLMRateLimitError):
+            delay = max((2 ** self.request.retries) * 5, exc.retry_after_seconds)
+            logger.info(
+                "Retrying task for design job %s after rate limit in %ss (model=%s)...",
+                job_id,
+                delay,
+                exc.model_id,
+            )
+            raise self.retry(exc=exc, countdown=delay)
+
         delay = (2 ** self.request.retries) * 5
         logger.info(f"Retrying task for design job {job_id} in {delay}s...")
         raise self.retry(exc=exc, countdown=delay)

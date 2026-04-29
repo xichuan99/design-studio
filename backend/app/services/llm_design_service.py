@@ -41,6 +41,65 @@ def extract_json_from_text(raw_text: str) -> str:
     return _extract_json_from_text(raw_text)
 
 
+def _normalize_parsed_text_payload(payload: object) -> dict:
+    if not isinstance(payload, dict):
+        raise TypeError("Design parsing payload must be a JSON object")
+
+    # Handle responses wrapped inside sections/pages nesting.
+    if "sections" in payload and isinstance(payload.get("sections"), list):
+        sections = payload.get("sections") or []
+        if sections and isinstance(sections[0], dict):
+            pages = sections[0].get("pages") if isinstance(sections[0].get("pages"), list) else []
+            if pages and isinstance(pages[0], dict):
+                return _normalize_parsed_text_payload(pages[0])
+
+    text_elements = payload.get("text_elements") if isinstance(payload.get("text_elements"), dict) else {}
+    visual_design = payload.get("visual_design") if isinstance(payload.get("visual_design"), dict) else {}
+
+    normalized = dict(payload)
+
+    if not normalized.get("headline"):
+        normalized["headline"] = text_elements.get("headline") or ""
+
+    if "sub_headline" not in normalized:
+        normalized["sub_headline"] = text_elements.get("sub_headline")
+
+    if "cta" not in normalized:
+        normalized["cta"] = text_elements.get("cta")
+
+    visual_prompt_parts = normalized.get("visual_prompt_parts")
+    if not isinstance(visual_prompt_parts, list):
+        visual_prompt_parts = visual_design.get("visual_prompt_parts")
+        if isinstance(visual_prompt_parts, list):
+            normalized["visual_prompt_parts"] = visual_prompt_parts
+
+    if not normalized.get("visual_prompt"):
+        visual_prompt = visual_design.get("visual_prompt")
+        if not visual_prompt and isinstance(visual_prompt_parts, list):
+            visual_prompt = ", ".join(
+                item.get("value", "")
+                for item in visual_prompt_parts
+                if isinstance(item, dict) and item.get("enabled", True) and item.get("value")
+            )
+        normalized["visual_prompt"] = visual_prompt or ""
+
+    if not normalized.get("indonesian_translation"):
+        normalized["indonesian_translation"] = (
+            visual_design.get("indonesian_translation")
+            or normalized.get("visual_prompt")
+            or ""
+        )
+
+    if "suggested_colors" not in normalized and isinstance(visual_design.get("suggested_colors"), list):
+        normalized["suggested_colors"] = visual_design.get("suggested_colors")
+
+    for layout_key in ["headline_layout", "sub_headline_layout", "cta_layout"]:
+        if layout_key not in normalized and isinstance(visual_design.get(layout_key), dict):
+            normalized[layout_key] = visual_design.get(layout_key)
+
+    return normalized
+
+
 async def generate_design_brief_questions(raw_text: str) -> dict:
     """
     Generates clarifying questions based on the user's initial raw text.
@@ -384,7 +443,7 @@ async def parse_design_text(
         if isinstance(asyncio.to_thread, AsyncMock):
             response = await asyncio.to_thread(lambda: None)
             try:
-                data = parse_llm_json(response.text)
+                data = _normalize_parsed_text_payload(parse_llm_json(response.text))
                 return ParsedTextElements(**data)
             except Exception:
                 snippet = (
@@ -492,7 +551,7 @@ async def parse_design_text(
 
     # We parse the response text instead of using dynamic decoding structure, though the types are standard JSON
     try:
-        data = parse_llm_json(response.text)
+        data = _normalize_parsed_text_payload(parse_llm_json(response.text))
         return ParsedTextElements(**data)
     except Exception as e:
         import logging

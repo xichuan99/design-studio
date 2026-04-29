@@ -23,11 +23,110 @@ from app.core.config import settings
 from app.services.llm_json_utils import parse_llm_json
 import logging
 import httpx
+import re
 from typing import Optional
 
 logger = logging.getLogger(__name__)
 
 MAX_ERROR_BODY_LOG_CHARS = 4000
+PROVIDER_OUTAGE_STATUS_CODES = {500, 502, 503, 504, 520, 521, 522, 523, 524}
+
+
+class LLMRateLimitError(Exception):
+    def __init__(self, model_id: str, retry_after_seconds: int, message: str):
+        self.model_id = model_id
+        self.retry_after_seconds = retry_after_seconds
+        super().__init__(message)
+
+
+def _extract_http_status_code(exc: Exception) -> Optional[int]:
+    response = getattr(exc, "response", None)
+    status_code = getattr(response, "status_code", None)
+    if isinstance(status_code, int):
+        return status_code
+
+    direct_status = getattr(exc, "status_code", None)
+    if isinstance(direct_status, int):
+        return direct_status
+
+    return None
+
+
+def _extract_retry_after_seconds(exc: Exception) -> int:
+    response = getattr(exc, "response", None)
+    if response is not None:
+        retry_after_header = response.headers.get("Retry-After")
+        if retry_after_header:
+            try:
+                return max(1, int(float(retry_after_header.strip())))
+            except Exception:
+                pass
+
+    message = str(exc)
+    message_lower = message.lower()
+
+    patterns = [
+        r"retry in\s*(\d+(?:\.\d+)?)\s*s",
+        r"retrydelay['\"\s:]+(\d+(?:\.\d+)?)\s*s",
+        r"retry after\s*(\d+(?:\.\d+)?)\s*s",
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, message_lower)
+        if match:
+            try:
+                return max(1, int(float(match.group(1))))
+            except Exception:
+                continue
+
+    return 30
+
+
+def _is_rate_limit_error(exc: Exception) -> bool:
+    status_code = _extract_http_status_code(exc)
+    if status_code == 429:
+        return True
+
+    msg = str(exc).lower()
+    return any(
+        token in msg
+        for token in [" 429", "rate limit", "rate-limited", "resource_exhausted", "quota exceeded"]
+    )
+
+
+def _is_provider_availability_error(exc: Exception) -> bool:
+    status_code = _extract_http_status_code(exc)
+    if status_code in PROVIDER_OUTAGE_STATUS_CODES:
+        return True
+
+    if isinstance(
+        exc,
+        (
+            httpx.ConnectError,
+            httpx.ConnectTimeout,
+            httpx.ReadTimeout,
+            httpx.WriteTimeout,
+            httpx.PoolTimeout,
+            httpx.RemoteProtocolError,
+            httpx.NetworkError,
+        ),
+    ):
+        return True
+
+    msg = str(exc).lower()
+    return any(
+        token in msg
+        for token in [
+            "temporarily unavailable",
+            "connection reset",
+            "connection refused",
+            "connection aborted",
+            "dns",
+            "timed out",
+            "timeout",
+            "service unavailable",
+        ]
+    )
 
 
 def _extract_error_message(error_val) -> str:
@@ -299,7 +398,33 @@ def call_gemini_with_fallback(
     try:
         return _do_call(primary_model)
     except Exception as e:
-        logger.error(f"Primary LLM ({primary_model}) failed: {str(e)}. Moving to Fallback ({fallback_model}).")
+        if _is_rate_limit_error(e):
+            retry_after_seconds = _extract_retry_after_seconds(e)
+            logger.warning(
+                "Primary LLM (%s) is rate-limited. Preserving primary-first policy and skipping fallback. retry_after_seconds=%s",
+                primary_model,
+                retry_after_seconds,
+            )
+            raise LLMRateLimitError(
+                model_id=primary_model,
+                retry_after_seconds=retry_after_seconds,
+                message=f"Primary model rate-limited: {primary_model}",
+            ) from e
+
+        if not _is_provider_availability_error(e):
+            logger.error(
+                "Primary LLM (%s) failed with non-availability error: %s. Skipping fallback.",
+                primary_model,
+                str(e),
+            )
+            raise e
+
+        logger.error(
+            "Primary LLM (%s) failed due provider availability issue: %s. Moving to Fallback (%s).",
+            primary_model,
+            str(e),
+            fallback_model,
+        )
 
         try:
             return _do_call(fallback_model, is_fallback=True)
