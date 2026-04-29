@@ -149,7 +149,6 @@ export default function DesignPreviewPage() {
     const draftPrompt = useMemo(() => (brief ? buildPrompt(brief) : ""), [brief]);
     const aspectRatio = brief ? (ASPECT_RATIO_MAP[brief.channel] ?? "1:1") : "1:1";
     const hasCatalogPlan = !!brief?.catalogSuggestedStructure?.length;
-    const hasCatalogFinalPlan = !!brief?.catalogFinalPlan;
     const mappingPageUpperBound = brief?.catalogTotalPages || 0;
     const hasInvalidMapping = useMemo(() => {
         if (!catalogEditableMappings?.length) return false;
@@ -230,7 +229,7 @@ export default function DesignPreviewPage() {
         }
 
         if (hasInvalidMapping) {
-            setCatalogRefreshError("Periksa kembali halaman target image mapping sebelum refresh final plan.");
+            setCatalogRefreshError("Periksa kembali halaman target image mapping sebelum memperbarui rencana katalog.");
             return;
         }
 
@@ -267,7 +266,7 @@ export default function DesignPreviewPage() {
                 selected_style: nextBrief.catalogSelectedStyle,
             });
         } catch (error) {
-            const message = error instanceof Error ? error.message : "Gagal memperbarui final plan katalog.";
+            const message = error instanceof Error ? error.message : "Gagal memperbarui rencana katalog.";
             setCatalogRefreshError(message);
         } finally {
             setIsRefreshingCatalogPlan(false);
@@ -648,20 +647,8 @@ export default function DesignPreviewPage() {
                                     {catalogRefreshError && <p className="text-xs text-destructive">{catalogRefreshError}</p>}
                                     <Button type="button" variant="outline" onClick={handleRefreshCatalogPlan} disabled={isRefreshingCatalogPlan || hasInvalidMapping}>
                                         {isRefreshingCatalogPlan ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                        {isRefreshingCatalogPlan ? "Memperbarui final plan..." : "Refresh Final Plan"}
+                                        {isRefreshingCatalogPlan ? "Memperbarui rencana katalog..." : "Perbarui Rencana Katalog"}
                                     </Button>
-                                </div>
-                            )}
-
-                            {brief.goal === "catalog" && hasCatalogFinalPlan && (
-                                <div className="space-y-3 rounded-2xl border bg-muted/20 p-5">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Final JSON plan</p>
-                                        <span className="rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground">{brief.catalogFinalPlan?.schema_version}</span>
-                                    </div>
-                                    <div className="rounded-xl border bg-background p-4">
-                                        <pre className="overflow-x-auto whitespace-pre-wrap break-words text-xs leading-6 text-foreground">{JSON.stringify(brief.catalogFinalPlan, null, 2)}</pre>
-                                    </div>
                                 </div>
                             )}
 
@@ -752,7 +739,7 @@ export default function DesignPreviewPage() {
                         <CardContent className="space-y-3 text-sm text-muted-foreground">
                             <div className="flex gap-3 rounded-2xl border bg-muted/20 p-4">
                                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                                <p>{brief.goal === "catalog" ? "AI sudah menyiapkan struktur, style, mapping gambar, dan final JSON plan untuk dievaluasi sebelum render." : "AI membuat desain berdasarkan goal, style, dan channel yang dipilih."}</p>
+                                <p>{brief.goal === "catalog" ? "AI sudah menyiapkan struktur, style, dan mapping gambar untuk dievaluasi sebelum render." : "AI membuat desain berdasarkan goal, style, dan channel yang dipilih."}</p>
                             </div>
                             <div className="flex gap-3 rounded-2xl border bg-muted/20 p-4">
                                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
