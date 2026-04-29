@@ -28,6 +28,22 @@ async def _update_job_status(job_id, **fields):
         await session.commit()
 
 
+async def _get_job_checkpoint(job_id: str) -> dict:
+    """Load persisted intermediate fields so retries can resume from checkpoints."""
+    async with AsyncSessionLocal() as session:
+        job_record = await session.get(Job, job_id)
+        if not job_record:
+            return {}
+        return {
+            "parsed_headline": job_record.parsed_headline,
+            "parsed_sub_headline": job_record.parsed_sub_headline,
+            "parsed_cta": job_record.parsed_cta,
+            "visual_prompt": job_record.visual_prompt,
+            "quantum_layout": job_record.quantum_layout,
+            "result_url": job_record.result_url,
+        }
+
+
 async def _execute_pipeline(
     job_id: str,
     raw_text: str,
@@ -51,34 +67,47 @@ async def _execute_pipeline(
             logger.info(f"Starting design generation | Job: {job_id}")
             await _update_job_status(job_id, status="processing")
 
-        parsed = await parse_design_text(
-            raw_text,
-            integrated_text=integrated_text,
-            brand_colors=brand_colors,
-            brand_typography=brand_typography,
-        )
+        checkpoint = await _get_job_checkpoint(job_id)
+        parsed_headline = checkpoint.get("parsed_headline")
+        parsed_sub_headline = checkpoint.get("parsed_sub_headline")
+        parsed_cta = checkpoint.get("parsed_cta")
+        visual_prompt_final = checkpoint.get("visual_prompt")
 
-        if parsed.visual_prompt_parts:
-            assembled = ", ".join(
-                p.value for p in parsed.visual_prompt_parts if p.enabled
-            )
-            visual_prompt_final = assembled if assembled else parsed.visual_prompt
+        if visual_prompt_final:
+            logger.info("Reusing persisted parse checkpoint | Job: %s", job_id)
         else:
-            visual_prompt_final = parsed.visual_prompt
+            parsed = await parse_design_text(
+                raw_text,
+                integrated_text=integrated_text,
+                brand_colors=brand_colors,
+                brand_typography=brand_typography,
+            )
 
-        await _update_job_status(
-            job_id,
-            parsed_headline=parsed.headline,
-            parsed_sub_headline=parsed.sub_headline,
-            parsed_cta=parsed.cta,
-            visual_prompt=visual_prompt_final,
-        )
+            if parsed.visual_prompt_parts:
+                assembled = ", ".join(
+                    p.value for p in parsed.visual_prompt_parts if p.enabled
+                )
+                visual_prompt_final = assembled if assembled else parsed.visual_prompt
+            else:
+                visual_prompt_final = parsed.visual_prompt
 
-        if settings.QUANTUM_LAYOUT_ENABLED:
+            parsed_headline = parsed.headline
+            parsed_sub_headline = parsed.sub_headline
+            parsed_cta = parsed.cta
+
+            await _update_job_status(
+                job_id,
+                parsed_headline=parsed_headline,
+                parsed_sub_headline=parsed_sub_headline,
+                parsed_cta=parsed_cta,
+                visual_prompt=visual_prompt_final,
+            )
+
+        if settings.QUANTUM_LAYOUT_ENABLED and not checkpoint.get("quantum_layout"):
             from app.services.quantum_service import optimize_quantum_layout
 
             quantum_layout = await optimize_quantum_layout(
-                parsed.headline, parsed.sub_headline, parsed.cta
+                parsed_headline, parsed_sub_headline, parsed_cta
             )
             if quantum_layout:
                 await _update_job_status(job_id, quantum_layout=quantum_layout)
@@ -168,8 +197,8 @@ def generate_design_task(
                 aspect_ratio,
                 style,
                 reference_url,
-                reference_focus,
                 integrated_text,
+                reference_focus,
                 brand_colors,
                 brand_typography,
                 seed=seed,

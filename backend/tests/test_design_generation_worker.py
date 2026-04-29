@@ -1,12 +1,13 @@
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.workers.design_generation import _execute_pipeline
+from app.workers.design_generation import _execute_pipeline, generate_design_task
 
 
 @pytest.mark.asyncio
+@patch("app.workers.design_generation._get_job_checkpoint", new_callable=AsyncMock)
 @patch("app.workers.design_generation._update_job_status", new_callable=AsyncMock)
 @patch("app.workers.design_generation.upload_image", new_callable=AsyncMock)
 @patch("app.workers.design_generation.download_image", new_callable=AsyncMock)
@@ -20,7 +21,9 @@ async def test_execute_pipeline_persists_job_file_size(
     mock_download_image,
     mock_upload_image,
     mock_update_job_status,
+    mock_get_job_checkpoint,
 ):
+    mock_get_job_checkpoint.return_value = {}
     mock_parse_design_text.return_value = SimpleNamespace(
         headline="Headline",
         sub_headline="Sub",
@@ -50,3 +53,79 @@ async def test_execute_pipeline_persists_job_file_size(
     assert completion_call.kwargs["status"] == "completed"
     assert completion_call.kwargs["result_url"] == "https://cdn.example.com/permanent.jpg"
     assert completion_call.kwargs["file_size"] == 6
+
+
+@pytest.mark.asyncio
+@patch("app.workers.design_generation._get_job_checkpoint", new_callable=AsyncMock)
+@patch("app.workers.design_generation._update_job_status", new_callable=AsyncMock)
+@patch("app.workers.design_generation.upload_image", new_callable=AsyncMock)
+@patch("app.workers.design_generation.download_image", new_callable=AsyncMock)
+@patch("app.workers.design_generation.generate_background", new_callable=AsyncMock)
+@patch("app.services.quantum_service.optimize_quantum_layout", new_callable=AsyncMock)
+@patch("app.workers.design_generation.parse_design_text", new_callable=AsyncMock)
+async def test_execute_pipeline_reuses_parse_checkpoint(
+    mock_parse_design_text,
+    mock_optimize_quantum_layout,
+    mock_generate_background,
+    mock_download_image,
+    mock_upload_image,
+    mock_update_job_status,
+    mock_get_job_checkpoint,
+):
+    mock_get_job_checkpoint.return_value = {
+        "parsed_headline": "Saved Headline",
+        "parsed_sub_headline": "Saved Sub",
+        "parsed_cta": "Saved CTA",
+        "visual_prompt": "saved visual prompt",
+        "quantum_layout": "{}",
+        "result_url": None,
+    }
+    mock_generate_background.return_value = {
+        "image_url": "https://cdn.example.com/generated.jpg",
+        "content_type": "image/jpeg",
+    }
+    mock_download_image.return_value = b"abc123"
+    mock_upload_image.return_value = "https://cdn.example.com/permanent.jpg"
+
+    await _execute_pipeline(
+        job_id="job-2",
+        raw_text="Buat desain",
+        aspect_ratio="1:1",
+        style="auto",
+        reference_url=None,
+        integrated_text=False,
+    )
+
+    mock_parse_design_text.assert_not_awaited()
+    mock_optimize_quantum_layout.assert_not_awaited()
+    assert mock_generate_background.await_args.kwargs["visual_prompt"] == "saved visual prompt"
+
+
+@patch("app.workers.design_generation._run_async")
+@patch("app.workers.design_generation._execute_pipeline")
+def test_generate_design_task_passes_arguments_in_correct_order(
+    mock_execute_pipeline,
+    mock_run_async,
+):
+    mock_execute_pipeline.return_value = "coro"
+    fake_task = SimpleNamespace(
+        request=SimpleNamespace(retries=0),
+        max_retries=3,
+        retry=MagicMock(),
+    )
+
+    generate_design_task(
+        fake_task,
+        job_id="job-3",
+        raw_text="Buat desain",
+        aspect_ratio="1:1",
+        style="auto",
+        reference_url="https://example.com/ref.jpg",
+        reference_focus="human",
+        integrated_text=True,
+    )
+
+    call_args = mock_execute_pipeline.call_args.args
+    assert call_args[5] is True
+    assert call_args[6] == "human"
+    mock_run_async.assert_called_once_with("coro")
