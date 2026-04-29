@@ -175,20 +175,41 @@ async def _execute_pipeline(
 
 
 @celery_app.task(bind=True, name="generate_design", time_limit=600, soft_time_limit=540, max_retries=3)
-def generate_design_task(
-    self,
-    job_id: str,
-    raw_text: str,
-    aspect_ratio: str = "1:1",
-    style: str = "auto",
-    reference_url: str | None = None,
-    reference_focus: str = "auto",
-    integrated_text: bool = False,
-    brand_colors: list | None = None,
-    brand_typography: dict | None = None,
-    seed: str | None = None,
-):
+def generate_design_task(self, *args, **kwargs):
     """Celery task: runs the full design generation pipeline."""
+    task_ctx = self
+    if args and hasattr(args[0], "request") and hasattr(args[0], "retry") and "job_id" in kwargs:
+        # Supports direct unit-test invocation where a fake task context is passed
+        # as the first argument alongside keyword payload arguments.
+        task_ctx = args[0]
+        args = args[1:]
+
+    arg_names = [
+        "job_id",
+        "raw_text",
+        "aspect_ratio",
+        "style",
+        "reference_url",
+        "reference_focus",
+        "integrated_text",
+        "brand_colors",
+        "brand_typography",
+        "seed",
+    ]
+    payload = {name: value for name, value in zip(arg_names, args)}
+    payload.update(kwargs)
+
+    job_id = payload["job_id"]
+    raw_text = payload["raw_text"]
+    aspect_ratio = payload.get("aspect_ratio", "1:1")
+    style = payload.get("style", "auto")
+    reference_url = payload.get("reference_url")
+    reference_focus = payload.get("reference_focus", "auto")
+    integrated_text = payload.get("integrated_text", False)
+    brand_colors = payload.get("brand_colors")
+    brand_typography = payload.get("brand_typography")
+    seed = payload.get("seed")
+
     try:
         _run_async(
             _execute_pipeline(
@@ -202,25 +223,25 @@ def generate_design_task(
                 brand_colors,
                 brand_typography,
                 seed=seed,
-                current_retry=self.request.retries,
-                max_retries=self.max_retries,
+                current_retry=task_ctx.request.retries,
+                max_retries=task_ctx.max_retries,
             )
         )
     except Exception as exc:
-        if self.request.retries >= self.max_retries:
-            logger.error(f"Task for design job {job_id} failed after {self.max_retries} retries: {exc}")
+        if task_ctx.request.retries >= task_ctx.max_retries:
+            logger.error(f"Task for design job {job_id} failed after {task_ctx.max_retries} retries: {exc}")
             return
 
         if isinstance(exc, LLMRateLimitError):
-            delay = max((2 ** self.request.retries) * 5, exc.retry_after_seconds)
+            delay = max((2 ** task_ctx.request.retries) * 5, exc.retry_after_seconds)
             logger.info(
                 "Retrying task for design job %s after rate limit in %ss (model=%s)...",
                 job_id,
                 delay,
                 exc.model_id,
             )
-            raise self.retry(exc=exc, countdown=delay)
+            raise task_ctx.retry(exc=exc, countdown=delay)
 
-        delay = (2 ** self.request.retries) * 5
+        delay = (2 ** task_ctx.request.retries) * 5
         logger.info(f"Retrying task for design job {job_id} in {delay}s...")
-        raise self.retry(exc=exc, countdown=delay)
+        raise task_ctx.retry(exc=exc, countdown=delay)

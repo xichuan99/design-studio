@@ -102,7 +102,7 @@ async def test_execute_pipeline_reuses_parse_checkpoint(
 
 
 @patch("app.workers.design_generation._run_async")
-@patch("app.workers.design_generation._execute_pipeline")
+@patch("app.workers.design_generation._execute_pipeline", new_callable=MagicMock)
 def test_generate_design_task_passes_arguments_in_correct_order(
     mock_execute_pipeline,
     mock_run_async,
