@@ -149,7 +149,13 @@ def _convert_to_openai_messages(contents, system_instruction=None):
     # Append any collected user parts into one user message payload
     if user_content_items:
         # Openrouter can accept array of dicts for multimodal
-        messages.append({"role": "user", "content": user_content_items})
+        # But for text-only, it's safer to use a string to satisfy JSON mode validation
+        has_image = any(item.get("type") == "image_url" for item in user_content_items)
+        if not has_image:
+            text_content = "\n\n".join(item["text"] for item in user_content_items if item.get("type") == "text")
+            messages.append({"role": "user", "content": text_content})
+        else:
+            messages.append({"role": "user", "content": user_content_items})
 
     return messages
 
