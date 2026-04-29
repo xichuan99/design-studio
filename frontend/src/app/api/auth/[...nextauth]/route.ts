@@ -51,6 +51,9 @@ async function refreshAccessToken(token: ExtendedJWT): Promise<ExtendedJWT> {
         console.error("Error refreshing Access Token", error);
         return {
             ...token,
+            accessToken: undefined,
+            refreshToken: undefined,
+            accessTokenExpires: 0,
             error: "RefreshAccessTokenError",
         };
     }
@@ -142,6 +145,7 @@ export const authOptions: NextAuthOptions = {
                     jwtToken.provider = "google";
                     jwtToken.id = user.id;
                     jwtToken.accessTokenExpires = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30 days
+                    jwtToken.error = undefined;
                 } else if (account.provider === "credentials") {
                     // This is 'user' returned from authorize
                     const credUser = user as { id?: string; accessToken?: string; refreshToken?: string };
@@ -150,7 +154,12 @@ export const authOptions: NextAuthOptions = {
                     jwtToken.accessTokenExpires = Date.now() + 60 * 60 * 1000; // 1 hour default
                     jwtToken.provider = "credentials";
                     jwtToken.id = user.id;
+                    jwtToken.error = undefined;
                 }
+                return jwtToken;
+            }
+
+            if (jwtToken.error === "RefreshAccessTokenError") {
                 return jwtToken;
             }
 

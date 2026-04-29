@@ -360,7 +360,10 @@ async def _run_catalog_json_call(system_instruction: str, payload: dict) -> obje
         client=client,
         primary_model=LLM_REASONING_PRIMARY,
         fallback_model=LLM_REASONING_FALLBACK,
-        contents=[json.dumps(payload, ensure_ascii=False)],
+        contents=[
+            "Return valid json only. Do not include markdown fences, prose, or additional commentary.",
+            json.dumps(payload, ensure_ascii=False),
+        ],
         config=types.GenerateContentConfig(
             system_instruction=system_instruction,
             response_mime_type="application/json",

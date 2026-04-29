@@ -3,6 +3,11 @@ import { useCallback } from 'react';
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
+type SessionWithAccessToken = {
+    accessToken?: string;
+    error?: string;
+} | null;
+
 export function useApiCore() {
     const { data: session } = useSession();
 
@@ -10,8 +15,11 @@ export function useApiCore() {
         const headers: Record<string, string> = {
             ...(skipContentType ? {} : { 'Content-Type': 'application/json' })
         };
-        // @ts-expect-error - accessToken is extended on the session object
-        const token = session?.accessToken;
+        const typedSession = session as SessionWithAccessToken;
+        const token =
+            typedSession?.error === 'RefreshAccessTokenError'
+                ? undefined
+                : typedSession?.accessToken;
 
         if (token) {
             headers['Authorization'] = `Bearer ${token}`;

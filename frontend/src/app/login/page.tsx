@@ -14,6 +14,7 @@ function LoginForm() {
 
     const callbackUrl = searchParams.get("callbackUrl") || "/projects";
     const errorParam = searchParams.get("error");
+    const reasonParam = searchParams.get("reason");
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -78,6 +79,12 @@ function LoginForm() {
 
     return (
         <div className="flex flex-col items-center gap-6 w-full max-w-sm">
+            {reasonParam === "session-expired" && !localError && !errorParam && (
+                <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 w-full text-amber-100 text-sm animate-in fade-in slide-in-from-top-1">
+                    <Info className="h-4 w-4 flex-shrink-0" />
+                    <span>Sesi Anda telah berakhir. Silakan login kembali untuk melanjutkan.</span>
+                </div>
+            )}
             {(errorParam || localError) && (
                 <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 w-full text-red-300 text-sm animate-in fade-in slide-in-from-top-1">
                     <AlertCircle className="h-4 w-4 flex-shrink-0" />
