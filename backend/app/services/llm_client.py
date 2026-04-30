@@ -20,6 +20,14 @@ Extracted to prevent circular imports.
 from google import genai
 from google.genai import types
 from app.core.config import settings
+from app.services.llm_metrics import record_llm_routing_event
+from app.services.llm_rate_guard import (
+    ModelConcurrencyLimitError,
+    acquire_model_slot,
+    get_model_cooldown_remaining,
+    mark_model_cooldown,
+    release_model_slot,
+)
 from app.services.llm_json_utils import parse_llm_json
 import logging
 import httpx
@@ -30,6 +38,26 @@ logger = logging.getLogger(__name__)
 
 MAX_ERROR_BODY_LOG_CHARS = 4000
 PROVIDER_OUTAGE_STATUS_CODES = {500, 502, 503, 504, 520, 521, 522, 523, 524}
+
+
+def _log_model_routing_event(
+    level: int,
+    message: str,
+    *,
+    event: str,
+    model_id: str,
+    **fields,
+) -> None:
+    record_llm_routing_event(event=event, model_id=model_id)
+    logger.log(
+        level,
+        message,
+        extra={
+            "llm_event": event,
+            "llm_model_id": model_id,
+            **fields,
+        },
+    )
 
 
 class LLMRateLimitError(Exception):
@@ -376,34 +404,173 @@ def call_gemini_with_fallback(
     Calls the primary model and retries with fallback when needed.
     Supports OpenRouter and Direct Gemini based on model prefix.
     """
-    def _do_call(model_id: str, is_fallback: bool = False):
+
+    def _do_call(
+        model_id: str,
+        is_fallback: bool = False,
+        enforce_model_slot: bool = True,
+    ):
         label = "FALLBACK" if is_fallback else "PRIMARY"
+        slot_acquired = False
 
-        if model_id.startswith("openrouter/"):
-            actual_id = model_id.replace("openrouter/", "", 1)
-            logger.info(f"🧠 [DEV INFO] Resolving prompt via {label} LLM (OpenRouter): {actual_id}")
-            return call_openrouter(model_id=actual_id, contents=contents, config=config)
+        if enforce_model_slot:
+            slot_acquired = acquire_model_slot(
+                model_id,
+                settings.LLM_MAX_CONCURRENT_PER_MODEL,
+            )
+            if not slot_acquired:
+                raise ModelConcurrencyLimitError(model_id)
 
-        elif model_id.startswith("google/"):
-            actual_id = model_id.replace("google/", "", 1)
-            logger.info(f"🧠 [DEV INFO] Resolving prompt via {label} LLM (Direct Gemini): {actual_id}")
-            direct_client = get_direct_gemini_client()
-            return direct_client.models.generate_content(model=actual_id, contents=contents, config=config)
+        try:
+            if model_id.startswith("openrouter/"):
+                actual_id = model_id.replace("openrouter/", "", 1)
+                logger.info(f"🧠 [DEV INFO] Resolving prompt via {label} LLM (OpenRouter): {actual_id}")
+                return call_openrouter(model_id=actual_id, contents=contents, config=config)
 
-        else:
-            # Legacy/default handling (usually OpenRouter via the passed client)
-            logger.info(f"🧠 [DEV INFO] Resolving prompt via {label} LLM (Default Client): {model_id}")
-            return client.models.generate_content(model=model_id, contents=contents, config=config)
+            elif model_id.startswith("google/"):
+                actual_id = model_id.replace("google/", "", 1)
+                logger.info(f"🧠 [DEV INFO] Resolving prompt via {label} LLM (Direct Gemini): {actual_id}")
+                direct_client = get_direct_gemini_client()
+                return direct_client.models.generate_content(model=actual_id, contents=contents, config=config)
+
+            else:
+                # Legacy/default handling (usually OpenRouter via the passed client)
+                logger.info(f"🧠 [DEV INFO] Resolving prompt via {label} LLM (Default Client): {model_id}")
+                return client.models.generate_content(model=model_id, contents=contents, config=config)
+        finally:
+            if slot_acquired:
+                release_model_slot(model_id)
+
+    def _is_on_cooldown(model_id: str) -> int:
+        remaining = get_model_cooldown_remaining(model_id)
+        if remaining > 0:
+            _log_model_routing_event(
+                logging.INFO,
+                "Skipping LLM because cooldown is still active.",
+                event="llm.cooldown.active",
+                model_id=model_id,
+                cooldown_remaining_seconds=remaining,
+            )
+        return remaining
+
+    def _try_next_available(models: list[str]):
+        last_error: Exception | None = None
+        saturated_model: str | None = None
+
+        for index, model_id in enumerate(models):
+            if _is_on_cooldown(model_id) > 0:
+                continue
+
+            try:
+                return _do_call(model_id, is_fallback=index > 0)
+            except ModelConcurrencyLimitError as exc:
+                last_error = exc
+                if saturated_model is None:
+                    saturated_model = model_id
+                _log_model_routing_event(
+                    logging.WARNING,
+                    "Model slot is saturated. Trying the next candidate.",
+                    event="llm.slot.saturated",
+                    model_id=model_id,
+                    max_concurrent=settings.LLM_MAX_CONCURRENT_PER_MODEL,
+                )
+                continue
+            except Exception as exc:
+                last_error = exc
+
+                if _is_rate_limit_error(exc):
+                    retry_after_seconds = _extract_retry_after_seconds(exc)
+                    mark_model_cooldown(model_id, retry_after_seconds)
+                    _log_model_routing_event(
+                        logging.WARNING,
+                        "Fallback candidate is rate-limited. Marking cooldown and trying the next model.",
+                        event="llm.fallback.rate_limited",
+                        model_id=model_id,
+                        retry_after_seconds=retry_after_seconds,
+                    )
+                    continue
+
+                if _is_provider_availability_error(exc):
+                    _log_model_routing_event(
+                        logging.WARNING,
+                        "Fallback candidate is unavailable. Trying the next model.",
+                        event="llm.fallback.unavailable",
+                        model_id=model_id,
+                        error=str(exc),
+                    )
+                    continue
+
+                raise
+
+        if saturated_model is not None:
+            _log_model_routing_event(
+                logging.WARNING,
+                "All available candidates are saturated. Proceeding without semaphore enforcement to avoid a hard stall.",
+                event="llm.slot.bypass",
+                model_id=saturated_model,
+            )
+            return _do_call(saturated_model, is_fallback=True, enforce_model_slot=False)
+
+        if last_error is not None:
+            raise last_error
+
+        raise LLMRateLimitError(
+            model_id=primary_model,
+            retry_after_seconds=max(
+                [_is_on_cooldown(model_id) for model_id in [primary_model, *models]],
+                default=30,
+            )
+            or 30,
+            message="All configured models are in cooldown or unavailable.",
+        )
+
+    emergency_model = "google/gemini-2.5-flash"
+    fallback_candidates = [fallback_model]
+    if fallback_model != emergency_model:
+        fallback_candidates.append(emergency_model)
+
+    primary_cooldown = _is_on_cooldown(primary_model)
+    if primary_cooldown > 0:
+        _log_model_routing_event(
+            logging.INFO,
+            "Primary LLM is in cooldown. Routing this request to fallback chain.",
+            event="llm.primary.cooldown_route",
+            model_id=primary_model,
+            cooldown_remaining_seconds=primary_cooldown,
+            fallback_model_id=fallback_model,
+        )
+        return _try_next_available(fallback_candidates)
 
     try:
         return _do_call(primary_model)
+    except ModelConcurrencyLimitError:
+        _log_model_routing_event(
+            logging.WARNING,
+            "Primary LLM hit the soft concurrency ceiling. Trying fallback chain first.",
+            event="llm.primary.slot_saturated",
+            model_id=primary_model,
+            max_concurrent=settings.LLM_MAX_CONCURRENT_PER_MODEL,
+        )
+        try:
+            return _try_next_available(fallback_candidates)
+        except Exception:
+            _log_model_routing_event(
+                logging.WARNING,
+                "Fallback chain was unavailable after primary saturation. Proceeding with primary without semaphore enforcement.",
+                event="llm.primary.slot_bypass",
+                model_id=primary_model,
+            )
+            return _do_call(primary_model, enforce_model_slot=False)
     except Exception as e:
         if _is_rate_limit_error(e):
             retry_after_seconds = _extract_retry_after_seconds(e)
-            logger.warning(
-                "Primary LLM (%s) is rate-limited. Preserving primary-first policy and skipping fallback. retry_after_seconds=%s",
-                primary_model,
-                retry_after_seconds,
+            mark_model_cooldown(primary_model, retry_after_seconds)
+            _log_model_routing_event(
+                logging.WARNING,
+                "Primary LLM is rate-limited. Marking cooldown and preserving retry flow for the current job.",
+                event="llm.primary.rate_limited",
+                model_id=primary_model,
+                retry_after_seconds=retry_after_seconds,
             )
             raise LLMRateLimitError(
                 model_id=primary_model,
@@ -419,25 +586,17 @@ def call_gemini_with_fallback(
             )
             raise e
 
-        logger.error(
-            "Primary LLM (%s) failed due provider availability issue: %s. Moving to Fallback (%s).",
-            primary_model,
-            str(e),
-            fallback_model,
+        _log_model_routing_event(
+            logging.ERROR,
+            "Primary LLM failed due provider availability issue. Moving to fallback.",
+            event="llm.primary.provider_unavailable",
+            model_id=primary_model,
+            fallback_model_id=fallback_model,
+            error=str(e),
         )
 
         try:
-            return _do_call(fallback_model, is_fallback=True)
+            return _try_next_available(fallback_candidates)
         except Exception as e_fb:
-            # Emergency direct fallback to ensure stability if OpenRouter (primary/fallback) is down
-            emergency_model = "google/gemini-2.5-flash"
-            if fallback_model != emergency_model:
-                logger.warning(f"Secondary Fallback ({fallback_model}) also failed. Attempting EMERGENCY direct fallback: {emergency_model}")
-                try:
-                    return _do_call(emergency_model, is_fallback=True)
-                except Exception as e_em:
-                    logger.critical(f"CRITICAL: All LLM providers including EMERGENCY failed! {str(e_em)}")
-                    raise e_em
-
             logger.critical(f"All LLM providers failed! Last error: {str(e_fb)}")
             raise e_fb

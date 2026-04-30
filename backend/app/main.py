@@ -23,6 +23,7 @@ from app.api.folders import router as folders_router
 from app.api.carousel import router as carousel_router
 from app.api.catalog import router as catalog_router
 from app.api.storage_payments import router as storage_payments_router
+from app.api.internal_metrics import router as internal_metrics_router
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -216,6 +217,7 @@ app.include_router(ai_tools_router, prefix="/api/tools", tags=["AI Tools"])
 app.include_router(carousel_router, prefix="/api/carousel", tags=["Carousel"])
 app.include_router(catalog_router, prefix="/api/catalog", tags=["Catalog"])
 app.include_router(storage_payments_router, prefix="/api/payments", tags=["Storage Payments"])
+app.include_router(internal_metrics_router, prefix="/api/internal", tags=["Internal"])
 app.include_router(ad_creator_router, prefix="/api/ad-creator", tags=["Ad Creator"])
 app.include_router(template_marketplace_router, prefix="/api", tags=["Template Marketplace"])
 app.include_router(folders_router, prefix="/api/folders", tags=["Folders"])

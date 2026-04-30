@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from app.services.llm_client import LLMRateLimitError
 from app.workers.design_generation import _execute_pipeline, generate_design_task
 
 
@@ -129,3 +130,36 @@ def test_generate_design_task_passes_arguments_in_correct_order(
     assert call_args[5] is True
     assert call_args[6] == "human"
     mock_run_async.assert_called_once_with("coro")
+
+
+@patch("app.workers.design_generation._run_async")
+@patch("app.workers.design_generation._execute_pipeline", new_callable=MagicMock)
+def test_generate_design_task_uses_retry_after_for_rate_limit(
+    mock_execute_pipeline,
+    mock_run_async,
+):
+    mock_execute_pipeline.return_value = "coro"
+    rate_limit_error = LLMRateLimitError(
+        model_id="openrouter/deepseek/deepseek-v4-flash",
+        retry_after_seconds=39,
+        message="Primary model rate-limited",
+    )
+    mock_run_async.side_effect = rate_limit_error
+    fake_retry = MagicMock(side_effect=RuntimeError("retry called"))
+    fake_task = SimpleNamespace(
+        request=SimpleNamespace(retries=1),
+        max_retries=3,
+        retry=fake_retry,
+    )
+
+    with pytest.raises(RuntimeError, match="retry called"):
+        generate_design_task(
+            fake_task,
+            job_id="job-4",
+            raw_text="Buat desain",
+            aspect_ratio="1:1",
+            style="auto",
+            integrated_text=False,
+        )
+
+    fake_retry.assert_called_once_with(exc=rate_limit_error, countdown=39)

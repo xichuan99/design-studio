@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     OPENROUTER_API_KEY: str = ""
     GEMINI_API_KEY: str = ""
     QUANTUM_LAYOUT_ENABLED: bool = True
+    LLM_MAX_CONCURRENT_PER_MODEL: int = 5
 
     # Email
     RESEND_API_KEY: str = ""
@@ -47,6 +48,7 @@ class Settings(BaseSettings):
 
     # Optional extra CA bundle for internal HTTPS assets/services.
     INTERNAL_CA_BUNDLE_PATH: str = ""
+    INTERNAL_METRICS_TOKEN: str = ""
 
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore"

@@ -127,3 +127,129 @@ def test_call_gemini_with_fallback_failsover_on_provider_outage():
     assert result is fallback_response
     assert client.models.generate_content.call_count == 2
 
+
+def test_call_gemini_with_fallback_routes_to_fallback_when_primary_in_cooldown():
+    client = MagicMock()
+    fallback_response = MagicMock(text="fallback-ok")
+    client.models.generate_content.return_value = fallback_response
+
+    with patch(
+        "app.services.llm_client.get_model_cooldown_remaining",
+        side_effect=[25, 0],
+    ):
+        result = call_gemini_with_fallback(
+            client=client,
+            primary_model="gemini-2.0-flash",
+            fallback_model="gemini-2.0-pro",
+            contents=["hello"],
+            config=MagicMock(),
+        )
+
+    assert result is fallback_response
+    assert client.models.generate_content.call_count == 1
+    call_kwargs = client.models.generate_content.call_args.kwargs
+    assert call_kwargs["model"] == "gemini-2.0-pro"
+
+
+def test_call_gemini_with_fallback_marks_primary_cooldown_on_rate_limit():
+    client = MagicMock()
+    primary_error = httpx.HTTPStatusError(
+        "429 RESOURCE_EXHAUSTED. Please retry in 39.334030145s.",
+        request=httpx.Request("POST", "https://openrouter.ai/api/v1/chat/completions"),
+        response=httpx.Response(429),
+    )
+    client.models.generate_content.side_effect = primary_error
+
+    with patch("app.services.llm_client.mark_model_cooldown") as mock_mark_cooldown:
+        with pytest.raises(LLMRateLimitError):
+            call_gemini_with_fallback(
+                client=client,
+                primary_model="gemini-2.0-flash",
+                fallback_model="gemini-2.0-pro",
+                contents=["hello"],
+                config=MagicMock(),
+            )
+
+    mock_mark_cooldown.assert_called_once_with("gemini-2.0-flash", 39)
+
+
+def test_call_gemini_with_fallback_uses_fallback_when_primary_slot_is_saturated():
+    client = MagicMock()
+    fallback_response = MagicMock(text="fallback-ok")
+    client.models.generate_content.return_value = fallback_response
+
+    with patch("app.services.llm_client.acquire_model_slot", side_effect=[False, True]), patch(
+        "app.services.llm_client.release_model_slot"
+    ) as mock_release:
+        result = call_gemini_with_fallback(
+            client=client,
+            primary_model="gemini-2.0-flash",
+            fallback_model="gemini-2.0-pro",
+            contents=["hello"],
+            config=MagicMock(),
+        )
+
+    assert result is fallback_response
+    assert client.models.generate_content.call_count == 1
+    assert client.models.generate_content.call_args.kwargs["model"] == "gemini-2.0-pro"
+    mock_release.assert_called_once_with("gemini-2.0-pro")
+
+
+def test_call_gemini_with_fallback_emits_structured_log_for_cooldown_route(caplog):
+    client = MagicMock()
+    fallback_response = MagicMock(text="fallback-ok")
+    client.models.generate_content.return_value = fallback_response
+
+    with patch(
+        "app.services.llm_client.get_model_cooldown_remaining",
+        side_effect=[25, 0],
+    ):
+        with caplog.at_level("INFO"):
+            call_gemini_with_fallback(
+                client=client,
+                primary_model="gemini-2.0-flash",
+                fallback_model="gemini-2.0-pro",
+                contents=["hello"],
+                config=MagicMock(),
+            )
+
+    cooldown_records = [
+        record
+        for record in caplog.records
+        if getattr(record, "llm_event", None) == "llm.primary.cooldown_route"
+    ]
+    assert len(cooldown_records) == 1
+    assert cooldown_records[0].llm_model_id == "gemini-2.0-flash"
+    assert cooldown_records[0].cooldown_remaining_seconds == 25
+    assert cooldown_records[0].fallback_model_id == "gemini-2.0-pro"
+
+
+def test_call_gemini_with_fallback_emits_structured_log_for_rate_limit(caplog):
+    client = MagicMock()
+    primary_error = httpx.HTTPStatusError(
+        "429 RESOURCE_EXHAUSTED. Please retry in 39.334030145s.",
+        request=httpx.Request("POST", "https://openrouter.ai/api/v1/chat/completions"),
+        response=httpx.Response(429),
+    )
+    client.models.generate_content.side_effect = primary_error
+
+    with patch("app.services.llm_client.mark_model_cooldown"):
+        with caplog.at_level("WARNING"):
+            with pytest.raises(LLMRateLimitError):
+                call_gemini_with_fallback(
+                    client=client,
+                    primary_model="gemini-2.0-flash",
+                    fallback_model="gemini-2.0-pro",
+                    contents=["hello"],
+                    config=MagicMock(),
+                )
+
+    rate_limit_records = [
+        record
+        for record in caplog.records
+        if getattr(record, "llm_event", None) == "llm.primary.rate_limited"
+    ]
+    assert len(rate_limit_records) == 1
+    assert rate_limit_records[0].llm_model_id == "gemini-2.0-flash"
+    assert rate_limit_records[0].retry_after_seconds == 39
+
