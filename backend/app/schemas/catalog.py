@@ -103,3 +103,45 @@ class FinalizePlanResponse(BaseModel):
     style: str
     pages: List[CatalogPagePlan]
     missing_data: List[str] = Field(default_factory=list)
+
+
+class CatalogRenderOptions(BaseModel):
+    aspect_ratio: str = Field(default="1:1", min_length=3, max_length=10)
+    language: str = Field(default="id", min_length=2, max_length=8)
+    quality_mode: Literal["draft", "standard", "high"] = "standard"
+    reference_image_url: Optional[str] = Field(default=None, max_length=2000)
+
+
+class CatalogRenderStartRequest(BaseModel):
+    final_plan: FinalizePlanResponse
+    options: CatalogRenderOptions = Field(default_factory=CatalogRenderOptions)
+
+
+class CatalogRenderStartResponse(BaseModel):
+    job_id: str
+    status: Literal["queued", "processing", "completed", "failed", "canceled"]
+    total_pages: int = Field(ge=1)
+    created_at: Optional[str] = None
+
+
+class CatalogRenderPageStatus(BaseModel):
+    page_number: int = Field(ge=1)
+    status: Literal["completed", "failed", "fallback"]
+    result_url: Optional[str] = None
+    fallback_used: bool = False
+    error_message: Optional[str] = None
+
+
+class CatalogRenderProgress(BaseModel):
+    completed_pages: int = Field(ge=0)
+    total_pages: int = Field(ge=1)
+    percent: int = Field(ge=0, le=100)
+
+
+class CatalogRenderStatusResponse(BaseModel):
+    job_id: str
+    status: Literal["queued", "processing", "completed", "failed", "canceled"]
+    progress: CatalogRenderProgress
+    pages: List[CatalogRenderPageStatus] = Field(default_factory=list)
+    zip_url: Optional[str] = None
+    error_message: Optional[str] = None

@@ -3,6 +3,9 @@ import { useCallback } from 'react';
 import { useApiCore } from './coreApi';
 import type {
     CatalogBasicsRequest,
+    CatalogRenderStartRequest,
+    CatalogRenderStartResponse,
+    CatalogRenderStatusResponse,
     CatalogFinalizePlanRequest,
     CatalogFinalizePlanResponse,
     CatalogGenerateCopyRequest,
@@ -93,11 +96,42 @@ export function useCatalogEndpoints() {
         return res.json();
     }, [API_BASE_URL, getHeaders]);
 
+    const startCatalogRender = useCallback(async (payload: CatalogRenderStartRequest): Promise<CatalogRenderStartResponse> => {
+        const res = await fetch(`${API_BASE_URL}/catalog/render`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+            const errBase = await res.json().catch(() => ({}));
+            throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to start catalog render');
+        }
+
+        return res.json();
+    }, [API_BASE_URL, getHeaders]);
+
+    const getCatalogRenderStatus = useCallback(async (jobId: string): Promise<CatalogRenderStatusResponse> => {
+        const res = await fetch(`${API_BASE_URL}/catalog/render/${jobId}`, {
+            method: 'GET',
+            headers: getHeaders(),
+        });
+
+        if (!res.ok) {
+            const errBase = await res.json().catch(() => ({}));
+            throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to get catalog render status');
+        }
+
+        return res.json();
+    }, [API_BASE_URL, getHeaders]);
+
     return {
         planCatalogStructure,
         suggestCatalogStyles,
         mapCatalogImages,
         generateCatalogCopy,
         finalizeCatalogPlan,
+        startCatalogRender,
+        getCatalogRenderStatus,
     };
 }

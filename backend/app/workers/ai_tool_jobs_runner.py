@@ -22,6 +22,7 @@ from app.workers.ai_tool_jobs_enhancement import (
     execute_retouch_tool_job,
 )
 from app.workers.ai_tool_jobs_pipeline import execute_pipeline_tool_job
+from app.workers.ai_tool_jobs_catalog import execute_catalog_render_tool_job
 
 AiToolExecutor = Callable[[str], Awaitable[None]]
 
@@ -35,6 +36,7 @@ AI_TOOL_EXECUTORS: dict[str, AiToolExecutor] = {
     "watermark": execute_watermark_tool_job,
     "batch": execute_batch_tool_job,
     "pipeline": execute_pipeline_tool_job,
+    "catalog_render": execute_catalog_render_tool_job,
 }
 
 

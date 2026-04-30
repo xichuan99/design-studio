@@ -461,6 +461,50 @@ export interface CatalogFinalizePlanResponse {
     missing_data: string[];
 }
 
+export type CatalogRenderQualityMode = 'draft' | 'standard' | 'high';
+
+export interface CatalogRenderOptions {
+    aspect_ratio?: string;
+    language?: string;
+    quality_mode?: CatalogRenderQualityMode;
+    reference_image_url?: string;
+}
+
+export interface CatalogRenderStartRequest {
+    final_plan: CatalogFinalizePlanResponse;
+    options?: CatalogRenderOptions;
+}
+
+export interface CatalogRenderStartResponse {
+    job_id: string;
+    status: 'queued' | 'processing' | 'completed' | 'failed' | 'canceled';
+    total_pages: number;
+    created_at?: string | null;
+}
+
+export interface CatalogRenderProgress {
+    completed_pages: number;
+    total_pages: number;
+    percent: number;
+}
+
+export interface CatalogRenderPageStatus {
+    page_number: number;
+    status: 'completed' | 'failed' | 'fallback';
+    result_url?: string | null;
+    fallback_used?: boolean;
+    error_message?: string | null;
+}
+
+export interface CatalogRenderStatusResponse {
+    job_id: string;
+    status: 'queued' | 'processing' | 'completed' | 'failed' | 'canceled';
+    progress: CatalogRenderProgress;
+    pages: CatalogRenderPageStatus[];
+    zip_url?: string | null;
+    error_message?: string | null;
+}
+
 export interface ParseDesignTextRequest {
     raw_text: string;
     aspect_ratio?: string;

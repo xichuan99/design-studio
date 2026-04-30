@@ -50,5 +50,15 @@ export interface DesignBriefSessionState {
     catalogImageMapping?: CatalogImageMappingState[];
     catalogGeneratedPages?: CatalogPagePlanState[];
     catalogFinalPlan?: CatalogFinalPlanState;
+    catalogRenderJobId?: string;
+    catalogRenderStatus?: "queued" | "processing" | "completed" | "failed" | "canceled";
+    catalogRenderZipUrl?: string;
+    catalogRenderedPages?: Array<{
+        page_number: number;
+        status: "completed" | "failed" | "fallback";
+        result_url?: string | null;
+        fallback_used?: boolean;
+        error_message?: string | null;
+    }>;
     updatedAt: string;
 }
