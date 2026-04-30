@@ -13,6 +13,19 @@ from app.services.llm_client import (
 )
 
 
+@pytest.fixture(autouse=True)
+def _isolate_llm_cooldown_state():
+    """Prevent real Redis writes from polluting cooldown state between tests.
+
+    Tests that need specific cooldown behaviour override these patches locally
+    with their own ``with patch(...)`` context managers.
+    """
+    with patch("app.services.llm_client.mark_model_cooldown"), patch(
+        "app.services.llm_client.get_model_cooldown_remaining", return_value=0
+    ):
+        yield
+
+
 def _mock_httpx_client_with_response(response: httpx.Response) -> MagicMock:
     client = MagicMock()
     client.post.return_value = response
