@@ -320,7 +320,6 @@ jobs:
 
             BACKEND_TAG="latest"
             FRONTEND_TAG="latest"
-            QUANTUM_TAG="latest"
 
             if [ "${BACKEND_CHANGED}" = "true" ]; then
               BACKEND_TAG="${{ github.sha }}"
@@ -328,13 +327,9 @@ jobs:
             if [ "${FRONTEND_CHANGED}" = "true" ]; then
               FRONTEND_TAG="${{ github.sha }}"
             fi
-            if [ "${QUANTUM_CHANGED}" = "true" ]; then
-              QUANTUM_TAG="${{ github.sha }}"
-            fi
 
             BACKEND_IMAGE_REF="${{ env.BACKEND_IMAGE }}:${BACKEND_TAG}"
             FRONTEND_IMAGE_REF="${{ env.FRONTEND_IMAGE }}:${FRONTEND_TAG}"
-            QUANTUM_IMAGE_REF="${{ env.QUANTUM_IMAGE }}:${QUANTUM_TAG}"
             
             # Reset perubahan lokal apapun termasuk docker-compose.yml
             git reset --hard HEAD
@@ -346,8 +341,7 @@ jobs:
 
             BACKEND_IMAGE="$BACKEND_IMAGE_REF" \
             FRONTEND_IMAGE="$FRONTEND_IMAGE_REF" \
-            QUANTUM_IMAGE="$QUANTUM_IMAGE_REF" \
-              docker compose pull backend frontend celery quantum-engine
+              docker compose pull backend frontend celery
 
             NEXTAUTH_SECRET="${{ secrets.NEXTAUTH_SECRET }}" \
             NEXTAUTH_URL="${{ secrets.NEXTAUTH_URL }}" \
@@ -355,7 +349,6 @@ jobs:
             GOOGLE_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET }}" \
             BACKEND_IMAGE="$BACKEND_IMAGE_REF" \
             FRONTEND_IMAGE="$FRONTEND_IMAGE_REF" \
-            QUANTUM_IMAGE="$QUANTUM_IMAGE_REF" \
               docker compose up -d --remove-orphans
 
             docker compose exec -T backend alembic upgrade head
