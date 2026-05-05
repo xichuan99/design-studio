@@ -34,3 +34,13 @@ export const PRODUCT_SCENE_REDIRECT_HANDOFF_ENABLED = (
   process.env.NEXT_PUBLIC_PRODUCT_SCENE_REDIRECT_HANDOFF_V1 ??
   "true"
 ).toLowerCase() === "true";
+
+export const COMPARE_MODELS_ENABLED = (
+  process.env.NEXT_PUBLIC_COMPARE_MODELS_V1 ??
+  "true"
+).toLowerCase() === "true";
+
+export const LANDING_EXPERIMENT_VARIANT = (
+  process.env.NEXT_PUBLIC_LANDING_EXPERIMENT_VARIANT ??
+  "control"
+).trim().toLowerCase();

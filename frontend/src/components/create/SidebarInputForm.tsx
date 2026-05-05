@@ -4,11 +4,13 @@ import { BrandKit } from "@/lib/api";
 import { ChevronDown, Palette, Wand2, ImagePlus } from "lucide-react";
 import { DimensionPresets } from "./inputs/DimensionPresets";
 import { GenerationOptions } from "./inputs/GenerationOptions";
+import { ModelSelector } from "./inputs/ModelSelector";
 import { ProductSettings } from "./inputs/ProductSettings";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
 import type { CreateStep } from "@/app/create/hooks/useCreateDesign";
 import type { UserIntent } from "@/app/create/types";
+import type { ModelCatalogItem, ModelTier } from "@/lib/api";
 
 interface SidebarInputFormProps {
     createMode: 'generate' | 'redesign';
@@ -23,6 +25,11 @@ interface SidebarInputFormProps {
     setAspectRatio: (val: string) => void;
     integratedText: boolean;
     setIntegratedText: (val: boolean) => void;
+    selectedModelTier: ModelTier;
+    setSelectedModelTier: (val: ModelTier) => void;
+    modelCatalog: ModelCatalogItem[];
+    onModelSelectorOpened: () => void;
+    onModelTierSelected: (val: ModelTier) => void;
     removeProductBg: boolean;
     setRemoveProductBg: (val: boolean) => void;
     showManualRef: boolean;
@@ -49,6 +56,7 @@ export function SidebarInputForm({
     rawText, setRawText, isInputLocked, isParsing,
     aspectRatio, setAspectRatio,
     integratedText, setIntegratedText,
+    selectedModelTier, setSelectedModelTier, modelCatalog, onModelSelectorOpened, onModelTierSelected,
     removeProductBg, setRemoveProductBg,
     showManualRef, setShowManualRef, referenceFile, referencePreview, isDragOver,
     fileInputRef, handleFileInputChange, handleRemoveFile, handleDragOver, handleDragLeave, handleDrop,
@@ -277,6 +285,17 @@ export function SidebarInputForm({
                     setIntegratedText={setIntegratedText}
                     isInputLocked={isInputLocked}
                 />
+
+                {modelCatalog.length > 0 && (
+                    <ModelSelector
+                        value={selectedModelTier}
+                        onChange={setSelectedModelTier}
+                        items={modelCatalog}
+                        isInputLocked={isInputLocked}
+                        onOpenAdvanced={onModelSelectorOpened}
+                        onSelectTier={onModelTierSelected}
+                    />
+                )}
             </div>
         </div>
     );

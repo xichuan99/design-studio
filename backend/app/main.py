@@ -24,6 +24,10 @@ from app.api.carousel import router as carousel_router
 from app.api.catalog import router as catalog_router
 from app.api.storage_payments import router as storage_payments_router
 from app.api.internal_metrics import router as internal_metrics_router
+from app.api.waitlist import router as waitlist_router
+from app.api.model_catalog import router as model_catalog_router
+from app.api.testimonials import router as testimonials_router
+from app.api.comparison_sessions import router as comparison_sessions_router
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -66,6 +70,10 @@ tags_metadata = [
     {"name": "AI Tools", "description": "General AI tooling operations."},
     {"name": "Carousel", "description": "Instagram carousel generation and export."},
     {"name": "Catalog", "description": "AI-assisted catalog planning flow."},
+    {"name": "Waitlist", "description": "Public waitlist endpoints."},
+    {"name": "Models", "description": "Model tier catalog for UI."},
+    {"name": "Testimonials", "description": "Public testimonials and moderation-backed submission flow."},
+    {"name": "Compare Models", "description": "Persisted multi-model comparison sessions."},
     {"name": "Health", "description": "Health checks."},
 ]
 
@@ -221,6 +229,10 @@ app.include_router(internal_metrics_router, prefix="/api/internal", tags=["Inter
 app.include_router(ad_creator_router, prefix="/api/ad-creator", tags=["Ad Creator"])
 app.include_router(template_marketplace_router, prefix="/api", tags=["Template Marketplace"])
 app.include_router(folders_router, prefix="/api/folders", tags=["Folders"])
+app.include_router(waitlist_router, prefix="/api/waitlist", tags=["Waitlist"])
+app.include_router(model_catalog_router, prefix="/api/models", tags=["Models"])
+app.include_router(testimonials_router, prefix="/api/testimonials", tags=["Testimonials"])
+app.include_router(comparison_sessions_router, prefix="/api/compare-models", tags=["Compare Models"])
 @app.get("/api/health", include_in_schema=False)
 @app.get(
     "/health",

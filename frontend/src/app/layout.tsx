@@ -7,42 +7,20 @@ import { WhatsAppButton } from "@/components/landing/WhatsAppButton";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://smartdesign.id"),
-  title: "Edit Foto Produk AI UMKM & Katalog Otomatis 2026 | SmartDesign Studio",
-  description: "Platform edit foto produk AI untuk UMKM dan pembuat katalog marketplace otomatis. Dari cerita jadi desain siap posting dalam 30 detik. Solusi konten bisnis 2026.",
-  keywords: [
-    "edit foto produk ai umkm",
-    "katalog marketplace otomatis",
-    "desain katalog ai 2026",
-    "bikin konten shopee tiktok otomatis",
-    "background remover ai",
-    "foto promosi umkm",
-    "studio visual ai indonesia",
-    "studio foto online umkm"
-  ],
-  alternates: {
-    canonical: "/",
-  },
+  title: "SmartDesign Studio",
+  description: "Platform desain AI untuk UMKM Indonesia.",
   openGraph: {
-    title: "Edit Foto Produk AI UMKM & Katalog Otomatis 2026 | SmartDesign",
-    description: "Dari cerita jadi desain siap posting dalam 30 detik. Solusi praktis pembuatan katalog e-commerce untuk UMKM Indonesia.",
-    url: "/",
+    title: "SmartDesign Studio",
+    description: "Platform desain AI untuk UMKM Indonesia.",
+    url: "https://smartdesign.id",
     siteName: "SmartDesign Studio",
     locale: "id_ID",
     type: "website",
-    images: [
-      {
-        url: "/images/examples/bg-swap-after.png",
-        width: 1200,
-        height: 630,
-        alt: "SmartDesign Studio - AI foto produk dan desain katalog otomatis untuk UMKM",
-      }
-    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Edit Foto Produk AI UMKM & Katalog Otomatis | SmartDesign Studio",
-    description: "Pembuat katalog marketplace otomatis. Dari cerita jadi desain siap posting dalam 30 detik.",
-    images: ["/images/examples/bg-swap-after.png"],
+    title: "SmartDesign Studio",
+    description: "Platform desain AI untuk UMKM Indonesia.",
   },
   robots: {
     index: true,

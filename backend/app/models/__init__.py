@@ -19,3 +19,6 @@ from app.models.project_version import ProjectVersion as ProjectVersion
 from app.models.brand_memory import BrandMemory as BrandMemory
 from app.models.storage_purchase import StoragePurchase as StoragePurchase
 from app.models.storage_quota_ledger import StorageQuotaLedger as StorageQuotaLedger
+from app.models.waitlist_entry import WaitlistEntry as WaitlistEntry
+from app.models.testimonial import Testimonial as Testimonial
+from app.models.comparison_session import ComparisonSession as ComparisonSession

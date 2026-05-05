@@ -19,6 +19,8 @@ class Settings(BaseSettings):
 
     # Email
     RESEND_API_KEY: str = ""
+    WAITLIST_EMAIL_FROM: str = "SmartDesign <system@nugrohopramono.my.id>"
+    WAITLIST_LEAD_MAGNET_URL: str = ""
 
     # Image Generation (Fal.ai)
     FAL_KEY: str = ""

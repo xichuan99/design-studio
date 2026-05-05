@@ -87,9 +87,9 @@ class DesignGenerationRequest(BaseModel):
         None, description="Optional seed for reproducible generation"
     )
     quality: str = Field(
-        "standard",
-        description="Model quality tier: 'standard' (Flux Pro) or 'ultra' (gpt-image-2, 2× credits)",
-        pattern="^(standard|ultra)$",
+        "auto",
+        description="Model tier selector: auto, basic, pro, ultra. Legacy values standard/ultra are still accepted.",
+        pattern="^(auto|basic|pro|ultra|standard)$",
     )
 
     model_config = ConfigDict(
@@ -158,6 +158,11 @@ class RedesignRequest(BaseModel):
     preserve_product: bool = Field(
         False,
         description="Jika True, AI akan mempertahankan bentuk, warna, dan identitas produk asli.",
+    )
+    quality: str = Field(
+        "auto",
+        description="Model tier selector: auto, basic, pro, ultra. Legacy values standard/ultra are still accepted.",
+        pattern="^(auto|basic|pro|ultra|standard)$",
     )
 
     model_config = ConfigDict(

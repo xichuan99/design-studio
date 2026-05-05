@@ -50,6 +50,11 @@ class UserResponse(BaseModel):
     credits_remaining: int = Field(
         ..., description="Current available credits", json_schema_extra={"example": 25}
     )
+    plan_tier: str = Field(
+        "starter",
+        description="User entitlement plan tier",
+        json_schema_extra={"example": "starter"},
+    )
     storage_used: int = Field(
         0,
         description="Storage used by the user in bytes",
@@ -80,6 +85,7 @@ class UserResponse(BaseModel):
                 "name": "Siti Rahma",
                 "avatar_url": "https://example.com/avatar.jpg",
                 "credits_remaining": 25,
+                "plan_tier": "starter",
                 "storage_used": 102400,
                 "storage_quota": 104857600,
                 "provider": "credentials",

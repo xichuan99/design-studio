@@ -7,9 +7,10 @@ Two tiers:
 
 import logging
 import time
+from typing import Optional
 
 import redis.asyncio as redis
-from fastapi import Depends
+from fastapi import Depends, Request
 
 from app.api.deps import get_current_user
 from app.core.exceptions import AppException
@@ -76,3 +77,31 @@ async def rate_limit_reads(current_user: User = Depends(get_current_user)) -> Us
 # Backward-compatible alias — existing imports keep working without changes
 # ---------------------------------------------------------------------------
 rate_limit_dependency = rate_limit_actions
+
+
+def _extract_client_ip(request: Request) -> str:
+    forwarded_for = request.headers.get("x-forwarded-for")
+    if forwarded_for:
+        first = forwarded_for.split(",")[0].strip()
+        if first:
+            return first
+    if request.client and request.client.host:
+        return request.client.host
+    return "unknown"
+
+
+async def rate_limit_public(
+    request: Request,
+    email: Optional[str] = None,
+    action: str = "public",
+    limit: int = 10,
+) -> None:
+    """Rate limiter for unauthenticated endpoints.
+
+    Applies limit per source IP and, when provided, per normalized email.
+    """
+    ip = _extract_client_ip(request)
+    await _check_rate_limit(f"rate_limit:{action}:ip:{ip}", limit=limit)
+    if email:
+        normalized = email.strip().lower()
+        await _check_rate_limit(f"rate_limit:{action}:email:{normalized}", limit=limit)

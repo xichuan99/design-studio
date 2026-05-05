@@ -79,6 +79,11 @@ class AuthResponse(BaseModel):
         description="Remaining generation credits",
         json_schema_extra={"example": 10},
     )
+    plan_tier: str = Field(
+        "starter",
+        description="Current plan tier for entitlement",
+        json_schema_extra={"example": "starter"},
+    )
     access_token: Optional[str] = Field(
         None,
         description="JWT access token",
@@ -99,6 +104,7 @@ class AuthResponse(BaseModel):
                 "name": "Budi Santoso",
                 "avatar_url": "https://example.com/avatar.jpg",
                 "credits_remaining": 10,
+                "plan_tier": "starter",
                 "access_token": "eyJhbG...",
                 "refresh_token": "eyJhbG...",
             }

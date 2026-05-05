@@ -173,10 +173,78 @@ export interface UserResponse {
     name: string;
     avatar_url?: string | null;
     credits_remaining: number;
+    plan_tier: 'starter' | 'pro' | 'business';
     storage_used: number;
     storage_quota: number;
     provider: string;
     created_at: string;
+}
+
+export type ModelTier = 'auto' | 'basic' | 'pro' | 'ultra';
+
+export interface ModelCatalogItem {
+    tier: ModelTier;
+    label: string;
+    description: string;
+    supported_tools: string[];
+    default_for_user: boolean;
+    accessible: boolean;
+    reason?: string | null;
+}
+
+export interface ModelCatalogResponse {
+    items: ModelCatalogItem[];
+}
+
+export interface ComparisonVariant {
+    tier: 'basic' | 'pro' | 'ultra';
+    status: 'queued' | 'processing' | 'completed' | 'failed';
+    estimated_cost: number;
+    result_url?: string | null;
+    error_message?: string | null;
+}
+
+export interface ComparisonSessionResponse {
+    id: string;
+    status: 'queued' | 'processing' | 'completed' | 'partial_failed' | 'failed';
+    share_slug: string;
+    raw_text: string;
+    aspect_ratio: string;
+    integrated_text: boolean;
+    requested_tiers: Array<'basic' | 'pro' | 'ultra'>;
+    variants: ComparisonVariant[];
+    charged_credits: number;
+    error_message?: string | null;
+    created_at: string;
+    completed_at?: string | null;
+}
+
+export interface ComparisonSessionCreateRequest {
+    raw_text: string;
+    aspect_ratio: string;
+    tiers: Array<'basic' | 'pro' | 'ultra'>;
+    integrated_text?: boolean;
+}
+
+export interface TestimonialCreateRequest {
+    name: string;
+    role: string;
+    quote: string;
+}
+
+export interface TestimonialResponseItem {
+    id: string;
+    name: string;
+    role: string;
+    quote: string;
+    status: string;
+    created_at: string;
+}
+
+export interface TestimonialSubmitResponse {
+    item: TestimonialResponseItem;
+    is_update: boolean;
+    message: string;
 }
 
 // --- Credit History Types ---
@@ -564,6 +632,7 @@ export interface GenerateDesignRequest {
     product_image_url?: string;
     remove_product_bg?: boolean;
     seed?: string;
+    quality?: ModelTier | 'standard';
 }
 
 export interface RedesignRequest {
@@ -574,6 +643,7 @@ export interface RedesignRequest {
     style_preference?: string;
     brand_kit_id?: string;
     preserve_product?: boolean;
+    quality?: ModelTier | 'standard';
 }
 
 export interface UploadImageResponse {

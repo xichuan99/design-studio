@@ -20,6 +20,24 @@ export function PricingSection() {
           </p>
         </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Starter</p>
+            <h3 className="mt-2 text-xl font-bold text-white">Auto + Basic</h3>
+            <p className="mt-2 text-sm text-slate-400">Untuk konten rutin yang butuh cepat, aman, dan tetap konsisten.</p>
+          </div>
+          <div className="rounded-2xl border border-purple-500/20 bg-purple-900/15 p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-purple-300">Pro</p>
+            <h3 className="mt-2 text-xl font-bold text-white">Buka Tier Pro</h3>
+            <p className="mt-2 text-sm text-slate-300">Naik kelas untuk detail visual harian yang lebih rapi dan fleksibel.</p>
+          </div>
+          <div className="rounded-2xl border border-blue-500/20 bg-blue-900/15 p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-300">Business</p>
+            <h3 className="mt-2 text-xl font-bold text-white">Buka Tier Ultra</h3>
+            <p className="mt-2 text-sm text-slate-300">Untuk campaign prioritas tinggi saat Anda butuh kualitas paling premium.</p>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
           
           {/* Credit Packages (Left / Top) */}
@@ -43,6 +61,7 @@ export function PricingSection() {
               <ul className="space-y-3 text-sm text-slate-300">
                 <li className="flex gap-2"><Check className="w-4 h-4 text-green-400 shrink-0" /> Termasuk daily claim (5 kr/hari)</li>
                 <li className="flex gap-2"><Check className="w-4 h-4 text-green-400 shrink-0" /> Akses semua tools AI</li>
+                <li className="flex gap-2"><Check className="w-4 h-4 text-green-400 shrink-0" /> Default model: Auto atau Basic</li>
               </ul>
             </div>
 
@@ -68,6 +87,7 @@ export function PricingSection() {
               <ul className="space-y-3 text-sm text-slate-300">
                 <li className="flex gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0" /> Biaya per proses lebih ringan</li>
                 <li className="flex gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0" /> Daily claim 10 kr/hari</li>
+                <li className="flex gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0" /> Buka pilihan model Pro di create flow</li>
               </ul>
             </div>
 
@@ -85,7 +105,7 @@ export function PricingSection() {
                     <span className="text-3xl font-bold text-white">Rp 150.000</span>
                     <span className="bg-blue-500/20 text-blue-400 text-xs px-2 py-0.5 rounded font-bold">Lebih efisien per proses</span>
                   </div>
-                  <div className="text-xs text-slate-400 mt-1">Daily claim 20 kr/hari</div>
+                  <div className="text-xs text-slate-400 mt-1">Daily claim 20 kr/hari + akses Ultra</div>
                 </div>
                 <div className="flex items-center gap-2 p-3 rounded-xl bg-black/30 border border-white/10 w-full sm:w-auto justify-center">
                   <Star className="w-6 h-6 text-yellow-500 fill-current" />
@@ -135,6 +155,10 @@ export function PricingSection() {
 
                 <p className="text-center text-xs text-slate-400 -mt-2">
                   Mulai dari paket yang paling nyaman dulu, lalu sesuaikan saat kebutuhan produksi konten bertambah.
+                </p>
+
+                <p className="text-center text-xs text-slate-500">
+                  Nama tier selalu sama di landing, selector create, dan katalog model: Auto, Basic, Pro, Ultra.
                 </p>
                 
                 <p className="text-center text-xs text-slate-500">

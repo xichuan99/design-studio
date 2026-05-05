@@ -161,6 +161,39 @@ export function useAiToolsEndpoints() {
             return res.json();
         }, [API_BASE_URL, getHeaders]);
 
+    const createComparisonSession = useCallback(async (payload: Types.ComparisonSessionCreateRequest): Promise<Types.ComparisonSessionResponse> => {
+            const res = await fetch(`${API_BASE_URL}/compare-models/sessions`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(payload),
+            });
+            if (!res.ok) {
+                const errBase = await res.json().catch(() => ({}));
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to create comparison session');
+            }
+            return res.json();
+        }, [API_BASE_URL, getHeaders]);
+
+    const getComparisonSession = useCallback(async (sessionId: string): Promise<Types.ComparisonSessionResponse> => {
+            const res = await fetch(`${API_BASE_URL}/compare-models/sessions/${sessionId}`, {
+                headers: getHeaders(),
+            });
+            if (!res.ok) {
+                const errBase = await res.json().catch(() => ({}));
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to fetch comparison session');
+            }
+            return res.json();
+        }, [API_BASE_URL, getHeaders]);
+
+    const getSharedComparisonSession = useCallback(async (shareSlug: string): Promise<Types.ComparisonSessionResponse> => {
+            const res = await fetch(`${API_BASE_URL}/compare-models/share/${shareSlug}`);
+            if (!res.ok) {
+                const errBase = await res.json().catch(() => ({}));
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to fetch shared comparison session');
+            }
+            return res.json();
+        }, [API_BASE_URL]);
+
     const getMyGenerations = useCallback(async (limit: number = 20, offset: number = 0, folderId?: string | null) => {
             const params = new URLSearchParams({ limit: limit.toString(), offset: offset.toString() });
             if (folderId) params.append('folder_id', folderId);
@@ -575,6 +608,30 @@ export function useAiToolsEndpoints() {
             }
         }, [API_BASE_URL, getHeaders]);
 
+    const getModelCatalog = useCallback(async (): Promise<Types.ModelCatalogResponse> => {
+            const res = await fetch(`${API_BASE_URL}/models`, {
+                headers: getHeaders(),
+            });
+            if (!res.ok) {
+                const errBase = await res.json().catch(() => ({}));
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to fetch model catalog');
+            }
+            return res.json();
+        }, [API_BASE_URL, getHeaders]);
+
+    const submitTestimonial = useCallback(async (payload: Types.TestimonialCreateRequest): Promise<Types.TestimonialSubmitResponse> => {
+            const res = await fetch(`${API_BASE_URL}/testimonials`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(payload),
+            });
+            if (!res.ok) {
+                const errBase = await res.json().catch(() => ({}));
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to submit testimonial');
+            }
+            return res.json();
+        }, [API_BASE_URL, getHeaders]);
+
     return {
         generateDesign,
         redesignFromReference,
@@ -584,6 +641,9 @@ export function useAiToolsEndpoints() {
         parseDesignText,
         uploadImage,
         getJobStatus,
+        createComparisonSession,
+        getComparisonSession,
+        getSharedComparisonSession,
         getMyGenerations,
         deleteGeneration,
         createToolJob,
@@ -607,5 +667,7 @@ export function useAiToolsEndpoints() {
         getMyToolResults,
         deleteToolResult,
         generateProjectTitle,
+        getModelCatalog,
+        submitTestimonial,
     };
 }

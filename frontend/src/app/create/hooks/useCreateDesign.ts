@@ -3,6 +3,8 @@ import {
     useProjectApi,
     BrandKit,
     CopywritingVariation,
+    ModelCatalogItem,
+    ModelTier,
 } from "@/lib/api";
 import { generateCanvasElementsFromTemplate } from "@/lib/templateEngine";
 import { useRouter } from "next/navigation";
@@ -28,12 +30,16 @@ export interface SavedCreateState {
     removeProductBg: boolean;
     copyVariations: CopywritingVariation[];
     userIntent: UserIntent;
+    selectedModelTier: ModelTier;
 }
 
 export function useCreateDesign() {
     const router = useRouter();
     const posthog = usePostHog();
-    const { generateDesign, redesignFromReference, getJobStatus, saveProject, uploadImage, getActiveBrandKit, clarifyUnified, generateCopywriting, parseDesignText, generateProjectTitle, getStorageUsage } = useProjectApi();
+    const { generateDesign, redesignFromReference, getJobStatus, saveProject, uploadImage, getActiveBrandKit, clarifyUnified, generateCopywriting, parseDesignText, generateProjectTitle, getStorageUsage, getModelCatalog, submitTestimonial } = useProjectApi();
+
+    const GENERATED_COUNT_STORAGE_KEY = "smartdesign_generated_count_v1";
+    const TESTIMONIAL_SUBMITTED_STORAGE_KEY = "smartdesign_testimonial_submitted_v1";
 
     const [rawText, setRawText] = useState("");
     const [aspectRatio, setAspectRatio] = useState("1:1");
@@ -53,6 +59,17 @@ export function useCreateDesign() {
     const [briefAnswers, setBriefAnswers] = useState<Record<string, string>>({});
     const [removeProductBg, setRemoveProductBg] = useState(false);
     const [userIntent, setUserIntent] = useState<UserIntent>(null);
+    const [selectedModelTier, setSelectedModelTier] = useState<ModelTier>("auto");
+    const [modelCatalog, setModelCatalog] = useState<ModelCatalogItem[]>([]);
+    const [generatedDesignCount, setGeneratedDesignCount] = useState(0);
+    const [showTestimonialPrompt, setShowTestimonialPrompt] = useState(false);
+    const [isSubmittingTestimonial, setIsSubmittingTestimonial] = useState(false);
+    const [hasSubmittedTestimonial, setHasSubmittedTestimonial] = useState(false);
+    const [testimonialForm, setTestimonialForm] = useState({
+        name: "",
+        role: "",
+        quote: "",
+    });
     
     // Brand Kit Opt-in State
     const [brandKitEnabled, setBrandKitEnabled] = useState(false);
@@ -94,6 +111,18 @@ export function useCreateDesign() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    useEffect(() => {
+        const fetchModelCatalog = async () => {
+            try {
+                const catalog = await getModelCatalog();
+                setModelCatalog(catalog.items || []);
+            } catch (err) {
+                console.error("Failed to fetch model catalog:", err);
+            }
+        };
+        fetchModelCatalog();
+    }, [getModelCatalog]);
+
     // Image History State
     const [imageHistory, setImageHistory] = useState<{ url: string; prompt: string }[]>([]);
     const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -124,12 +153,79 @@ export function useCreateDesign() {
                 setRemoveProductBg(parsed.removeProductBg || false);
                 setCopyVariations(parsed.copyVariations || []);
                 setUserIntent(parsed.userIntent || null);
+                setSelectedModelTier(parsed.selectedModelTier || "auto");
             } catch (e) {
                 console.error("Failed to parse saved state", e);
             }
         }
+
+        const savedGeneratedCount = localStorage.getItem(GENERATED_COUNT_STORAGE_KEY);
+        if (savedGeneratedCount) {
+            const parsedCount = Number(savedGeneratedCount);
+            if (!Number.isNaN(parsedCount) && parsedCount > 0) {
+                setGeneratedDesignCount(parsedCount);
+            }
+        }
+
+        const testimonialSubmitted = localStorage.getItem(TESTIMONIAL_SUBMITTED_STORAGE_KEY) === "1";
+        setHasSubmittedTestimonial(testimonialSubmitted);
+
         setIsInitialized(true);
     }, []);
+
+    useEffect(() => {
+        if (!isInitialized) return;
+        if (generatedDesignCount < 5 || hasSubmittedTestimonial) return;
+
+        setShowTestimonialPrompt(true);
+    }, [generatedDesignCount, hasSubmittedTestimonial, isInitialized]);
+
+    const recordDesignGenerated = useCallback(() => {
+        setGeneratedDesignCount(prev => {
+            const next = prev + 1;
+            localStorage.setItem(GENERATED_COUNT_STORAGE_KEY, String(next));
+
+            if (next >= 5 && !hasSubmittedTestimonial) {
+                setShowTestimonialPrompt(true);
+                posthog?.capture('testimonial_prompt_shown', {
+                    generated_count: next,
+                    source: 'create_generation_success',
+                });
+            }
+
+            return next;
+        });
+    }, [hasSubmittedTestimonial, posthog]);
+
+    const handleSubmitTestimonialPrompt = useCallback(async () => {
+        const payload = {
+            name: testimonialForm.name.trim(),
+            role: testimonialForm.role.trim(),
+            quote: testimonialForm.quote.trim(),
+        };
+
+        if (payload.name.length < 2 || payload.role.length < 2 || payload.quote.length < 12) {
+            toast.error('Lengkapi nama, role, dan testimoni minimal 12 karakter.');
+            return;
+        }
+
+        setIsSubmittingTestimonial(true);
+        try {
+            await submitTestimonial(payload);
+            setHasSubmittedTestimonial(true);
+            localStorage.setItem(TESTIMONIAL_SUBMITTED_STORAGE_KEY, '1');
+            setShowTestimonialPrompt(false);
+            posthog?.capture('testimonial_submitted', {
+                source: 'create_prompt_after_5_generations',
+            });
+            toast.success('Terima kasih! Testimoni Anda berhasil dikirim.');
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Gagal mengirim testimoni.';
+            toast.error(message);
+        } finally {
+            setIsSubmittingTestimonial(false);
+        }
+    }, [posthog, submitTestimonial, testimonialForm]);
 
     // Save state to localStorage whenever it changes
     useEffect(() => {
@@ -149,13 +245,14 @@ export function useCreateDesign() {
             briefQuestions,
             briefAnswers,
             copyVariations,
-            userIntent
+            userIntent,
+            selectedModelTier,
         };
         localStorage.setItem('smartdesign_create_state', JSON.stringify(stateToSave));
     }, [
         isInitialized, rawText, aspectRatio, currentStep, createMode, redesignStrength,
         parsedData, imageHistory, activeImageIndex, integratedText, removeProductBg,
-        briefQuestions, briefAnswers, copyVariations, userIntent
+        briefQuestions, briefAnswers, copyVariations, userIntent, selectedModelTier
     ]);
 
     const handleTogglePromptPart = useCallback((index: number) => {
@@ -185,6 +282,7 @@ export function useCreateDesign() {
             setReferencePreview(null);
             setRemoveProductBg(false);
             setUserIntent(null);
+            setSelectedModelTier("auto");
         }
     }, []);
 
@@ -368,6 +466,7 @@ export function useCreateDesign() {
                     raw_text: finalPrompt,
                     strength: redesignStrength,
                     aspect_ratio: aspectRatio,
+                    quality: selectedModelTier,
                     brand_kit_id: undefined as string | undefined
                 };
                 if (activeBrandKit && brandKitEnabled) {
@@ -382,6 +481,7 @@ export function useCreateDesign() {
                     integrated_text: integratedText,
                     remove_product_bg: removeProductBg && !!uploadedReferenceUrl,
                     product_image_url: removeProductBg ? uploadedReferenceUrl : undefined,
+                    quality: selectedModelTier,
                     brand_kit_id: undefined as string | undefined
                 };
                 if (activeBrandKit && brandKitEnabled) {
@@ -415,6 +515,12 @@ export function useCreateDesign() {
                     });
                     setCurrentStep('preview');
                     posthog?.capture('create_generation_success', { create_mode: createMode });
+                    posthog?.capture('design_generated', {
+                        create_mode: createMode,
+                        aspect_ratio: aspectRatio,
+                        quality: selectedModelTier,
+                    });
+                    recordDesignGenerated();
                 } else {
                     throw new Error(statusData.error_message || "Generation failed");
                 }
@@ -450,6 +556,12 @@ export function useCreateDesign() {
                         });
                         setCurrentStep('preview');
                         posthog?.capture('create_generation_success', { create_mode: createMode });
+                        posthog?.capture('design_generated', {
+                            create_mode: createMode,
+                            aspect_ratio: aspectRatio,
+                            quality: selectedModelTier,
+                        });
+                        recordDesignGenerated();
                     } else if (statusData.status === "failed") {
                         throw new Error(statusData.error_message || "Design generation failed");
                     }
@@ -534,7 +646,7 @@ export function useCreateDesign() {
         } finally {
             setIsGeneratingImage(false);
         }
-    }, [parsedData, rawText, referenceFile, aspectRatio, integratedText, removeProductBg, activeBrandKit, brandKitEnabled, createMode, redesignStrength, getStorageUsage, uploadImage, generateDesign, redesignFromReference, getJobStatus, router, posthog]);
+    }, [parsedData, rawText, referenceFile, aspectRatio, integratedText, removeProductBg, activeBrandKit, brandKitEnabled, createMode, redesignStrength, selectedModelTier, getStorageUsage, uploadImage, generateDesign, redesignFromReference, getJobStatus, router, posthog, recordDesignGenerated]);
 
     const handleProceedToEditor = useCallback(async () => {
         if (!parsedData) return;
@@ -674,6 +786,17 @@ export function useCreateDesign() {
         brandKitEnabled,
         setBrandKitEnabled,
         userIntent,
-        setUserIntent
+        setUserIntent,
+        selectedModelTier,
+        setSelectedModelTier,
+        modelCatalog,
+        generatedDesignCount,
+        showTestimonialPrompt,
+        setShowTestimonialPrompt,
+        testimonialForm,
+        setTestimonialForm,
+        isSubmittingTestimonial,
+        hasSubmittedTestimonial,
+        handleSubmitTestimonialPrompt,
     };
 }

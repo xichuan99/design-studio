@@ -3,6 +3,7 @@ from app.schemas.error import ERROR_RESPONSES
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy import func
 import secrets
 from datetime import datetime, timedelta, timezone
 import logging
@@ -18,6 +19,7 @@ from app.core.security import (
 )
 from app.models.user import User
 from app.schemas.auth import RegisterRequest, LoginRequest, AuthResponse, RefreshTokenRequest, ForgotPasswordRequest, ResetPasswordRequest
+from app.models.waitlist_entry import WaitlistEntry
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +41,8 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
     Otherwise, creates the user, hashes the password, and logs 10 bonus credits for signing up.
     """
     # Check if user already exists
-    result = await db.execute(select(User).where(User.email == data.email))
+    normalized_email = data.email.strip().lower()
+    result = await db.execute(select(User).where(func.lower(User.email) == normalized_email))
     existing_user = result.scalar_one_or_none()
 
     if existing_user:
@@ -50,7 +53,7 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
     # Create new user
     hashed_password = get_password_hash(data.password)
     user = User(
-        email=data.email,
+        email=normalized_email,
         name=data.name,
         password_hash=hashed_password,
         provider="credentials",
@@ -66,6 +69,17 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
 
     await log_credit_change(db, user, SIGNUP_BONUS, "Bonus pendaftaran")
 
+    waitlist_result = await db.execute(
+        select(WaitlistEntry).where(
+            func.lower(WaitlistEntry.email) == normalized_email,
+            WaitlistEntry.converted_user_id.is_(None),
+        )
+    )
+    waitlist_entry = waitlist_result.scalar_one_or_none()
+    if waitlist_entry:
+        waitlist_entry.converted_user_id = user.id
+        waitlist_entry.converted_at = datetime.now(timezone.utc)
+
     await db.commit()
     await db.refresh(user)
 
@@ -78,6 +92,7 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
         "name": user.name,
         "avatar_url": user.avatar_url,
         "credits_remaining": user.credits_remaining,
+        "plan_tier": user.plan_tier,
         "access_token": access_token,
         "refresh_token": refresh_token,
     }
@@ -121,6 +136,7 @@ async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
         "name": user.name,
         "avatar_url": user.avatar_url,
         "credits_remaining": user.credits_remaining,
+        "plan_tier": user.plan_tier,
         "access_token": access_token,
         "refresh_token": refresh_token,
     }
@@ -166,6 +182,7 @@ async def refresh_tokens(data: RefreshTokenRequest, db: AsyncSession = Depends(g
         "name": user.name,
         "avatar_url": user.avatar_url,
         "credits_remaining": user.credits_remaining,
+        "plan_tier": user.plan_tier,
         "access_token": new_access,
         "refresh_token": new_refresh,
     }

@@ -5,6 +5,7 @@ import uuid
 from app.core.database import Base
 
 STORAGE_QUOTA_FREE = 104857600  # 100 MB in bytes
+PLAN_TIER_STARTER = "starter"
 
 
 class User(Base):
@@ -19,6 +20,7 @@ class User(Base):
     from app.core.credit_costs import DEFAULT_CREDITS
 
     credits_remaining = Column(Integer, nullable=False, default=DEFAULT_CREDITS)
+    plan_tier = Column(String, nullable=False, default=PLAN_TIER_STARTER)
     storage_used = Column(BigInteger, nullable=False, default=0)
     storage_quota = Column(BigInteger, nullable=False, default=STORAGE_QUOTA_FREE)
 

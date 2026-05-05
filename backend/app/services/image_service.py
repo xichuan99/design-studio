@@ -31,6 +31,7 @@ async def generate_background(
     visual_prompt: str,
     reference_image_url: str | None = None,
     reference_focus: str = "auto",
+    model_tier: str = "pro",
     style: str = "auto",
     aspect_ratio: str = "1:1",
     integrated_text: bool = False,
@@ -122,11 +123,18 @@ async def generate_background(
 
     import asyncio
 
+    normalized_tier = (model_tier or "pro").strip().lower()
+    if normalized_tier == "standard":
+        normalized_tier = "pro"
+
     # Choose model based on whether we have a reference image (image-to-image vs text-to-image)
     if reference_image_url:
         primary_model_id = FAL_IMAGE_IMAGE_TO_IMAGE_PRIMARY
     else:
-        primary_model_id = FAL_IMAGE_TEXT_TO_IMAGE_PRIMARY
+        if normalized_tier == "basic":
+            primary_model_id = FAL_IMAGE_TEXT_TO_IMAGE_FALLBACK
+        else:
+            primary_model_id = FAL_IMAGE_TEXT_TO_IMAGE_PRIMARY
 
     max_retries = 3
     base_delay = 2.0

@@ -22,6 +22,7 @@ from app.core.config import settings
 from uuid import UUID
 import re
 import httpx
+from app.core.model_tiers import default_model_tier_for_plan, is_model_accessible
 
 
 def sanitize_prompt_for_imagen(prompt: str) -> str:
@@ -480,7 +481,27 @@ async def generate_design(
             )
         )
 
-        use_ultra = getattr(request, "quality", "standard") == "ultra"
+        requested_quality = (getattr(request, "quality", "auto") or "auto").lower()
+        if requested_quality == "standard":
+            requested_quality = "pro"
+
+        if requested_quality == "auto":
+            selected_model_tier = default_model_tier_for_plan(current_user.plan_tier)
+        else:
+            selected_model_tier = requested_quality
+
+        required_plan_by_tier = {
+            "basic": "starter",
+            "pro": "pro",
+            "ultra": "business",
+        }
+        required_plan_tier = required_plan_by_tier.get(selected_model_tier, "starter")
+        if not is_model_accessible(current_user.plan_tier, required_plan_tier):
+            raise ValidationError(
+                detail=f"Model tier '{selected_model_tier}' membutuhkan paket minimal {required_plan_tier}."
+            )
+
+        use_ultra = selected_model_tier == "ultra"
         if use_ultra:
             from app.services.image_service import generate_background_ultra
             from app.core.credit_costs import COST_GENERATE_DESIGN_ULTRA, COST_GENERATE_DESIGN
@@ -498,6 +519,7 @@ async def generate_design(
                 visual_prompt=enhanced_prompt,
                 reference_image_url=effective_reference_image_url,
                 reference_focus=reference_focus,
+                model_tier=selected_model_tier,
                 style=style_key,
                 aspect_ratio=request.aspect_ratio,
                 integrated_text=request.integrated_text,
@@ -607,23 +629,51 @@ async def redesign_image(
     current_user: User = Depends(rate_limit_dependency),
 ):
     """Redesigns an image using Gemini Vision and FLUX.2 Dev."""
-    from app.core.credit_costs import COST_REDESIGN
+    from app.core.credit_costs import COST_REDESIGN, COST_REDESIGN_ULTRA
     from app.core.exceptions import InsufficientCreditsError, InternalServerError
     from app.services.credit_service import log_credit_change
     from app.services.redesign_service import (
         analyze_reference_image,
         run_flux_redesign,
     )
+    from app.services.image_service import build_gpt2_image_edit_args, run_gpt2_image_edit
     from app.services.storage_service import upload_image_tracked
     from datetime import datetime, timezone
 
-    if current_user.credits_remaining < COST_REDESIGN:
+    requested_quality = (getattr(request, "quality", "auto") or "auto").lower()
+    if requested_quality == "standard":
+        requested_quality = "pro"
+
+    if requested_quality == "auto":
+        selected_model_tier = default_model_tier_for_plan(current_user.plan_tier)
+    else:
+        selected_model_tier = requested_quality
+
+    required_plan_by_tier = {
+        "basic": "starter",
+        "pro": "pro",
+        "ultra": "business",
+    }
+    required_plan_tier = required_plan_by_tier.get(selected_model_tier, "starter")
+    if not is_model_accessible(current_user.plan_tier, required_plan_tier):
+        raise ValidationError(
+            detail=f"Model tier '{selected_model_tier}' membutuhkan paket minimal {required_plan_tier}."
+        )
+
+    credit_cost = COST_REDESIGN_ULTRA if selected_model_tier == "ultra" else COST_REDESIGN
+
+    if current_user.credits_remaining < credit_cost:
         raise InsufficientCreditsError(
             detail="Insufficient credits. Please upgrade or wait for a refill."
         )
 
     # Deduct credit
-    await log_credit_change(db, current_user, -COST_REDESIGN, "Redesign gambar")
+    await log_credit_change(
+        db,
+        current_user,
+        -credit_cost,
+        "Redesign gambar ultra" if selected_model_tier == "ultra" else "Redesign gambar",
+    )
 
     # Create a job record in the database
     job = Job(
@@ -681,13 +731,29 @@ async def redesign_image(
             preserve_product=request.preserve_product,
         )
 
-        # Step 2: Run Fal.ai image-to-image redesign.
-        image_bytes = await run_flux_redesign(
-            image_url=request.reference_image_url,
-            enriched_prompt=enriched_prompt,
-            strength=request.strength,
-            aspect_ratio=request.aspect_ratio.value,
-        )
+        # Step 2: Route redesign request to the selected model tier.
+        if selected_model_tier == "ultra":
+            ultra_result = await run_gpt2_image_edit(
+                build_gpt2_image_edit_args(
+                    prompt=enriched_prompt,
+                    image_urls=[request.reference_image_url],
+                )
+            )
+            result_url = ultra_result.get("images", [{}])[0].get("url")
+            if not result_url:
+                raise ValueError("No image URL returned from ultra redesign service")
+
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                image_response = await client.get(result_url)
+                image_response.raise_for_status()
+                image_bytes = image_response.content
+        else:
+            image_bytes = await run_flux_redesign(
+                image_url=request.reference_image_url,
+                enriched_prompt=enriched_prompt,
+                strength=request.strength,
+                aspect_ratio=request.aspect_ratio.value,
+            )
 
         if not image_bytes:
             raise ValueError("No image bytes returned from redesign service")
@@ -733,7 +799,12 @@ async def redesign_image(
 
         # Refund credit
         await log_credit_change(
-            db, current_user, COST_REDESIGN, "Refund: sistem error pada redesign"
+            db,
+            current_user,
+            credit_cost,
+            "Refund: sistem error pada redesign ultra"
+            if selected_model_tier == "ultra"
+            else "Refund: sistem error pada redesign",
         )
         await db.commit()
 

@@ -27,6 +27,14 @@ const faqs = [
   {
     question: "Bisakah saya mengedit langsung dari HP?",
     answer: "Tentu! SmartDesign Studio dirancang sepenuhnya responsif, sehingga Anda bisa memfoto produk dengan HP dan langsung mengeditnya melalui browser di HP Anda."
+  },
+  {
+    question: "Kenapa tidak langsung pakai ChatGPT atau Gemini saja?",
+    answer: "Chatbot AI bagus untuk ide awal, tapi biasanya belum menyatukan workflow desain bisnis end-to-end. SmartDesign menggabungkan multi-model AI, format siap platform, brand consistency, dan editor dalam satu alur agar hasilnya langsung lebih siap dipakai untuk kebutuhan promosi UMKM."
+  },
+  {
+    question: "Apa bedanya model AI Basic, Pro, dan Ultra?",
+    answer: "Basic difokuskan untuk kecepatan dan efisiensi biaya, Pro untuk kualitas detail harian, dan Ultra untuk kebutuhan campaign premium. Anda bisa memilih sesuai prioritas proyek, sementara mode Auto membantu memilih tier secara otomatis berdasarkan akses paket dan kebutuhan hasil."
   }
 ];
 

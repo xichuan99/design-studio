@@ -6,9 +6,11 @@ focused modules.
 
 from app.workers.ai_tool_jobs import process_ai_tool_job_task, run_ai_tool_job_now, run_ai_tool_job
 from app.workers.design_generation import generate_design_task
+from app.workers.comparison_sessions import process_comparison_session_task
 
 __all__ = [
     "generate_design_task",
+    "process_comparison_session_task",
     "process_ai_tool_job_task",
     "run_ai_tool_job_now",
     "run_ai_tool_job",

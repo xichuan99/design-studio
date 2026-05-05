@@ -6,12 +6,12 @@ import { useEffect, useState } from "react";
 import { redirect } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { usePostHog } from "posthog-js/react";
-import { ArrowRight, Layers, Loader2, Sparkles, Wand2 } from "lucide-react";
+import { ArrowRight, GitCompare, Layers, Loader2, Sparkles, Wand2 } from "lucide-react";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useProjectApi } from "@/lib/api";
-import { START_HUB_ENABLED } from "@/lib/feature-flags";
+import { COMPARE_MODELS_ENABLED, START_HUB_ENABLED } from "@/lib/feature-flags";
 import { featuredToolItems } from "@/lib/tool-catalog";
 
 interface ProjectSummary {
@@ -204,6 +204,21 @@ export default function StartPage() {
                             <CardDescription>Akses cepat ke alat edit foto yang sering digunakan.</CardDescription>
                         </CardHeader>
                         <CardContent className="grid gap-3">
+                            {COMPARE_MODELS_ENABLED && (
+                                <Link
+                                    href="/compare-models"
+                                    onClick={() => posthog?.capture("start_hub_quick_tool_opened", { tool_href: "/compare-models", tool_title: "Compare Models" })}
+                                    className="flex items-center gap-3 rounded-2xl border bg-muted/20 px-4 py-3 transition-colors hover:bg-muted/60"
+                                >
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-background shadow-sm">
+                                        <GitCompare className="h-5 w-5 text-primary" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-semibold text-foreground">Compare Models</p>
+                                        <p className="line-clamp-1 text-xs text-muted-foreground">Bandingkan output Basic, Pro, dan Ultra dari satu brief.</p>
+                                    </div>
+                                </Link>
+                            )}
                             {featuredToolItems.map((tool) => (
                                 <Link
                                     key={tool.href}

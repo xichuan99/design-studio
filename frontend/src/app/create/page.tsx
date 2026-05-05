@@ -18,6 +18,17 @@ import { UnifiedResultsView } from "@/components/create/UnifiedResultsView";
 import { ErrorModal } from "@/components/feedback/ErrorModal";
 import { InlineErrorBanner } from "@/components/feedback/InlineErrorBanner";
 import { BrandSwitcher } from '@/components/editor/BrandSwitcher';
+import { Button } from "@/components/ui/button";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useCreateDesign } from "./hooks/useCreateDesign";
 import { INTENT_FIRST_ENTRY_ENABLED, START_HUB_ENABLED } from "@/lib/feature-flags";
 
@@ -87,8 +98,27 @@ function LegacyCreatePage() {
         handleGenerateImage,
         handleProceedToEditor,
         brandKitEnabled, setBrandKitEnabled,
-        setUserIntent
+        setUserIntent,
+        selectedModelTier,
+        setSelectedModelTier,
+        modelCatalog,
+        generatedDesignCount,
+        showTestimonialPrompt,
+        setShowTestimonialPrompt,
+        testimonialForm,
+        setTestimonialForm,
+        isSubmittingTestimonial,
+        hasSubmittedTestimonial,
+        handleSubmitTestimonialPrompt,
     } = useCreateDesign();
+
+    const handleModelSelectorOpened = () => {
+        posthog?.capture('model_selector_opened', { create_mode: createMode });
+    };
+
+    const handleModelTierSelected = (tier: "auto" | "basic" | "pro" | "ultra") => {
+        posthog?.capture('model_tier_selected', { create_mode: createMode, tier });
+    };
 
     const mobileStepLabel = currentStep === 'brief'
         ? 'Lengkapi brief'
@@ -195,6 +225,11 @@ function LegacyCreatePage() {
                             setAspectRatio={setAspectRatio}
                             integratedText={integratedText}
                             setIntegratedText={setIntegratedText}
+                            selectedModelTier={selectedModelTier}
+                            setSelectedModelTier={setSelectedModelTier}
+                            modelCatalog={modelCatalog}
+                            onModelSelectorOpened={handleModelSelectorOpened}
+                            onModelTierSelected={handleModelTierSelected}
                             removeProductBg={removeProductBg}
                             setRemoveProductBg={setRemoveProductBg}
                             showManualRef={showManualRef}
@@ -588,6 +623,77 @@ function LegacyCreatePage() {
                 actionLabel={errorModalState.actionLabel}
                 onAction={errorModalState.onAction}
             />
+
+            <Dialog
+                open={showTestimonialPrompt}
+                onOpenChange={(nextOpen) => {
+                    if (!nextOpen && !hasSubmittedTestimonial) {
+                        posthog?.capture('testimonial_prompt_dismissed', {
+                            generated_count: generatedDesignCount,
+                            source: 'create_prompt_after_5_generations',
+                        });
+                    }
+                    setShowTestimonialPrompt(nextOpen);
+                }}
+            >
+                <DialogContent className="sm:max-w-xl">
+                    <DialogHeader>
+                        <DialogTitle>Bantu kami dengan testimoni singkat</DialogTitle>
+                        <DialogDescription>
+                            Anda sudah membuat {generatedDesignCount} desain. Cerita singkat Anda akan membantu creator lain memahami hasil yang bisa dicapai di SmartDesign.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <label htmlFor="testimonial-name" className="text-sm font-medium text-foreground">Nama</label>
+                            <Input
+                                id="testimonial-name"
+                                value={testimonialForm.name}
+                                onChange={(event) => setTestimonialForm((prev) => ({ ...prev, name: event.target.value }))}
+                                placeholder="Contoh: Rina Putri"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label htmlFor="testimonial-role" className="text-sm font-medium text-foreground">Role / bisnis</label>
+                            <Input
+                                id="testimonial-role"
+                                value={testimonialForm.role}
+                                onChange={(event) => setTestimonialForm((prev) => ({ ...prev, role: event.target.value }))}
+                                placeholder="Contoh: Owner Toko Fashion"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label htmlFor="testimonial-quote" className="text-sm font-medium text-foreground">Testimoni</label>
+                            <Textarea
+                                id="testimonial-quote"
+                                value={testimonialForm.quote}
+                                onChange={(event) => setTestimonialForm((prev) => ({ ...prev, quote: event.target.value }))}
+                                placeholder="Apa perubahan terbesar yang Anda rasakan sejak pakai SmartDesign?"
+                                rows={4}
+                            />
+                        </div>
+                    </div>
+
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setShowTestimonialPrompt(false)}
+                            disabled={isSubmittingTestimonial}
+                        >
+                            Nanti saja
+                        </Button>
+                        <Button
+                            type="button"
+                            onClick={handleSubmitTestimonialPrompt}
+                            disabled={isSubmittingTestimonial}
+                        >
+                            {isSubmittingTestimonial ? "Mengirim..." : "Kirim Testimoni"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
