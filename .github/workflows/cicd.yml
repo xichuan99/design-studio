@@ -14,7 +14,6 @@ env:
   REGISTRY: ghcr.io
   BACKEND_IMAGE: ghcr.io/clarinovist/design-studio-backend
   FRONTEND_IMAGE: ghcr.io/clarinovist/design-studio-frontend
-  QUANTUM_IMAGE: ghcr.io/clarinovist/design-studio-quantum
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 # ─────────────────────────────────────────────
@@ -27,7 +26,6 @@ jobs:
     outputs:
       backend_changed: ${{ steps.detect.outputs.backend_changed }}
       frontend_changed: ${{ steps.detect.outputs.frontend_changed }}
-      quantum_changed: ${{ steps.detect.outputs.quantum_changed }}
       any_changed: ${{ steps.detect.outputs.any_changed }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
@@ -42,7 +40,6 @@ jobs:
 
           backend_changed=false
           frontend_changed=false
-          quantum_changed=false
           infra_changed=false
 
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
@@ -66,7 +63,6 @@ jobs:
             case "$file" in
               backend/*) backend_changed=true ;;
               frontend/*) frontend_changed=true ;;
-              quantum-engine/*) quantum_changed=true ;;
               .github/workflows/*|docker-compose.yml|release-please-config.json|.release-please-manifest.json|VERSION)
                 infra_changed=true
                 ;;
@@ -76,24 +72,22 @@ jobs:
           if [[ "$infra_changed" == "true" ]]; then
             backend_changed=true
             frontend_changed=true
-            quantum_changed=true
           fi
 
           any_changed=false
-          if [[ "$backend_changed" == "true" || "$frontend_changed" == "true" || "$quantum_changed" == "true" ]]; then
+          if [[ "$backend_changed" == "true" || "$frontend_changed" == "true" ]]; then
             any_changed=true
           fi
 
           echo "backend_changed=$backend_changed" >> "$GITHUB_OUTPUT"
           echo "frontend_changed=$frontend_changed" >> "$GITHUB_OUTPUT"
-          echo "quantum_changed=$quantum_changed" >> "$GITHUB_OUTPUT"
           echo "any_changed=$any_changed" >> "$GITHUB_OUTPUT"
 
   test-backend:
     name: "🐍 Backend Tests & Lint"
     runs-on: ubuntu-latest
     needs: [changes]
-    if: needs.changes.outputs.backend_changed == 'true' || needs.changes.outputs.quantum_changed == 'true'
+    if: needs.changes.outputs.backend_changed == 'true'
 
     services:
       postgres:
@@ -159,12 +153,6 @@ jobs:
       - name: Pytest — Backend
         run: cd backend && pytest tests/ -v --tb=short
 
-      - name: Pytest — Quantum Engine
-        run: |
-          cd quantum-engine
-          python -m pip install -r requirements.txt
-          pytest tests/ -v --tb=short
-
 # ─────────────────────────────────────────────
 # Job 1b: Frontend Lint + Build (Node) — runs in PARALLEL with 1a
 # ─────────────────────────────────────────────
@@ -228,33 +216,6 @@ jobs:
           cache-from: type=gha,scope=backend
           cache-to: type=gha,mode=max,scope=backend
 
-  build-quantum:
-    name: "⚛️ Build Quantum Engine"
-    runs-on: ubuntu-latest
-    needs: [changes, test-backend]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.quantum_changed == 'true'
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
-      - uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
-        with:
-          context: ./quantum-engine
-          file: ./quantum-engine/Dockerfile
-          push: true
-          tags: |
-            ${{ env.QUANTUM_IMAGE }}:latest
-            ${{ env.QUANTUM_IMAGE }}:${{ github.sha }}
-          cache-from: type=gha,scope=quantum
-          cache-to: type=gha,mode=max,scope=quantum
-
   build-frontend:
     name: "🎨 Build Frontend"
     runs-on: ubuntu-latest
@@ -291,14 +252,13 @@ jobs:
   deploy:
     name: "🚀 Deploy ke VPS"
     runs-on: ubuntu-latest
-    needs: [changes, build-backend, build-quantum, build-frontend]
+    needs: [changes, build-backend, build-frontend]
     if: >-
       always() &&
       github.event_name == 'push' &&
       github.ref == 'refs/heads/main' &&
       needs.changes.outputs.any_changed == 'true' &&
       (needs.build-backend.result == 'success' || needs.build-backend.result == 'skipped') &&
-      (needs.build-quantum.result == 'success' || needs.build-quantum.result == 'skipped') &&
       (needs.build-frontend.result == 'success' || needs.build-frontend.result == 'skipped')
 
     steps:
@@ -309,7 +269,6 @@ jobs:
         env:
           BACKEND_CHANGED: ${{ needs.changes.outputs.backend_changed }}
           FRONTEND_CHANGED: ${{ needs.changes.outputs.frontend_changed }}
-          QUANTUM_CHANGED: ${{ needs.changes.outputs.quantum_changed }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
