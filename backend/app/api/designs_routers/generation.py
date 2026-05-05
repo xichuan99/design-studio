@@ -424,6 +424,7 @@ async def generate_design(
 
         # Step 2.5: Quantum Layout Optimization (Synchronous Fallback route)
         if settings.QUANTUM_LAYOUT_ENABLED:
+            import json as _json
             from app.services.quantum_service import optimize_quantum_layout
 
             quantum_layout = await optimize_quantum_layout(
@@ -431,6 +432,13 @@ async def generate_design(
             )
             if quantum_layout:
                 job.quantum_layout = quantum_layout
+                try:
+                    ql_data = _json.loads(quantum_layout)
+                    modifier = ql_data.get("image_prompt_modifier")
+                    if modifier:
+                        visual_prompt_final = f"{visual_prompt_final} {modifier}"
+                except Exception:
+                    pass
 
         await db.commit()
 

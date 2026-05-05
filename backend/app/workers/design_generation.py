@@ -105,12 +105,20 @@ async def _execute_pipeline(
 
         if settings.QUANTUM_LAYOUT_ENABLED and not checkpoint.get("quantum_layout"):
             from app.services.quantum_service import optimize_quantum_layout
+            import json as _json
 
             quantum_layout = await optimize_quantum_layout(
                 parsed_headline, parsed_sub_headline, parsed_cta
             )
             if quantum_layout:
                 await _update_job_status(job_id, quantum_layout=quantum_layout)
+                try:
+                    ql_data = _json.loads(quantum_layout)
+                    modifier = ql_data.get("image_prompt_modifier")
+                    if modifier:
+                        visual_prompt_final = f"{visual_prompt_final} {modifier}"
+                except Exception:
+                    pass
 
         upload_ref_url = reference_url
         if reference_url:

@@ -58,14 +58,8 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-  quantum-engine:
-    image: ${QUANTUM_IMAGE:-design-studio-quantum}
-    build:
-      context: ./quantum-engine
-      dockerfile: Dockerfile
-    ports:
-      - "8001:8001"
-    restart: unless-stopped
+  # quantum-engine: removed — layout optimization is now handled in-process
+  # by backend/app/services/placement_engine.py (no external container needed).
 
   frontend:
     image: ${FRONTEND_IMAGE:-design-studio-frontend}
