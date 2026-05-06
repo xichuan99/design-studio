@@ -2,7 +2,7 @@
 
 > *Updated: 2026-05-05 | Strategic pivot: Model-Agnostic Architecture + Counter AI Frontier*
 
-**May 2026 Update:** Backend sudah memiliki arsitektur model-agnostic (20+ model AI, GPT Image 2 via fal.ai, tiered pricing). Roadmap ini difokuskan untuk **mengekspos kemampuan backend ke UX** dan **membangun moat di layer platform (workflow + brand + editor)**, bukan di layer AI model.
+**May 2026 Update:** Backend sudah memiliki arsitektur model-agnostic dengan 3 model AI premium yang sudah terintegrasi: GPT Image 2 (via fal.ai), Flux (via fal.ai), dan Gemini Imagen — plus tiered pricing. Jumlah model akan terus bertambah seiring evaluasi berkelanjutan. Roadmap ini difokuskan untuk **mengekspos kemampuan backend ke UX** dan **membangun moat di layer platform (workflow + brand + editor)**, bukan di layer AI model.
 
 ## Prinsip Roadmap
 
@@ -18,10 +18,10 @@
 
 | Item | Detail | Status |
 |------|--------|:---:|
-| Landing page rewrite | Counter ChatGPT/GPT Image 2, multi-model messaging | 🔴 Belum |
-| Waitlist mechanism | Backend API + DB + frontend form + lead magnet delivery | 🔴 Belum |
-| Model selector UI | User bisa pilih Basic/Pro/Ultra di create flow | 🔴 Belum |
-| Pricing display Ultra tier | Tampilkan tier Ultra Quality di pricing | 🔴 Belum |
+| Landing page rewrite | Counter ChatGPT/GPT Image 2, multi-model messaging | 🟢 Done |
+| Waitlist mechanism | Backend API + DB + frontend form + lead magnet delivery | 🟢 Done |
+| Model selector UI | User bisa pilih Basic/Pro/Ultra di create flow | 🟢 Done |
+| Pricing display Ultra tier | Tampilkan tier Ultra Quality di pricing | 🟢 Done |
 
 **Milestone:** Landing page live. Waitlist capture email. User bisa pilih model AI.
 

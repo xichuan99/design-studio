@@ -13,7 +13,7 @@ ENV/
 coverage/
 test-results/
 playwright-report/
-blob-report/
+blob-report
 /playwright/.cache/
 /playwright/.auth/
 
@@ -26,7 +26,7 @@ build/
 dist/
 
 # Misc
-.DS_Store
+**/.DS_Store
 *.pem
 *.log
 build_log.txt
@@ -53,13 +53,19 @@ backend/add_credits.py
 scratch_scripts/
 backend/fix_tests.py
 
-# Business docs (private)
-docs/business/
+# Cache / Build artifacts
+.pytest_cache/
+.ruff_cache/
 
 # AI Agents & Tools
 .cursor/
 .cursorrules
 .agents/
 _agents
-.vscode/
-docs/
+.hermes/
+
+# Business docs (private)
+docs/business/
+
+# UAT test docs (not needed in repo)
+docs/uat/

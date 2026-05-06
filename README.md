@@ -83,7 +83,7 @@
 | **Backend** | Python 3.9+, FastAPI, SQLAlchemy 2.0 (async), Pydantic, Alembic |
 | **Queue** | Celery 5 + Redis 7 |
 | **Database** | PostgreSQL 16 |
-| **AI/ML** | Google Gemini Flash (text), Fal.ai SDXL/Flux (image), scikit-learn (color extraction) |
+| **AI/ML** | Google Gemini Flash (text), Fal.ai GPT Image 2 & Flux (image), scikit-learn (color extraction) |
 | **Storage** | Backblaze B2 (S3-compatible) |
 | **Auth** | NextAuth.js + Google OAuth |
 | **Monitoring** | Structured logging, Request ID middleware, optional PostHog |
