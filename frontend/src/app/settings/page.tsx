@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { ProfileSection } from "./components/ProfileSection";
 import { CreditsSection } from "./components/CreditsSection";
+import { ReferralSection } from "./components/ReferralSection";
 import { StorageSection } from "./components/StorageSection";
 import { DangerZoneSection } from "./components/DangerZoneSection";
 import { Loader2 } from "lucide-react";
@@ -41,6 +42,7 @@ export default function SettingsPage() {
                 <div className="space-y-2">
                     <ProfileSection />
                     <CreditsSection />
+                    <ReferralSection />
                     <Suspense fallback={<div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>}>
                         <StorageSection />
                     </Suspense>

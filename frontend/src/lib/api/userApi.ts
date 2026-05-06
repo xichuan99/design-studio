@@ -110,6 +110,33 @@ export function useUserEndpoints() {
         [API_BASE_URL, getHeaders]
     );
 
+    const applyReferralCode = useCallback(
+        async (payload: Types.ReferralApplyRequest): Promise<Types.ReferralApplyResponse> => {
+            const res = await fetch(`${API_BASE_URL}/referrals/apply`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(payload),
+            });
+            if (!res.ok) {
+                const errBody = await res.json().catch(() => ({}));
+                throw new Error(errBody?.error?.detail || errBody?.detail || 'Failed to apply referral code');
+            }
+            return res.json();
+        },
+        [API_BASE_URL, getHeaders]
+    );
+
+    const getReferralStatus = useCallback(async (): Promise<Types.ReferralStatusResponse> => {
+        const res = await fetch(`${API_BASE_URL}/referrals/status`, {
+            headers: getHeaders(),
+        });
+        if (!res.ok) {
+            const errBody = await res.json().catch(() => ({}));
+            throw new Error(errBody?.error?.detail || errBody?.detail || 'Failed to fetch referral status');
+        }
+        return res.json();
+    }, [API_BASE_URL, getHeaders]);
+
     return {
         getUserProfile,
         updateProfile,
@@ -119,5 +146,7 @@ export function useUserEndpoints() {
         getStorageAddons,
         createStoragePurchaseIntent,
         getStoragePurchases,
+        applyReferralCode,
+        getReferralStatus,
     };
 }

@@ -18,6 +18,13 @@ class User(Base):
     provider = Column(String, nullable=False, default="google")
     password_hash = Column(String, nullable=True)
     from app.core.credit_costs import DEFAULT_CREDITS
+    referral_code = Column(
+        String,
+        nullable=False,
+        unique=True,
+        index=True,
+        default=lambda: uuid.uuid4().hex[:12].upper(),
+    )
 
     credits_remaining = Column(Integer, nullable=False, default=DEFAULT_CREDITS)
     plan_tier = Column(String, nullable=False, default=PLAN_TIER_STARTER)

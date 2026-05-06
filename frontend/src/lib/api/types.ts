@@ -247,6 +247,12 @@ export interface TestimonialSubmitResponse {
     message: string;
 }
 
+export interface MultiFormatResponse {
+    image_url: string;
+    variants: Record<string, string>;
+    errors?: string[] | null;
+}
+
 // --- Credit History Types ---
 export interface CreditTransaction {
     id: string;
@@ -310,6 +316,43 @@ export interface StorageAddon {
     bytes_added: number;
     amount: number;
     currency: string;
+}
+
+// --- Referral Types ---
+export interface ReferralApplyRequest {
+    code: string;
+}
+
+export interface ReferralApplyResponse {
+    status: 'pending' | 'verified';
+    message: string;
+    referral: {
+        referrer_name: string;
+        status: string;
+        reward_credits: number;
+        applied_at: string;
+        verified_at?: string | null;
+        credited_at?: string | null;
+    };
+}
+
+export interface ReferralAppliedInfo {
+    referrer_name: string;
+    status: 'pending' | 'verified';
+    created_at: string;
+    verified_at?: string | null;
+}
+
+export interface ReferralSummary {
+    pending_count: number;
+    verified_count: number;
+    credits_earned_total: number;
+}
+
+export interface ReferralStatusResponse {
+    referral_code: string;
+    summary: ReferralSummary;
+    applied_referral?: ReferralAppliedInfo | null;
 }
 
 export interface StorageAddonListResponse {

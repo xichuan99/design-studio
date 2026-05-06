@@ -22,3 +22,4 @@ from app.models.storage_quota_ledger import StorageQuotaLedger as StorageQuotaLe
 from app.models.waitlist_entry import WaitlistEntry as WaitlistEntry
 from app.models.testimonial import Testimonial as Testimonial
 from app.models.comparison_session import ComparisonSession as ComparisonSession
+from app.models.referral import Referral as Referral
