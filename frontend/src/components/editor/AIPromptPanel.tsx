@@ -185,7 +185,7 @@ export const AIPromptPanel: React.FC = () => {
                     open: true,
                     type: 'storage',
                     title: 'Penyimpanan Penuh',
-                    description: 'Kuota penyimpanan Anda sudah penuh. Hapus file lama di pengaturan untuk menambah ruang.',
+                    description: 'Kuota penyimpanan Kamu sudah penuh. Hapus file lama di pengaturan untuk menambah ruang.',
                     actionLabel: 'Upgrade Storage',
                     onAction: () => {
                         window.location.href = '/settings?upgrade=storage';
@@ -200,7 +200,7 @@ export const AIPromptPanel: React.FC = () => {
                 });
             } else if (msg.toLowerCase().includes("timed out") || msg.toLowerCase().includes("timeout")) {
                 setInlineError({
-                    message: "Generasi memakan waktu terlalu lama. Kredit Anda tidak terpotong.",
+                    message: "Generasi memakan waktu terlalu lama. Kredit Kamu tidak terpotong.",
                     type: 'warning',
                 });
             } else {

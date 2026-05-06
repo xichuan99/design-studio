@@ -164,13 +164,13 @@ export const ManualTextPanel: React.FC = () => {
                         </div>
                     </div>
                     <p className="text-[11px] text-muted-foreground leading-relaxed pt-2 border-t border-primary/10">
-                        {activeBrandProfile.brand_strategy?.differentiator || "Teks baru akan mengikuti font Style Brand Kit Anda secara otomatis."}
+                        {activeBrandProfile.brand_strategy?.differentiator || "Teks baru akan mengikuti font Style Brand Kit Kamu secara otomatis."}
                     </p>
                 </div>
             ) : (
                 <div className="p-4 rounded-xl border border-dashed bg-muted/20 space-y-2 text-center">
                     <Palette className="w-5 h-5 mx-auto text-muted-foreground opacity-50 mb-1" />
-                    <p className="text-xs text-muted-foreground">Aktifkan Brand Kit untuk menerapkan font brand Anda secara otomatis.</p>
+                    <p className="text-xs text-muted-foreground">Aktifkan Brand Kit untuk menerapkan font brand Kamu secara otomatis.</p>
                 </div>
             )}
         </div>

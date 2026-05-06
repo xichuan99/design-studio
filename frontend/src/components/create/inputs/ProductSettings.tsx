@@ -43,7 +43,7 @@ export function ProductSettings({
                 <p className="text-xs leading-relaxed text-muted-foreground">
                     {createMode === 'redesign'
                         ? 'Unggah gambar utama yang ingin diubah. Ini menjadi dasar hasil redesign pertama.'
-                        : 'Opsional. Tambahkan foto jika Anda ingin AI memakai produk atau gaya visual tertentu sebagai acuan.'}
+                        : 'Opsional. Tambahkan foto jika Kamu ingin AI memakai produk atau gaya visual tertentu sebagai acuan.'}
                 </p>
             </div>
             <ReferenceImageUpload

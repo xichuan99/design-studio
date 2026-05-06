@@ -31,7 +31,7 @@ export function UnifiedResultsView({
                     Pastikan Arahan Visual Sudah Sesuai
                 </h2>
                 <p className="text-muted-foreground text-sm max-w-lg mx-auto mt-1">
-                    Ini adalah rangkuman arah desain yang akan dipakai untuk membuat hasil pertama Anda. Matikan elemen yang tidak perlu atau revisi detailnya sebelum lanjut.
+                    Ini adalah rangkuman arah desain yang akan dipakai untuk membuat hasil pertama Kamu. Matikan elemen yang tidak perlu atau revisi detailnya sebelum lanjut.
                 </p>
             </div>
 

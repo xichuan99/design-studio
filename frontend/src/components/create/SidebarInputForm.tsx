@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
-import { BrandKit } from "@/lib/api";
 import { ChevronDown, Palette, Wand2, ImagePlus } from "lucide-react";
 import { DimensionPresets } from "./inputs/DimensionPresets";
 import { GenerationOptions } from "./inputs/GenerationOptions";
@@ -8,63 +7,23 @@ import { ModelSelector } from "./inputs/ModelSelector";
 import { ProductSettings } from "./inputs/ProductSettings";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
-import type { CreateStep } from "@/app/create/hooks/useCreateDesign";
-import type { UserIntent } from "@/app/create/types";
-import type { ModelCatalogItem, ModelTier } from "@/lib/api";
+import { useSidebarInputFormContext } from "./context/SidebarInputFormContext";
 
-interface SidebarInputFormProps {
-    createMode: 'generate' | 'redesign';
-    setCreateMode: (val: 'generate' | 'redesign') => void;
-    redesignStrength: number;
-    setRedesignStrength: (val: number) => void;
-    rawText: string;
-    setRawText: (val: string) => void;
-    isInputLocked: boolean;
-    isParsing: boolean;
-    aspectRatio: string;
-    setAspectRatio: (val: string) => void;
-    integratedText: boolean;
-    setIntegratedText: (val: boolean) => void;
-    selectedModelTier: ModelTier;
-    setSelectedModelTier: (val: ModelTier) => void;
-    modelCatalog: ModelCatalogItem[];
-    onModelSelectorOpened: () => void;
-    onModelTierSelected: (val: ModelTier) => void;
-    removeProductBg: boolean;
-    setRemoveProductBg: (val: boolean) => void;
-    showManualRef: boolean;
-    setShowManualRef: (val: boolean) => void;
-    referenceFile: File | null;
-    referencePreview: string | null;
-    isDragOver: boolean;
-    fileInputRef: React.RefObject<HTMLInputElement | null>;
-    handleFileInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    handleRemoveFile: () => void;
-    handleDragOver: (e: React.DragEvent) => void;
-    handleDragLeave: (e: React.DragEvent) => void;
-    handleDrop: (e: React.DragEvent) => void;
-    activeBrandKit: BrandKit | null;
-    brandKitEnabled: boolean;
-    setBrandKitEnabled: (val: boolean) => void;
-    currentStep: CreateStep;
-    userIntent: UserIntent;
-    intentFirstEnabled?: boolean;
-}
-
-export function SidebarInputForm({
-    createMode, setCreateMode, redesignStrength, setRedesignStrength,
-    rawText, setRawText, isInputLocked, isParsing,
-    aspectRatio, setAspectRatio,
-    integratedText, setIntegratedText,
-    selectedModelTier, setSelectedModelTier, modelCatalog, onModelSelectorOpened, onModelTierSelected,
-    removeProductBg, setRemoveProductBg,
-    showManualRef, setShowManualRef, referenceFile, referencePreview, isDragOver,
-    fileInputRef, handleFileInputChange, handleRemoveFile, handleDragOver, handleDragLeave, handleDrop,
-    activeBrandKit, brandKitEnabled, setBrandKitEnabled,
-    currentStep,
-    userIntent,
-    intentFirstEnabled = false,
-}: SidebarInputFormProps) {
+export function SidebarInputForm() {
+    const {
+        createMode, setCreateMode, redesignStrength, setRedesignStrength,
+        rawText, setRawText, isInputLocked, isParsing,
+        aspectRatio, setAspectRatio,
+        integratedText, setIntegratedText,
+        selectedModelTier, setSelectedModelTier, modelCatalog, onModelSelectorOpened, onModelTierSelected,
+        removeProductBg, setRemoveProductBg,
+        showManualRef, setShowManualRef, referenceFile, referencePreview, isDragOver,
+        fileInputRef, handleFileInputChange, handleRemoveFile, handleDragOver, handleDragLeave, handleDrop,
+        activeBrandKit, brandKitEnabled, setBrandKitEnabled,
+        currentStep,
+        userIntent,
+        intentFirstEnabled = false,
+    } = useSidebarInputFormContext();
     const [referenceSettingsOverride, setReferenceSettingsOverride] = useState<boolean | null>(null);
     const formatStepNumber = showManualRef ? 3 : 2;
     const isGenerateMode = createMode === 'generate';
@@ -125,8 +84,8 @@ export function SidebarInputForm({
                 <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
                     <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">1</span>
                     {isIntentFlow
-                        ? (userIntent === 'content_from_text' ? 'Brief Konten Anda' : 'Arah Visual Anda')
-                        : (isGenerateMode ? "Tujuan Desain Anda" : "Arah Redesign")}
+                        ? (userIntent === 'content_from_text' ? 'Brief Konten Kamu' : 'Arah Visual Kamu')
+                        : (isGenerateMode ? "Tujuan Desain Kamu" : "Arah Redesign")}
                 </label>
                 <p className="text-xs leading-relaxed text-muted-foreground">
                     {isIntentFlow
@@ -134,8 +93,8 @@ export function SidebarInputForm({
                             ? "Tulis poin promosi utama. Visual akan disusun otomatis dari brief ini."
                             : "Tulis hasil yang ingin dicapai agar AI menyiapkan visual yang tepat.")
                         : isGenerateMode
-                        ? "Tulis hasil yang ingin Anda capai. Detail visual dan copy promosi bisa digabung dalam satu brief."
-                        : "Jelaskan perubahan yang Anda inginkan agar foto referensi diarahkan ke tampilan baru."}
+                        ? "Tulis hasil yang ingin Kamu capai. Detail visual dan copy promosi bisa digabung dalam satu brief."
+                        : "Jelaskan perubahan yang Kamu inginkan agar foto referensi diarahkan ke tampilan baru."}
                 </p>
                 <Textarea
                     placeholder={isGenerateMode ? "Contoh: Buat poster promo teh manis untuk Instagram, nuansa ceria merah muda, ada headline 'Diskon 50%' dan ruang harga yang jelas" : "Contoh: Ubah fotonya jadi lebih premium, background lebih bersih, dan pencahayaan lebih hangat"}

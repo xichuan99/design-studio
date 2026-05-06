@@ -101,7 +101,7 @@ export function ImportQueueDialog({
                         {items.length} foto siap diimport ke canvas
                     </DialogTitle>
                     <DialogDescription>
-                        Foto-foto ini berasal dari proses batch sebelumnya. Anda bisa import semua sekaligus atau pilih satu per satu.
+                        Foto-foto ini berasal dari proses batch sebelumnya. Kamu bisa import semua sekaligus atau pilih satu per satu.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -129,7 +129,7 @@ export function ImportQueueDialog({
                                     </button>
                                     <button
                                         className="p-1.5 bg-white/90 rounded-full hover:bg-white transition-colors"
-                                        title="Download"
+                                        title="Unduh"
                                         onClick={() => window.open(item.url, "_blank")}
                                     >
                                         <Download className="h-4 w-4 text-foreground" />

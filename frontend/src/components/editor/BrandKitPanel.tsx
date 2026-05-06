@@ -115,7 +115,7 @@ export default function BrandKitPanel({ onClose, onApplyColors }: BrandKitPanelP
                 } catch (uploadErr) {
                     console.error("Failed to upload logo:", uploadErr);
                     const errorMessage = uploadErr instanceof Error ? uploadErr.message : "Gagal mengunggah logo.";
-                    toast.error(errorMessage.toLowerCase().includes("quota") || errorMessage.includes("413") ? "Gagal mengunggah logo: Kuota penyimpanan Anda penuh." : "Gagal mengunggah logo, brand kit akan disimpan tanpa logo.");
+                    toast.error(errorMessage.toLowerCase().includes("quota") || errorMessage.includes("413") ? "Gagal mengunggah logo: Kuota penyimpanan Kamu penuh." : "Gagal mengunggah logo, brand kit akan disimpan tanpa logo.");
                     // Silently fail upload and proceed saving with null logo
                 }
             }

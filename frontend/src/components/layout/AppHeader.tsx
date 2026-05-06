@@ -79,7 +79,7 @@ export const AppHeader = ({ renderActions }: AppHeaderProps = {}) => {
                         className={`flex items-center gap-1.5 transition-colors ${isLibraryActive ? 'text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'}`}
                     >
                         <LayoutDashboard className="w-4 h-4" />
-                        <span>Library</span>
+                        <span>Koleksi</span>
                     </Link>
                     <Link href="/brand" className={`flex items-center gap-1.5 transition-colors ${isActive('/brand')}`}>
                         <Palette className="w-4 h-4" />
@@ -107,7 +107,7 @@ export const AppHeader = ({ renderActions }: AppHeaderProps = {}) => {
                         <div
                             className={`absolute left-0 top-full pt-3 transition-all duration-200 z-50 ${toolsMenuOpen ? "opacity-100 visible translate-y-0 pointer-events-auto" : "opacity-0 invisible translate-y-1 pointer-events-none"}`}
                         >
-                            <div className="w-[760px] rounded-2xl border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/85 shadow-2xl p-4">
+                            <div className="w-[min(760px,calc(100vw-2rem))] max-w-[760px] rounded-2xl border bg-card/95 p-4 shadow-2xl backdrop-blur supports-[backdrop-filter]:bg-card/85">
                                 <div className="grid grid-cols-2 gap-4">
                                     {toolSections.map((section) => (
                                         <div key={section.title} className="min-w-0">
@@ -186,7 +186,7 @@ export const AppHeader = ({ renderActions }: AppHeaderProps = {}) => {
                             onClick={() => setMobileMenuOpen(false)}
                         >
                             <LayoutDashboard className="w-4 h-4" />
-                            Library
+                            Koleksi
                         </Link>
                         <Link
                             href="/brand"

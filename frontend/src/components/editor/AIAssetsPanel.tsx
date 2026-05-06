@@ -113,7 +113,7 @@ export const AIAssetsPanel: React.FC = () => {
         return (
             <div className="flex flex-col h-full bg-card p-4 items-center justify-center text-muted-foreground">
                 <Loader2 className="h-6 w-6 animate-spin mb-2" />
-                <p className="text-xs">Memuat aset Anda...</p>
+                <p className="text-xs">Memuat aset Kamu...</p>
             </div>
         );
     }
@@ -133,7 +133,7 @@ export const AIAssetsPanel: React.FC = () => {
                     <Sparkles className="h-6 w-6 text-primary/50" />
                 </div>
                 <p className="text-sm font-medium">Belum ada hasil AI</p>
-                <p className="text-xs px-4">Visual yang Anda buat melalui panel AI akan muncul dan tersimpan otomatis di sini.</p>
+                <p className="text-xs px-4">Visual yang Kamu buat melalui panel AI akan muncul dan tersimpan otomatis di sini.</p>
             </div>
         );
     }
@@ -171,7 +171,7 @@ export const AIAssetsPanel: React.FC = () => {
                                         variant="secondary" 
                                         className="h-7 text-[10px] w-full gap-1.5 bg-black/50 hover:bg-black/70 text-white border-0"
                                         onClick={() => setPendingBgRemovalAsset(previewUrl || asset.result_url)}
-                                        title="Download untuk Dihapus Background-nya"
+                                        title="Unduh untuk Dihapus Background-nya"
                                     >
                                         Hapus BG
                                     </Button>
@@ -210,7 +210,7 @@ export const AIAssetsPanel: React.FC = () => {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Hapus Background?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Gambar akan diunduh sehingga Anda dapat mengunggahnya ke tab Hapus BG. Lanjutkan?
+                            Gambar akan diunduh sehingga Kamu dapat mengunggahnya ke tab Hapus BG. Lanjutkan?
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

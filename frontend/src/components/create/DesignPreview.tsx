@@ -31,7 +31,7 @@ export function DesignPreview({ imageUrl }: DesignPreviewProps) {
                     </div>
                     <h3 className="mt-4 text-lg font-semibold text-foreground">Hasil pertama akan muncul di sini</h3>
                     <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                        Setelah AI selesai menyiapkan visual, Anda bisa membandingkan hasilnya di area ini lalu lanjut ke editor untuk sentuhan akhir.
+                        Setelah AI selesai menyiapkan visual, Kamu bisa membandingkan hasilnya di area ini lalu lanjut ke editor untuk sentuhan akhir.
                     </p>
                 </div>
             </div>

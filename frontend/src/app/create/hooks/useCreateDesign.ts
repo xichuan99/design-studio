@@ -33,10 +33,21 @@ export interface SavedCreateState {
     selectedModelTier: ModelTier;
 }
 
+// Normalize frontend aspect ratio values (including marketplace/social presets) to backend-compatible values
+function normalizeAspectRatio(frontendValue: string): string {
+  const MAPPING: Record<string, string> = {
+    "all": "1:1",
+    "9:16-wa": "9:16",
+    "1:1-shopee": "1:1",
+    "1:1-tokped": "1:1",
+  };
+  return MAPPING[frontendValue] || frontendValue;
+}
+
 export function useCreateDesign() {
     const router = useRouter();
     const posthog = usePostHog();
-    const { generateDesign, redesignFromReference, getJobStatus, saveProject, uploadImage, getActiveBrandKit, clarifyUnified, generateCopywriting, parseDesignText, generateProjectTitle, getStorageUsage, getModelCatalog, submitTestimonial } = useProjectApi();
+    const { generateDesign, redesignFromReference, getJobStatus, saveProject, uploadImage, getActiveBrandKit, clarifyUnified, generateCopywriting, parseDesignText, generateProjectTitle, getStorageUsage, getModelCatalog, generateMultiFormat, submitTestimonial } = useProjectApi();
 
     const GENERATED_COUNT_STORAGE_KEY = "smartdesign_generated_count_v1";
     const TESTIMONIAL_SUBMITTED_STORAGE_KEY = "smartdesign_testimonial_submitted_v1";
@@ -340,7 +351,7 @@ export function useCreateDesign() {
             const [parsed, copywritingData] = await Promise.allSettled([
                 parseDesignText({
                     raw_text: rawText,
-                    aspect_ratio: aspectRatio,
+                    aspect_ratio: normalizeAspectRatio(aspectRatio),
                     num_variations: 2,
                     integrated_text: integratedText,
                     clarification_answers: answers
@@ -465,7 +476,7 @@ export function useCreateDesign() {
                     reference_image_url: uploadedReferenceUrl,
                     raw_text: finalPrompt,
                     strength: redesignStrength,
-                    aspect_ratio: aspectRatio,
+                    aspect_ratio: normalizeAspectRatio(aspectRatio),
                     quality: selectedModelTier,
                     brand_kit_id: undefined as string | undefined
                 };
@@ -476,7 +487,7 @@ export function useCreateDesign() {
             } else {
                 const generateDesignPayload = {
                     raw_text: finalPrompt,
-                    aspect_ratio: aspectRatio,
+                    aspect_ratio: normalizeAspectRatio(aspectRatio),
                     reference_image_url: uploadedReferenceUrl,
                     integrated_text: integratedText,
                     remove_product_bg: removeProductBg && !!uploadedReferenceUrl,
@@ -517,7 +528,7 @@ export function useCreateDesign() {
                     posthog?.capture('create_generation_success', { create_mode: createMode });
                     posthog?.capture('design_generated', {
                         create_mode: createMode,
-                        aspect_ratio: aspectRatio,
+                        aspect_ratio: normalizeAspectRatio(aspectRatio),
                         quality: selectedModelTier,
                     });
                     recordDesignGenerated();
@@ -558,7 +569,7 @@ export function useCreateDesign() {
                         posthog?.capture('create_generation_success', { create_mode: createMode });
                         posthog?.capture('design_generated', {
                             create_mode: createMode,
-                            aspect_ratio: aspectRatio,
+                            aspect_ratio: normalizeAspectRatio(aspectRatio),
                             quality: selectedModelTier,
                         });
                         recordDesignGenerated();
@@ -656,6 +667,20 @@ export function useCreateDesign() {
         setIsSaving(true);
         try {
             let finalAspectRatio = aspectRatio;
+            let variants: Record<string, string> | undefined = undefined;
+            
+            // If "all" format selected, generate multi-format variants
+            if (aspectRatio === "all" && activeImageUrl) {
+                try {
+                    const multiResult = await generateMultiFormat(activeImageUrl);
+                    if (multiResult.variants) {
+                        variants = multiResult.variants;
+                    }
+                } catch (variantErr) {
+                    console.warn("Failed to generate multi-format variants:", variantErr);
+                    // Continue with main image — variants are best-effort
+                }
+            }
             if (activeImageUrl) {
                 const proxyUrl = activeImageUrl.startsWith('http')
                     ? `/api/proxy-image?url=${encodeURIComponent(activeImageUrl)}`
@@ -726,6 +751,7 @@ export function useCreateDesign() {
                     backgroundUrl: activeImageUrl || null,
                     elements: elements,
                     originalPrompt: parsedData.visual_prompt || rawText,
+                    multiFormatVariants: variants || null,
                     workflow: {
                         sourceTool: "create",
                         entryMode: createMode === "redesign" ? "legacy_redesign" : "legacy_create",
@@ -742,7 +768,7 @@ export function useCreateDesign() {
             toast.error('Gagal melanjutkan ke editor. Silakan coba lagi.');
             setIsSaving(false);
         }
-    }, [parsedData, imageHistory, activeImageIndex, aspectRatio, integratedText, rawText, generateProjectTitle, saveProject, router, copyVariations, createMode, posthog, userIntent]);
+    }, [parsedData, imageHistory, activeImageIndex, aspectRatio, integratedText, rawText, generateProjectTitle, saveProject, router, copyVariations, createMode, posthog, userIntent, generateMultiFormat]);
 
     return {
         rawText, setRawText,

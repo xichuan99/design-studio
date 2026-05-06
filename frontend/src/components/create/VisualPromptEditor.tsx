@@ -124,12 +124,12 @@ export function VisualPromptEditor({
             <div className="bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-2xl p-5 sm:p-6 shadow-[0_0_30px_rgba(var(--primary),0.05)] mt-2">
                 <div className="mb-3">
                     <h4 className="text-sm font-semibold text-foreground">✏️ Revisi Prompt</h4>
-                    <p className="text-xs text-muted-foreground mt-0.5">Ingin mengubah hasil gambar? Tulis revisi Anda di bawah, lalu klik Terapkan.</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Ingin mengubah hasil gambar? Tulis revisi Kamu di bawah, lalu klik Terapkan.</p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3">
                     <div className="relative flex-1">
                         <Input 
-                            placeholder="Tulis revisi Anda di sini..."
+                            placeholder="Tulis revisi Kamu di sini..."
                             className="h-12 bg-background dark:bg-white/5 border-primary/30 focus:border-primary/50 text-foreground placeholder:text-muted-foreground"
                             value={instruction}
                             onChange={(e) => setInstruction(e.target.value)}

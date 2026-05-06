@@ -60,7 +60,7 @@ export function GenerationProgress() {
                     {currentPhase}
                 </p>
                 <p className="text-sm text-muted-foreground/80">
-                    Setelah langkah ini selesai, Anda akan masuk ke tahap review untuk memilih hasil terbaik.
+                    Setelah langkah ini selesai, Kamu akan masuk ke tahap review untuk memilih hasil terbaik.
                 </p>
             </div>
 

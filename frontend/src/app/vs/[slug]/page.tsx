@@ -55,7 +55,7 @@ export default async function VersusPage({ params }: { params: Promise<{ slug: s
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-8 px-4 py-12 md:px-6">
       <section className="rounded-3xl border bg-card p-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Versus Page</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Halaman Perbandingan</p>
         <h1 className="mt-3 text-4xl font-semibold tracking-tight text-foreground">{current.title}</h1>
         <p className="mt-4 max-w-3xl text-base leading-7 text-muted-foreground">{current.description}</p>
       </section>
@@ -69,11 +69,11 @@ export default async function VersusPage({ params }: { params: Promise<{ slug: s
       <section className="rounded-3xl border bg-card p-8">
         <h2 className="text-2xl font-semibold text-foreground">Apa yang paling relevan untuk tim Anda?</h2>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-          Jika Anda butuh workflow yang langsung bergerak dari brief ke visual siap pakai, gunakan jalur desain atau bandingkan model lebih dulu lewat comparison session.
+          Jika Kamu butuh workflow yang langsung bergerak dari brief ke visual siap pakai, gunakan Jalur Desain atau bandingkan model lebih dulu lewat sesi perbandingan.
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
-          <Link href="/compare-models" className="rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground">Buka Compare Models</Link>
-          <Link href="/" className="rounded-xl border px-4 py-3 text-sm font-semibold text-foreground">Kembali ke Landing</Link>
+          <Link href="/compare-models" className="rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground">Buka Bandingkan Model</Link>
+          <Link href="/" className="rounded-xl border px-4 py-3 text-sm font-semibold text-foreground">Kembali ke Beranda</Link>
         </div>
       </section>
     </main>

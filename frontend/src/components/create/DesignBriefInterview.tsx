@@ -45,10 +45,10 @@ export function DesignBriefInterview({
                     <Sparkles className="w-8 h-8 text-primary" />
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
-                    Mari Perjelas Visi Anda
+                    Mari Perjelas Visi Kamu
                 </h2>
                 <p className="text-sm text-muted-foreground max-w-lg mx-auto">
-                    Bantu AI memahami gaya desain yang Anda inginkan dengan menjawab beberapa pertanyaan singkat ini.
+                    Bantu AI memahami gaya desain yang Kamu inginkan dengan menjawab beberapa pertanyaan singkat ini.
                 </p>
                 <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary/80">
                     {answeredCount}/{questions.length} pertanyaan terisi
@@ -89,7 +89,7 @@ export function DesignBriefInterview({
                         {q.type === 'text' && (
                             <div className="ml-8">
                                 <Textarea 
-                                    placeholder="Ketik jawaban Anda di sini..."
+                                    placeholder="Ketik jawaban Kamu di sini..."
                                     value={answers[q.id] || ""}
                                     onChange={(e) => handleAnswer(q.id, e.target.value)}
                                     className="max-w-md bg-background dark:bg-white/5 text-foreground border-border/50 focus-visible:ring-primary placeholder:text-muted-foreground resize-none"

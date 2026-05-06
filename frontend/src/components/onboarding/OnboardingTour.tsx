@@ -6,16 +6,16 @@ import Joyride, { CallBackProps, STATUS } from "react-joyride";
 const TOUR_STEPS = [
     {
         target: ".tour-step-1",
-        content: "Mulai dari tujuan desain Anda. Tulis brief singkat, headline promo, atau hasil yang ingin Anda capai.",
+        content: "Mulai dari tujuan desain Kamu. Tulis brief singkat, headline promo, atau hasil yang ingin Kamu capai.",
         disableBeacon: true,
     },
     {
         target: ".tour-step-2",
-        content: "Tentukan format hasil dan bagaimana teks akan dipakai, agar output pertama lebih dekat ke kebutuhan Anda.",
+        content: "Tentukan format hasil dan bagaimana teks akan dipakai, agar output pertama lebih dekat ke kebutuhan Kamu.",
     },
     {
         target: ".tour-step-3",
-        content: "Tekan tombol ini untuk lanjut ke arahan visual atau langsung membuat hasil pertama Anda.",
+        content: "Tekan tombol ini untuk lanjut ke arahan visual atau langsung membuat hasil pertama Kamu.",
     },
 ];
 

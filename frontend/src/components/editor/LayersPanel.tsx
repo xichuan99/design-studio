@@ -88,7 +88,7 @@ const SortableLayerItem: React.FC<SortableLayerItemProps> = ({
                     {...attributes} 
                     {...listeners}
                     className="cursor-grab hover:text-foreground text-muted-foreground p-1 -ml-1 rounded hover:bg-muted flex-shrink-0 outline-none"
-                    title="Drag to reorder"
+                    title="Seret untuk urut ulang"
                 >
                     <GripVertical className="h-4 w-4 opacity-50" />
                 </div>
@@ -103,7 +103,7 @@ const SortableLayerItem: React.FC<SortableLayerItemProps> = ({
                             className="absolute -left-1.5 -top-1.5 w-3 h-3 rounded-full border cursor-pointer opacity-0 group-hover/picker:opacity-100 transition-opacity z-10 hover:scale-110 shadow-sm"
                             style={{ backgroundColor: el.colorTag || '#e5e7eb', borderColor: 'var(--border)' }}
                             onClick={(e) => { e.stopPropagation(); }}
-                            title="Set color tag"
+                            title="Atur tag warna"
                         />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start" sideOffset={8}>
@@ -118,7 +118,7 @@ const SortableLayerItem: React.FC<SortableLayerItemProps> = ({
                             ))}
                             <div 
                                 className="w-5 h-5 rounded-sm cursor-pointer border flex items-center justify-center text-[10px] hover:bg-muted"
-                                title="Clear color"
+                                title="Hapus warna"
                                 onClick={(e) => { e.stopPropagation(); setColorTag(el.id, null); }}
                             >
                                 ✕
@@ -164,7 +164,7 @@ const SortableLayerItem: React.FC<SortableLayerItemProps> = ({
                     size="icon"
                     className={`h-6 w-6 ${el.locked ? 'text-amber-500' : 'text-muted-foreground'}`}
                     onClick={(e) => { e.stopPropagation(); toggleLock(el.id); }}
-                    title={el.locked ? "Unlock" : "Lock"}
+                    title={el.locked ? "Buka Kunci" : "Kunci"}
                 >
                     {el.locked ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3" />}
                 </Button>
@@ -173,7 +173,7 @@ const SortableLayerItem: React.FC<SortableLayerItemProps> = ({
                     size="icon"
                     className={`h-6 w-6 ${el.visible === false ? 'text-muted-foreground opacity-50' : 'text-foreground'}`}
                     onClick={(e) => { e.stopPropagation(); toggleVisibility(el.id); }}
-                    title={el.visible === false ? "Show" : "Hide"}
+                    title={el.visible === false ? "Tampilkan" : "Sembunyikan"}
                 >
                     {el.visible === false ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
                 </Button>

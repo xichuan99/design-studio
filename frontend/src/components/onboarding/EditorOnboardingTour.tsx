@@ -6,18 +6,18 @@ import Joyride, { CallBackProps, STATUS } from "react-joyride";
 const TOUR_STEPS = [
     {
         target: "body",
-        content: "Selamat datang di SmartDesign Editor! Mari kita lihat apa saja yang bisa Anda lakukan di sini.",
+        content: "Selamat datang di SmartDesign Editor! Mari kita lihat apa saja yang bisa Kamu lakukan di sini.",
         placement: "center" as const,
         disableBeacon: true,
     },
     {
         target: ".tour-edit-ai",
-        content: "Di panel sebelah kiri ini Anda bisa mengakses alat bantu AI, template desain, menambahkan gambar, atau mengubah rasio canvas.",
+        content: "Di panel sebelah kiri ini Kamu bisa mengakses alat bantu AI, template desain, menambahkan gambar, atau mengubah rasio canvas.",
         placement: "right" as const,
     },
     {
         target: ".tour-edit-canvas",
-        content: "Ini area canvas utama Anda. Klik elemen untuk memindahkan, memutar, atau mengubah ukurannya.",
+        content: "Ini area canvas utama Kamu. Klik elemen untuk memindahkan, memutar, atau mengubah ukurannya.",
         placement: "bottom" as const,
     },
     {
@@ -27,12 +27,12 @@ const TOUR_STEPS = [
     },
     {
         target: ".tour-edit-layers",
-        content: "Anda juga bisa mengatur urutan tumpukan elemen, dan mengunci atau menghapusnya lewat Panel Layer.",
+        content: "Kamu juga bisa mengatur urutan tumpukan elemen, dan mengunci atau menghapusnya lewat Panel Layer.",
         placement: "left" as const,
     },
     {
         target: ".tour-edit-export",
-        content: "Jika sudah puas dengan hasilnya, klik tombol ini untuk menyimpan atau mengunduh karya desain Anda!",
+        content: "Jika sudah puas dengan hasilnya, klik tombol ini untuk menyimpan atau mengunduh karya desain Kamu!",
         placement: "bottom" as const,
     },
 ];

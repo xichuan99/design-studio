@@ -28,28 +28,28 @@ export function ErrorModal({
         safety: {
             icon: <ShieldAlert className="w-10 h-10 text-amber-500" />,
             defaultTitle: "Brief Perlu Diubah",
-            defaultDesc: "Permintaan ini belum bisa diproses karena terdeteksi mengandung unsur sensitif atau terlalu dekat dengan materi yang dilindungi. Ubah brief Anda dengan kata yang lebih umum lalu coba lagi.",
+            defaultDesc: "Permintaan ini belum bisa diproses karena terdeteksi mengandung unsur sensitif atau terlalu dekat dengan materi yang dilindungi. Ubah brief Kamu dengan kata yang lebih umum lalu coba lagi.",
             defaultAction: "Ubah Brief",
             iconBg: "bg-amber-100 dark:bg-amber-900/30",
         },
         credits: {
             icon: <Coins className="w-10 h-10 text-indigo-500" />,
             defaultTitle: "Kredit Belum Cukup",
-            defaultDesc: "Kredit Anda belum cukup untuk melanjutkan proses AI ini. Tambahkan kredit lalu lanjutkan dari langkah yang sama.",
+            defaultDesc: "Kredit Kamu belum cukup untuk melanjutkan proses AI ini. Tambahkan kredit lalu lanjutkan dari langkah yang sama.",
             defaultAction: "Lihat Opsi Kredit",
             iconBg: "bg-indigo-100 dark:bg-indigo-900/30",
         },
         system: {
             icon: <AlertTriangle className="w-10 h-10 text-destructive" />,
             defaultTitle: "Hasil Belum Bisa Diproses",
-            defaultDesc: "Ada kendala saat menyiapkan hasil Anda. Coba lagi beberapa saat lagi atau revisi brief jika diperlukan.",
+            defaultDesc: "Ada kendala saat menyiapkan hasil Kamu. Coba lagi beberapa saat lagi atau revisi brief jika diperlukan.",
             defaultAction: "Coba Lagi",
             iconBg: "bg-destructive/10",
         },
         storage: {
             icon: <HardDrive className="w-10 h-10 text-teal-500" />,
             defaultTitle: "Ruang Penyimpanan Habis",
-            defaultDesc: "Kuota penyimpanan Anda sudah penuh. Hapus file lama atau upgrade paket untuk menambah ruang kerja.",
+            defaultDesc: "Kuota penyimpanan Kamu sudah penuh. Hapus file lama atau upgrade paket untuk menambah ruang kerja.",
             defaultAction: "Kelola Penyimpanan",
             iconBg: "bg-teal-100 dark:bg-teal-900/30",
         }

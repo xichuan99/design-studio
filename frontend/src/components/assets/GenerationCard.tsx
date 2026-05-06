@@ -176,7 +176,7 @@ export function GenerationCard({
                         <AlertDialogTitle>Hapus hasil visual ini?</AlertDialogTitle>
                         <AlertDialogDescription>
                             {isLinkedToProject 
-                                ? "Hasil ini tampaknya sudah Anda jadikan proyek di editor. Menghapus file aslinya akan mengosongkan storage, tetapi Anda tidak bisa mengunduh file mentahnya lagi dari sini. Proyek Anda tetap aman."
+                                ? "Hasil ini tampaknya sudah Kamu jadikan proyek di editor. Menghapus file aslinya akan mengosongkan storage, tetapi Kamu tidak bisa mengunduh file mentahnya lagi dari sini. Proyek Kamu tetap aman."
                                 : "Aset ini akan dihapus permanen dan membebaskan kuota storage Anda. Tindakan ini tidak dapat dibatalkan."}
                         </AlertDialogDescription>
                     </AlertDialogHeader>

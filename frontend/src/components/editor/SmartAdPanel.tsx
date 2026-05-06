@@ -92,7 +92,7 @@ export const SmartAdPanel: React.FC = () => {
             const errorCode = typedError.errorCode || "";
             
             if (errorCode === "LLM_GENERATION_FAILED" || errorMessage.includes("konsep iklan")) {
-                toast.error("Gagal menyusun konsep visual. Coba sederhanakan brief Anda agar lebih mudah dipahami AI.", {
+                toast.error("Gagal menyusun konsep visual. Coba sederhanakan brief Kamu agar lebih mudah dipahami AI.", {
                     duration: 6000,
                     action: {
                         label: "Lihat Brief",
@@ -189,7 +189,7 @@ export const SmartAdPanel: React.FC = () => {
                     <div className="space-y-1 rounded-xl border border-border/60 bg-background/70 p-4">
                         <h3 className="text-sm font-semibold text-foreground">Foto Produk ke Konsep Visual</h3>
                         <p className="text-xs leading-relaxed text-muted-foreground">
-                            Gunakan foto produk sebagai bahan awal, lalu biarkan AI menyiapkan beberapa arah iklan yang bisa langsung Anda rapikan di canvas.
+                            Gunakan foto produk sebagai bahan awal, lalu biarkan AI menyiapkan beberapa arah iklan yang bisa langsung Kamu rapikan di canvas.
                         </p>
                     </div>
 
@@ -310,7 +310,7 @@ export const SmartAdPanel: React.FC = () => {
                     <div className="flex items-center justify-between pb-2 border-b">
                         <div>
                             <h3 className="text-sm font-semibold">Pilih Konsep yang Paling Dekat</h3>
-                            <p className="text-xs text-muted-foreground mt-1">Setelah dipilih, konsep akan dimasukkan ke canvas agar bisa Anda rapikan lebih lanjut.</p>
+                            <p className="text-xs text-muted-foreground mt-1">Setelah dipilih, konsep akan dimasukkan ke canvas agar bisa Kamu rapikan lebih lanjut.</p>
                         </div>
                         <button 
                             onClick={() => setResult(null)}

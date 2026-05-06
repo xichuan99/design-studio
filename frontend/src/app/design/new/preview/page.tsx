@@ -1,80 +1,26 @@
 "use client";
 
-import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { redirect, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { usePostHog } from "posthog-js/react";
-import { AlertCircle, ArrowLeft, ArrowRight, CheckCircle2, Download, Loader2, Sparkles, Wand2 } from "lucide-react";
+import { AlertCircle, ArrowLeft, ArrowRight, CheckCircle2, Loader2, Sparkles, Wand2 } from "lucide-react";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { useProjectApi } from "@/lib/api";
 import { useToolHandoff } from "@/hooks/useToolHandoff";
 import { PREVIEW_REAL_GENERATION_ENABLED } from "@/lib/feature-flags";
 import { DESIGN_BRIEF_SESSION_KEY, type DesignBriefSessionState } from "@/lib/design-brief-session";
 import type { CatalogRenderStatusResponse } from "@/lib/api/types";
-
-const ASPECT_RATIO_MAP: Record<string, string> = {
-    instagram: "1:1",
-    marketplace: "1:1",
-    ads: "9:16",
-};
-
-const GOAL_LABEL_MAP: Record<string, string> = {
-    promo: "promosi produk yang menarik dan engaging",
-    catalog: "katalog produk yang profesional dan rapi",
-    ads: "iklan performa yang eye-catching dan persuasif",
-};
-
-const CHANNEL_LABEL_MAP: Record<string, string> = {
-    instagram: "Instagram feed",
-    marketplace: "halaman produk marketplace",
-    ads: "Google / Meta Ads",
-};
-
-const PRODUCT_TYPE_LABEL_MAP: Record<string, string> = {
-    "Makanan & Minuman": "produk makanan/minuman",
-    Fashion: "produk fashion",
-    Beauty: "produk beauty",
-    Elektronik: "produk elektronik",
-    "Rumah Tangga": "produk rumah tangga",
-    Lainnya: "produk umum",
-};
-
-const GEN_STATUS_LABELS = [
-    "Menyiapkan komposisi visual...",
-    "Menentukan palet warna...",
-    "Membuat layout...",
-    "Menambahkan detail desain...",
-    "Hampir selesai...",
-];
-
-function mapCopyToneToCatalogTone(copyTone: string): "formal" | "fun" | "premium" | "soft_selling" {
-    if (copyTone === "Premium") return "premium";
-    if (copyTone === "Friendly") return "fun";
-    if (copyTone === "Edukatif") return "formal";
-    return "soft_selling";
-}
-
-function buildPrompt(brief: DesignBriefSessionState): string {
-    const goalLabel = GOAL_LABEL_MAP[brief.goal] ?? brief.goal;
-    const channelLabel = CHANNEL_LABEL_MAP[brief.channel] ?? brief.channel;
-    const productTypeLabel = brief.customProductType ?? PRODUCT_TYPE_LABEL_MAP[brief.productType] ?? brief.productType;
-    const noteLine = brief.notes ? `Catatan tambahan: ${brief.notes}.` : null;
-    const catalogLine = brief.goal === "catalog" && brief.catalogTotalPages
-        ? `Rancang sebagai katalog ${brief.catalogType ?? "product"} dengan ${brief.catalogTotalPages} halaman.`
-        : null;
-    return [
-        `Buat desain ${goalLabel} untuk ${channelLabel} dengan konteks ${productTypeLabel}.`,
-        catalogLine,
-        `Gaya visual: ${brief.style}.`,
-        `Tone copy: ${brief.copyTone}.`,
-        noteLine,
-        "Gunakan komposisi visual yang bersih, hierarki teks yang jelas, dan siap diedit di editor.",
-    ].filter(Boolean).join(" ");
-}
+import { BriefSummaryCard } from "./BriefSummaryCard";
+import { CatalogRenderGallery } from "./CatalogRenderGallery";
+import {
+    ASPECT_RATIO_MAP,
+    GEN_STATUS_LABELS,
+    buildPrompt,
+    mapCopyToneToCatalogTone,
+} from "./utils";
 
 export default function DesignPreviewPage() {
     const { status } = useSession();
@@ -104,6 +50,13 @@ export default function DesignPreviewPage() {
     const [catalogMappingValidation, setCatalogMappingValidation] = useState<Record<string, string>>({});
     const [catalogRefreshError, setCatalogRefreshError] = useState<string | null>(null);
     const [isRefreshingCatalogPlan, setIsRefreshingCatalogPlan] = useState(false);
+    const isMountedRef = useRef(true);
+
+    useEffect(() => {
+        return () => {
+            isMountedRef.current = false;
+        };
+    }, []);
 
     useEffect(() => {
         const frame = window.requestAnimationFrame(() => {
@@ -158,7 +111,6 @@ export default function DesignPreviewPage() {
 
     const draftPrompt = useMemo(() => (brief ? buildPrompt(brief) : ""), [brief]);
     const aspectRatio = brief ? (ASPECT_RATIO_MAP[brief.channel] ?? "1:1") : "1:1";
-    const hasCatalogPlan = !!brief?.catalogSuggestedStructure?.length;
     const mappingPageUpperBound = brief?.catalogTotalPages || 0;
     const hasInvalidMapping = useMemo(() => {
         if (!catalogEditableMappings?.length) return false;
@@ -384,7 +336,7 @@ export default function DesignPreviewPage() {
                 let finalStatus = await getCatalogRenderStatus(startResponse.job_id);
                 const maxAttempts = 180;
 
-                for (let i = 0; i < maxAttempts; i++) {
+                for (let i = 0; i < maxAttempts && isMountedRef.current; i++) {
                     setCatalogRenderProgressLabel(
                         `Render katalog ${finalStatus.progress.completed_pages}/${finalStatus.progress.total_pages} halaman`
                     );
@@ -397,6 +349,9 @@ export default function DesignPreviewPage() {
                     }
 
                     await new Promise<void>((resolve) => setTimeout(resolve, 2000));
+                    if (!isMountedRef.current) {
+                        return;
+                    }
                     finalStatus = await getCatalogRenderStatus(startResponse.job_id);
                 }
 
@@ -447,8 +402,11 @@ export default function DesignPreviewPage() {
             let resultUrl = await fetchResult();
             if (!resultUrl) {
                 const maxAttempts = 180;
-                for (let i = 0; i < maxAttempts && !resultUrl; i++) {
+                for (let i = 0; i < maxAttempts && !resultUrl && isMountedRef.current; i++) {
                     await new Promise<void>(resolve => setTimeout(resolve, 2000));
+                    if (!isMountedRef.current) {
+                        return;
+                    }
                     resultUrl = await fetchResult();
                 }
             }
@@ -541,7 +499,7 @@ export default function DesignPreviewPage() {
                 {/* Hero section */}
                 <section className="rounded-3xl border bg-gradient-to-br from-background via-background to-muted/40 px-6 py-8 md:px-8">
                     <div className="max-w-3xl space-y-4">
-                        <p className="text-sm font-semibold uppercase tracking-[0.22em] text-primary">Brief siap di-generate</p>
+                        <p className="text-sm font-semibold uppercase tracking-[0.22em] text-primary">Brief siap digenerate</p>
                         <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
                             AI akan membuat desain awal langsung dari brief ini.
                         </h1>
@@ -555,257 +513,27 @@ export default function DesignPreviewPage() {
 
                 <section className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
                     {/* Brief summary */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-xl">Ringkasan brief</CardTitle>
-                            <CardDescription>Ini yang akan dikirim ke AI sebagai dasar pembuatan desain.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                                <div className="rounded-2xl border bg-muted/20 p-4">
-                                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Goal</p>
-                                    <p className="mt-2 text-sm font-semibold text-foreground capitalize">{brief.goal}</p>
-                                </div>
-                                <div className="rounded-2xl border bg-muted/20 p-4">
-                                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Product Type</p>
-                                    <p className="mt-2 text-sm font-semibold text-foreground">{brief.customProductType ?? brief.productType}</p>
-                                </div>
-                                <div className="rounded-2xl border bg-muted/20 p-4">
-                                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Style</p>
-                                    <p className="mt-2 text-sm font-semibold text-foreground">{brief.style}</p>
-                                </div>
-                                <div className="rounded-2xl border bg-muted/20 p-4">
-                                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Channel</p>
-                                    <p className="mt-2 text-sm font-semibold text-foreground capitalize">{brief.channel}</p>
-                                </div>
-                                <div className="rounded-2xl border bg-muted/20 p-4">
-                                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Copy Tone</p>
-                                    <p className="mt-2 text-sm font-semibold text-foreground">{brief.copyTone}</p>
-                                </div>
-                                {brief.goal === "catalog" && brief.catalogType && (
-                                    <div className="rounded-2xl border bg-muted/20 p-4">
-                                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Catalog Type</p>
-                                        <p className="mt-2 text-sm font-semibold text-foreground capitalize">{brief.catalogType}</p>
-                                    </div>
-                                )}
-                                {brief.goal === "catalog" && brief.catalogTotalPages && (
-                                    <div className="rounded-2xl border bg-muted/20 p-4">
-                                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Total Pages</p>
-                                        <p className="mt-2 text-sm font-semibold text-foreground">{brief.catalogTotalPages}</p>
-                                    </div>
-                                )}
-                            </div>
-
-                            {brief.notes && (
-                                <div className="rounded-2xl border bg-muted/20 p-5">
-                                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Catatan tambahan</p>
-                                    <p className="mt-3 text-sm leading-7 text-foreground">{brief.notes}</p>
-                                </div>
-                            )}
-
-                            <div className="rounded-2xl border bg-muted/20 p-5">
-                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Prompt yang akan digunakan</p>
-                                <p className="mt-3 text-sm leading-7 text-foreground">{draftPrompt}</p>
-                            </div>
-
-                            {brief.goal === "catalog" && hasCatalogPlan && (
-                                <div className="space-y-3 rounded-2xl border bg-muted/20 p-5">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Struktur katalog awal</p>
-                                        <span className="rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground">{brief.catalogSuggestedStructure?.length} halaman</span>
-                                    </div>
-                                    <div className="grid gap-3">
-                                        {brief.catalogSuggestedStructure?.map((page) => (
-                                            <div key={page.page_number} className="rounded-xl border bg-background p-4">
-                                                <div className="flex items-center justify-between gap-3">
-                                                    <p className="text-sm font-semibold text-foreground">Halaman {page.page_number}</p>
-                                                    <span className="rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground">{page.layout}</span>
-                                                </div>
-                                                <p className="mt-2 text-sm text-foreground">{String(page.content.title ?? page.type)}</p>
-                                                <p className="mt-1 text-xs text-muted-foreground">{page.type}</p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {brief.goal === "catalog" && !!brief.catalogStyleOptions?.length && (
-                                <div className="space-y-3 rounded-2xl border bg-muted/20 p-5">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Arah style yang disarankan AI</p>
-                                        <span className="rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground">overrideable</span>
-                                    </div>
-                                    <div className="grid gap-3">
-                                        {brief.catalogStyleOptions?.map((option) => (
-                                            <button
-                                                key={option.style}
-                                                type="button"
-                                                onClick={() => setCatalogSelectedStyle(option.style)}
-                                                className={`rounded-xl border p-4 text-left ${catalogSelectedStyle === option.style ? "border-primary bg-primary/5" : "bg-background"}`}
-                                            >
-                                                <p className="text-sm font-semibold text-foreground">{option.style}</p>
-                                                <p className="mt-1 text-xs text-muted-foreground">{option.description}</p>
-                                                <p className="mt-2 text-xs text-muted-foreground">Use case: {option.use_case}</p>
-                                                <p className="mt-1 text-xs text-muted-foreground">Layout: {option.layout}</p>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {brief.goal === "catalog" && !!brief.catalogImageMapping?.length && (
-                                <div className="space-y-3 rounded-2xl border bg-muted/20 p-5">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Override image mapping</p>
-                                        <span className="rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground">editable role + pages</span>
-                                    </div>
-                                    <div className="grid gap-3">
-                                        {(catalogEditableMappings || []).map((mapping) => (
-                                            <div key={mapping.image_id} className="rounded-xl border bg-background p-4">
-                                                <div className="flex items-center justify-between gap-3">
-                                                    <p className="text-sm font-semibold text-foreground">{mapping.image_id}</p>
-                                                    <span className="rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground">{Math.round(mapping.confidence * 100)}%</span>
-                                                </div>
-                                                <div className="mt-3 flex flex-wrap gap-2">
-                                                    {[
-                                                        "cover_image",
-                                                        "product_image",
-                                                        "service_image",
-                                                        "detail_image",
-                                                        "supporting_image",
-                                                    ].map((option) => (
-                                                        <button
-                                                            key={`${mapping.image_id}-${option}`}
-                                                            type="button"
-                                                            onClick={() => handleCatalogMappingCategoryChange(mapping.image_id, option)}
-                                                            className={`rounded-full border px-3 py-1 text-xs ${mapping.category === option ? "border-primary bg-primary/10 text-primary" : "bg-muted/20 hover:bg-muted/50"}`}
-                                                        >
-                                                            {option}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                                <div className="mt-3">
-                                                    <Input
-                                                        value={mapping.recommended_pages.join(", ")}
-                                                        onChange={(event) => handleCatalogMappingPagesChange(mapping.image_id, event.target.value)}
-                                                        aria-label={`Halaman target untuk ${mapping.image_id}`}
-                                                    />
-                                                    <p className="mt-1 text-xs text-muted-foreground">Isi daftar halaman dengan format koma, contoh: 1, 3, 5</p>
-                                                    {catalogMappingValidation[mapping.image_id] && (
-                                                        <p className="mt-1 text-xs text-destructive">{catalogMappingValidation[mapping.image_id]}</p>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {brief.goal === "catalog" && !!brief.catalogGeneratedPages?.length && (
-                                <div className="space-y-3 rounded-2xl border bg-muted/20 p-5">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Override halaman katalog</p>
-                                        <span className="rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground">edit title + refresh</span>
-                                    </div>
-                                    <div className="grid gap-3">
-                                        {catalogEditablePages?.map((page) => (
-                                            <div key={`editable-${page.page_number}`} className="rounded-xl border bg-background p-4">
-                                                <div className="flex items-center justify-between gap-3">
-                                                    <p className="text-sm font-semibold text-foreground">Halaman {page.page_number}</p>
-                                                    <span className="rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground">{page.type}</span>
-                                                </div>
-                                                <Input
-                                                    className="mt-3"
-                                                    value={String(page.content.title ?? "")}
-                                                    onChange={(event) => handleCatalogPageTitleChange(page.page_number, event.target.value)}
-                                                    aria-label={`Judul halaman katalog ${page.page_number}`}
-                                                />
-                                            </div>
-                                        ))}
-                                    </div>
-                                    {catalogRefreshError && <p className="text-xs text-destructive">{catalogRefreshError}</p>}
-                                    <Button type="button" variant="outline" onClick={handleRefreshCatalogPlan} disabled={isRefreshingCatalogPlan || hasInvalidMapping}>
-                                        {isRefreshingCatalogPlan ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                        {isRefreshingCatalogPlan ? "Memperbarui rencana katalog..." : "Perbarui Rencana Katalog"}
-                                    </Button>
-                                </div>
-                            )}
-
-                            {brief.productImageUrl && (
-                                <div className="space-y-3 rounded-2xl border bg-muted/20 p-5">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Foto produk</p>
-                                        <span className="rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground">Diunggah</span>
-                                    </div>
-                                    <div className="relative h-40 w-full overflow-hidden rounded-xl border bg-background">
-                                        <Image
-                                            src={brief.productImageUrl}
-                                            alt="Foto produk yang diunggah"
-                                            fill
-                                            sizes="(max-width: 1024px) 100vw, 600px"
-                                            className="object-cover"
-                                            unoptimized
-                                        />
-                                    </div>
-                                </div>
-                            )}
-
-                            {brief.productImageUrl && (
-                                <div className="space-y-2 rounded-2xl border bg-muted/20 p-5">
-                                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Mode visual</p>
-                                    <div className="grid gap-2 sm:grid-cols-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => setSkipAiGenerate(false)}
-                                            className={`rounded-xl border px-3 py-2 text-left text-sm transition-colors ${!skipAiGenerate ? "border-primary bg-primary/10 text-primary" : "bg-background hover:bg-muted/60"}`}
-                                        >
-                                            Generate gambar AI
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setSkipAiGenerate(true)}
-                                            className={`rounded-xl border px-3 py-2 text-left text-sm transition-colors ${skipAiGenerate ? "border-primary bg-primary/10 text-primary" : "bg-background hover:bg-muted/60"}`}
-                                        >
-                                            Pakai foto produk langsung (tanpa AI)
-                                        </button>
-                                    </div>
-                                    {!skipAiGenerate && (
-                                        <div className="space-y-2 pt-2">
-                                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Fokus referensi</p>
-                                            <div className="grid gap-2 sm:grid-cols-3">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setReferenceFocus("auto")}
-                                                    className={`rounded-xl border px-3 py-2 text-left text-sm transition-colors ${referenceFocus === "auto" ? "border-primary bg-primary/10 text-primary" : "bg-background hover:bg-muted/60"}`}
-                                                >
-                                                    Auto
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setReferenceFocus("human")}
-                                                    className={`rounded-xl border px-3 py-2 text-left text-sm transition-colors ${referenceFocus === "human" ? "border-primary bg-primary/10 text-primary" : "bg-background hover:bg-muted/60"}`}
-                                                >
-                                                    Orang
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setReferenceFocus("object")}
-                                                    className={`rounded-xl border px-3 py-2 text-left text-sm transition-colors ${referenceFocus === "object" ? "border-primary bg-primary/10 text-primary" : "bg-background hover:bg-muted/60"}`}
-                                                >
-                                                    Objek
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <span className="rounded-md border bg-muted/30 px-2 py-0.5 font-mono">{aspectRatio}</span>
-                                <span>Rasio otomatis berdasarkan channel</span>
-                            </div>
-                        </CardContent>
-                    </Card>
+                    <BriefSummaryCard
+                        brief={brief}
+                        draftPrompt={draftPrompt}
+                        aspectRatio={aspectRatio}
+                        catalogSelectedStyle={catalogSelectedStyle}
+                        setCatalogSelectedStyle={setCatalogSelectedStyle}
+                        catalogEditableMappings={catalogEditableMappings}
+                        catalogEditablePages={catalogEditablePages}
+                        catalogMappingValidation={catalogMappingValidation}
+                        catalogRefreshError={catalogRefreshError}
+                        isRefreshingCatalogPlan={isRefreshingCatalogPlan}
+                        hasInvalidMapping={hasInvalidMapping}
+                        skipAiGenerate={skipAiGenerate}
+                        setSkipAiGenerate={setSkipAiGenerate}
+                        referenceFocus={referenceFocus}
+                        setReferenceFocus={setReferenceFocus}
+                        onCatalogPageTitleChange={handleCatalogPageTitleChange}
+                        onCatalogMappingCategoryChange={handleCatalogMappingCategoryChange}
+                        onCatalogMappingPagesChange={handleCatalogMappingPagesChange}
+                        onRefreshCatalogPlan={handleRefreshCatalogPlan}
+                    />
 
                     {/* What happens next */}
                     <Card>
@@ -826,7 +554,7 @@ export default function DesignPreviewPage() {
                             </div>
                             <div className="flex gap-3 rounded-2xl border bg-muted/20 p-4">
                                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                                <p>Anda bisa menambahkan teks, logo, mengubah warna, atau regenerate dari editor.</p>
+                                <p>Kamu bisa menambahkan teks, logo, mengubah warna, atau regenerate dari editor.</p>
                             </div>
                         </CardContent>
                     </Card>
@@ -860,78 +588,11 @@ export default function DesignPreviewPage() {
 
                 {/* Catalog render gallery */}
                 {catalogRenderResult && (
-                    <section className="space-y-4 rounded-3xl border bg-muted/20 p-6">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                            <div>
-                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Render katalog selesai</p>
-                                <h2 className="mt-1 text-xl font-semibold text-foreground">
-                                    {catalogRenderResult.progress.completed_pages} dari {catalogRenderResult.progress.total_pages} halaman berhasil dirender
-                                </h2>
-                            </div>
-                            {catalogRenderResult.zip_url && (
-                                <a
-                                    href={catalogRenderResult.zip_url}
-                                    download="catalog-pages.zip"
-                                    className="inline-flex items-center gap-2 rounded-xl border bg-background px-4 py-2 text-sm font-medium hover:bg-muted/60 transition-colors"
-                                >
-                                    <Download className="h-4 w-4" />
-                                    Download semua halaman (ZIP)
-                                </a>
-                            )}
-                        </div>
-
-                        <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                            {catalogRenderResult.pages.map((page) => (
-                                <div key={page.page_number} className="group relative overflow-hidden rounded-xl border bg-background">
-                                    {page.result_url ? (
-                                        <>
-                                            <div className="relative aspect-square w-full overflow-hidden bg-muted/40">
-                                                <Image
-                                                    src={page.result_url}
-                                                    alt={`Halaman ${page.page_number}`}
-                                                    fill
-                                                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                                                    className="object-cover transition-transform duration-200 group-hover:scale-105"
-                                                    unoptimized
-                                                />
-                                                {page.fallback_used && (
-                                                    <span className="absolute left-2 top-2 rounded-full bg-amber-500/90 px-2 py-0.5 text-[10px] font-semibold text-white">
-                                                        Fallback
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <div className="p-3">
-                                                <p className="text-xs font-semibold text-foreground">Halaman {page.page_number}</p>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="mt-2 w-full rounded-lg text-xs"
-                                                    disabled={handoffLoading}
-                                                    onClick={() =>
-                                                        openInEditor({
-                                                            resultUrl: page.result_url!,
-                                                            sourceTool: "design-brief",
-                                                            title: `Katalog — Halaman ${page.page_number}`,
-                                                            intent: "design_brief",
-                                                            entryMode: "brief_preview_catalog_render",
-                                                        })
-                                                    }
-                                                >
-                                                    {handoffLoading ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : null}
-                                                    Buka di editor
-                                                </Button>
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <div className="flex aspect-square flex-col items-center justify-center gap-2 p-4">
-                                            <AlertCircle className="h-6 w-6 text-destructive/60" />
-                                            <p className="text-center text-xs text-muted-foreground">Halaman {page.page_number} gagal dirender</p>
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    </section>
+                    <CatalogRenderGallery
+                        result={catalogRenderResult}
+                        handoffLoading={handoffLoading}
+                        onOpenInEditor={openInEditor}
+                    />
                 )}
 
                 {/* Sticky action bar */}

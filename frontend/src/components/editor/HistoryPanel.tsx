@@ -136,7 +136,7 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({ projectId }) => {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Pulihkan Desain?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Tindakan ini akan mengganti desain Anda saat ini dengan versi riwayat ini. Perubahan yang belum disimpan akan hilang.
+                            Tindakan ini akan mengganti desain Kamu saat ini dengan versi riwayat ini. Perubahan yang belum disimpan akan hilang.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

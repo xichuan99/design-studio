@@ -57,7 +57,7 @@ export const EditorTopBar: React.FC<EditorTopBarProps> = ({ projectId, saveStatu
         setSaving(true);
         try {
             const payload = {
-                title: projectTitle || 'Untitled Design',
+                title: projectTitle || 'Desain Tanpa Judul',
                 ...buildVersionedCanvasPayload({
                     elements,
                     backgroundUrl,
@@ -152,9 +152,9 @@ export const EditorTopBar: React.FC<EditorTopBarProps> = ({ projectId, saveStatu
                         <h1
                             className="font-jakarta font-semibold text-base cursor-pointer hover:bg-muted px-2 py-1 rounded transition-colors truncate max-w-xs"
                             onClick={() => setIsEditingTitle(true)}
-                            title="Click to rename project"
+                            title="Klik untuk ubah nama proyek"
                         >
-                            {projectTitle || "Untitled Design"}
+                            {projectTitle || "Desain Tanpa Judul"}
                         </h1>
                     )}
                     {originalPrompt && (
@@ -180,10 +180,10 @@ export const EditorTopBar: React.FC<EditorTopBarProps> = ({ projectId, saveStatu
             {/* Right section: History, Save status, Export */}
             <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1 mr-2 border-r pr-3">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => setVersionHistoryOpen(true)} title="Version History">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => setVersionHistoryOpen(true)} title="Riwayat Versi">
                         <History className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => setShortcutsOpen(true)} title="Keyboard Shortcuts">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => setShortcutsOpen(true)} title="Pintasan Keyboard">
                         <Keyboard className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={undo} disabled={historyIndex === 0} title="Undo (Ctrl+Z)">
@@ -194,7 +194,7 @@ export const EditorTopBar: React.FC<EditorTopBarProps> = ({ projectId, saveStatu
                     </Button>
                 </div>
 
-                <div className="flex items-center gap-3 mr-2 px-2" title="Save Status">
+                <div className="flex items-center gap-3 mr-2 px-2" title="Status Simpan">
                     {renderSaveContent()}
                 </div>
 
@@ -206,13 +206,13 @@ export const EditorTopBar: React.FC<EditorTopBarProps> = ({ projectId, saveStatu
                     disabled={!stageRef}
                 >
                     <DownloadIcon className="h-4 w-4 drop-shadow-sm" />
-                    <span className="hidden sm:inline font-semibold">Export</span>
+                    <span className="hidden sm:inline font-semibold">Ekspor</span>
                 </Button>
 
                 <ExportDialog
                     open={exportOpen}
                     onOpenChange={setExportOpen}
-                    title={projectTitle || (projectId ? "Smart_Design_Project" : "Untitled_Design")}
+                    title={projectTitle || (projectId ? "Proyek_Smart_Design" : "Desain_Tanpa_Judul")}
                     onAutoResizeClick={() => {
                         setExportOpen(false);
                         setAutoResizeOpen(true);
@@ -221,7 +221,7 @@ export const EditorTopBar: React.FC<EditorTopBarProps> = ({ projectId, saveStatu
                 <AutoResizeDialog
                     open={autoResizeOpen}
                     onOpenChange={setAutoResizeOpen}
-                    title={projectTitle || (projectId ? "Smart_Design_Project" : "Untitled_Design")}
+                    title={projectTitle || (projectId ? "Proyek_Smart_Design" : "Desain_Tanpa_Judul")}
                 />
                 <KeyboardShortcutsDialog
                     open={shortcutsOpen}

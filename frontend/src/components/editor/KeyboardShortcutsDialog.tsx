@@ -16,17 +16,17 @@ export function KeyboardShortcutsDialog({ open, onOpenChange }: KeyboardShortcut
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md pb-6 outline-none">
                 <DialogHeader>
-                    <DialogTitle className="font-semibold text-xl">Keyboard Shortcuts</DialogTitle>
+                    <DialogTitle className="font-semibold text-xl">Pintasan Keyboard</DialogTitle>
                     <DialogDescription>
-                        Use these shortcuts to work more efficiently.
+                        Gunakan pintasan ini untuk bekerja lebih efisien.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 mt-2">
                     <div className="flex flex-col gap-3 border bg-muted/30 p-4 rounded-xl shadow-sm">
-                        <ShortcutRow label="Delete Element" keys={['Del', '/', 'Backspace']} />
+                        <ShortcutRow label="Hapus Elemen" keys={['Del', '/', 'Backspace']} />
                         <ShortcutRow label="Undo" keys={['Ctrl', '+', 'Z']} />
                         <ShortcutRow label="Redo" keys={['Ctrl', '+', 'Shift', '+', 'Z']} />
-                        <ShortcutRow label="Duplicate Element" keys={['Ctrl', '+', 'D']} />
+                        <ShortcutRow label="Duplikasi Elemen" keys={['Ctrl', '+', 'D']} />
                     </div>
                 </div>
             </DialogContent>

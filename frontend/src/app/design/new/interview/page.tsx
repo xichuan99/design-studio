@@ -223,22 +223,7 @@ export default function DesignInterviewPage() {
                 catalogStyleOptions = suggested.style_options;
                 catalogSelectedStyle = suggested.style_options[0]?.style;
 
-                if (productImageUrl) {
-                    const mappedImages = await mapCatalogImages({
-                        basics,
-                        structure: planned.suggested_structure,
-                        images: [
-                            {
-                                image_id: "uploaded_product_image",
-                                filename: productFile?.name,
-                                description: `${finalProductType} ${notes.trim()}`.trim() || undefined,
-                            },
-                        ],
-                    });
-                    catalogImageMapping = mappedImages.image_mapping;
-                }
-
-                const generatedCopy = await generateCatalogCopy({
+                const copyPromise = generateCatalogCopy({
                     basics,
                     selected_style: catalogSelectedStyle || finalStyle,
                     pages: planned.suggested_structure,
@@ -249,6 +234,25 @@ export default function DesignInterviewPage() {
                         notes: notes.trim() || undefined,
                     },
                 });
+
+                const mappingPromise = productImageUrl
+                    ? mapCatalogImages({
+                        basics,
+                        structure: planned.suggested_structure,
+                        images: [
+                            {
+                                image_id: "uploaded_product_image",
+                                filename: productFile?.name,
+                                description: `${finalProductType} ${notes.trim()}`.trim() || undefined,
+                            },
+                        ],
+                    })
+                    : Promise.resolve(null);
+
+                const [generatedCopy, mappedImages] = await Promise.all([copyPromise, mappingPromise]);
+                if (mappedImages?.image_mapping) {
+                    catalogImageMapping = mappedImages.image_mapping;
+                }
                 catalogGeneratedPages = generatedCopy.pages;
 
                 catalogFinalPlan = await finalizeCatalogPlan({
@@ -338,7 +342,7 @@ export default function DesignInterviewPage() {
                     </div>
                     <div className="mt-4 space-y-2">
                         <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
-                            <span>Progress brief</span>
+                            <span>Progres Brief</span>
                             <span>{progress}%</span>
                         </div>
                         <div className="h-2 rounded-full bg-muted">
@@ -432,7 +436,7 @@ export default function DesignInterviewPage() {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
-                                <p className="text-sm font-medium text-foreground">Catalog type</p>
+                                <p className="text-sm font-medium text-foreground">Tipe Katalog</p>
                                 <div className="flex flex-wrap gap-2">
                                     {catalogTypes.map((item) => (
                                         <button
@@ -469,7 +473,7 @@ export default function DesignInterviewPage() {
                                     onChange={(event) => setCatalogTotalPages(Number(event.target.value) || 5)}
                                     aria-label="Jumlah halaman katalog"
                                 />
-                                <p className="text-xs text-muted-foreground">Di preview, sistem akan menyiapkan structure awal dan 3 arah style yang bisa Anda evaluasi.</p>
+                                <p className="text-xs text-muted-foreground">Di preview, sistem akan menyiapkan struktur awal dan 3 arah style yang bisa Kamu evaluasi.</p>
                             </div>
 
                             {catalogPlanningError && (
@@ -668,7 +672,7 @@ export default function DesignInterviewPage() {
                         </p>
                         <div className="flex items-center gap-2">
                             <Button variant="ghost" onClick={() => handleContinue(true)} className="rounded-xl">
-                                Skip
+                                Lewati
                             </Button>
                             <Button onClick={() => void handleContinue(false)} size="lg" className="gap-2 rounded-xl" disabled={progress < 100 || isCatalogPlanning}>
                                 {isCatalogPlanning ? <Loader2 className="h-4 w-4 animate-spin" /> : null}

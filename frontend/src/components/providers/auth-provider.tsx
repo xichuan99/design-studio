@@ -19,7 +19,7 @@ function SessionExpiryGuard() {
         }
 
         hasTriggeredRef.current = true;
-        toast.error("Sesi Anda telah berakhir. Silakan login kembali.");
+        toast.error("Sesi Kamu telah berakhir. Silakan login kembali.");
         void signOut({ callbackUrl: "/login?reason=session-expired" });
     }, [sessionError, status]);
 

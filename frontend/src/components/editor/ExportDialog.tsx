@@ -93,7 +93,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({ open, onOpenChange, 
                 <DialogHeader>
                     <DialogTitle>Ekspor Desain</DialogTitle>
                     <DialogDescription>
-                        Pilih format untuk mengunduh desain Anda.
+                        Pilih format untuk mengunduh desain Kamu.
                     </DialogDescription>
                 </DialogHeader>
 

@@ -266,7 +266,7 @@ export const ProjectVersionDialog: React.FC<ProjectVersionDialogProps> = ({ open
                         <AlertDialogHeader>
                             <AlertDialogTitle>Pulihkan Versi &quot;{versionToRestore?.version_name}&quot;?</AlertDialogTitle>
                             <AlertDialogDescription>
-                                Kanvas Anda saat ini akan ditimpa dengan status dari versi ini. Perubahan yang belum Anda simpan (atau belum dibuat snapshot) akan hilang.
+                                Kanvas Kamu saat ini akan ditimpa dengan status dari versi ini. Perubahan yang belum Kamu simpan (atau belum dibuat snapshot) akan hilang.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>

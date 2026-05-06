@@ -174,9 +174,13 @@ export function useAiToolsEndpoints() {
             return res.json();
         }, [API_BASE_URL, getHeaders]);
 
-    const getComparisonSession = useCallback(async (sessionId: string): Promise<Types.ComparisonSessionResponse> => {
+    const getComparisonSession = useCallback(async (
+            sessionId: string,
+            options?: { signal?: AbortSignal }
+        ): Promise<Types.ComparisonSessionResponse> => {
             const res = await fetch(`${API_BASE_URL}/compare-models/sessions/${sessionId}`, {
                 headers: getHeaders(),
+                signal: options?.signal,
             });
             if (!res.ok) {
                 const errBase = await res.json().catch(() => ({}));
@@ -608,9 +612,10 @@ export function useAiToolsEndpoints() {
             }
         }, [API_BASE_URL, getHeaders]);
 
-    const getModelCatalog = useCallback(async (): Promise<Types.ModelCatalogResponse> => {
+    const getModelCatalog = useCallback(async (options?: { signal?: AbortSignal }): Promise<Types.ModelCatalogResponse> => {
             const res = await fetch(`${API_BASE_URL}/models`, {
                 headers: getHeaders(),
+                signal: options?.signal,
             });
             if (!res.ok) {
                 const errBase = await res.json().catch(() => ({}));
@@ -628,6 +633,19 @@ export function useAiToolsEndpoints() {
             if (!res.ok) {
                 const errBase = await res.json().catch(() => ({}));
                 throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to submit testimonial');
+            }
+            return res.json();
+        }, [API_BASE_URL, getHeaders]);
+
+    const generateMultiFormat = useCallback(async (imageUrl: string): Promise<Types.MultiFormatResponse> => {
+            const res = await fetch(`${API_BASE_URL}/images/multi-format`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify({ image_url: imageUrl }),
+            });
+            if (!res.ok) {
+                const errBase = await res.json().catch(() => ({}));
+                throw new Error((errBase?.error?.detail || errBase?.detail) || 'Failed to generate multi-format variants');
             }
             return res.json();
         }, [API_BASE_URL, getHeaders]);
@@ -668,6 +686,7 @@ export function useAiToolsEndpoints() {
         deleteToolResult,
         generateProjectTitle,
         getModelCatalog,
+        generateMultiFormat,
         submitTestimonial,
     };
 }

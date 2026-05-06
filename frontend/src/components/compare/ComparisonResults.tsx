@@ -16,7 +16,7 @@ export function ComparisonResults({ session, readOnly = false, onShare }: Compar
       <div className="rounded-2xl border bg-card p-5">
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Comparison Session</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Sesi Perbandingan</p>
             <h2 className="mt-2 text-2xl font-semibold text-foreground">Bandingkan model untuk brief yang sama</h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">{session.raw_text}</p>
           </div>
@@ -54,14 +54,14 @@ export function ComparisonResults({ session, readOnly = false, onShare }: Compar
               {variant.result_url ? (
                 <div className="overflow-hidden rounded-xl border bg-muted/20">
                   <div className="relative aspect-square w-full">
-                    <Image src={variant.result_url} alt={`Comparison result ${variant.tier}`} fill className="object-cover" unoptimized />
+                    <Image src={variant.result_url} alt={`Hasil perbandingan ${variant.tier}`} fill className="object-cover" unoptimized />
                   </div>
                 </div>
               ) : (
                 <div className="flex aspect-square items-center justify-center rounded-xl border border-dashed bg-muted/20 p-6 text-center text-sm text-muted-foreground">
                   {variant.status === "failed"
                     ? variant.error_message || "Varian ini gagal diproses."
-                    : "Variant sedang diproses. Halaman ini akan ter-update saat polling berikutnya."}
+                    : "Varian sedang diproses. Halaman ini akan ter-update saat polling berikutnya."}
                 </div>
               )}
             </div>

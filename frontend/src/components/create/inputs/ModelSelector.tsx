@@ -3,6 +3,13 @@ import { ChevronDown, Lock, Sparkles } from "lucide-react";
 
 import type { ModelCatalogItem, ModelTier } from "@/lib/api";
 
+const TIER_SUBTITLES: Record<string, string> = {
+    basic: "⚡ Cepat & Murah — konten harian",
+    pro: "🔧 Kualitas Harian — detail rapi",
+    ultra: "🔥 Kualitas Premium — campaign penting",
+    auto: "🤖 Biar kami yang pilihkan",
+};
+
 interface ModelSelectorProps {
     value: ModelTier;
     onChange: (value: ModelTier) => void;
@@ -41,6 +48,9 @@ export function ModelSelector({
     };
 
     const handleSelect = (tier: ModelTier) => {
+        if (tier === value) {
+            return;
+        }
         onChange(tier);
         onSelectTier(tier);
     };
@@ -82,11 +92,12 @@ export function ModelSelector({
                                 <Sparkles className="h-4 w-4 text-primary" />
                                 <span className="text-sm font-semibold text-foreground">Auto</span>
                             </div>
+                            <p className="mt-0.5 text-[11px] font-medium text-muted-foreground">{TIER_SUBTITLES.auto}</p>
                             <p className="mt-1 text-xs text-muted-foreground">{defaultItem.description}</p>
                         </div>
                         {defaultItem.default_for_user && (
                             <span className="rounded-full bg-primary/10 px-2 py-1 text-[11px] font-semibold text-primary">
-                                Default akun Anda
+                                Default akun Kamu
                             </span>
                         )}
                     </div>
@@ -115,6 +126,11 @@ export function ModelSelector({
                                             <span className="text-sm font-semibold text-foreground">{item.label}</span>
                                             {!item.accessible && <Lock className="h-3.5 w-3.5 text-muted-foreground" />}
                                         </div>
+                                        {TIER_SUBTITLES[item.tier] && (
+                                            <p className="mt-0.5 text-[11px] font-medium text-muted-foreground">
+                                                {TIER_SUBTITLES[item.tier]}
+                                            </p>
+                                        )}
                                         <p className="mt-1 text-xs text-muted-foreground">{item.description}</p>
                                         {!item.accessible && item.reason && (
                                             <p className="mt-2 text-[11px] font-medium text-amber-600">{item.reason}</p>

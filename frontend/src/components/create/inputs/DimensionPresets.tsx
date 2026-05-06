@@ -1,5 +1,5 @@
 import React from "react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 
 interface DimensionPresetsProps {
@@ -22,9 +22,26 @@ export function DimensionPresets({
                         <SelectValue placeholder="Format" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="1:1">Postingan Square (1:1)</SelectItem>
-                        <SelectItem value="9:16">Story / Reels (9:16)</SelectItem>
-                        <SelectItem value="16:9">Lanskap (16:9)</SelectItem>
+                        <SelectGroup>
+                            <SelectLabel>Multi-Format</SelectLabel>
+                            <SelectItem value="all">Semua Format — 1 brief, siap semua platform</SelectItem>
+                        </SelectGroup>
+                        <SelectGroup>
+                            <SelectLabel>Sosial Media</SelectLabel>
+                            <SelectItem value="1:1">IG Feed Square (1:1) — 1080×1080</SelectItem>
+                            <SelectItem value="4:5">IG Feed (4:5) — 1080×1350</SelectItem>
+                            <SelectItem value="9:16">IG Story / Reels (9:16) — 1080×1920</SelectItem>
+                            <SelectItem value="9:16-wa">WA Story (9:16) — 1080×1920</SelectItem>
+                        </SelectGroup>
+                        <SelectGroup>
+                            <SelectLabel>Marketplace</SelectLabel>
+                            <SelectItem value="1:1-shopee">Shopee (1:1) — 1200×1200</SelectItem>
+                            <SelectItem value="1:1-tokped">Tokopedia (1:1) — 1200×1200</SelectItem>
+                        </SelectGroup>
+                        <SelectGroup>
+                            <SelectLabel>Umum</SelectLabel>
+                            <SelectItem value="16:9">Lanskap (16:9)</SelectItem>
+                        </SelectGroup>
                     </SelectContent>
                 </Select>
             </div>

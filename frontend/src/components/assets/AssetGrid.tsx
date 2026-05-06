@@ -324,7 +324,7 @@ export function AssetGrid({
                             message={
                                 activeFilter
                                     ? "Tidak ada hasil untuk filter ini."
-                                    : "Hasil AI Tools Anda akan tersimpan otomatis di sini."
+                                    : "Hasil AI Tools Kamu akan tersimpan otomatis di sini."
                             }
                         />
                     ) : (
@@ -403,7 +403,7 @@ export function AssetGrid({
                             message={
                                 projectFilterId
                                     ? "Belum ada hasil visual yang terhubung ke proyek ini."
-                                    : "Desain yang Anda buat via AI akan muncul di sini."
+                                    : "Desain yang Kamu buat via AI akan muncul di sini."
                             }
                         />
                     ) : (

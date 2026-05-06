@@ -45,7 +45,7 @@ export const AutoResizeDialog: React.FC<AutoResizeDialogProps> = ({ open, onOpen
         
         const targetSizes = SOCIAL_SIZES.filter(s => selectedSizeIds.includes(s.id));
         if (targetSizes.length === 0) {
-            toast.error("Please select at least one size to export.");
+            toast.error("Pilih minimal satu ukuran untuk diekspor.");
             return;
         }
 
@@ -129,7 +129,7 @@ export const AutoResizeDialog: React.FC<AutoResizeDialogProps> = ({ open, onOpen
                 <DialogHeader>
                     <DialogTitle>Social Media Auto-Resize</DialogTitle>
                     <DialogDescription>
-                        Generate and download your design in multiple social media formats at once.
+                        Generate dan unduh desain kamu dalam berbagai format media sosial sekaligus.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -177,7 +177,7 @@ export const AutoResizeDialog: React.FC<AutoResizeDialogProps> = ({ open, onOpen
                 <div className="flex justify-end pt-4 border-t">
                     <Button disabled={isExporting || selectedSizeIds.length === 0} onClick={handleExport} className="w-full sm:w-auto px-8">
                         {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-                        {isExporting ? "Generating ZIP..." : `Download ${selectedSizeIds.length > 0 ? `(${selectedSizeIds.length})` : ''}`}
+                        {isExporting ? "Membuat ZIP..." : `Unduh ${selectedSizeIds.length > 0 ? `(${selectedSizeIds.length})` : ''}`}
                     </Button>
                 </div>
             </DialogContent>

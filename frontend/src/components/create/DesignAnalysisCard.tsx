@@ -19,7 +19,7 @@ export function DesignAnalysisCard({
                     Struktur Teks
                 </CardTitle>
                 <CardDescription>
-                    AI telah membedah teks promo Anda menjadi elemen-elemen grafis yang siap diposisikan di atas template.
+                    AI telah membedah teks promo Kamu menjadi elemen-elemen grafis yang siap diposisikan di atas template.
                 </CardDescription>
             </CardHeader>
             <CardContent className="pt-6 space-y-6">

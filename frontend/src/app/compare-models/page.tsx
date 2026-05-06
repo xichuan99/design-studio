@@ -29,7 +29,8 @@ export default function CompareModelsPage() {
 
   useEffect(() => {
     if (status !== "authenticated") return;
-    getModelCatalog()
+    const controller = new AbortController();
+    getModelCatalog({ signal: controller.signal })
       .then((catalog) => {
         const nextTiers = catalog.items
           .filter((item) => item.tier !== "auto" && item.accessible)
@@ -39,18 +40,30 @@ export default function CompareModelsPage() {
         }
       })
       .catch(() => undefined);
+
+    return () => {
+      controller.abort();
+    };
   }, [getModelCatalog, status]);
 
   useEffect(() => {
     if (!session || !["queued", "processing"].includes(session.status)) return;
 
+    let lastController: AbortController | null = null;
+
     const interval = window.setInterval(() => {
-      void getComparisonSession(session.id)
+      lastController?.abort();
+      const controller = new AbortController();
+      lastController = controller;
+      void getComparisonSession(session.id, { signal: controller.signal })
         .then((next) => setSession(next))
         .catch(() => undefined);
     }, 3000);
 
-    return () => window.clearInterval(interval);
+    return () => {
+      window.clearInterval(interval);
+      lastController?.abort();
+    };
   }, [getComparisonSession, session]);
 
   useEffect(() => {
@@ -96,7 +109,7 @@ export default function CompareModelsPage() {
         aspect_ratio: created.aspect_ratio,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal memulai comparison.");
+      setError(err instanceof Error ? err.message : "Gagal memulai perbandingan.");
     } finally {
       setLoading(false);
     }
@@ -116,7 +129,7 @@ export default function CompareModelsPage() {
       <AppHeader />
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 md:px-6 lg:px-8">
         <section className="rounded-3xl border bg-card p-6 md:p-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Compare Models</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Bandingkan Model</p>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight text-foreground">Bandingkan hasil dari beberapa model AI</h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">Tulis satu brief, lalu lihat hasil `Basic`, `Pro`, dan `Ultra` berdampingan tanpa perlu mengulang prompt manual satu per satu.</p>
         </section>
@@ -132,7 +145,7 @@ export default function CompareModelsPage() {
             />
             <div className="grid gap-4 md:grid-cols-3">
               <label className="space-y-2 text-sm text-foreground">
-                <span className="font-medium">Aspect ratio</span>
+                <span className="font-medium">Rasio Aspek</span>
                 <select value={aspectRatio} onChange={(event) => setAspectRatio(event.target.value)} className="h-11 w-full rounded-xl border bg-background px-3">
                   <option value="1:1">1:1</option>
                   <option value="4:5">4:5</option>
@@ -164,7 +177,7 @@ export default function CompareModelsPage() {
             {error && <p className="text-sm text-red-600">{error}</p>}
             <div className="flex flex-wrap items-center gap-3">
               <button type="submit" disabled={loading || tiers.length === 0} className="rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-60">
-                {loading ? "Menyiapkan comparison..." : "Mulai comparison"}
+                {loading ? "Menyiapkan perbandingan..." : "Mulai perbandingan"}
               </button>
               {shareCopied && <span className="text-sm text-emerald-600">Link share berhasil disalin.</span>}
             </div>

@@ -26,6 +26,7 @@ export default function StartPage() {
     const { getProjects } = useProjectApi();
     const [projects, setProjects] = useState<ProjectSummary[]>([]);
     const [loadingProjects, setLoadingProjects] = useState(true);
+    const [projectsError, setProjectsError] = useState<string | null>(null);
 
     useEffect(() => {
         let mounted = true;
@@ -36,9 +37,13 @@ export default function StartPage() {
                 const result = await getProjects();
                 if (mounted) {
                     setProjects(result.slice(0, 3));
+                    setProjectsError(null);
                 }
             } catch (error) {
                 console.error("Failed to load recent projects", error);
+                if (mounted) {
+                    setProjectsError("Gagal memuat proyek terbaru. Silakan muat ulang halaman.");
+                }
             } finally {
                 if (mounted) {
                     setLoadingProjects(false);
@@ -75,9 +80,9 @@ export default function StartPage() {
             <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 md:px-6 lg:px-8">
                 <section className="rounded-3xl border bg-gradient-to-br from-background via-background to-muted/40 px-6 py-8 md:px-10 md:py-12">
                     <div className="max-w-3xl space-y-4">
-                        <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-5xl">Apa yang ingin Anda buat hari ini?</h1>
+                        <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-5xl">Apa yang ingin kamu buat hari ini?</h1>
                         <p className="max-w-2xl text-sm leading-6 text-muted-foreground md:text-base">
-                            Pilih layanan yang Anda butuhkan untuk membuat visual produk yang menarik.
+                            Pilih layanan yang kamu butuhkan untuk membuat visual produk yang menarik.
                         </p>
                     </div>
                 </section>
@@ -101,13 +106,13 @@ export default function StartPage() {
                             <div className="space-y-2">
                                 <CardTitle className="text-2xl">Buat Desain Promosi</CardTitle>
                                 <CardDescription className="max-w-lg text-sm leading-6">
-                                    Buat materi promosi dan banner media sosial secara otomatis dengan bantuan AI, cukup ceritakan kebutuhan Anda.
+                                    Buat materi promosi dan banner media sosial secara otomatis dengan bantuan AI, cukup ceritakan kebutuhan kamu.
                                 </CardDescription>
                             </div>
                         </CardHeader>
                         <CardContent className="flex-1 flex flex-col justify-end">
                             <div className="rounded-2xl border bg-muted/30 p-4 text-sm text-muted-foreground w-full mb-6">
-                                <p>Sistem AI akan membantu Anda menentukan konsep, gaya visual, hingga ukuran yang pas untuk marketplace atau media sosial.</p>
+                                <p>Sistem AI akan membantu kamu menentukan konsep, gaya visual, hingga ukuran yang pas untuk marketplace atau media sosial.</p>
                             </div>
                             <Button asChild size="lg" className="w-full justify-between rounded-xl">
                                 <Link
@@ -166,13 +171,17 @@ export default function StartPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle className="text-xl">Lanjutkan pekerjaan terakhir</CardTitle>
-                            <CardDescription>Lanjutkan desain terakhir Anda.</CardDescription>
+                            <CardDescription>Lanjutkan desain terakhir kamu.</CardDescription>
                         </CardHeader>
                         <CardContent>
                             {loadingProjects ? (
                                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                     <Loader2 className="h-4 w-4 animate-spin" />
                                     Memuat proyek terbaru...
+                                </div>
+                            ) : projectsError ? (
+                                <div className="rounded-2xl border border-destructive/40 bg-destructive/5 p-6 text-sm text-destructive">
+                                    {projectsError}
                                 </div>
                             ) : projects.length === 0 ? (
                                 <div className="rounded-2xl border border-dashed p-6 text-sm text-muted-foreground">
@@ -200,21 +209,21 @@ export default function StartPage() {
 
                     <Card>
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-xl"><Layers className="h-5 w-5 text-primary" /> Quick tools</CardTitle>
+                            <CardTitle className="flex items-center gap-2 text-xl"><Layers className="h-5 w-5 text-primary" /> Tools Cepat</CardTitle>
                             <CardDescription>Akses cepat ke alat edit foto yang sering digunakan.</CardDescription>
                         </CardHeader>
                         <CardContent className="grid gap-3">
                             {COMPARE_MODELS_ENABLED && (
                                 <Link
                                     href="/compare-models"
-                                    onClick={() => posthog?.capture("start_hub_quick_tool_opened", { tool_href: "/compare-models", tool_title: "Compare Models" })}
+                                    onClick={() => posthog?.capture("start_hub_quick_tool_opened", { tool_href: "/compare-models", tool_title: "Bandingkan Model" })}
                                     className="flex items-center gap-3 rounded-2xl border bg-muted/20 px-4 py-3 transition-colors hover:bg-muted/60"
                                 >
                                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-background shadow-sm">
                                         <GitCompare className="h-5 w-5 text-primary" />
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="text-sm font-semibold text-foreground">Compare Models</p>
+                                        <p className="text-sm font-semibold text-foreground">Bandingkan Model</p>
                                         <p className="line-clamp-1 text-xs text-muted-foreground">Bandingkan output Basic, Pro, dan Ultra dari satu brief.</p>
                                     </div>
                                 </Link>

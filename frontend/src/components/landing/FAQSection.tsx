@@ -30,7 +30,7 @@ const faqs = [
   },
   {
     question: "Kenapa tidak langsung pakai ChatGPT atau Gemini saja?",
-    answer: "Chatbot AI bagus untuk ide awal, tapi biasanya belum menyatukan workflow desain bisnis end-to-end. SmartDesign menggabungkan multi-model AI, format siap platform, brand consistency, dan editor dalam satu alur agar hasilnya langsung lebih siap dipakai untuk kebutuhan promosi UMKM."
+    answer: "Chatbot AI bagus untuk ide awal, tapi biasanya belum menyatukan workflow desain bisnis end-to-end. SmartDesign menggabungkan 3 model AI premium (GPT Image 2, Flux, Gemini), format siap platform, brand consistency, dan editor dalam satu alur agar hasilnya langsung lebih siap dipakai untuk kebutuhan promosi UMKM. Jumlah model akan terus bertambah."
   },
   {
     question: "Apa bedanya model AI Basic, Pro, dan Ultra?",
