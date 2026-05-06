@@ -5,6 +5,9 @@ import os
 from typing import Any, Dict
 from uuid import UUID
 
+import logging
+from datetime import datetime, timezone
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -16,6 +19,37 @@ from app.services.credit_service import log_credit_change
 
 CATALOG_RENDER_TOOL_NAME = "catalog_render"
 CATALOG_RENDER_CREDIT_PER_PAGE = 1
+
+logger = logging.getLogger(__name__)
+
+
+async def _tracked_run_ai_tool_job(job_id: str) -> None:
+    """Wrapper that guarantees AiToolJob status becomes 'failed' on unhandled crash."""
+    try:
+        from app.workers.tasks import run_ai_tool_job
+
+        await run_ai_tool_job(job_id)
+    except Exception as exc:
+        logger.exception(
+            "Unhandled failure in AI tool job background task",
+            extra={"job_id": job_id},
+        )
+        try:
+            from app.core.database import AsyncSessionLocal
+            from app.models.ai_tool_job import AiToolJob
+
+            async with AsyncSessionLocal() as db:
+                record = await db.get(AiToolJob, job_id)
+                if record:
+                    record.status = "failed"
+                    record.error_message = f"System error: {exc}"
+                    record.finished_at = datetime.now(timezone.utc)
+                    await db.commit()
+        except Exception as persist_err:
+            logger.error(
+                "Could not persist failed status for AI tool job",
+                extra={"job_id": job_id, "error": str(persist_err)},
+            )
 
 
 def _calculate_catalog_render_credit(total_pages: int) -> int:
@@ -73,9 +107,7 @@ async def start_catalog_render_job(
 
             process_ai_tool_job_task.delay(str(job.id))
         else:
-            from app.workers.tasks import run_ai_tool_job
-
-            asyncio.create_task(run_ai_tool_job(str(job.id)))
+            asyncio.create_task(_tracked_run_ai_tool_job(str(job.id)))
 
     return {
         "job_id": str(job.id),

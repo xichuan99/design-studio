@@ -176,10 +176,34 @@ def process_comparison_session_task(self, session_id: str):
     return run_worker_async(_process_comparison_session(session_id))
 
 
+async def _tracked_process_comparison_session(session_id: str) -> None:
+    """Wrapper yang memastikan status DB di-update meski task crash sebelum sempat write."""
+    try:
+        await _process_comparison_session(session_id)
+    except Exception as exc:
+        logger.exception(
+            "Unhandled failure in comparison session background task",
+            extra={"session_id": session_id},
+        )
+        try:
+            async with AsyncSessionLocal() as db:
+                record = await db.get(ComparisonSession, session_id)
+                if record:
+                    record.status = "failed"
+                    record.error_message = f"System error: {exc}"
+                    record.completed_at = datetime.now(timezone.utc)
+                    await db.commit()
+        except Exception as persist_err:
+            logger.error(
+                "Could not persist failed status for comparison session",
+                extra={"session_id": session_id, "error": str(persist_err)},
+            )
+
+
 def dispatch_comparison_session(session_id: str) -> None:
     use_celery = os.getenv("USE_CELERY", "false").lower() == "true"
     if use_celery:
         process_comparison_session_task.delay(session_id)
         return
 
-    asyncio.create_task(_process_comparison_session(session_id))
+    asyncio.create_task(_tracked_process_comparison_session(session_id))

@@ -55,6 +55,7 @@ async def _execute_pipeline(
     brand_colors: list | None = None,
     brand_typography: dict | None = None,
     seed: str | None = None,
+    charged_credits: int = 40,
     current_retry: int = 0,
     max_retries: int = 0,
 ):
@@ -173,7 +174,7 @@ async def _execute_pipeline(
                         from app.services.credit_service import log_credit_change
 
                         await log_credit_change(
-                            session, user_record, 1, "Refund: server task gagal"
+                            session, user_record, charged_credits, "Refund: server task gagal"
                         )
                 await session.commit()
         else:
@@ -217,6 +218,7 @@ def generate_design_task(self, *args, **kwargs):
     brand_colors = payload.get("brand_colors")
     brand_typography = payload.get("brand_typography")
     seed = payload.get("seed")
+    charged_credits = int(payload.get("charged_credits", 40))
 
     try:
         _run_async(
@@ -231,6 +233,7 @@ def generate_design_task(self, *args, **kwargs):
                 brand_colors,
                 brand_typography,
                 seed=seed,
+                charged_credits=charged_credits,
                 current_retry=task_ctx.request.retries,
                 max_retries=task_ctx.max_retries,
             )

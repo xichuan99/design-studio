@@ -17,6 +17,12 @@ from app.schemas.testimonial import (
 router = APIRouter(tags=["Testimonials"])
 
 
+def _apply_testimonial_payload(item: Testimonial, payload: TestimonialCreateRequest) -> None:
+    item.name = payload.name
+    item.role = payload.role
+    item.quote = payload.quote
+
+
 @router.get(
     "",
     response_model=TestimonialListResponse,
@@ -55,20 +61,19 @@ async def submit_testimonial(
     )
     existing = existing_result.scalar_one_or_none()
 
-    is_update = existing is not None and existing.status == "pending"
-    if is_update:
-        existing.name = payload.name
-        existing.role = payload.role
-        existing.quote = payload.quote
-        existing.reviewer_notes = None
+    is_pending_update = existing is not None and existing.status == "pending"
+
+    if is_pending_update:
         item = existing
+        _apply_testimonial_payload(item, payload)
+        item.reviewer_notes = None
     else:
         item = Testimonial(
             user_id=current_user.id,
+            status="pending",
             name=payload.name,
             role=payload.role,
             quote=payload.quote,
-            status="pending",
         )
         db.add(item)
 
@@ -82,7 +87,7 @@ async def submit_testimonial(
 
     return TestimonialSubmitResponse(
         item=TestimonialResponseItem.model_validate(item),
-        is_update=is_update,
+        is_update=is_pending_update,
         message="Testimoni berhasil dikirim dan menunggu review."
     )
 

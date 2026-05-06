@@ -253,9 +253,10 @@ async def generate_design(
             detail="Insufficient credits. Please upgrade or wait for a refill.",
         )
 
-    # Deduct credit
+    # Deduct credit — track total charged for accurate refunds
     from app.services.credit_service import log_credit_change
 
+    total_charged = COST_GENERATE_DESIGN
     await log_credit_change(db, current_user, -COST_GENERATE_DESIGN, "Generate desain")
 
     # Catalog flow may upload the image as product_image_url without remove_product_bg.
@@ -370,6 +371,7 @@ async def generate_design(
                 brand_colors=brand_colors,
                 brand_typography=brand_typography,
                 seed=getattr(request, "seed", None),
+                charged_credits=total_charged,
             )
             return {
                 "job_id": str(job.id),
@@ -382,7 +384,7 @@ async def generate_design(
             from app.services.credit_service import log_credit_change
 
             await log_credit_change(
-                db, current_user, COST_GENERATE_DESIGN, "Refund: gagal generate desain"
+                db, current_user, total_charged, "Refund: gagal generate desain"
             )
             await db.commit()
             raise InternalServerError(
@@ -509,6 +511,7 @@ async def generate_design(
             if current_user.credits_remaining < extra_cost:
                 raise InsufficientCreditsError(detail="Insufficient credits for ultra quality")
             await log_credit_change(db, current_user, -extra_cost, "Generate desain (ultra surcharge)")
+            total_charged = COST_GENERATE_DESIGN_ULTRA  # full 80
             fal_result = await generate_background_ultra(
                 visual_prompt=enhanced_prompt,
                 aspect_ratio=request.aspect_ratio,
@@ -591,7 +594,7 @@ async def generate_design(
             from app.services.credit_service import log_credit_change
 
             await log_credit_change(
-                db, current_user, COST_GENERATE_DESIGN, "Refund: prompt ditolak AI"
+                db, current_user, total_charged, "Refund: prompt ditolak AI"
             )
 
         await db.commit()
@@ -609,7 +612,7 @@ async def generate_design(
         from app.services.credit_service import log_credit_change
 
         await log_credit_change(
-            db, current_user, COST_GENERATE_DESIGN, "Refund: sistem error"
+            db, current_user, total_charged, "Refund: sistem error"
         )
         await db.commit()
         raise InternalServerError(detail=f"Image generation failed: {str(e)}")

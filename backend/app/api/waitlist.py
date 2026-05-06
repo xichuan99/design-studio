@@ -18,6 +18,12 @@ router = APIRouter(tags=["Waitlist"])
 
 
 async def _resolve_position(db: AsyncSession, entry: WaitlistEntry) -> int:
+    # Serialize position resolution to prevent TOCTOU race condition.
+    # Two concurrent waitlist joins will block on this transaction-scoped
+    # advisory lock, ensuring each count query sees a consistent snapshot
+    # and assigned positions never overlap.
+    await db.execute(select(func.pg_advisory_xact_lock(1001)))
+
     position_query = select(func.count(WaitlistEntry.id)).where(
         or_(
             WaitlistEntry.created_at < entry.created_at,
@@ -46,7 +52,6 @@ async def join_waitlist(
 
     await rate_limit_public(
         request=request,
-        email=normalized_email,
         action="waitlist_join",
         limit=8,
     )

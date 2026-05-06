@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import base64
-import io
 import logging
+import os
+import shutil
+import tempfile
 import zipfile
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
@@ -115,6 +117,19 @@ async def _save_progress(
         await session.commit()
 
 
+def _write_page_to_tempfile(page_bytes: bytes, page_number: int, tmpdir: str) -> str:
+    """Write page bytes to disk tempfile and return the file path.
+
+    Using NamedTemporaryFile(delete=False) so the file survives after
+    the context manager closes. Cleanup is done by the caller via
+    shutil.rmtree on the tmpdir.
+    """
+    filepath = os.path.join(tmpdir, f"page-{page_number:02d}.png")
+    with open(filepath, "wb") as f:
+        f.write(page_bytes)
+    return filepath
+
+
 async def execute_catalog_render_tool_job(job_id: str) -> None:
     async with AsyncSessionLocal() as session:
         job = await session.get(AiToolJob, job_id)
@@ -171,176 +186,196 @@ async def execute_catalog_render_tool_job(job_id: str) -> None:
     effective_reference_url = reference_image_url if quality_mode != "draft" else None
 
     rendered_pages: List[Dict[str, Any]] = []
-    page_bytes_map: Dict[int, bytes] = {}
+    # Store page_number -> tempfile path to avoid keeping all bytes in RAM.
+    page_file_map: Dict[int, str] = {}
+    tmpdir = tempfile.mkdtemp(prefix="catalog_render_")
 
-    for index in range(1, total_pages + 1):
-        async with AsyncSessionLocal() as session:
-            live_job = await session.get(AiToolJob, job_id)
-            if not live_job:
-                return
-            if live_job.cancel_requested:
-                await set_ai_tool_job_canceled(session, live_job, "Refund: job catalog render dibatalkan")
-                await session.commit()
-                return
+    try:
+        for index in range(1, total_pages + 1):
+            async with AsyncSessionLocal() as session:
+                live_job = await session.get(AiToolJob, job_id)
+                if not live_job:
+                    return
+                if live_job.cancel_requested:
+                    await set_ai_tool_job_canceled(session, live_job, "Refund: job catalog render dibatalkan")
+                    await session.commit()
+                    return
 
-        page_data = pages[index - 1] if index <= len(pages) else {}
+            page_data = pages[index - 1] if index <= len(pages) else {}
 
-        page_status: Dict[str, Any] = {
-            "page_number": index,
-            "status": "processing",
-            "result_url": None,
-            "fallback_used": False,
-            "error_message": None,
-        }
+            page_status: Dict[str, Any] = {
+                "page_number": index,
+                "status": "processing",
+                "result_url": None,
+                "fallback_used": False,
+                "error_message": None,
+            }
 
-        # --- Attempt real AI generation ---
-        ai_success = False
-        try:
-            visual_prompt = _build_page_visual_prompt(
-                page=page_data,
-                catalog_type=catalog_type,
-                style=style,
-                tone=tone,
-            )
-            logger.info(f"[catalog_render:{job_id}] Page {index}/{total_pages}: generating with prompt={visual_prompt[:80]}...")
-
-            gen_result = await generate_background(
-                visual_prompt=visual_prompt,
-                reference_image_url=effective_reference_url,
-                style=style,
-                aspect_ratio=aspect_ratio,
-                integrated_text=False,
-            )
-
-            page_bytes = await download_image(gen_result["image_url"])
-            page_url = await upload_image(
-                page_bytes,
-                key=f"catalog_render/{job_id}/page-{index:02d}.png",
-                content_type="image/png",
-                prefix="catalog_render",
-            )
-
-            page_status["result_url"] = page_url
-            page_status["status"] = "completed"
-            page_status["fallback_used"] = False
-            page_bytes_map[index] = page_bytes
-            ai_success = True
-
-        except Exception as ai_err:
-            logger.warning(f"[catalog_render:{job_id}] Page {index} AI generation failed: {ai_err}")
-
-        # --- Fallback: use reference image or transparent PNG ---
-        if not ai_success:
+            # --- Attempt real AI generation ---
+            ai_success = False
             try:
+                visual_prompt = _build_page_visual_prompt(
+                    page=page_data,
+                    catalog_type=catalog_type,
+                    style=style,
+                    tone=tone,
+                )
+                logger.info(
+                    f"[catalog_render:{job_id}] Page {index}/{total_pages}: "
+                    f"generating with prompt={visual_prompt[:80]}..."
+                )
+
+                gen_result = await generate_background(
+                    visual_prompt=visual_prompt,
+                    reference_image_url=effective_reference_url,
+                    style=style,
+                    aspect_ratio=aspect_ratio,
+                    integrated_text=False,
+                )
+
+                page_bytes = await download_image(gen_result["image_url"])
                 page_url = await upload_image(
-                    fallback_source_bytes,
+                    page_bytes,
                     key=f"catalog_render/{job_id}/page-{index:02d}.png",
                     content_type="image/png",
                     prefix="catalog_render",
                 )
+
                 page_status["result_url"] = page_url
-                page_status["status"] = "fallback"
-                page_status["fallback_used"] = True
-                page_bytes_map[index] = fallback_source_bytes
-            except Exception as upload_err:
-                page_status["status"] = "failed"
-                page_status["error_message"] = str(upload_err)
+                page_status["status"] = "completed"
+                page_status["fallback_used"] = False
+                page_file_map[index] = _write_page_to_tempfile(page_bytes, index, tmpdir)
+                ai_success = True
 
-        rendered_pages.append(page_status)
+            except Exception as ai_err:
+                logger.warning(f"[catalog_render:{job_id}] Page {index} AI generation failed: {ai_err}")
 
-        completed_pages = len([p for p in rendered_pages if p.get("result_url")])
-        progress = 10 + int((index / total_pages) * 80)
-        result_meta = {
-            "total_pages": total_pages,
-            "completed_pages": completed_pages,
-            "pages": rendered_pages,
-            "zip_url": None,
-        }
+            # --- Fallback: use reference image or transparent PNG ---
+            if not ai_success:
+                try:
+                    page_url = await upload_image(
+                        fallback_source_bytes,
+                        key=f"catalog_render/{job_id}/page-{index:02d}.png",
+                        content_type="image/png",
+                        prefix="catalog_render",
+                    )
+                    page_status["result_url"] = page_url
+                    page_status["status"] = "fallback"
+                    page_status["fallback_used"] = True
+                    page_file_map[index] = _write_page_to_tempfile(fallback_source_bytes, index, tmpdir)
+                except Exception as upload_err:
+                    page_status["status"] = "failed"
+                    page_status["error_message"] = str(upload_err)
 
-        await _save_progress(
-            job_id,
-            status="processing",
-            phase_message=f"Render halaman {index}/{total_pages}",
-            progress_percent=min(progress, 95),
-            result_meta=result_meta,
-        )
+            rendered_pages.append(page_status)
 
-    successful_pages = [p for p in rendered_pages if p.get("result_url")]
-    if not successful_pages:
-        async with AsyncSessionLocal() as session:
-            failed_job = await session.get(AiToolJob, job_id)
-            if not failed_job:
-                return
-
-            failed_job.status = "failed"
-            failed_job.error_message = "Seluruh halaman katalog gagal dirender"
-            failed_job.phase_message = "Render katalog gagal"
-            failed_job.progress_percent = 100
-            failed_job.finished_at = datetime.now(timezone.utc)
-            failed_job.payload_json = dict(failed_job.payload_json or {})
-            failed_job.payload_json["_result_meta"] = {
+            completed_pages = len([p for p in rendered_pages if p.get("result_url")])
+            progress = 10 + int((index / total_pages) * 80)
+            result_meta = {
                 "total_pages": total_pages,
-                "completed_pages": 0,
+                "completed_pages": completed_pages,
                 "pages": rendered_pages,
                 "zip_url": None,
             }
-            session.add(failed_job)
-            await refund_ai_tool_job_if_needed(
-                session,
-                failed_job,
-                reason="Refund: seluruh halaman catalog render gagal",
+
+            await _save_progress(
+                job_id,
+                status="processing",
+                phase_message=f"Render halaman {index}/{total_pages}",
+                progress_percent=min(progress, 95),
+                result_meta=result_meta,
             )
-            await session.commit()
-        return
 
-    zip_buffer = io.BytesIO()
-    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
-        for page in successful_pages:
-            page_number = int(page.get("page_number") or 0)
-            if page_number <= 0:
-                continue
-            zip_file.writestr(f"page-{page_number:02d}.png", page_bytes_map.get(page_number, _FALLBACK_PNG_BYTES))
+        successful_pages = [p for p in rendered_pages if p.get("result_url")]
+        if not successful_pages:
+            async with AsyncSessionLocal() as session:
+                failed_job = await session.get(AiToolJob, job_id)
+                if not failed_job:
+                    return
 
-    zip_url = await upload_image(
-        zip_buffer.getvalue(),
-        key=f"catalog_render/{job_id}/catalog-pages.zip",
-        content_type="application/zip",
-        prefix="catalog_render",
-    )
-
-    async with AsyncSessionLocal() as session:
-        job = await session.get(AiToolJob, job_id)
-        if not job:
+                failed_job.status = "failed"
+                failed_job.error_message = "Seluruh halaman katalog gagal dirender"
+                failed_job.phase_message = "Render katalog gagal"
+                failed_job.progress_percent = 100
+                failed_job.finished_at = datetime.now(timezone.utc)
+                failed_job.payload_json = dict(failed_job.payload_json or {})
+                failed_job.payload_json["_result_meta"] = {
+                    "total_pages": total_pages,
+                    "completed_pages": 0,
+                    "pages": rendered_pages,
+                    "zip_url": None,
+                }
+                session.add(failed_job)
+                await refund_ai_tool_job_if_needed(
+                    session,
+                    failed_job,
+                    reason="Refund: seluruh halaman catalog render gagal",
+                )
+                await session.commit()
             return
 
-        if job.cancel_requested:
-            await set_ai_tool_job_canceled(session, job, "Refund: job catalog render dibatalkan")
-            await session.commit()
-            return
+        # Build ZIP from tempfiles on disk (minimises RAM usage).
+        zip_path = os.path.join(tmpdir, "catalog-pages.zip")
+        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zip_file:
+            for page in successful_pages:
+                page_number = int(page.get("page_number") or 0)
+                if page_number <= 0:
+                    continue
+                src_path = page_file_map.get(page_number)
+                if src_path and os.path.isfile(src_path):
+                    zip_file.write(src_path, arcname=f"page-{page_number:02d}.png")
 
-        payload = dict(job.payload_json or {})
-        payload["_result_meta"] = {
-            "total_pages": total_pages,
-            "completed_pages": len(successful_pages),
-            "pages": rendered_pages,
-            "zip_url": zip_url,
-        }
+        # Read final ZIP from disk (only one file at a time — small).
+        with open(zip_path, "rb") as f:
+            zip_bytes = f.read()
 
-        session.add(
-            AiToolResult(
-                user_id=job.user_id,
-                tool_name="catalog_render",
-                result_url=zip_url,
-                file_size=len(zip_buffer.getvalue()),
-                input_summary=f"Catalog pages: {total_pages}",
-            )
+        zip_url = await upload_image(
+            zip_bytes,
+            key=f"catalog_render/{job_id}/catalog-pages.zip",
+            content_type="application/zip",
+            prefix="catalog_render",
         )
 
-        job.status = "completed"
-        job.result_url = zip_url
-        job.phase_message = "Render katalog selesai"
-        job.progress_percent = 100
-        job.finished_at = datetime.now(timezone.utc)
-        job.payload_json = payload
-        session.add(job)
-        await session.commit()
+        async with AsyncSessionLocal() as session:
+            job = await session.get(AiToolJob, job_id)
+            if not job:
+                return
+
+            if job.cancel_requested:
+                await set_ai_tool_job_canceled(session, job, "Refund: job catalog render dibatalkan")
+                await session.commit()
+                return
+
+            payload = dict(job.payload_json or {})
+            payload["_result_meta"] = {
+                "total_pages": total_pages,
+                "completed_pages": len(successful_pages),
+                "pages": rendered_pages,
+                "zip_url": zip_url,
+            }
+
+            session.add(
+                AiToolResult(
+                    user_id=job.user_id,
+                    tool_name="catalog_render",
+                    result_url=zip_url,
+                    file_size=len(zip_bytes),
+                    input_summary=f"Catalog pages: {total_pages}",
+                )
+            )
+
+            job.status = "completed"
+            job.result_url = zip_url
+            job.phase_message = "Render katalog selesai"
+            job.progress_percent = 100
+            job.finished_at = datetime.now(timezone.utc)
+            job.payload_json = payload
+            session.add(job)
+            await session.commit()
+
+    finally:
+        # Always clean up temp files, even on early return / exception.
+        try:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+        except Exception:
+            pass
