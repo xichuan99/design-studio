@@ -5,41 +5,41 @@ import { ChevronDown } from "lucide-react";
 
 const faqs = [
   {
-    question: "Apakah aplikasi ini gratis digunakan?",
-    answer: "Ya, Anda bisa mulai gratis tanpa kartu kredit. Setelah itu, Anda hanya bayar saat butuh lewat sistem kredit (tanpa langganan bulanan), jadi biaya tetap fleksibel untuk skala UMKM."
+    question: "Daftar gratis dapat apa aja?",
+    answer: "100 kredit + PDF '30 Ide Konten UMKM Bulan Ini' langsung ke email. 100 kredit cukup buat 2-3 desain pertama tanpa bayar sepeser pun. Nggak perlu kartu kredit. Nggak ada komitmen."
   },
   {
     question: "Berapa lama proses edit fotonya?",
-    answer: "Untuk edit standar, hasil biasanya selesai dalam beberapa menit. Waktu bisa lebih lama jika kualitas file awal rendah, antrean sedang tinggi, atau proses yang dipilih lebih kompleks."
+    answer: "Edit standar selesai dalam 3-10 detik. Generate desain dari nol butuh 1-2 menit. Batch edit 50 foto? Sekitar 5 menit. Semua async — kamu bisa tinggal dan dapat notifikasi kalau sudah jadi."
   },
   {
     question: "Format file apa saja yang didukung?",
-    answer: "Saat ini kami mendukung format JPG, PNG, dan WEBP untuk foto yang diunggah. Hasil editan bisa diunduh dalam kualitas tinggi (hingga 4K) berformat PNG dengan background transparan atau JPG."
+    answer: "Upload: JPG, PNG, WEBP. Download: PNG transparan (untuk logo), JPG kualitas tinggi, atau PDF (untuk print). Semua hasil up to 4K resolution. Siap langsung upload ke Shopee, Tokopedia, Instagram."
   },
   {
-    question: "Bagaimana kualitas hasil fotonya untuk katalog marketplace?",
-    answer: "Kualitas akhir mengikuti kualitas foto awal dan jenis proses yang dipilih. SmartDesign membantu meningkatkan ketajaman, pencahayaan, dan konsistensi visual agar lebih siap untuk katalog marketplace, sambil tetap memberi kontrol edit manual jika perlu penyesuaian akhir."
+    question: "Kualitas hasilnya bagus untuk katalog marketplace?",
+    answer: "SmartDesign pakai model AI tier premium (Flux Pro, GPT Image 2) untuk output. Ditambah AI Interview sebelum generate biar hasil sesuai kebutuhan. Kalau kurang puas? Ada editor drag-and-drop buat koreksi."
   },
   {
-    question: "Bagaimana cara kerja sistem kreditnya?",
-    answer: "Kami tidak memakai langganan bulanan. Anda membeli kredit sesuai kebutuhan, lalu kredit terpotong saat proses AI dijalankan. Dengan model ini, Anda bisa mengontrol biaya produksi konten berdasarkan volume kerja aktual."
+    question: "Gimana cara kerja sistem kreditnya?",
+    answer: "Mirip pulsa HP. Beli kredit sekali, pakai kapan aja. Nggak hangus. Tier 1 (5 kredit) untuk edit ringan. Tier 4 (40 kredit) untuk generate desain full AI. Kamu yang kontrol mau hemat atau maksimal."
   },
   {
-    question: "Bisakah saya mengedit langsung dari HP?",
-    answer: "Tentu! SmartDesign Studio dirancang sepenuhnya responsif, sehingga Anda bisa memfoto produk dengan HP dan langsung mengeditnya melalui browser di HP Anda."
+    question: "Bisa pakai dari HP?",
+    answer: "100%. SmartDesign responsif penuh. Foto produk pakai HP → edit langsung di browser HP → download → upload ke Instagram/Shopee. Nggak perlu install app."
   },
   {
-    question: "Kenapa tidak langsung pakai ChatGPT atau Gemini saja?",
-    answer: "Chatbot AI bagus untuk ide awal, tapi biasanya belum menyatukan workflow desain bisnis end-to-end. SmartDesign menggabungkan 3 model AI premium (GPT Image 2, Flux, Gemini), format siap platform, brand consistency, dan editor dalam satu alur agar hasilnya langsung lebih siap dipakai untuk kebutuhan promosi UMKM. Jumlah model akan terus bertambah."
+    question: "Kenapa nggak pakai ChatGPT/Gemini aja?",
+    answer: "ChatGPT bagus buat ide. Tapi hasilnya gambar mentah: nggak bisa diedit, ukuran generik, brand nggak tersimpan, caption terpisah. SmartDesign gabungin AI Interview + model terbaik + editor + brand kit + format pas + caption jadi. Dari chat langsung jadi desain siap upload."
   },
   {
     question: "Apa bedanya model AI Basic, Pro, dan Ultra?",
-    answer: "Basic difokuskan untuk kecepatan dan efisiensi biaya, Pro untuk kualitas detail harian, dan Ultra untuk kebutuhan campaign premium. Anda bisa memilih sesuai prioritas proyek, sementara mode Auto membantu memilih tier secara otomatis berdasarkan akses paket dan kebutuhan hasil."
+    answer: "Basic (Flux Schnell): cepat + hemat. Cocok untuk konten harian. Pro (Flux Pro): detail lebih tajam, lighting lebih natural. Ultra (GPT Image 2): kualitas tertinggi, cocok untuk campaign flagship. Kamu pilih sesuai budget dan kebutuhan."
   }
 ];
 
 export function FAQSection() {
-  const [openIndex, setOpenIndex] = useState<number | null>(0); // First one open by default
+  const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   const toggleFaq = (index: number) => {
     setOpenIndex(openIndex === index ? null : index);
@@ -48,17 +48,17 @@ export function FAQSection() {
   return (
     <div className="w-full py-24 relative">
       <div className="absolute top-0 right-0 w-1/3 h-[1px] bg-gradient-to-l from-transparent via-purple-500/50 to-transparent"></div>
-      
+
       <div className="max-w-3xl mx-auto px-4">
         <div className="text-center mb-12">
-          <span className="text-purple-400 font-semibold tracking-wider uppercase text-sm">Bantuan</span>
+          <span className="text-purple-400 font-semibold tracking-wider uppercase text-sm">Masih Ragu?</span>
           <h2 className="text-3xl md:text-4xl font-bold text-white mt-2 mb-4">Pertanyaan yang Sering Diajukan</h2>
-          <p className="text-slate-400">Punya pertanyaan lain? Tim support kami siap membantu Anda.</p>
+          <p className="text-slate-400">Kalau masih ada yang belum jelas, tim kami siap jawab via WhatsApp.</p>
         </div>
 
         <div className="space-y-4">
           {faqs.map((faq, index) => (
-            <div 
+            <div
               key={index}
               className={`border border-white/10 rounded-2xl overflow-hidden transition-all duration-300 ${
                 openIndex === index ? "bg-white/10 shadow-[0_0_20px_rgba(108,43,238,0.15)]" : "bg-white/5 hover:bg-white/10"
@@ -76,8 +76,8 @@ export function FAQSection() {
                   <ChevronDown className="w-5 h-5" />
                 </div>
               </button>
-              
-              <div 
+
+              <div
                 className={`overflow-hidden transition-all duration-300 ease-in-out ${
                   openIndex === index ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
                 }`}

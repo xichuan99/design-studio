@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { Check, Star, Info } from "lucide-react";
+import { Check, Star, Info, ArrowRight, Lock } from "lucide-react";
 
-export function PricingSection() {
-  const [creditsSelected, setCreditsSelected] = useState(500); // Default to popular tier
+interface PricingSectionProps {
+  onJoinWaitlist?: (ctaLocation: string) => void;
+}
 
+export function PricingSection({ onJoinWaitlist }: PricingSectionProps) {
   return (
     <div className="w-full py-24 relative" id="pricing">
       {/* Background glow */}
@@ -13,43 +14,41 @@ export function PricingSection() {
 
       <div className="max-w-6xl mx-auto px-4 relative z-10">
         <div className="text-center mb-16">
-          <span className="text-purple-400 font-semibold tracking-wider uppercase text-sm">Harga Kredit</span>
-          <h2 className="text-4xl md:text-5xl font-bold text-white mt-4 mb-6">Bayar Sesuai Kebutuhan</h2>
+          <div className="inline-flex items-center gap-2 bg-purple-500/10 rounded-full px-4 py-1.5 mb-4 border border-purple-500/30">
+            <Lock className="text-purple-400 h-4 w-4" />
+            <span className="text-xs font-bold text-purple-300 uppercase tracking-wider">Harga Terkunci untuk Early Adopter</span>
+          </div>
+          <h2 className="text-4xl md:text-5xl font-bold text-white mt-4 mb-6">Bayar Seperti Pulsa HP</h2>
           <p className="text-slate-400 max-w-2xl mx-auto text-lg">
-            Mulai gratis, lalu lanjut sesuai ritme bisnis Anda. Tanpa komitmen langganan bulanan, jadi pengeluaran konten terasa lebih terkontrol. <strong className="text-white">1 kredit dihitung per langkah proses AI. Rata-rata 1 hasil visual membutuhkan sekitar 40 kredit.</strong>
+            Nggak ada langganan bulanan. Beli kredit saat butuh. Sisanya bisa dipake besok, minggu depan, atau bulan depan. Nggak hangus.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
           <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Starter</p>
-            <h3 className="mt-2 text-xl font-bold text-white">Auto + Basic</h3>
-            <p className="mt-2 text-sm text-slate-400">Untuk konten rutin yang butuh cepat, aman, dan tetap konsisten.</p>
+            <h3 className="mt-2 text-xl font-bold text-white">Konten Harian</h3>
+            <p className="mt-2 text-sm text-slate-400">Cepat, hemat, konsisten. Cocok untuk post rutin Instagram dan Shopee.</p>
           </div>
           <div className="rounded-2xl border border-purple-500/20 bg-purple-900/15 p-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-purple-300">Pro</p>
-            <h3 className="mt-2 text-xl font-bold text-white">Buka Tier Pro</h3>
-            <p className="mt-2 text-sm text-slate-300">Naik kelas untuk detail visual harian yang lebih rapi dan fleksibel.</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-purple-300">Pro ⭐</p>
+            <h3 className="mt-2 text-xl font-bold text-white">Campaign Penting</h3>
+            <p className="mt-2 text-sm text-slate-300">Detail lebih tajam. Produk lebih menonjol. Pas untuk promo besar.</p>
           </div>
           <div className="rounded-2xl border border-blue-500/20 bg-blue-900/15 p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-300">Business</p>
-            <h3 className="mt-2 text-xl font-bold text-white">Buka Tier Ultra</h3>
-            <p className="mt-2 text-sm text-slate-300">Untuk campaign prioritas tinggi saat Anda butuh kualitas paling premium.</p>
+            <h3 className="mt-2 text-xl font-bold text-white">Campaign Premium</h3>
+            <p className="mt-2 text-sm text-slate-300">Kualitas tertinggi. Hanya untuk desain flagship yang benar-benar harus wow.</p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-          
+
           {/* Credit Packages (Left / Top) */}
           <div className="lg:col-span-7 grid sm:grid-cols-2 gap-6">
-            
+
             {/* Starter */}
-            <div 
-              className={`p-6 rounded-3xl border transition-all cursor-pointer ${
-                creditsSelected === 100 ? "bg-white/10 border-purple-500 shadow-[0_0_20px_rgba(168,85,247,0.2)]" : "bg-white/5 border-white/10 hover:bg-white/10"
-              }`}
-              onClick={() => setCreditsSelected(100)}
-            >
+            <div className="p-6 rounded-3xl border border-white/10 bg-white/5">
               <div className="text-slate-400 font-medium mb-2">Paket Starter</div>
               <div className="flex items-baseline gap-2 mb-4">
                 <span className="text-4xl font-bold text-white">Rp 15.000</span>
@@ -59,21 +58,16 @@ export function PricingSection() {
                 <span className="font-bold text-white text-lg">100 Kredit</span>
               </div>
               <ul className="space-y-3 text-sm text-slate-300">
-                <li className="flex gap-2"><Check className="w-4 h-4 text-green-400 shrink-0" /> Termasuk daily claim (5 kr/hari)</li>
+                <li className="flex gap-2"><Check className="w-4 h-4 text-green-400 shrink-0" /> Daily claim 5 kredit/hari</li>
                 <li className="flex gap-2"><Check className="w-4 h-4 text-green-400 shrink-0" /> Akses semua tools AI</li>
-                <li className="flex gap-2"><Check className="w-4 h-4 text-green-400 shrink-0" /> Default model: Auto atau Basic</li>
+                <li className="flex gap-2"><Check className="w-4 h-4 text-green-400 shrink-0" /> Model Basic + Auto</li>
               </ul>
             </div>
 
             {/* Popular */}
-            <div 
-              className={`p-6 rounded-3xl border relative transition-all cursor-pointer ${
-                creditsSelected === 500 ? "bg-purple-900/20 border-purple-400 shadow-[0_0_30px_rgba(168,85,247,0.3)]" : "bg-white/5 border-white/10 hover:bg-white/10"
-              }`}
-              onClick={() => setCreditsSelected(500)}
-            >
+            <div className="p-6 rounded-3xl border relative border-purple-500/30 bg-purple-900/15 shadow-[0_0_30px_rgba(168,85,247,0.15)]">
               <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg">
-                Rekomendasi UMKM Aktif
+                Paling Laris untuk UMKM
               </div>
               <div className="text-slate-200 font-medium mb-2 mt-2">Paket Pro</div>
               <div className="flex items-baseline gap-2 mb-4">
@@ -85,27 +79,22 @@ export function PricingSection() {
                 <span className="font-bold text-white text-lg">500 Kredit</span>
               </div>
               <ul className="space-y-3 text-sm text-slate-300">
-                <li className="flex gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0" /> Biaya per proses lebih ringan</li>
-                <li className="flex gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0" /> Daily claim 10 kr/hari</li>
-                <li className="flex gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0" /> Buka pilihan model Pro di create flow</li>
+                <li className="flex gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0" /> Lebih hemat per desain</li>
+                <li className="flex gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0" /> Daily claim 10 kredit/hari</li>
+                <li className="flex gap-2"><Check className="w-4 h-4 text-purple-400 shrink-0" /> Buka model Pro (Flux Pro)</li>
               </ul>
             </div>
 
-             {/* Business */}
-             <div 
-              className={`p-6 rounded-3xl border transition-all cursor-pointer sm:col-span-2 ${
-                creditsSelected === 2000 ? "bg-white/10 border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.2)]" : "bg-white/5 border-white/10 hover:bg-white/10"
-              }`}
-              onClick={() => setCreditsSelected(2000)}
-            >
+            {/* Business */}
+            <div className="p-6 rounded-3xl border border-white/10 bg-white/5 sm:col-span-2">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                   <div className="text-slate-400 font-medium mb-1">Paket Business</div>
                   <div className="flex items-baseline gap-2">
                     <span className="text-3xl font-bold text-white">Rp 150.000</span>
-                    <span className="bg-blue-500/20 text-blue-400 text-xs px-2 py-0.5 rounded font-bold">Lebih efisien per proses</span>
+                    <span className="bg-blue-500/20 text-blue-400 text-xs px-2 py-0.5 rounded font-bold">Paling hemat per kredit</span>
                   </div>
-                  <div className="text-xs text-slate-400 mt-1">Daily claim 20 kr/hari + akses Ultra</div>
+                  <div className="text-xs text-slate-400 mt-1">Daily claim 20 kredit/hari + akses Ultra (GPT Image 2)</div>
                 </div>
                 <div className="flex items-center gap-2 p-3 rounded-xl bg-black/30 border border-white/10 w-full sm:w-auto justify-center">
                   <Star className="w-6 h-6 text-yellow-500 fill-current" />
@@ -116,55 +105,60 @@ export function PricingSection() {
 
           </div>
 
-          {/* Calculator (Right / Bottom) */}
+          {/* Calculator + CTA (Right / Bottom) */}
           <div className="lg:col-span-5 relative">
-             <div className="sticky top-24 bg-slate-900 border border-white/10 rounded-3xl p-8 shadow-2xl">
+             <div className="sticky top-24 bg-slate-900 border border-purple-500/20 rounded-3xl p-8 shadow-2xl">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xs font-bold text-purple-400 uppercase tracking-wider">Perkiraan Biaya</span>
+              </div>
               <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                 Simulasi Penggunaan
+                 1 Desain = Berapa?
                  <div className="group relative">
                     <Info className="w-4 h-4 text-slate-400 cursor-help" />
                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-slate-800 text-xs text-slate-300 rounded shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none text-center">
-                      Asumsi 1 hasil visual butuh 40 kredit untuk sekali proses AI.
+                      Rata-rata 1 desain butuh 40 kredit. Bisa lebih irit paket Pro/Business.
                     </div>
                  </div>
               </h3>
-              
-              <div className="space-y-6">
+
+              <div className="space-y-4 mb-6">
                 <div className="flex justify-between items-center pb-4 border-b border-white/5">
-                  <span className="text-slate-400">Total Kredit</span>
-                  <span className="text-2xl font-bold text-purple-400">{creditsSelected}</span>
+                  <span className="text-slate-400">Paket Starter (100 kr)</span>
+                  <span className="text-white font-bold">~2 desain</span>
                 </div>
-                
                 <div className="flex justify-between items-center pb-4 border-b border-white/5">
-                  <span className="text-slate-400">Harga per Edit</span>
-                  <span className="text-white font-medium">
-                    Rp {Math.round((creditsSelected === 100 ? 15000 : creditsSelected === 500 ? 50000 : 150000) / (creditsSelected / 40))}
-                  </span>
+                  <span className="text-slate-400">Paket Pro (500 kr)</span>
+                  <span className="text-purple-300 font-bold">~12 desain</span>
                 </div>
-
-                <div className="bg-purple-900/20 border border-purple-500/20 rounded-xl p-4 flex flex-col items-center justify-center text-center gap-2">
-                  <span className="text-sm text-slate-300">Cukup untuk membuat sekitar:</span>
-                  <div className="text-3xl font-black text-white">
-                    {Math.floor(creditsSelected / 40)} <span className="text-xl font-bold text-slate-400">Hasil Visual</span>
-                  </div>
+                <div className="flex justify-between items-center pb-4 border-b border-white/5">
+                  <span className="text-slate-400">Paket Business (2000 kr)</span>
+                  <span className="text-blue-300 font-bold">~50 desain</span>
                 </div>
-
-                <button className="w-full py-4 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold text-lg hover:from-purple-500 hover:to-blue-500 transition-all shadow-lg hover:shadow-purple-500/25 mt-4">
-                  Pilih Paket Ini
-                </button>
-
-                <p className="text-center text-xs text-slate-400 -mt-2">
-                  Mulai dari paket yang paling nyaman dulu, lalu sesuaikan saat kebutuhan produksi konten bertambah.
-                </p>
-
-                <p className="text-center text-xs text-slate-500">
-                  Nama tier selalu sama di landing, selector create, dan katalog model: Auto, Basic, Pro, Ultra.
-                </p>
-                
-                <p className="text-center text-xs text-slate-500">
-                  Pembayaran aman via QRIS, GoPay, OVO, atau transfer bank.
-                </p>
               </div>
+
+              <div className="bg-purple-900/20 border border-purple-500/20 rounded-xl p-4 mb-4 text-center">
+                <p className="text-sm text-slate-300 mb-1">Lebih murah dari sewa desainer?</p>
+                <p className="text-lg font-bold text-white">1x desain freelancer = Rp 150.000-500.000</p>
+                <p className="text-xs text-slate-400">SmartDesign: Rp 4.000-15.000 per desain</p>
+              </div>
+
+              {onJoinWaitlist && (
+                <button
+                  onClick={() => onJoinWaitlist("pricing_section")}
+                  className="w-full py-4 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold text-lg hover:from-purple-500 hover:to-blue-500 transition-all shadow-lg hover:shadow-purple-500/25 flex items-center justify-center gap-2"
+                >
+                  <span>Daftar Gratis Dulu</span>
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+              )}
+
+              <p className="text-center text-xs text-slate-400 mt-3">
+                Early adopter lock harga spesial. Setelah launch, harga naik 30%.
+              </p>
+
+              <p className="text-center text-xs text-slate-500 mt-2">
+                Pembayaran via QRIS, GoPay, OVO, atau transfer bank.
+              </p>
              </div>
           </div>
 

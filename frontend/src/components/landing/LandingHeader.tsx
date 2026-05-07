@@ -1,16 +1,14 @@
-import { Brush, Menu, X } from "lucide-react";
+import { Brush, Menu, X, ArrowRight } from "lucide-react";
 
 interface LandingHeaderProps {
   mobileMenuOpen: boolean;
   setMobileMenuOpen: (open: boolean) => void;
-  onLogin: (ctaLocation: string) => void;
   onJoinWaitlist: (ctaLocation: string) => void;
 }
 
 export function LandingHeader({
   mobileMenuOpen,
   setMobileMenuOpen,
-  onLogin,
   onJoinWaitlist,
 }: LandingHeaderProps) {
   return (
@@ -29,11 +27,12 @@ export function LandingHeader({
             <a className="text-slate-300 hover:text-purple-400 transition-colors text-sm font-medium" href="#pricing">Harga</a>
           </nav>
           <div className="flex gap-3">
-            <button onClick={() => onLogin("header_desktop")} className="rounded-lg h-10 px-5 border border-slate-700 hover:bg-slate-800 text-white text-sm font-medium transition-all">
-              Masuk
-            </button>
-            <button onClick={() => onJoinWaitlist("header_desktop")} className="rounded-lg h-10 px-5 bg-purple-600 hover:bg-purple-500 text-white text-sm font-bold shadow-[0_0_20px_rgba(108,43,238,0.5)] transition-all">
-              Gabung Waitlist
+            <button
+              onClick={() => onJoinWaitlist("header_desktop")}
+              className="rounded-lg h-10 px-5 bg-purple-600 hover:bg-purple-500 text-white text-sm font-bold shadow-[0_0_20px_rgba(108,43,238,0.5)] transition-all flex items-center gap-2"
+            >
+              Daftar Gratis
+              <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -47,8 +46,12 @@ export function LandingHeader({
           <a className="text-slate-200 hover:text-purple-400 transition-colors font-medium py-2" href="#how-it-works" onClick={() => setMobileMenuOpen(false)}>Cara Kerja</a>
           <a className="text-slate-200 hover:text-purple-400 transition-colors font-medium py-2" href="#pricing" onClick={() => setMobileMenuOpen(false)}>Harga</a>
           <hr className="border-white/10" />
-          <button onClick={() => { onJoinWaitlist("header_mobile"); setMobileMenuOpen(false); }} className="rounded-lg h-12 bg-purple-600 hover:bg-purple-500 text-white font-bold transition-all">
-            Gabung Waitlist
+          <button
+            onClick={() => { onJoinWaitlist("header_mobile"); setMobileMenuOpen(false); }}
+            className="rounded-lg h-12 bg-purple-600 hover:bg-purple-500 text-white font-bold transition-all flex items-center justify-center gap-2"
+          >
+            Daftar Gratis — Dapat 100 Kredit
+            <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       )}

@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, Banknote, CheckCircle2, Copy, ImageOff, Sparkles } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { ArrowRight, Banknote, CheckCircle2, Copy, ImageOff, Sparkles, Clock, Gift } from "lucide-react";
 import { CapabilityMarquee } from "@/components/landing/CapabilityMarquee";
 import { ComparisonTableSection } from "@/components/landing/ComparisonTableSection";
 import { ResultGallery } from "@/components/landing/ResultGallery";
@@ -31,7 +31,6 @@ type WaitlistJoinResult = {
 };
 
 export default function LandingPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const posthog = usePostHog();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -41,15 +40,6 @@ export default function LandingPage() {
   const [waitlistResult, setWaitlistResult] = useState<WaitlistJoinResult | null>(null);
   const [waitlistCount, setWaitlistCount] = useState<number | null>(null);
   const [landingVariant, setLandingVariant] = useState<string>("control");
-
-  const handleLogin = (ctaLocation: string) => {
-    trackLandingCtaClicked(posthog, {
-      variant: landingVariant,
-      cta_name: "login",
-      cta_location: ctaLocation,
-    });
-    router.push("/login");
-  };
 
   const handleJoinWaitlist = (ctaLocation: string) => {
     trackLandingCtaClicked(posthog, {
@@ -124,7 +114,7 @@ export default function LandingPage() {
         | null;
 
       if (!res.ok) {
-        const detail = data?.error?.detail || "Gagal mendaftar waitlist. Coba lagi sebentar.";
+        const detail = data?.error?.detail || "Gagal mendaftar. Coba lagi sebentar.";
         setWaitlistError(detail);
         return;
       }
@@ -162,10 +152,10 @@ export default function LandingPage() {
     "operatingSystem": "All",
     "offers": {
       "@type": "Offer",
-      "price": "10000",
+      "price": "0",
       "priceCurrency": "IDR",
     },
-    "description": "Platform AI untuk workflow desain UMKM, dari brief hingga hasil siap ekspor."
+    "description": "Platform AI untuk workflow desain UMKM — daftar gratis dan dapat 100 kredit + bonus PDF ide konten."
   };
 
   return (
@@ -184,12 +174,11 @@ export default function LandingPage() {
           <LandingHeader
             mobileMenuOpen={mobileMenuOpen}
             setMobileMenuOpen={setMobileMenuOpen}
-            onLogin={handleLogin}
             onJoinWaitlist={handleJoinWaitlist}
           />
 
           {/* Hero Section */}
-          <HeroSection onJoinWaitlist={handleJoinWaitlist} />
+          <HeroSection onJoinWaitlist={handleJoinWaitlist} waitlistCount={waitlistCount} />
 
           {/* Kenapa AI Chatbot Tidak Cukup */}
           <ComparisonTableSection />
@@ -212,10 +201,14 @@ export default function LandingPage() {
             <div id="features" className="flex flex-col gap-12 py-20 border-t border-white/5 relative">
               <div className="flex flex-col items-center gap-4 text-center">
                 <span className="text-blue-400 font-semibold tracking-wider uppercase text-sm">Solusi Bisnis</span>
-                <h2 className="text-4xl md:text-5xl font-bold leading-tight tracking-tight text-white mb-2">Kenapa UMKM Pakai SmartDesign untuk Foto Produk & Katalog?</h2>
-                <p className="text-slate-400 text-lg max-w-[600px]">Bantu tim kecil bergerak lebih konsisten tanpa beban desain berulang yang sering bikin proses promosi terhenti.</p>
+                <h2 className="text-4xl md:text-5xl font-bold leading-tight tracking-tight text-white mb-2">
+                  Satu Platform, Semua Kebutuhan Visual UMKM
+                </h2>
+                <p className="text-slate-400 text-lg max-w-[600px]">
+                  Nggak perlu pindah-pindah app. Dari foto produk sampai desain promo, semua bisa di sini.
+                </p>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
                 <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-2xl hover:bg-white/10 transition-all duration-300">
                   <div className="w-14 h-14 bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-xl flex items-center justify-center mb-6">
@@ -223,7 +216,7 @@ export default function LandingPage() {
                   </div>
                   <h3 className="text-xl font-bold text-white mb-3">AI Desain Katalog & Konten Promo</h3>
                   <p className="text-slate-400 text-sm leading-relaxed">
-                    Bantu Anda memecah kebuntuan ide saat harus menyiapkan konten promo rutin, tanpa perlu selalu mulai desain dari nol.
+                    Ceritakan produkmu — AI yang mikirin headline, warna, layout, dan caption. Hasilnya 3 variasi desain siap pilih dalam 2 menit.
                   </p>
                 </div>
 
@@ -233,7 +226,7 @@ export default function LandingPage() {
                   </div>
                   <h3 className="text-xl font-bold text-white mb-3">Edit Foto Produk AI & Penghapus Latar</h3>
                   <p className="text-slate-400 text-sm leading-relaxed">
-                    Tingkatkan penjualan dengan foto produk yang lebih tajam, cerah, dan konsisten. Sekali edit, hasil siap untuk katalog Shopee, Tokopedia, dan etalase marketplace lain.
+                    Foto HP biasa jadi foto katalog profesional. Hapus background, ganti suasana, retouch, upscale — semua dalam 3 detik per foto.
                   </p>
                 </div>
 
@@ -243,7 +236,7 @@ export default function LandingPage() {
                   </div>
                   <h3 className="text-xl font-bold text-white mb-3">AI Copywriting untuk Caption Promo</h3>
                   <p className="text-slate-400 text-sm leading-relaxed">
-                    Bebas dari writer&apos;s block. AI membantu menulis caption promosi yang relevan dengan produk, target audiens, dan gaya komunikasi brand UMKM Anda.
+                    Writer&apos;s block? Kasih tau AI produk dan targetmu — dapat 3 caption FOMO, benefit-driven, dan social proof langsung tinggal copas.
                   </p>
                 </div>
 
@@ -253,7 +246,7 @@ export default function LandingPage() {
                   </div>
                   <h3 className="text-xl font-bold text-white mb-3">Edit Batch Foto Produk (50 Foto)</h3>
                   <p className="text-slate-400 text-sm leading-relaxed">
-                    Punya banyak SKU baru? Edit foto produk sekaligus untuk kebutuhan katalog dan konten promo mingguan, tanpa proses manual satu per satu.
+                    Upload puluhan SKU sekaligus. AI proses semua dengan setting yang sama — background seragam, lighting konsisten, siap upload massal.
                   </p>
                 </div>
               </div>
@@ -265,18 +258,20 @@ export default function LandingPage() {
             <div className="py-20 border-t border-white/5 relative">
               <div className="flex flex-col items-center gap-4 text-center mb-10 px-4">
                 <span className="text-purple-400 font-semibold tracking-wider uppercase text-sm">Untuk Siapa</span>
-                <h2 className="text-3xl md:text-5xl font-bold leading-tight tracking-tight text-white">SmartDesign Dibuat untuk UMKM, Seller Marketplace, dan Tim Konten</h2>
+                <h2 className="text-3xl md:text-5xl font-bold leading-tight tracking-tight text-white">
+                  Dibuat Khusus untuk Pelaku UMKM Indonesia
+                </h2>
                 <p className="text-slate-400 text-lg max-w-3xl">
-                  Cocok untuk Anda yang butuh konten rutin, tapi tidak punya waktu panjang untuk desain manual setiap hari.
+                  Nggak pernah pakai Photoshop? Gapapa. Nggak ngerti prompt engineering? Juga gapapa.
                 </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5 px-4">
                 {[
-                  "Pemilik warung, kafe, atau toko online yang butuh konten promo harian",
-                  "Seller fashion yang perlu foto produk lebih rapi dan konsisten",
-                  "Pemilik jasa (salon, klinik, kursus) yang ingin terlihat profesional di media sosial",
-                  "Reseller yang ingin produksi konten cepat tanpa proses desain berulang",
+                  "Pemilik warung, kafe, atau toko online yang butuh konten promo harian tanpa sewa desainer",
+                  "Seller fashion yang foto produknya masih berantakan dan pengen feed Instagram lebih rapi",
+                  "Pemilik jasa (salon, klinik, kursus) yang ingin terlihat profesional tapi budget terbatas",
+                  "Reseller yang pengen produksi konten cepat tanpa mikirin desain satu per satu",
                 ].map((item) => (
                   <div key={item} className="bg-white/5 border border-white/10 rounded-2xl p-5 text-slate-200 text-sm md:text-base flex items-start gap-3">
                     <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0 mt-0.5" />
@@ -288,7 +283,7 @@ export default function LandingPage() {
           </ScrollReveal>
 
           {/* Testimonials */}
-          <TestimonialsSection />
+          <TestimonialsSection waitlistCount={waitlistCount} />
 
           <ObjectionSection />
 
@@ -299,34 +294,74 @@ export default function LandingPage() {
 
           {/* Full Pricing / Credit Store */}
           <ScrollReveal direction="up" delay={200}>
-            <PricingSection />
+            <PricingSection onJoinWaitlist={handleJoinWaitlist} />
           </ScrollReveal>
+
+          {/* Sticky Bottom CTA Bar (Mobile Only) */}
+          <div className="fixed bottom-0 left-0 right-0 bg-slate-950/95 backdrop-blur-xl border-t border-white/10 p-3 md:hidden z-50 flex items-center justify-between gap-3"
+               style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+            <div className="flex flex-col"
+>              <span className="text-white text-sm font-bold"
+>Daftar Gratis</span
+>              <span className="text-slate-400 text-xs"
+>100 kredit + PDF bonus</span
+>            </div
+>            <button
+              onClick={() => handleJoinWaitlist("sticky_mobile")}
+              className="bg-purple-600 hover:bg-purple-500 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap"
+            >
+              Ambil Slot
+            </button>
+          </div>
 
           {/* Final CTA */}
           <ScrollReveal>
             <div className="py-20 border-t border-white/5 relative">
               <div className="mx-4 rounded-3xl border border-purple-500/20 bg-gradient-to-r from-purple-900/35 to-blue-900/30 p-8 md:p-12 text-center">
+                <div className="inline-flex items-center gap-2 bg-yellow-500/10 rounded-full px-4 py-1.5 mb-6 border border-yellow-500/30">
+                  <Clock className="text-yellow-400 h-4 w-4" />
+                  <span className="text-xs font-bold text-yellow-300"
+>Slot Terbatas — Batch Pertama Tutup Setelah 500 Pendaftar</span
+>                </div>
+
                 <h2 className="text-3xl md:text-5xl font-bold text-white leading-tight mb-4">
                   Jangan Sampai Tokomu Ketinggalan Kereta Pertama
                 </h2>
                 <p className="text-slate-300 text-base md:text-lg max-w-3xl mx-auto mb-8">
-                  Feed kompetitor makin rapi. Pelanggan makin pilih-pilih. AI makin pintar — tapi tools untuk pakai AI secara maksimal masih langka. SmartDesign dibuat supaya kamu bisa tampil profesional tanpa bingung pilih model AI. Tanpa belajar prompt engineering. Tanpa sewa desainer. Tanpa stress.
+                  Feed kompetitor makin rapi. Pelanggan makin pilih-pilih. SmartDesign dibuat supaya kamu bisa tampil profesional tanpa bingung pilih model AI. Tanpa belajar desain. Tanpa sewa desainer.
                 </p>
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                  <button
+
+                {/* Incentive Stack */}
+                <div className="flex flex-wrap justify-center gap-3 mb-8"
+>                  {[
+                    { icon: Gift, text: "100 Kredit Gratis" },
+                    { icon: CheckCircle2, text: "PDF 30 Ide Konten UMKM" },
+                    { icon: CheckCircle2, text: "Akses Prioritas Batch 1" },
+                    { icon: CheckCircle2, text: "Harga Spesial Selamanya" },
+                  ].map(({ icon: Icon, text }) => (
+                    <div key={text} className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-2"
+>                      <Icon className="w-4 h-4 text-purple-400" />
+                      <span className="text-slate-300 text-sm"
+>{text}</span
+>                    </div>
+                  ))}
+                </div
+>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4"
+>                  <button
                     onClick={() => handleJoinWaitlist("final_cta")}
-                    className="flex items-center justify-center gap-2 rounded-xl h-12 px-7 bg-purple-600 text-white font-bold shadow-[0_0_20px_rgba(108,43,238,0.5)] hover:bg-purple-500 transition-all"
+                    className="flex items-center justify-center gap-2 rounded-xl h-14 px-8 bg-gradient-to-r from-purple-600 to-purple-500 text-white font-bold shadow-[0_0_30px_rgba(108,43,238,0.4)] hover:shadow-[0_0_40px_rgba(168,85,247,0.5)] hover:scale-105 transition-all"
                   >
-                    <span>Gabung Waitlist</span>
-                    <ArrowRight className="h-4 w-4" />
+                    <span>Daftar Gratis Sekarang</span>
+                    <ArrowRight className="h-5 w-5" />
                   </button>
-                  <a
-                    href="#showcase"
-                    className="flex items-center justify-center gap-2 rounded-xl h-12 px-7 bg-white/5 border border-white/10 text-white font-medium hover:bg-white/10 transition-colors"
-                  >
-                    Lihat Contoh Desain
-                  </a>
                 </div>
+
+                {typeof waitlistCount === "number" && waitlistCount > 0 && (
+                  <p className="mt-4 text-sm text-slate-400">
+                    <strong className="text-white">{waitlistCount.toLocaleString("id-ID")} UMKM</strong> sudah bergabung. Sisa slot: <strong className="text-purple-300">{Math.max(0, 500 - waitlistCount)}</strong>
+                  </p>
+                )}
               </div>
             </div>
           </ScrollReveal>

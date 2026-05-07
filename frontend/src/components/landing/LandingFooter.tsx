@@ -1,4 +1,4 @@
-import { Brush, Gift, Mail } from "lucide-react";
+import { Brush, Gift, Mail, ArrowRight, CheckCircle2 } from "lucide-react";
 
 interface WaitlistResult {
   position: number;
@@ -35,22 +35,32 @@ export function LandingFooter({
             <span className="font-bold text-white text-xl tracking-tight">SmartDesign Studio</span>
           </div>
           <p className="text-slate-400 max-w-sm">
-            Platform desain AI untuk UMKM Indonesia - selalu pakai model AI terbaik. Dari cerita ke desain siap upload dalam 2 menit.
+            Platform desain AI untuk UMKM Indonesia — dari cerita ke desain siap upload dalam 2 menit.
           </p>
 
-          <div className="mt-2 text-sm text-slate-300">
-            <p className="mb-3 font-semibold text-white">Amankan Akses Batch Pertama - Gratis 30 Hari</p>
-            {typeof waitlistCount === "number" && (
-              <p className="mb-2 text-xs text-slate-400">
-                {waitlistCount.toLocaleString("id-ID")} UMKM sudah masuk waitlist.
-              </p>
+          <div className="mt-2">
+            <p className="mb-1 font-bold text-white text-lg">Ambil 100 Kredit Gratis + Bonus PDF</p>
+            <p className="mb-3 text-sm text-slate-400">
+              Daftar sekarang dan langsung dapat 100 kredit (cukup untuk 2-3 desain pertama) + PDF &quot;30 Ide Konten UMKM Bulan Ini&quot;.
+            </p>
+
+            {typeof waitlistCount === "number" && waitlistCount > 0 && (
+              <div className="flex items-center gap-2 mb-3 text-sm">
+                <div className="flex -space-x-2">
+                  <div className="w-6 h-6 rounded-full bg-purple-500 border-2 border-slate-950 flex items-center justify-center text-[8px] text-white font-bold">A</div>
+                  <div className="w-6 h-6 rounded-full bg-blue-500 border-2 border-slate-950 flex items-center justify-center text-[8px] text-white font-bold">B</div>
+                  <div className="w-6 h-6 rounded-full bg-emerald-500 border-2 border-slate-950 flex items-center justify-center text-[8px] text-white font-bold">C</div>
+                </div>
+                <span className="text-slate-400"><strong className="text-white">{waitlistCount.toLocaleString("id-ID")}+ UMKM</strong> sudah daftar</span>
+              </div>
             )}
+
             <form className="flex gap-2" onSubmit={onWaitlistSubmit}>
               <div className="relative flex-1">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                 <input
                   type="email"
-                  placeholder="Email Anda..."
+                  placeholder="Email kamu..."
                   required
                   value={waitlistEmail}
                   onChange={(event) => onWaitlistEmailChange(event.target.value)}
@@ -60,19 +70,33 @@ export function LandingFooter({
               <button
                 type="submit"
                 disabled={waitlistLoading}
-                className="bg-purple-600 hover:bg-purple-500 disabled:opacity-60 text-white px-4 py-2.5 rounded-lg font-medium transition-colors"
+                className="bg-purple-600 hover:bg-purple-500 disabled:opacity-60 text-white px-4 py-2.5 rounded-lg font-bold transition-colors flex items-center gap-2 whitespace-nowrap"
               >
-                {waitlistLoading ? "Mengirim..." : "Daftar"}
+                {waitlistLoading ? "Mengirim..." : (
+                  <>
+                    Daftar Gratis
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
               </button>
             </form>
             {waitlistError && <p className="mt-2 text-xs text-red-400">{waitlistError}</p>}
             {waitlistResult && (
               <p className="mt-2 text-xs text-green-400">
                 {waitlistResult.is_new
-                  ? `Berhasil. Posisi waitlist Anda saat ini: #${waitlistResult.position}.`
-                  : `Email ini sudah terdaftar. Posisi waitlist Anda: #${waitlistResult.position}.`}
+                  ? `Berhasil! Posisi waitlist kamu: #${waitlistResult.position}. Cek email untuk bonus PDF.`
+                  : `Email sudah terdaftar. Posisi kamu: #${waitlistResult.position}.`}
               </p>
             )}
+
+            <div className="flex flex-wrap gap-2 mt-3">
+              <span className="flex items-center gap-1 text-xs text-slate-500">
+                <CheckCircle2 className="w-3 h-3 text-green-400" /> Tanpa kartu kredit
+              </span>
+              <span className="flex items-center gap-1 text-xs text-slate-500">
+                <CheckCircle2 className="w-3 h-3 text-green-400" /> Bisa batal kapan saja
+              </span>
+            </div>
           </div>
         </div>
 
@@ -81,7 +105,7 @@ export function LandingFooter({
           <a href="#how-it-works" className="text-slate-400 hover:text-white transition-colors">Cara Kerja</a>
           <a href="#showcase" className="text-slate-400 hover:text-white transition-colors">Galeri Hasil</a>
           <a href="#pricing" className="text-slate-400 hover:text-white transition-colors">Harga Kredit</a>
-          <a href="/login" className="text-slate-400 hover:text-white transition-colors">Login / Daftar</a>
+          <a href="/login" className="text-slate-400 hover:text-white transition-colors">Login</a>
         </div>
 
         <div className="md:col-span-4 flex flex-col gap-4">
@@ -92,7 +116,7 @@ export function LandingFooter({
             </div>
             <div>
               <h5 className="text-white font-bold text-sm mb-1">Ajak Teman, Dapat Kredit!</h5>
-              <p className="text-slate-400 text-xs">Undang pelaku UMKM lain dan dapatkan <span className="text-purple-400 font-bold">10 kredit bonus</span> untuk setiap teman yang mendaftar.</p>
+              <p className="text-slate-400 text-xs">Undang pelaku UMKM lain dan dapatkan <span className="text-purple-400 font-bold">10 kredit bonus</span> untuk setiap teman yang daftar.</p>
             </div>
           </div>
 
