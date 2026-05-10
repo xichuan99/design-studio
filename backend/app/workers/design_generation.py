@@ -190,6 +190,33 @@ async def _execute_pipeline(
             except Exception:
                 pass  # skip failed variation
 
+        # Trigger reaktif Set 4: deteksi studio shot center pada hasil pertama
+        if generated_urls and settings.QUANTUM_LAYOUT_ENABLED:
+            try:
+                from app.services.trigger_detector import detect_studio_shot_center
+                import json as _json
+                override = await detect_studio_shot_center(generated_urls[0])
+                if override:
+                    set4_bundle = []
+                    for url in generated_urls:
+                        set4_bundle.append({
+                            "set_num": 4,
+                            "result_url": url,
+                            "composition": {
+                                "set_num": 4,
+                                "ratio": aspect_ratio,
+                                "copy_space_side": "top_bottom",
+                                "layout_name": "Center Drama",
+                                "validation_flags": [],
+                            },
+                            "image_prompt_modifier": override["image_prompt_modifier"],
+                            "layout_elements": [],
+                        })
+                    await _update_job_status(job_id, quantum_layout=_json.dumps(override), variation_results=_json.dumps(set4_bundle))
+                    logger.info("Trigger reaktif Set 4: layout overridden to Center Drama | Job: %s", job_id)
+            except Exception:
+                pass
+
         if generated_urls:
             # Patch variation_results with real URLs
             import json as _json

@@ -7,7 +7,7 @@ from app.services.placement_engine import place_elements
 
 SAFE_MIN = 0.05
 SAFE_MAX = 0.95
-MIN_Y_GAP = 0.06
+MIN_Y_GAP = 0.12
 ROLE_ORDER = ["headline", "sub_headline", "cta"]
 
 
@@ -92,6 +92,22 @@ def validate_layout(
 
     xs = [float(item.get("x", 0)) for item in normalized]
     ys = [float(item.get("y", 0)) for item in normalized]
+
+    # X uniqueness: all text elements must have different X positions
+    # unless intentionally aligned as a text column (Set 2 overflow exception)
+    roles = [str(item.get("role", "")) for item in normalized]
+    for i in range(len(xs)):
+        for j in range(i + 1, len(xs)):
+            if abs(xs[i] - xs[j]) < 0.01 and roles[i] != roles[j]:
+                # Allow identical X in Sets 1-5 where placement engine intentionally aligns text columns
+                # This validation is mainly for Gemini-generated layouts (Rules B parsing path)
+                if set_num not in (1, 2, 3, 4, 5):
+                    flags.append("x_non_unique")
+                break
+        else:
+            continue
+        break
+
     avg_x = sum(xs) / len(xs)
     avg_y = sum(ys) / len(ys)
 

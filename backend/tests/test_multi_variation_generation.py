@@ -25,7 +25,7 @@ async def test_optimize_quantum_layout_returns_multiple_variations(mock_build):
             "composition": {"set_num": 2, "ratio": "1:1", "copy_space_side": "right"},
             "image_prompt_modifier": "copy space right",
             "layout_elements": [
-                {"role": "headline", "x": 0.83, "y": 0.35, "font_size": 72, "font_weight": "bold", "text_align": "center", "outline": False}
+                {"role": "headline", "x": 0.83, "y": 0.35, "font_size": 72, "font_weight": "bold", "text_align": "center", "outline": True}
             ],
         },
     ]

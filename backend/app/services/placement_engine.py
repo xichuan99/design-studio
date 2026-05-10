@@ -67,7 +67,7 @@ def place_elements(
     """
     if set_num == 1:
         # Panel Kiri: copy space left 33%, subject right cropped
-        layouts = _set_1_layout(has_headline, has_sub, has_cta)
+        layouts = _set_1_layout(has_headline, has_sub, has_cta, text_length_headline)
         copy_side = "left"
         img_modifier = (
             "composition: subject on the RIGHT side filling 67% of frame, "
@@ -79,7 +79,7 @@ def place_elements(
 
     elif set_num == 2:
         # Panel Kanan: copy space right 33%, subject left cropped
-        layouts = _set_2_layout(has_headline, has_sub, has_cta)
+        layouts = _set_2_layout(has_headline, has_sub, has_cta, text_length_headline)
         copy_side = "right"
         img_modifier = (
             "composition: subject on the LEFT side filling 67% of frame, "
@@ -101,7 +101,7 @@ def place_elements(
 
     elif set_num == 4:
         # Center Drama: strips top 20% and bottom 15%, center 65% for subject
-        layouts = _set_4_layout(has_headline, has_sub, has_cta)
+        layouts = _set_4_layout(has_headline, has_sub, has_cta, text_length_headline)
         copy_side = "top_bottom"
         img_modifier = (
             "composition: CENTERED subject with clean studio space around it. "
@@ -112,7 +112,7 @@ def place_elements(
 
     elif set_num == 5:
         # Diagonal Modern: subject upper-right, copy space lower-left
-        layouts = _set_5_layout(has_headline, has_sub, has_cta)
+        layouts = _set_5_layout(has_headline, has_sub, has_cta, text_length_headline)
         copy_side = "diagonal"
         img_modifier = (
             "composition: dynamic diagonal layout. Subject occupies the "
@@ -194,20 +194,22 @@ def _validate_y_gaps(layouts: list[ElementLayout]) -> None:
             )
 
 
-def _set_1_layout(has_headline: bool, has_sub: bool, has_cta: bool) -> list[ElementLayout]:
+def _set_1_layout(has_headline: bool, has_sub: bool, has_cta: bool, text_length_headline: int = 0) -> list[ElementLayout]:
     """Panel Kiri — copy space left 33% (x range 0.05–0.30)."""
     result: list[ElementLayout] = []
-    # Vertical: golden ratio within left strip
+    # Scale headline font down for very long text
+    h_font = max(48, 72 - max(0, text_length_headline - 25) * 2) if text_length_headline > 25 else 72
+    s_font = max(26, 32 - max(0, text_length_headline - 25)) if text_length_headline > 25 else 32
     if has_headline:
         result.append(ElementLayout(
             role="headline", x=0.17, y=0.35,
-            font_size=72, font_weight="bold",
+            font_size=h_font, font_weight="bold",
             text_align="center", outline=False,
         ))
     if has_sub:
         result.append(ElementLayout(
             role="sub_headline", x=0.17, y=0.52,
-            font_size=32, font_weight="regular",
+            font_size=s_font, font_weight="regular",
             text_align="center", outline=False,
         ))
     if has_cta:
@@ -220,26 +222,28 @@ def _set_1_layout(has_headline: bool, has_sub: bool, has_cta: bool) -> list[Elem
     return result
 
 
-def _set_2_layout(has_headline: bool, has_sub: bool, has_cta: bool) -> list[ElementLayout]:
+def _set_2_layout(has_headline: bool, has_sub: bool, has_cta: bool, text_length_headline: int = 0) -> list[ElementLayout]:
     """Panel Kanan — copy space right 33% (x range 0.67–0.92)."""
     result: list[ElementLayout] = []
+    h_font = max(48, 72 - max(0, text_length_headline - 25) * 2) if text_length_headline > 25 else 72
+    s_font = max(26, 32 - max(0, text_length_headline - 25)) if text_length_headline > 25 else 32
     if has_headline:
         result.append(ElementLayout(
             role="headline", x=0.83, y=0.35,
-            font_size=72, font_weight="bold",
-            text_align="center", outline=False,
+            font_size=h_font, font_weight="bold",
+            text_align="center", outline=True,
         ))
     if has_sub:
         result.append(ElementLayout(
             role="sub_headline", x=0.83, y=0.52,
-            font_size=32, font_weight="regular",
-            text_align="center", outline=False,
+            font_size=s_font, font_weight="regular",
+            text_align="center", outline=True,
         ))
     if has_cta:
         result.append(ElementLayout(
             role="cta", x=0.83, y=0.70,
             font_size=28, font_weight="bold",
-            text_align="center", outline=False,
+            text_align="center", outline=True,
         ))
     _validate_y_gaps(result)
     return result
@@ -297,19 +301,21 @@ def _set_3_layout(
     return result
 
 
-def _set_4_layout(has_headline: bool, has_sub: bool, has_cta: bool) -> list[ElementLayout]:
+def _set_4_layout(has_headline: bool, has_sub: bool, has_cta: bool, text_length_headline: int = 0) -> list[ElementLayout]:
     """Center Drama — top strip (y 0.07–0.18) + bottom strip (y 0.88–0.95). NO text in center."""
     result: list[ElementLayout] = []
+    h_font = max(36, 52 - max(0, text_length_headline - 25) * 2) if text_length_headline > 25 else 52
+    s_font = max(22, 28 - max(0, text_length_headline - 25)) if text_length_headline > 25 else 28
     if has_headline:
         result.append(ElementLayout(
-            role="headline", x=0.50, y=0.09,
-            font_size=52, font_weight="bold",
+            role="headline", x=0.50, y=0.07,
+            font_size=h_font, font_weight="bold",
             text_align="center", outline=False,
         ))
     if has_sub:
         result.append(ElementLayout(
-            role="sub_headline", x=0.50, y=0.16,
-            font_size=28, font_weight="regular",
+            role="sub_headline", x=0.50, y=0.19,
+            font_size=s_font, font_weight="regular",
             text_align="center", outline=False,
         ))
     if has_cta:
@@ -322,24 +328,26 @@ def _set_4_layout(has_headline: bool, has_sub: bool, has_cta: bool) -> list[Elem
     return result
 
 
-def _set_5_layout(has_headline: bool, has_sub: bool, has_cta: bool) -> list[ElementLayout]:
+def _set_5_layout(has_headline: bool, has_sub: bool, has_cta: bool, text_length_headline: int = 0) -> list[ElementLayout]:
     """Diagonal Modern — lower-left diagonal zone. Larger, bolder typography with outline."""
     result: list[ElementLayout] = []
+    h_font = max(64, 96 - max(0, text_length_headline - 25) * 3) if text_length_headline > 25 else 96
+    s_font = max(28, 40 - max(0, text_length_headline - 25)) if text_length_headline > 25 else 40
     if has_headline:
         result.append(ElementLayout(
-            role="headline", x=0.22, y=0.72,
-            font_size=96, font_weight="bold",
+            role="headline", x=0.22, y=0.65,
+            font_size=h_font, font_weight="bold",
             text_align="left", outline=True,
         ))
     if has_sub:
         result.append(ElementLayout(
-            role="sub_headline", x=0.22, y=0.84,
-            font_size=40, font_weight="semibold",
+            role="sub_headline", x=0.22, y=0.77,
+            font_size=s_font, font_weight="semibold",
             text_align="left", outline=True,
         ))
     if has_cta:
         result.append(ElementLayout(
-            role="cta", x=0.22, y=0.93,
+            role="cta", x=0.22, y=0.89,
             font_size=36, font_weight="bold",
             text_align="left", outline=True,
         ))

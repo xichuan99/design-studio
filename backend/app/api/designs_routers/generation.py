@@ -627,6 +627,34 @@ async def generate_design(
             except Exception:
                 pass  # skip failed variation
 
+        # Trigger reaktif Set 4: deteksi studio shot center pada hasil pertama
+        if generated_urls and settings.QUANTUM_LAYOUT_ENABLED:
+            try:
+                from app.services.trigger_detector import detect_studio_shot_center
+                override = await detect_studio_shot_center(generated_urls[0])
+                if override:
+                    job.quantum_layout = _json.dumps(override)
+                    # Rebuild variation bundle dengan layout Set 4
+                    set4_bundle = []
+                    for i, url in enumerate(generated_urls):
+                        set4_bundle.append({
+                            "set_num": 4,
+                            "result_url": url,
+                            "composition": {
+                                "set_num": 4,
+                                "ratio": request.aspect_ratio,
+                                "copy_space_side": "top_bottom",
+                                "layout_name": "Center Drama",
+                                "validation_flags": [],
+                            },
+                            "image_prompt_modifier": override["image_prompt_modifier"],
+                            "layout_elements": [],
+                        })
+                    job.variation_results = _json.dumps(set4_bundle)
+                    logging.info("Trigger reaktif Set 4: layout overridden to Center Drama")
+            except Exception:
+                pass
+
         if generated_urls:
             # Patch variation_results with real URLs
             try:
