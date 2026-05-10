@@ -109,7 +109,7 @@ async def _execute_pipeline(
             import json as _json
 
             quantum_layout = await optimize_quantum_layout(
-                parsed_headline, parsed_sub_headline, parsed_cta
+                parsed_headline, parsed_sub_headline, parsed_cta, ratio=aspect_ratio
             )
             if quantum_layout:
                 await _update_job_status(job_id, quantum_layout=quantum_layout)

@@ -208,6 +208,11 @@ class TestSelectAndPlace:
                 f"set {r.set_num} not allowed for 16:9"
             )
 
+    def test_16_9_pool_matches_allowed_set_contract(self):
+        observed = {select_and_place("16:9", True, True, True).set_num for _ in range(200)}
+        assert observed.issubset({1, 2, 5})
+        assert observed == {1, 2, 5}
+
     def test_9_16_never_picks_excluded_ratios(self):
         forbidden = {1, 2}
         for _ in range(50):
@@ -215,6 +220,11 @@ class TestSelectAndPlace:
             assert r.set_num not in forbidden, (
                 f"set {r.set_num} not allowed for 9:16"
             )
+
+    def test_9_16_pool_matches_allowed_set_contract(self):
+        observed = {select_and_place("9:16", True, True, True).set_num for _ in range(200)}
+        assert observed.issubset({3, 4, 5})
+        assert observed == {3, 4, 5}
 
 
 # ---------------------------------------------------------------------------

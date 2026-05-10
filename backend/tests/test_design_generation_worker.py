@@ -1,8 +1,11 @@
 from types import SimpleNamespace
+from uuid import uuid4
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from app.api.designs_routers.generation import generate_design
+from app.schemas.design import DesignGenerationRequest
 from app.services.llm_client import LLMRateLimitError
 from app.workers.design_generation import _execute_pipeline, generate_design_task
 
@@ -54,6 +57,9 @@ async def test_execute_pipeline_persists_job_file_size(
     assert completion_call.kwargs["status"] == "completed"
     assert completion_call.kwargs["result_url"] == "https://cdn.example.com/permanent.jpg"
     assert completion_call.kwargs["file_size"] == 6
+    mock_optimize_quantum_layout.assert_awaited_once_with(
+        "Headline", "Sub", "CTA", ratio="1:1"
+    )
 
 
 @pytest.mark.asyncio
@@ -163,3 +169,73 @@ def test_generate_design_task_uses_retry_after_for_rate_limit(
         )
 
     fake_retry.assert_called_once_with(exc=rate_limit_error, countdown=39)
+
+
+@pytest.mark.asyncio
+@patch("app.api.designs_routers.generation.httpx.AsyncClient")
+@patch("app.services.credit_service.log_credit_change", new_callable=AsyncMock)
+@patch("app.services.storage_service.upload_image_tracked", new_callable=AsyncMock)
+@patch("app.services.image_service.generate_background", new_callable=AsyncMock)
+@patch("app.services.quantum_service.optimize_quantum_layout", new_callable=AsyncMock)
+@patch("app.services.llm_service.parse_design_text", new_callable=AsyncMock)
+async def test_generate_design_sync_passes_request_aspect_ratio_to_quantum_layout(
+    mock_parse_design_text,
+    mock_optimize_quantum_layout,
+    mock_generate_background,
+    mock_upload_image_tracked,
+    mock_log_credit_change,
+    mock_async_client,
+):
+    parsed = SimpleNamespace(
+        headline="Headline",
+        sub_headline="Sub",
+        cta="CTA",
+        visual_prompt="prompt final",
+        visual_prompt_parts=None,
+    )
+    mock_parse_design_text.return_value = parsed
+    mock_optimize_quantum_layout.return_value = None
+    mock_generate_background.return_value = {
+        "image_url": "https://cdn.example.com/generated.jpg",
+        "content_type": "image/jpeg",
+    }
+    mock_upload_image_tracked.return_value = "https://cdn.example.com/permanent.jpg"
+
+    mock_response = MagicMock()
+    mock_response.content = b"image-bytes"
+    mock_response.raise_for_status = MagicMock()
+    mock_http_client = mock_async_client.return_value.__aenter__.return_value
+    mock_http_client.get = AsyncMock(return_value=mock_response)
+
+    created_jobs = []
+
+    def _capture_add(job):
+        created_jobs.append(job)
+
+    mock_db = MagicMock()
+    mock_db.add.side_effect = _capture_add
+    mock_db.commit = AsyncMock()
+    mock_db.refresh = AsyncMock()
+
+    user = SimpleNamespace(
+        id=uuid4(),
+        credits_remaining=999,
+        plan_tier="starter",
+    )
+
+    request = DesignGenerationRequest(
+        raw_text="Promo spesial akhir pekan",
+        aspect_ratio="9:16",
+        style_preference="bold",
+        integrated_text=False,
+    )
+
+    response = await generate_design(request=request, db=mock_db, current_user=user)
+
+    assert response["status"] == "completed"
+    assert created_jobs, "expected a Job instance to be added to the session"
+    assert created_jobs[0].aspect_ratio == "9:16"
+    mock_log_credit_change.assert_awaited()
+    mock_optimize_quantum_layout.assert_awaited_once_with(
+        "Headline", "Sub", "CTA", ratio="9:16"
+    )
