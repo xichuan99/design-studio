@@ -14,8 +14,7 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
-from app.services.llm_client import get_direct_gemini_client
-from google.genai import types
+from app.services.llm_client import call_vision_analysis
 
 logger = logging.getLogger(__name__)
 
@@ -26,18 +25,8 @@ async def detect_studio_shot_center(image_url: str) -> Optional[dict]:
     with centered subject and surrounding empty space.
 
     Returns composition override dict if studio shot detected, None otherwise.
-    The override dict contains:
-        {
-            "triggered": True,
-            "set_num": 4,
-            "copy_space_side": "top_bottom",
-            "image_prompt_modifier": "composition: CENTERED subject with clean studio space..."
-        }
     """
     try:
-        client = get_direct_gemini_client()
-
-        # Download image bytes
         import httpx
         async with httpx.AsyncClient(timeout=15.0) as http:
             resp = await http.get(image_url)
@@ -56,23 +45,13 @@ async def detect_studio_shot_center(image_url: str) -> Optional[dict]:
             "subjects off-center, cluttered compositions."
         )
 
-        response = client.models.generate_content(
-            model="gemini-2.5-flash-lite",
-            contents=[
-                types.Part.from_bytes(data=image_bytes, mime_type="image/png"),
-                prompt,
-            ],
-            config=types.GenerateContentConfig(
-                temperature=0.0,
-                max_output_tokens=150,
-            ),
-        )
+        text = call_vision_analysis(image_bytes, prompt)
 
-        if not response.text:
+        if not text:
             return None
 
         import json
-        text = response.text.strip()
+        text = text.strip()
         if text.startswith("```"):
             text = text.split("\n", 1)[-1].rsplit("```", 1)[0]
         data = json.loads(text)

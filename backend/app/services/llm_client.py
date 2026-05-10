@@ -393,6 +393,32 @@ def call_openrouter(model_id: str, contents: list, config: types.GenerateContent
             logger.error(f"OpenRouter call failed ({model_id}) before receiving response: {str(e)}")
         raise
 
+def call_vision_analysis(image_bytes: bytes, prompt: str, *, model: str = "gemini-2.5-flash-lite", temperature: float = 0.0, max_output_tokens: int = 150) -> Optional[str]:
+    """
+    Analyze an image using Gemini Vision and return the text response.
+
+    This wrapper keeps generate_content calls centralized in llm_client.py
+    so that routing policy tests can verify compliance.
+    """
+    try:
+        client = get_direct_gemini_client()
+        response = client.models.generate_content(
+            model=model,
+            contents=[
+                types.Part.from_bytes(data=image_bytes, mime_type="image/png"),
+                prompt,
+            ],
+            config=types.GenerateContentConfig(
+                temperature=temperature,
+                max_output_tokens=max_output_tokens,
+            ),
+        )
+        return response.text if response.text else None
+    except Exception as exc:
+        logger.warning("Vision analysis call failed (non-critical): %s", exc)
+        return None
+
+
 def call_gemini_with_fallback(
     client: genai.Client,
     primary_model: str,
