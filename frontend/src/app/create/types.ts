@@ -37,6 +37,7 @@ export interface VariationResult {
         font_weight?: string;
         text_align?: string;
         outline?: boolean;
+        font_family_alt?: string | null;
     }[];
 }
 

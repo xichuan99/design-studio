@@ -32,6 +32,7 @@ class ElementLayout:
     font_weight: str
     text_align: str
     outline: bool   # whether text outline/shadow is required
+    font_family_alt: str | None = None  # optional alternative font for visual mixing (Set 5)
 
 
 @dataclass
@@ -41,6 +42,8 @@ class CompositionResult:
     copy_space_side: str    # "left" | "right" | "bottom" | "top_bottom" | "diagonal"
     layouts: list[ElementLayout]
     image_prompt_modifier: str  # appended to visual_prompt for image generation
+    studio_mode: bool = False   # Set 4-specific: True = studio shot, False = full background
+    cta_style: str = "text"     # "text" | "pill" | "box" — CTA rendering hint
 
 
 # ---------------------------------------------------------------------------
@@ -124,13 +127,23 @@ def place_elements(
     else:
         raise ValueError(f"Invalid set_num: {set_num}. Must be 1–5.")
 
+    cta_style = _resolve_cta_style(set_num)
+
     return CompositionResult(
         set_num=set_num,
         ratio=ratio,
         copy_space_side=copy_side,
         layouts=layouts,
         image_prompt_modifier=img_modifier,
+        studio_mode=False,
+        cta_style=cta_style,
     )
+
+
+def _resolve_cta_style(set_num: int) -> str:
+    """Determine CTA rendering style based on composition set."""
+    styles = {1: "pill", 2: "text", 3: "box", 4: "text", 5: "pill"}
+    return styles.get(set_num, "text")
 
 
 def select_and_place(
@@ -222,6 +235,11 @@ def _set_1_layout(has_headline: bool, has_sub: bool, has_cta: bool, text_length_
     return result
 
 
+def _set_1_cta_style() -> str:
+    """Heuristic: CTA style for Set 1 — pill if product-focused, text default."""
+    return "pill"
+
+
 def _set_2_layout(has_headline: bool, has_sub: bool, has_cta: bool, text_length_headline: int = 0) -> list[ElementLayout]:
     """Panel Kanan — copy space right 33% (x range 0.67–0.92)."""
     result: list[ElementLayout] = []
@@ -257,46 +275,86 @@ def _set_3_layout(
 ) -> list[ElementLayout]:
     """Bottom Strip — text strip bottom 38% (y range 0.65–0.95)."""
     result: list[ElementLayout] = []
-    # Compact layout if all three elements present; spread otherwise
-    if has_headline and has_sub and has_cta:
+    all_three = has_headline and has_sub and has_cta
+
+    if all_three:
+        # Compact layout: headline (0.65) → sub (0.77) → cta (0.89)
+        # All gaps = 0.12, compliant with MIN_Y_GAP
         if has_headline:
             result.append(ElementLayout(
-                role="headline", x=0.50, y=0.67,
+                role="headline", x=0.50, y=0.65,
                 font_size=52, font_weight="bold",
-                text_align="center", outline=False,
+                text_align="center", outline=True,
             ))
         if has_sub:
             result.append(ElementLayout(
-                role="sub_headline", x=0.50, y=0.79,
+                role="sub_headline", x=0.50, y=0.77,
                 font_size=26, font_weight="regular",
-                text_align="center", outline=False,
+                text_align="center", outline=True,
             ))
         if has_cta:
             result.append(ElementLayout(
-                role="cta", x=0.50, y=0.91,
+                role="cta", x=0.50, y=0.89,
                 font_size=28, font_weight="bold",
-                text_align="center", outline=False,
+                text_align="center", outline=True,
             ))
     else:
-        # Stacked with more vertical breathing room
-        if has_headline:
-            result.append(ElementLayout(
-                role="headline", x=0.50, y=0.70,
-                font_size=48, font_weight="bold",
-                text_align="center", outline=False,
-            ))
-        if has_sub:
-            result.append(ElementLayout(
-                role="sub_headline", x=0.50, y=0.82,
-                font_size=26, font_weight="regular",
-                text_align="center", outline=False,
-            ))
-        if has_cta:
-            result.append(ElementLayout(
-                role="cta", x=0.50, y=0.92,
-                font_size=28, font_weight="bold",
-                text_align="center", outline=False,
-            ))
+        # Stacked with more vertical breathing room — pairwise spacing
+        count = sum([has_headline, has_sub, has_cta])
+        if count == 2:
+            if has_headline and has_sub:
+                result.append(ElementLayout(
+                    role="headline", x=0.50, y=0.70,
+                    font_size=48, font_weight="bold",
+                    text_align="center", outline=True,
+                ))
+                result.append(ElementLayout(
+                    role="sub_headline", x=0.50, y=0.82,
+                    font_size=26, font_weight="regular",
+                    text_align="center", outline=True,
+                ))
+            elif has_headline and has_cta:
+                result.append(ElementLayout(
+                    role="headline", x=0.50, y=0.68,
+                    font_size=48, font_weight="bold",
+                    text_align="center", outline=True,
+                ))
+                result.append(ElementLayout(
+                    role="cta", x=0.50, y=0.80,
+                    font_size=28, font_weight="bold",
+                    text_align="center", outline=True,
+                ))
+            elif has_sub and has_cta:
+                result.append(ElementLayout(
+                    role="sub_headline", x=0.50, y=0.72,
+                    font_size=26, font_weight="regular",
+                    text_align="center", outline=True,
+                ))
+                result.append(ElementLayout(
+                    role="cta", x=0.50, y=0.84,
+                    font_size=28, font_weight="bold",
+                    text_align="center", outline=True,
+                ))
+        else:
+            # Single element: center it comfortably
+            if has_headline:
+                result.append(ElementLayout(
+                    role="headline", x=0.50, y=0.75,
+                    font_size=48, font_weight="bold",
+                    text_align="center", outline=True,
+                ))
+            elif has_sub:
+                result.append(ElementLayout(
+                    role="sub_headline", x=0.50, y=0.78,
+                    font_size=26, font_weight="regular",
+                    text_align="center", outline=True,
+                ))
+            elif has_cta:
+                result.append(ElementLayout(
+                    role="cta", x=0.50, y=0.85,
+                    font_size=28, font_weight="bold",
+                    text_align="center", outline=True,
+                ))
     _validate_y_gaps(result)
     return result
 
@@ -338,12 +396,14 @@ def _set_5_layout(has_headline: bool, has_sub: bool, has_cta: bool, text_length_
             role="headline", x=0.22, y=0.65,
             font_size=h_font, font_weight="bold",
             text_align="left", outline=True,
+            font_family_alt="Bebas Neue",
         ))
     if has_sub:
         result.append(ElementLayout(
             role="sub_headline", x=0.22, y=0.77,
             font_size=s_font, font_weight="semibold",
             text_align="left", outline=True,
+            font_family_alt="Montserrat",
         ))
     if has_cta:
         result.append(ElementLayout(
