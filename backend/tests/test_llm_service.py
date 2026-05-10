@@ -13,6 +13,7 @@ from app.services.llm_service import (
     modify_visual_prompt,
     parse_design_text,
 )
+from app.services.pipeline_prompt_builder import build_final_prompt, build_rules_a, build_rules_b
 from app.schemas.design import ParsedTextElements
 
 
@@ -192,6 +193,49 @@ async def test_generate_copywriting_questions_accepts_clarification_questions_ke
 
     assert "questions" in result
     assert result["questions"][0]["id"] == "promo_detail"
+
+
+def test_build_rules_a_includes_brand_and_clarification_context():
+    prompt = build_rules_a(
+        clarification_answers={"mood": "Minimalis & Modern"},
+        brand_colors=["#112233", "#445566"],
+        brand_typography={"primary_font": "Inter", "secondary_font": "Poppins"},
+        brand_memory_context=["Hindari gaya terlalu ramai"],
+    )
+
+    assert "RULES A" in prompt
+    assert "USER'S CLARIFICATION ANSWERS" in prompt
+    assert "#112233" in prompt
+    assert "Primary Font: \"Inter\"" in prompt
+    assert "Hindari gaya terlalu ramai" in prompt
+
+
+def test_build_rules_b_constrains_backend_controlled_composition():
+    prompt = build_rules_b()
+
+    assert "RULES B" in prompt
+    assert "backend selects the final composition" in prompt.lower()
+    assert "do not invent, override, or contradict copy-space" in prompt.lower()
+    assert "layout coordinates are advisory fallback hints only" in prompt.lower()
+
+
+@pytest.mark.asyncio
+async def test_parse_design_text_uses_rules_a_and_rules_b_prompt_builder():
+    captured = {}
+
+    async def _capture_to_thread(func, *args, **kwargs):
+        captured["system_instruction"] = kwargs["config"].system_instruction
+        return _fake_response(_BASE)
+
+    with patch("app.services.llm_design_service.get_genai_client", return_value=MagicMock()), patch(
+        "app.services.llm_design_service.settings.OPENROUTER_API_KEY", "test-key"
+    ), patch("asyncio.to_thread", new=_capture_to_thread):
+        result = await parse_design_text("Promo kopi susu kekinian")
+
+    assert isinstance(result, ParsedTextElements)
+    assert "RULES A" in captured["system_instruction"]
+    assert "RULES B" in captured["system_instruction"]
+    assert "backend selects the final composition" in captured["system_instruction"].lower()
 
 
 # ---------------------------------------------------------------------------

@@ -18,6 +18,7 @@ from app.services.llm_prompts import (
     REDESIGN_BRIEF_SYSTEM,
     MODIFY_PROMPT_SYSTEM,
 )
+from app.services.pipeline_prompt_builder import build_final_prompt
 def normalize_brief_questions_payload(payload: object) -> dict:
     from app.schemas.design import BriefQuestionsResponse
 
@@ -374,64 +375,13 @@ async def parse_design_text(
         Exception: If the LLM call or response parsing fails.
     """
 
-    prompt_modifier = ""
-    if integrated_text:
-        prompt_modifier = """
-        IMPORTANT INTEGRATED TEXT OVERRIDE:
-        The user wants the text completely integrated into the image generation itself.
-        Instead of asking for 'copy space', your `visual_prompt` MUST explicitly tell the image generator to render the headline text natively in the scene.
-        - headline can be up to 8 words for reliable AI text rendering
-        - sub_headline and CTA text SHOULD also be rendered in the image with proper visual hierarchy
-        - Headline should be the largest, most prominent text. Sub-headline smaller. CTA as a button-like or badge-like element.
-        - Use scene context for natural text (neon sign, chalkboard, banner, poster on wall)
-        Example visual_prompt: "A hyper-realistic 3D render of a neon sign that spells 'MEGA SALE', vibrant cyberpunk street background, bold typography."
-        """
-
-    clarification_modifier = ""
-    if clarification_answers:
-        clarification_modifier = f"""
-        USER'S CLARIFICATION ANSWERS:
-        The user has provided the following specific details for the design. YOU MUST incorporate these into your visual_prompt and visual_prompt_parts.
-        {json.dumps(clarification_answers, indent=2)}
-        """
-
-    brand_colors_modifier = ""
-    if brand_colors:
-        brand_colors_modifier = f"""
-        BRAND COLORS:
-        The user has an active Brand Kit. You MUST use these exact colors for the suggested_colors and coordinate the layout elements to use these colors:
-        {json.dumps(brand_colors)}
-        In the visual_prompt_parts 'colors' category, explicitly mention these hex codes or their nearest color name equivalents.
-        """
-
-    brand_typography_modifier = ""
-    if brand_typography:
-        primary_font = brand_typography.get("primary_font", "")
-        secondary_font = brand_typography.get("secondary_font", "")
-        if primary_font or secondary_font:
-            brand_typography_modifier = f"""
-        BRAND TYPOGRAPHY:
-        The user has an active Brand Kit with specific fonts. You MUST use these fonts:
-        - Primary Font: "{primary_font}" -> Use this for headline_layout.font_family
-        - Secondary Font: "{secondary_font}" -> Use this for sub_headline_layout.font_family AND cta_layout.font_family
-        Do NOT use any other font. These brand fonts are mandatory.
-        """
-
-    brand_memory_modifier = ""
-    if brand_memory_context:
-        brand_memory_modifier = f"""
-        BRAND GUIDELINES & CONTEXT (RAG MEMORY):
-        The user's brand has specific historical guidelines and constraints. YOU MUST incorporate these rules into your design decisions:
-        {json.dumps(brand_memory_context, indent=2)}
-        """
-
-    final_prompt = (
-        SYSTEM_PROMPT
-        + prompt_modifier
-        + clarification_modifier
-        + brand_colors_modifier
-        + brand_typography_modifier
-        + brand_memory_modifier
+    final_prompt = build_final_prompt(
+        system_prompt=SYSTEM_PROMPT,
+        integrated_text=integrated_text,
+        clarification_answers=clarification_answers,
+        brand_colors=brand_colors,
+        brand_typography=brand_typography,
+        brand_memory_context=brand_memory_context,
     )
 
     if not settings.OPENROUTER_API_KEY:

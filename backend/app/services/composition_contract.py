@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.services.layout_validation import autocorrect_layout, validate_layout
 from app.services.placement_engine import select_and_place
 
 
@@ -45,12 +46,32 @@ def build_composition_contract(
         for el in placement.layouts
     ]
 
+    validation = validate_layout(
+        layout_elements,
+        set_num=placement.set_num,
+        ratio=placement.ratio,
+        copy_space_side=placement.copy_space_side,
+    )
+    if not validation.is_valid:
+        layout_elements = autocorrect_layout(
+            layout_elements,
+            set_num=placement.set_num,
+            ratio=placement.ratio,
+            copy_space_side=placement.copy_space_side,
+        )
+        validation = validate_layout(
+            layout_elements,
+            set_num=placement.set_num,
+            ratio=placement.ratio,
+            copy_space_side=placement.copy_space_side,
+        )
+
     composition = {
         "set_num": placement.set_num,
         "ratio": placement.ratio,
         "copy_space_side": placement.copy_space_side,
         "layout_name": LAYOUT_NAMES.get(placement.set_num),
-        "validation_flags": [],
+        "validation_flags": validation.flags,
     }
 
     return {
