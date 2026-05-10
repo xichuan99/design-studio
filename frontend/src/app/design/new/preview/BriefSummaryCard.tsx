@@ -99,6 +99,49 @@ export function BriefSummaryCard({
                     </div>
                 )}
 
+                {(brief.headlineOverride || brief.subHeadlineOverride || brief.ctaOverride || brief.offerText || brief.productName) && (
+                    <div className="rounded-2xl border bg-muted/20 p-5">
+                        <div className="flex items-center justify-between gap-3">
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Copy manual</p>
+                            <span className="rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground">
+                                {brief.useAiCopyAssist === false ? "AI assist off" : "AI assist on"}
+                            </span>
+                        </div>
+                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                            {brief.productName && (
+                                <div className="rounded-xl border bg-background p-4">
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Produk / brand</p>
+                                    <p className="mt-2 text-sm font-semibold text-foreground">{brief.productName}</p>
+                                </div>
+                            )}
+                            {brief.offerText && (
+                                <div className="rounded-xl border bg-background p-4">
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Offer</p>
+                                    <p className="mt-2 text-sm font-semibold text-foreground">{brief.offerText}</p>
+                                </div>
+                            )}
+                            {brief.headlineOverride && (
+                                <div className="rounded-xl border bg-background p-4 sm:col-span-2">
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Headline</p>
+                                    <p className="mt-2 text-base font-semibold text-foreground">{brief.headlineOverride}</p>
+                                </div>
+                            )}
+                            {brief.subHeadlineOverride && (
+                                <div className="rounded-xl border bg-background p-4 sm:col-span-2">
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Sub-headline</p>
+                                    <p className="mt-2 text-sm leading-7 text-foreground">{brief.subHeadlineOverride}</p>
+                                </div>
+                            )}
+                            {brief.ctaOverride && (
+                                <div className="rounded-xl border bg-background p-4">
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">CTA</p>
+                                    <p className="mt-2 text-sm font-semibold text-foreground">{brief.ctaOverride}</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 <div className="rounded-2xl border bg-muted/20 p-5">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Prompt yang akan digunakan</p>
                     <p className="mt-3 text-sm leading-7 text-foreground">{draftPrompt}</p>

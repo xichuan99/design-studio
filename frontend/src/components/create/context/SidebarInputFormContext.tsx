@@ -1,7 +1,7 @@
 import { createContext, useContext } from "react";
 import { BrandKit, type ModelCatalogItem, type ModelTier } from "@/lib/api";
 import type { CreateStep } from "@/app/create/hooks/useCreateDesign";
-import type { UserIntent } from "@/app/create/types";
+import type { CopyLengthWarning, ManualCopyOverrides, UserIntent } from "@/app/create/types";
 
 export interface SidebarInputFormContextValue {
     createMode: "generate" | "redesign";
@@ -16,6 +16,9 @@ export interface SidebarInputFormContextValue {
     setAspectRatio: (val: string) => void;
     integratedText: boolean;
     setIntegratedText: (val: boolean) => void;
+    manualCopyOverrides: ManualCopyOverrides;
+    updateManualCopyOverrides: (patch: Partial<ManualCopyOverrides>) => void;
+    headlineLengthWarning: CopyLengthWarning | null;
     selectedModelTier: ModelTier;
     setSelectedModelTier: (val: ModelTier) => void;
     modelCatalog: ModelCatalogItem[];

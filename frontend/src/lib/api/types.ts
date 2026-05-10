@@ -639,6 +639,12 @@ export interface ParseDesignTextRequest {
     num_variations?: number;
     integrated_text?: boolean;
     clarification_answers?: Record<string, string>;
+    headline_override?: string;
+    sub_headline_override?: string;
+    cta_override?: string;
+    product_name?: string;
+    offer_text?: string;
+    use_ai_copy_assist?: boolean;
 }
 
 // --- Magic Text Types ---
@@ -687,6 +693,12 @@ export interface GenerateDesignRequest {
     num_variations?: number;
     integrated_text?: boolean;
     clarification_answers?: Record<string, string>;
+    headline_override?: string;
+    sub_headline_override?: string;
+    cta_override?: string;
+    product_name?: string;
+    offer_text?: string;
+    use_ai_copy_assist?: boolean;
     brand_kit_id?: string;
     product_image_url?: string;
     remove_product_bg?: boolean;

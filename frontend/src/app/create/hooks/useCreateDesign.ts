@@ -9,7 +9,18 @@ import {
 import { generateCanvasElementsFromTemplate } from "@/lib/templateEngine";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ParsedDesignData, VisualPromptPart, BriefQuestion, MAX_FILE_SIZE, UserIntent } from "@/app/create/types";
+import {
+    buildHeadlineLengthWarning,
+    CopyLengthWarning,
+    DEFAULT_MANUAL_COPY_OVERRIDES,
+    ManualCopyOverrides,
+    normalizeOptionalCopyValue,
+    ParsedDesignData,
+    VisualPromptPart,
+    BriefQuestion,
+    MAX_FILE_SIZE,
+    UserIntent,
+} from "@/app/create/types";
 import { usePostHog } from 'posthog-js/react';
 
 export type CreateStep = 'input' | 'brief' | 'results' | 'generating' | 'preview';
@@ -31,6 +42,13 @@ export interface SavedCreateState {
     copyVariations: CopywritingVariation[];
     userIntent: UserIntent;
     selectedModelTier: ModelTier;
+    manualCopyOverrides?: ManualCopyOverrides;
+}
+
+function parseBooleanString(value: string | boolean | undefined): boolean | undefined {
+    if (value === true || value === "true") return true;
+    if (value === false || value === "false") return false;
+    return undefined;
 }
 
 // Normalize frontend aspect ratio values (including marketplace/social presets) to backend-compatible values
@@ -68,10 +86,12 @@ export function useCreateDesign() {
     const [integratedText, setIntegratedText] = useState(false);
     const [briefQuestions, setBriefQuestions] = useState<BriefQuestion[]>([]);
     const [briefAnswers, setBriefAnswers] = useState<Record<string, string>>({});
+    const [manualCopyOverrides, setManualCopyOverrides] = useState<ManualCopyOverrides>(DEFAULT_MANUAL_COPY_OVERRIDES);
     const [removeProductBg, setRemoveProductBg] = useState(false);
     const [userIntent, setUserIntent] = useState<UserIntent>(null);
     const [selectedModelTier, setSelectedModelTier] = useState<ModelTier>("auto");
     const [modelCatalog, setModelCatalog] = useState<ModelCatalogItem[]>([]);
+    const [headlineLengthWarning, setHeadlineLengthWarning] = useState<CopyLengthWarning | null>(null);
     const [generatedDesignCount, setGeneratedDesignCount] = useState(0);
     const [showTestimonialPrompt, setShowTestimonialPrompt] = useState(false);
     const [isSubmittingTestimonial, setIsSubmittingTestimonial] = useState(false);
@@ -134,6 +154,23 @@ export function useCreateDesign() {
         fetchModelCatalog();
     }, [getModelCatalog]);
 
+    useEffect(() => {
+        setHeadlineLengthWarning(
+            buildHeadlineLengthWarning(
+                manualCopyOverrides.headlineOverride,
+                normalizeAspectRatio(aspectRatio),
+                integratedText
+            )
+        );
+    }, [aspectRatio, integratedText, manualCopyOverrides.headlineOverride]);
+
+    const updateManualCopyOverrides = useCallback((patch: Partial<ManualCopyOverrides>) => {
+        setManualCopyOverrides((prev) => ({
+            ...prev,
+            ...patch,
+        }));
+    }, []);
+
     // Image History State
     const [imageHistory, setImageHistory] = useState<{ url: string; prompt: string }[]>([]);
     const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -161,6 +198,17 @@ export function useCreateDesign() {
                 setIntegratedText(parsed.integratedText || false);
                 setBriefQuestions(parsed.briefQuestions || []);
                 setBriefAnswers(parsed.briefAnswers || {});
+                setManualCopyOverrides({
+                    headlineOverride: parsed.manualCopyOverrides?.headlineOverride || parsed.briefAnswers?.headlineOverride || "",
+                    subHeadlineOverride: parsed.manualCopyOverrides?.subHeadlineOverride || parsed.briefAnswers?.subHeadlineOverride || "",
+                    ctaOverride: parsed.manualCopyOverrides?.ctaOverride || parsed.briefAnswers?.ctaOverride || "",
+                    productName: parsed.manualCopyOverrides?.productName || parsed.briefAnswers?.productName || "",
+                    offerText: parsed.manualCopyOverrides?.offerText || parsed.briefAnswers?.offerText || "",
+                    useAiCopyAssist:
+                        parsed.manualCopyOverrides?.useAiCopyAssist
+                        ?? parseBooleanString(parsed.briefAnswers?.useAiCopyAssist)
+                        ?? DEFAULT_MANUAL_COPY_OVERRIDES.useAiCopyAssist,
+                });
                 setRemoveProductBg(parsed.removeProductBg || false);
                 setCopyVariations(parsed.copyVariations || []);
                 setUserIntent(parsed.userIntent || null);
@@ -258,12 +306,13 @@ export function useCreateDesign() {
             copyVariations,
             userIntent,
             selectedModelTier,
+            manualCopyOverrides,
         };
         localStorage.setItem('smartdesign_create_state', JSON.stringify(stateToSave));
     }, [
         isInitialized, rawText, aspectRatio, currentStep, createMode, redesignStrength,
         parsedData, imageHistory, activeImageIndex, integratedText, removeProductBg,
-        briefQuestions, briefAnswers, copyVariations, userIntent, selectedModelTier
+        briefQuestions, briefAnswers, copyVariations, userIntent, selectedModelTier, manualCopyOverrides
     ]);
 
     const handleTogglePromptPart = useCallback((index: number) => {
@@ -288,6 +337,7 @@ export function useCreateDesign() {
             setActiveImageIndex(0);
             setBriefQuestions([]);
             setBriefAnswers({});
+            setManualCopyOverrides(DEFAULT_MANUAL_COPY_OVERRIDES);
             setCopyVariations([]);
             setReferenceFile(null);
             setReferencePreview(null);
@@ -347,6 +397,11 @@ export function useCreateDesign() {
         setIsParsing(true);
         setBriefAnswers(answers);
         posthog?.capture('create_brief_submitted', { create_mode: createMode });
+        const normalizedHeadlineOverride = normalizeOptionalCopyValue(manualCopyOverrides.headlineOverride);
+        const normalizedSubHeadlineOverride = normalizeOptionalCopyValue(manualCopyOverrides.subHeadlineOverride);
+        const normalizedCtaOverride = normalizeOptionalCopyValue(manualCopyOverrides.ctaOverride);
+        const normalizedProductName = normalizeOptionalCopyValue(manualCopyOverrides.productName);
+        const normalizedOfferText = normalizeOptionalCopyValue(manualCopyOverrides.offerText);
         try {
             const [parsed, copywritingData] = await Promise.allSettled([
                 parseDesignText({
@@ -354,7 +409,13 @@ export function useCreateDesign() {
                     aspect_ratio: normalizeAspectRatio(aspectRatio),
                     num_variations: 2,
                     integrated_text: integratedText,
-                    clarification_answers: answers
+                    clarification_answers: answers,
+                    headline_override: normalizedHeadlineOverride,
+                    sub_headline_override: normalizedSubHeadlineOverride,
+                    cta_override: normalizedCtaOverride,
+                    product_name: normalizedProductName,
+                    offer_text: normalizedOfferText,
+                    use_ai_copy_assist: manualCopyOverrides.useAiCopyAssist,
                 }),
                 generateCopywriting({
                     product_description: rawText,
@@ -391,7 +452,7 @@ export function useCreateDesign() {
         } finally {
             setIsParsing(false);
         }
-    }, [rawText, aspectRatio, integratedText, activeBrandKit, brandKitEnabled, parseDesignText, generateCopywriting, createMode, posthog]);
+    }, [rawText, aspectRatio, integratedText, manualCopyOverrides, activeBrandKit, brandKitEnabled, parseDesignText, generateCopywriting, createMode, posthog]);
 
     const handleAnalyze = useCallback(async () => {
         if (!rawText.trim()) return;
@@ -466,6 +527,11 @@ export function useCreateDesign() {
             }
 
             const finalPrompt = assembledPrompt;
+            const normalizedHeadlineOverride = normalizeOptionalCopyValue(manualCopyOverrides.headlineOverride);
+            const normalizedSubHeadlineOverride = normalizeOptionalCopyValue(manualCopyOverrides.subHeadlineOverride);
+            const normalizedCtaOverride = normalizeOptionalCopyValue(manualCopyOverrides.ctaOverride);
+            const normalizedProductName = normalizeOptionalCopyValue(manualCopyOverrides.productName);
+            const normalizedOfferText = normalizeOptionalCopyValue(manualCopyOverrides.offerText);
             let jobData;
 
             if (createMode === 'redesign') {
@@ -492,6 +558,12 @@ export function useCreateDesign() {
                     integrated_text: integratedText,
                     remove_product_bg: removeProductBg && !!uploadedReferenceUrl,
                     product_image_url: removeProductBg ? uploadedReferenceUrl : undefined,
+                    headline_override: normalizedHeadlineOverride,
+                    sub_headline_override: normalizedSubHeadlineOverride,
+                    cta_override: normalizedCtaOverride,
+                    product_name: normalizedProductName,
+                    offer_text: normalizedOfferText,
+                    use_ai_copy_assist: manualCopyOverrides.useAiCopyAssist,
                     quality: selectedModelTier,
                     brand_kit_id: undefined as string | undefined
                 };
@@ -544,7 +616,7 @@ export function useCreateDesign() {
                     await new Promise((resolve) => setTimeout(resolve, 2000));
                     const statusData = await getJobStatus(jobId);
 
-                    if (statusData.status === "completed") {
+                    if (statusData.status === "completed" && statusData.result_url) {
                         isComplete = true;
                         const newUrl = statusData.result_url;
                         setImageHistory(prev => {
@@ -573,6 +645,8 @@ export function useCreateDesign() {
                             quality: selectedModelTier,
                         });
                         recordDesignGenerated();
+                    } else if (statusData.status === "completed") {
+                        throw new Error("Generation completed without image result");
                     } else if (statusData.status === "failed") {
                         throw new Error(statusData.error_message || "Design generation failed");
                     }
@@ -657,7 +731,7 @@ export function useCreateDesign() {
         } finally {
             setIsGeneratingImage(false);
         }
-    }, [parsedData, rawText, referenceFile, aspectRatio, integratedText, removeProductBg, activeBrandKit, brandKitEnabled, createMode, redesignStrength, selectedModelTier, getStorageUsage, uploadImage, generateDesign, redesignFromReference, getJobStatus, router, posthog, recordDesignGenerated]);
+    }, [parsedData, rawText, referenceFile, aspectRatio, integratedText, removeProductBg, manualCopyOverrides, activeBrandKit, brandKitEnabled, createMode, redesignStrength, selectedModelTier, getStorageUsage, uploadImage, generateDesign, redesignFromReference, getJobStatus, router, posthog, recordDesignGenerated]);
 
     const handleProceedToEditor = useCallback(async () => {
         if (!parsedData) return;
@@ -787,6 +861,9 @@ export function useCreateDesign() {
         integratedText, setIntegratedText,
         briefQuestions, setBriefQuestions,
         briefAnswers, setBriefAnswers,
+        manualCopyOverrides,
+        updateManualCopyOverrides,
+        headlineLengthWarning,
         removeProductBg, setRemoveProductBg,
         copyVariations, setCopyVariations,
         errorModalState, setErrorModalState,

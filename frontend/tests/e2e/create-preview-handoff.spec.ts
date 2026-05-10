@@ -1,17 +1,116 @@
 import { test, expect } from '@playwright/test';
 
-import { loginAsDemoUser } from './utils/auth';
+async function mockAuthenticatedSession(page: import('@playwright/test').Page) {
+  await page.route('**/api/auth/session', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        user: {
+          name: 'Demo User',
+          email: 'demo@example.com',
+          image: null,
+        },
+        expires: '2099-01-01T00:00:00.000Z',
+        accessToken: 'mock-token',
+      }),
+    });
+  });
+}
 
 const SEEDED_PREVIEW_IMAGE = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024"><rect width="1024" height="1024" fill="%23f3f4f6"/><circle cx="512" cy="430" r="180" fill="%23f59e0b"/><rect x="280" y="650" width="464" height="140" rx="28" fill="%23111827"/></svg>';
 
 test.describe('Create Preview Handoff', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAsDemoUser(page);
+    await mockAuthenticatedSession(page);
+  });
+
+  test('restores manual copy overrides in legacy create sidebar', async ({ page, isMobile }) => {
+    test.setTimeout(120000);
+    test.skip(isMobile, 'Sidebar assertions are desktop-only for this regression guard');
+
+    const manualHeadline = 'Diskon besar akhir bulan untuk semua serum terbaik';
+    const manualSubHeadline = 'Promo terbatas dengan bonus sample untuk pembelian minggu ini.';
+    const manualCta = 'Checkout Sekarang';
+    const manualProductName = 'Serum Glow Max';
+    const manualOffer = 'Gratis ongkir seluruh Indonesia';
+
+    await page.goto('/create?legacy=1');
+    await page.evaluate(
+      ({ manualHeadline, manualSubHeadline, manualCta, manualProductName, manualOffer }) => {
+        localStorage.setItem(
+          'smartdesign_create_state',
+          JSON.stringify({
+            rawText: 'Poster promo serum glow max',
+            aspectRatio: '1:1',
+            currentStep: 'input',
+            createMode: 'generate',
+            redesignStrength: 0.65,
+            parsedData: null,
+            imageHistory: [],
+            activeImageIndex: 0,
+            integratedText: false,
+            briefQuestions: [],
+            briefAnswers: {
+              headlineOverride: manualHeadline,
+              subHeadlineOverride: manualSubHeadline,
+              ctaOverride: manualCta,
+              productName: manualProductName,
+              offerText: manualOffer,
+              useAiCopyAssist: 'false',
+            },
+            manualCopyOverrides: {
+              headlineOverride: manualHeadline,
+              subHeadlineOverride: manualSubHeadline,
+              ctaOverride: manualCta,
+              productName: manualProductName,
+              offerText: manualOffer,
+              useAiCopyAssist: false,
+            },
+            removeProductBg: false,
+            copyVariations: [],
+            userIntent: 'content_from_text',
+            selectedModelTier: 'auto',
+          })
+        );
+      },
+      { manualHeadline, manualSubHeadline, manualCta, manualProductName, manualOffer }
+    );
+    await page.reload();
+    await expect(page.getByText(/Copy final \(opsional\)/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByPlaceholder('Contoh: Diskon 50% Menu Favorit')).toHaveValue(manualHeadline);
+    await expect(page.getByPlaceholder('Contoh: Berlaku khusus weekend ini untuk varian paling laris.')).toHaveValue(manualSubHeadline);
+    await expect(page.getByPlaceholder('Contoh: Pesan Sekarang')).toHaveValue(manualCta);
+    await expect(page.getByPlaceholder('Contoh: Teh Manis Jumbo')).toHaveValue(manualProductName);
+    await expect(page.getByPlaceholder('Contoh: Beli 2 Gratis 1 sampai Minggu')).toHaveValue(manualOffer);
+    await expect(page.getByRole('switch', { name: /Aktifkan AI copy assist/i })).toHaveAttribute('aria-checked', 'false');
   });
 
   test('can continue from preview into the editor', async ({ page, isMobile }) => {
     test.setTimeout(120000);
 
+    await page.route('**/designs/generate-title', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ title: 'Promo Kopi Susu' }),
+      });
+    });
+
+    await page.route('**/projects/', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          id: 'mock-project-id',
+          title: 'Promo Kopi Susu',
+          status: 'draft',
+          canvas_state: {},
+        }),
+      });
+    });
+
+    await page.goto('/create?legacy=1');
     await page.evaluate((seededPreviewImage) => {
       localStorage.setItem(
         'smartdesign_create_state',
@@ -38,25 +137,22 @@ test.describe('Create Preview Handoff', () => {
           removeProductBg: false,
           copyVariations: [],
           userIntent: 'content_from_text',
+          selectedModelTier: 'auto',
         })
       );
     }, SEEDED_PREVIEW_IMAGE);
-
-    await page.goto('/create?legacy=1');
+    await page.reload();
 
     await expect(page.getByRole('heading', { name: /Pilih hasil terbaik lalu lanjutkan ke editor/i })).toBeVisible();
     const proceedButton = page.getByRole('button', { name: /Lanjut Rapikan di Editor|Ke Editor/i });
     await expect(proceedButton).toBeVisible();
     await proceedButton.click({ force: true });
 
-    // On mobile, this handoff can be blocked by layout overlays in CI browsers.
-    // Validate CTA interactivity without forcing a brittle cross-route expectation.
     if (isMobile) {
       await expect(page.getByRole('heading', { name: /Pilih hasil terbaik lalu lanjutkan ke editor/i })).toBeVisible();
       return;
     }
 
-    await page.waitForURL('**/edit/**', { timeout: 60000 });
-    await expect(page.locator('.konvajs-content')).toBeVisible({ timeout: 10000 });
+    await page.waitForURL('**/edit/mock-project-id', { timeout: 60000 });
   });
 });

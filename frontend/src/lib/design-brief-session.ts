@@ -38,6 +38,12 @@ export interface DesignBriefSessionState {
     style: string;
     channel: string;
     copyTone: string;
+    headlineOverride?: string;
+    subHeadlineOverride?: string;
+    ctaOverride?: string;
+    productName?: string;
+    offerText?: string;
+    useAiCopyAssist?: boolean;
     notes?: string;
     productImageUrl?: string;
     productImageFilename?: string;

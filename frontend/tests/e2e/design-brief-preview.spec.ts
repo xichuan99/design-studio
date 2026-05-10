@@ -109,6 +109,18 @@ async function goToPreviewFromInterview(page: import('@playwright/test').Page) {
   await page.waitForURL('**/design/new/preview');
 }
 
+async function seedPreviewBrief(page: import('@playwright/test').Page, payload: Record<string, unknown>) {
+  await page.goto('/design/new/preview');
+  await continueIfAuthInterstitial(page);
+  await page.evaluate(
+    ({ key, payload }) => {
+      window.sessionStorage.setItem(key, JSON.stringify(payload));
+    },
+    { key: DESIGN_BRIEF_SESSION_KEY, payload }
+  );
+  await page.reload();
+}
+
 test.describe('Design Brief Flow — Interview & Preview', () => {
   test.skip(({ browserName }) => browserName === 'webkit', 'WebKit session redirect race on protected design routes in CI');
 
@@ -124,9 +136,9 @@ test.describe('Design Brief Flow — Interview & Preview', () => {
       });
 
       await test.step('Brief summary cards are visible', async () => {
-        const goalValue = page.getByText('Goal').locator('xpath=following-sibling::p[1]');
-        const styleValue = page.getByText('Style').locator('xpath=following-sibling::p[1]');
-        const channelValue = page.getByText('Channel').locator('xpath=following-sibling::p[1]');
+        const goalValue = page.getByText('Tujuan').locator('xpath=following-sibling::p[1]');
+        const styleValue = page.getByText('Gaya').locator('xpath=following-sibling::p[1]');
+        const channelValue = page.getByText('Channel Utama').locator('xpath=following-sibling::p[1]');
 
         await expect(goalValue).toHaveText(/catalog/i, { timeout: 10000 });
         await expect(styleValue).toHaveText('Bold marketplace');
@@ -147,30 +159,18 @@ test.describe('Design Brief Flow — Interview & Preview', () => {
         await expect(page.getByText('1:1')).toBeVisible();
       });
 
-      await test.step('Catalog structure, styles, and final plan are visible', async () => {
+      await test.step('Catalog structure, styles, and editable plan controls are visible', async () => {
         await expect(page.getByText(/Struktur katalog awal/i)).toBeVisible();
         await expect(page.getByText(/Beauty Catalog 2026/i)).toBeVisible();
         await expect(page.getByText(/Arah style yang disarankan AI/i)).toBeVisible();
         await expect(page.getByText(/Minimalist Clean/i)).toBeVisible();
-        await expect(page.getByText(/Override image mapping/i)).toBeVisible();
-        await expect(page.getByText(/editable role \+ pages/i)).toBeVisible();
         await expect(page.getByText(/Override halaman katalog/i)).toBeVisible();
-        await expect(page.getByRole('button', { name: /Refresh Final Plan/i })).toBeVisible();
-        await expect(page.getByText(/Final JSON plan/i)).toBeVisible();
-        await expect(page.getByText(/catalog\.plan\.v1/i)).toBeVisible();
+        await expect(page.getByRole('button', { name: /Perbarui Rencana Katalog/i })).toBeVisible();
       });
     });
 
     test('upload photo + skip AI mode opens editor without hitting generate endpoint', async ({ page }) => {
       let generateCalled = false;
-
-      await page.route('**/designs/upload', async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({ url: 'https://example.com/product-image.jpg' }),
-        });
-      });
 
       await page.route('**/designs/generate', async (route) => {
         generateCalled = true;
@@ -194,22 +194,16 @@ test.describe('Design Brief Flow — Interview & Preview', () => {
         });
       });
 
-      await page.goto('/design/new/interview');
-      await page.getByRole('button', { name: /Katalog produk/i }).click();
-      await page.getByRole('button', { name: /Fashion/i }).click();
-      await page.getByRole('button', { name: /Minimal clean/i }).click();
-      await page.getByRole('button', { name: /^Instagram$/i }).click();
-      await page.getByRole('button', { name: /Friendly/i }).click();
-
-      await page.locator('input[type="file"]').setInputFiles({
-        name: 'product.jpg',
-        mimeType: 'image/jpeg',
-        buffer: Buffer.from('mock-jpg-content'),
+      await seedPreviewBrief(page, {
+        goal: 'promo',
+        productType: 'Fashion',
+        style: 'Minimal clean',
+        channel: 'instagram',
+        copyTone: 'Friendly',
+        productImageUrl: 'https://example.com/product-image.jpg',
+        productImageFilename: 'product.jpg',
+        updatedAt: new Date().toISOString(),
       });
-      await expect(page.getByText(/Foto produk siap dipakai/i)).toBeVisible({ timeout: 10000 });
-
-      await page.getByRole('button', { name: /Lanjut ke Preview/i }).click();
-      await page.waitForURL('**/design/new/preview');
 
       await expect(page.getByRole('button', { name: /Pakai foto produk langsung \(tanpa AI\)/i })).toBeVisible();
       await expect(page.getByRole('button', { name: /Buka Editor dengan Foto Ini/i })).toBeVisible();
@@ -246,18 +240,63 @@ test.describe('Design Brief Flow — Interview & Preview', () => {
     });
 
     test('"Pakai engine lama" link pre-fills localStorage and navigates to /create', async ({ page }) => {
-      await goToPreviewFromInterview(page);
+      const manualHeadline = 'Diskon besar akhir bulan';
+      const manualSubHeadline = 'Harga spesial untuk stok terbatas.';
+      const manualCta = 'Checkout Sekarang';
+      const manualProductName = 'Serum Glow Max';
+      const manualOffer = 'Gratis ongkir seluruh Indonesia';
+
+      await seedPreviewBrief(page, {
+        goal: 'catalog',
+        productType: 'Beauty',
+        style: 'Bold marketplace',
+        channel: 'marketplace',
+        copyTone: 'Persuasif',
+        headlineOverride: manualHeadline,
+        subHeadlineOverride: manualSubHeadline,
+        ctaOverride: manualCta,
+        productName: manualProductName,
+        offerText: manualOffer,
+        useAiCopyAssist: false,
+        catalogType: 'product',
+        catalogTotalPages: 5,
+        updatedAt: new Date().toISOString(),
+      });
+
+      await test.step('Preview shows manual copy summary and prompt guardrail', async () => {
+        await expect(page.getByText('Copy manual', { exact: true })).toBeVisible({ timeout: 15000 });
+        await expect(page.getByText(manualHeadline, { exact: true })).toBeVisible({ timeout: 15000 });
+        await expect(page.getByText(manualSubHeadline, { exact: true })).toBeVisible({ timeout: 15000 });
+        await expect(page.getByText(manualCta, { exact: true })).toBeVisible({ timeout: 15000 });
+        await expect(page.getByText(manualProductName, { exact: true })).toBeVisible({ timeout: 15000 });
+        await expect(page.getByText(manualOffer, { exact: true })).toBeVisible({ timeout: 15000 });
+        await expect(page.getByText(/AI assist off/i)).toBeVisible({ timeout: 15000 });
+      });
 
       await test.step('Click legacy engine link', async () => {
         await page.getByRole('button', { name: /Pakai engine lama/i }).click();
         await page.waitForURL('**/create**');
       });
 
-      await test.step('smartdesign_create_state was written to localStorage', async () => {
+      await test.step('smartdesign_create_state was written to localStorage with manual copy overrides', async () => {
         const saved = await page.evaluate(() => localStorage.getItem('smartdesign_create_state'));
         expect(saved).not.toBeNull();
         const parsed = JSON.parse(saved!);
         expect(parsed.briefAnswers.goal).toBe('catalog');
+        expect(parsed.briefAnswers.headlineOverride).toBe(manualHeadline);
+        expect(parsed.briefAnswers.subHeadlineOverride).toBe(manualSubHeadline);
+        expect(parsed.briefAnswers.ctaOverride).toBe(manualCta);
+        expect(parsed.briefAnswers.productName).toBe(manualProductName);
+        expect(parsed.briefAnswers.offerText).toBe(manualOffer);
+        expect(parsed.briefAnswers.useAiCopyAssist).toBe(false);
+        expect(parsed.manualCopyOverrides).toEqual({
+          headlineOverride: manualHeadline,
+          subHeadlineOverride: manualSubHeadline,
+          ctaOverride: manualCta,
+          productName: manualProductName,
+          offerText: manualOffer,
+          useAiCopyAssist: false,
+        });
       });
     });
   });

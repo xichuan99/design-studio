@@ -67,6 +67,9 @@ function LegacyCreatePage() {
         sidebarOpen, setSidebarOpen,
         integratedText, setIntegratedText,
         briefQuestions,
+        manualCopyOverrides,
+        updateManualCopyOverrides,
+        headlineLengthWarning,
         removeProductBg, setRemoveProductBg,
         errorModalState, setErrorModalState,
         inlineError, setInlineError,
@@ -216,6 +219,9 @@ function LegacyCreatePage() {
                             setAspectRatio={setAspectRatio}
                             integratedText={integratedText}
                             setIntegratedText={setIntegratedText}
+                            manualCopyOverrides={manualCopyOverrides}
+                            updateManualCopyOverrides={updateManualCopyOverrides}
+                            headlineLengthWarning={headlineLengthWarning}
                             selectedModelTier={selectedModelTier}
                             setSelectedModelTier={setSelectedModelTier}
                             modelCatalog={modelCatalog}

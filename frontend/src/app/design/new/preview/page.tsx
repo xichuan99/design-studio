@@ -254,9 +254,23 @@ export default function DesignPreviewPage() {
                     style: brief.style,
                     channel: brief.channel,
                     copyTone: brief.copyTone,
+                    headlineOverride: brief.headlineOverride,
+                    subHeadlineOverride: brief.subHeadlineOverride,
+                    ctaOverride: brief.ctaOverride,
+                    productName: brief.productName,
+                    offerText: brief.offerText,
+                    useAiCopyAssist: brief.useAiCopyAssist,
                     notes: brief.notes,
                     productImageUrl: brief.productImageUrl,
                     referenceFocus,
+                },
+                manualCopyOverrides: {
+                    headlineOverride: brief.headlineOverride || "",
+                    subHeadlineOverride: brief.subHeadlineOverride || "",
+                    ctaOverride: brief.ctaOverride || "",
+                    productName: brief.productName || "",
+                    offerText: brief.offerText || "",
+                    useAiCopyAssist: brief.useAiCopyAssist,
                 },
             }));
         }
@@ -388,6 +402,12 @@ export default function DesignPreviewPage() {
                 reference_image_url: brief.productImageUrl,
                 reference_focus: referenceFocus,
                 product_image_url: brief.productImageUrl,
+                headline_override: brief.headlineOverride,
+                sub_headline_override: brief.subHeadlineOverride,
+                cta_override: brief.ctaOverride,
+                product_name: brief.productName,
+                offer_text: brief.offerText,
+                use_ai_copy_assist: brief.useAiCopyAssist,
             });
             const jobId = jobData.job_id;
 

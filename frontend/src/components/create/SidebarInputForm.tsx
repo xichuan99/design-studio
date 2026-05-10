@@ -1,10 +1,12 @@
 import React, { useMemo, useState } from "react";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ChevronDown, Palette, Wand2, ImagePlus } from "lucide-react";
 import { DimensionPresets } from "./inputs/DimensionPresets";
 import { GenerationOptions } from "./inputs/GenerationOptions";
 import { ModelSelector } from "./inputs/ModelSelector";
 import { ProductSettings } from "./inputs/ProductSettings";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
 import { useSidebarInputFormContext } from "./context/SidebarInputFormContext";
@@ -15,6 +17,7 @@ export function SidebarInputForm() {
         rawText, setRawText, isInputLocked, isParsing,
         aspectRatio, setAspectRatio,
         integratedText, setIntegratedText,
+        manualCopyOverrides, updateManualCopyOverrides, headlineLengthWarning,
         selectedModelTier, setSelectedModelTier, modelCatalog, onModelSelectorOpened, onModelTierSelected,
         removeProductBg, setRemoveProductBg,
         showManualRef, setShowManualRef, referenceFile, referencePreview, isDragOver,
@@ -256,6 +259,92 @@ export function SidebarInputForm() {
                     />
                 )}
             </div>
+
+            {isGenerateMode && (
+                <div className={`space-y-4 pt-2 border-t ${isInputLocked ? 'opacity-60 pointer-events-none' : ''}`}>
+                    <div className="space-y-1">
+                        <label className="text-sm font-semibold text-foreground">Copy final (opsional)</label>
+                        <p className="text-xs leading-relaxed text-muted-foreground">
+                            Isi jika lo sudah punya headline/sub-headline/CTA final. Warning di bawah hanya saran layout, bukan blocker.
+                        </p>
+                    </div>
+
+                    <div className="flex items-start justify-between gap-4 rounded-xl border bg-muted/20 p-3">
+                        <div className="space-y-1">
+                            <p className="text-sm font-medium text-foreground">AI copy assist</p>
+                            <p className="text-xs leading-relaxed text-muted-foreground">
+                                Tetap aktif kalau hanya override sebagian field. Matikan kalau mau pakai copy manual sepenuhnya.
+                            </p>
+                        </div>
+                        <Switch
+                            checked={manualCopyOverrides.useAiCopyAssist}
+                            onCheckedChange={(checked) => updateManualCopyOverrides({ useAiCopyAssist: checked })}
+                            aria-label="Aktifkan AI copy assist"
+                            disabled={isInputLocked}
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Headline</label>
+                        <Input
+                            value={manualCopyOverrides.headlineOverride}
+                            onChange={(e) => updateManualCopyOverrides({ headlineOverride: e.target.value })}
+                            placeholder="Contoh: Diskon 50% Menu Favorit"
+                            disabled={isInputLocked || isParsing}
+                        />
+                        <div className="flex items-center justify-between gap-3 text-[11px]">
+                            <span className="text-muted-foreground">{manualCopyOverrides.headlineOverride.trim().length} karakter</span>
+                            {headlineLengthWarning ? (
+                                <span className="text-amber-600">{headlineLengthWarning.message}</span>
+                            ) : (
+                                <span className="text-muted-foreground">Panjang headline masih aman untuk layout awal.</span>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Sub-headline</label>
+                        <Textarea
+                            value={manualCopyOverrides.subHeadlineOverride}
+                            onChange={(e) => updateManualCopyOverrides({ subHeadlineOverride: e.target.value })}
+                            placeholder="Contoh: Berlaku khusus weekend ini untuk varian paling laris."
+                            className="min-h-[90px] resize-none"
+                            disabled={isInputLocked || isParsing}
+                        />
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="space-y-2">
+                            <label className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">CTA</label>
+                            <Input
+                                value={manualCopyOverrides.ctaOverride}
+                                onChange={(e) => updateManualCopyOverrides({ ctaOverride: e.target.value })}
+                                placeholder="Contoh: Pesan Sekarang"
+                                disabled={isInputLocked || isParsing}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Produk / brand</label>
+                            <Input
+                                value={manualCopyOverrides.productName}
+                                onChange={(e) => updateManualCopyOverrides({ productName: e.target.value })}
+                                placeholder="Contoh: Teh Manis Jumbo"
+                                disabled={isInputLocked || isParsing}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Offer / promo text</label>
+                        <Input
+                            value={manualCopyOverrides.offerText}
+                            onChange={(e) => updateManualCopyOverrides({ offerText: e.target.value })}
+                            placeholder="Contoh: Beli 2 Gratis 1 sampai Minggu"
+                            disabled={isInputLocked || isParsing}
+                        />
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

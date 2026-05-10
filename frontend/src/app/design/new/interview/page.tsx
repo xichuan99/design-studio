@@ -10,10 +10,16 @@ import { AppHeader } from "@/components/layout/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { DESIGN_BRIEF_SESSION_KEY } from "@/lib/design-brief-session";
 import { useProjectApi } from "@/lib/api";
 import type { CatalogGoal } from "@/lib/api/types";
+import {
+    buildHeadlineLengthWarning,
+    DEFAULT_MANUAL_COPY_OVERRIDES,
+    normalizeOptionalCopyValue,
+} from "@/app/create/types";
 
 const MAX_UPLOAD_SIZE = 10 * 1024 * 1024;
 
@@ -111,8 +117,18 @@ export default function DesignInterviewPage() {
     const [catalogTotalPages, setCatalogTotalPages] = useState(5);
     const [isCatalogPlanning, setIsCatalogPlanning] = useState(false);
     const [catalogPlanningError, setCatalogPlanningError] = useState<string | null>(null);
+    const [headlineOverride, setHeadlineOverride] = useState(DEFAULT_MANUAL_COPY_OVERRIDES.headlineOverride);
+    const [subHeadlineOverride, setSubHeadlineOverride] = useState(DEFAULT_MANUAL_COPY_OVERRIDES.subHeadlineOverride);
+    const [ctaOverride, setCtaOverride] = useState(DEFAULT_MANUAL_COPY_OVERRIDES.ctaOverride);
+    const [productName, setProductName] = useState(DEFAULT_MANUAL_COPY_OVERRIDES.productName);
+    const [offerText, setOfferText] = useState(DEFAULT_MANUAL_COPY_OVERRIDES.offerText);
+    const [useAiCopyAssist, setUseAiCopyAssist] = useState(DEFAULT_MANUAL_COPY_OVERRIDES.useAiCopyAssist);
     const normalizedCustomProductType = customProductType.trim();
     const isOtherProductType = productType === "Lainnya";
+    const headlineWarning = useMemo(
+        () => buildHeadlineLengthWarning(headlineOverride, channel === "ads" ? "9:16" : "1:1", false),
+        [channel, headlineOverride]
+    );
 
     const progress = useMemo(() => {
         let filled = 0;
@@ -282,6 +298,10 @@ export default function DesignInterviewPage() {
             copyTone: finalCopyTone,
             hasNotes: notes.trim().length > 0,
             hasProductImage: !!productImageUrl,
+            hasHeadlineOverride: headlineOverride.trim().length > 0,
+            hasSubHeadlineOverride: subHeadlineOverride.trim().length > 0,
+            hasCtaOverride: ctaOverride.trim().length > 0,
+            useAiCopyAssist,
             catalogType: finalGoal === "catalog" ? finalCatalogType : undefined,
             catalogTotalPages: finalGoal === "catalog" ? finalCatalogTotalPages : undefined,
             isSkip,
@@ -295,6 +315,12 @@ export default function DesignInterviewPage() {
                 style: finalStyle,
                 channel: finalChannel,
                 copyTone: finalCopyTone,
+                headlineOverride: normalizeOptionalCopyValue(headlineOverride),
+                subHeadlineOverride: normalizeOptionalCopyValue(subHeadlineOverride),
+                ctaOverride: normalizeOptionalCopyValue(ctaOverride),
+                productName: normalizeOptionalCopyValue(productName) || finalProductType,
+                offerText: normalizeOptionalCopyValue(offerText),
+                useAiCopyAssist,
                 notes: notes.trim(),
                 productImageUrl: productImageUrl ?? undefined,
                 productImageFilename: productFile?.name,
@@ -584,7 +610,86 @@ export default function DesignInterviewPage() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-xl">6. Foto produk (opsional)</CardTitle>
+                        <CardTitle className="text-xl">6. Copy final yang mau dipakai (opsional)</CardTitle>
+                        <CardDescription>Isi kalau Kamu sudah punya headline, sub-headline, atau CTA final. Kalau kosong, AI akan bantu menyusun copy.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="flex items-start justify-between gap-4 rounded-2xl border bg-muted/20 p-4">
+                            <div className="space-y-1">
+                                <p className="text-sm font-semibold text-foreground">AI copy assist</p>
+                                <p className="text-xs leading-relaxed text-muted-foreground">
+                                    Tetap aktifkan kalau Kamu hanya override sebagian field. Matikan kalau mau sistem hanya pakai copy manual yang Kamu isi.
+                                </p>
+                            </div>
+                            <Switch checked={useAiCopyAssist} onCheckedChange={setUseAiCopyAssist} aria-label="Aktifkan AI copy assist" />
+                        </div>
+
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <div className="space-y-2 md:col-span-2">
+                                <label className="text-sm font-medium text-foreground" htmlFor="headline-override">Headline</label>
+                                <Input
+                                    id="headline-override"
+                                    value={headlineOverride}
+                                    onChange={(event) => setHeadlineOverride(event.target.value)}
+                                    placeholder="Contoh: Diskon 50% untuk Menu Favorit"
+                                />
+                                <div className="flex items-center justify-between gap-3 text-xs">
+                                    <span className="text-muted-foreground">{headlineOverride.trim().length} karakter</span>
+                                    {headlineWarning ? (
+                                        <span className="text-amber-600">{headlineWarning.message}</span>
+                                    ) : (
+                                        <span className="text-muted-foreground">Aman untuk layout awal.</span>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="space-y-2 md:col-span-2">
+                                <label className="text-sm font-medium text-foreground" htmlFor="subheadline-override">Sub-headline</label>
+                                <Textarea
+                                    id="subheadline-override"
+                                    value={subHeadlineOverride}
+                                    onChange={(event) => setSubHeadlineOverride(event.target.value)}
+                                    placeholder="Contoh: Berlaku khusus akhir pekan ini dengan pilihan rasa paling laris."
+                                    rows={3}
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-foreground" htmlFor="cta-override">CTA</label>
+                                <Input
+                                    id="cta-override"
+                                    value={ctaOverride}
+                                    onChange={(event) => setCtaOverride(event.target.value)}
+                                    placeholder="Contoh: Pesan Sekarang"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-foreground" htmlFor="product-name">Nama produk / brand</label>
+                                <Input
+                                    id="product-name"
+                                    value={productName}
+                                    onChange={(event) => setProductName(event.target.value)}
+                                    placeholder="Contoh: Teh Manis Jumbo"
+                                />
+                            </div>
+
+                            <div className="space-y-2 md:col-span-2">
+                                <label className="text-sm font-medium text-foreground" htmlFor="offer-text">Offer / promo text</label>
+                                <Input
+                                    id="offer-text"
+                                    value={offerText}
+                                    onChange={(event) => setOfferText(event.target.value)}
+                                    placeholder="Contoh: Beli 2 Gratis 1 sampai Minggu"
+                                />
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-xl">7. Foto produk (opsional)</CardTitle>
                         <CardDescription>Upload foto asli produk agar hasil katalog lebih akurat. Anda bisa lanjut tanpa upload.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-3">
@@ -652,7 +757,7 @@ export default function DesignInterviewPage() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-xl">7. Catatan tambahan (opsional)</CardTitle>
+                        <CardTitle className="text-xl">8. Catatan tambahan (opsional)</CardTitle>
                         <CardDescription>Tuliskan info penting seperti promo, harga, atau larangan visual tertentu.</CardDescription>
                     </CardHeader>
                     <CardContent>

@@ -45,16 +45,27 @@ export function mapCopyToneToCatalogTone(copyTone: string): "formal" | "fun" | "
 export function buildPrompt(brief: DesignBriefSessionState): string {
     const goalLabel = GOAL_LABEL_MAP[brief.goal] ?? brief.goal;
     const channelLabel = CHANNEL_LABEL_MAP[brief.channel] ?? brief.channel;
-    const productTypeLabel = brief.customProductType ?? PRODUCT_TYPE_LABEL_MAP[brief.productType] ?? brief.productType;
+    const productTypeLabel = brief.productName || brief.customProductType || PRODUCT_TYPE_LABEL_MAP[brief.productType] || brief.productType;
     const noteLine = brief.notes ? `Catatan tambahan: ${brief.notes}.` : null;
     const catalogLine = brief.goal === "catalog" && brief.catalogTotalPages
         ? `Rancang sebagai katalog ${brief.catalogType ?? "product"} dengan ${brief.catalogTotalPages} halaman.`
+        : null;
+    const manualCopyLine = [
+        brief.headlineOverride ? `Headline utama: ${brief.headlineOverride}.` : null,
+        brief.subHeadlineOverride ? `Sub-headline: ${brief.subHeadlineOverride}.` : null,
+        brief.ctaOverride ? `CTA: ${brief.ctaOverride}.` : null,
+        brief.offerText ? `Offer penting: ${brief.offerText}.` : null,
+    ].filter(Boolean).join(" ");
+    const copyAssistLine = brief.useAiCopyAssist === false
+        ? "Gunakan copy manual sebagai source of truth, jangan menambahkan alternatif copy AI."
         : null;
     return [
         `Buat desain ${goalLabel} untuk ${channelLabel} dengan konteks ${productTypeLabel}.`,
         catalogLine,
         `Gaya visual: ${brief.style}.`,
         `Tone copy: ${brief.copyTone}.`,
+        manualCopyLine,
+        copyAssistLine,
         noteLine,
         "Gunakan komposisi visual yang bersih, hierarki teks yang jelas, dan siap diedit di editor.",
     ].filter(Boolean).join(" ");
