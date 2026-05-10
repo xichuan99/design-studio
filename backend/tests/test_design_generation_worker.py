@@ -57,9 +57,9 @@ async def test_execute_pipeline_persists_job_file_size(
     assert completion_call.args[0] == "job-1"
     assert completion_call.kwargs["status"] == "completed"
     assert completion_call.kwargs["result_url"] == "https://cdn.example.com/permanent.jpg"
-    assert completion_call.kwargs["file_size"] == 6
+    assert completion_call.kwargs["file_size"] == 37
     mock_optimize_quantum_layout.assert_awaited_once_with(
-        "Headline", "Sub", "CTA", ratio="1:1"
+        "Headline", "Sub", "CTA", ratio="1:1", num_variations=3
     )
 
 
@@ -106,7 +106,8 @@ async def test_execute_pipeline_reuses_parse_checkpoint(
 
     mock_parse_design_text.assert_not_awaited()
     mock_optimize_quantum_layout.assert_not_awaited()
-    assert mock_generate_background.await_args.kwargs["visual_prompt"] == "saved visual prompt"
+    # First call (var_idx=0) must still use the checkpoint prompt
+    assert mock_generate_background.await_args_list[0].kwargs["visual_prompt"] == "saved visual prompt"
 
 
 @patch("app.workers.design_generation._run_async")
@@ -227,7 +228,7 @@ async def test_execute_pipeline_honors_manual_copy_overrides(
         for call in mock_update_job_status.await_args_list
     )
     mock_optimize_quantum_layout.assert_awaited_once_with(
-        "HEADLINE MANUAL", "SUB MANUAL", "CTA MANUAL", ratio="1:1"
+        "HEADLINE MANUAL", "SUB MANUAL", "CTA MANUAL", ratio="1:1", num_variations=3
     )
 
 
@@ -315,7 +316,7 @@ async def test_generate_design_sync_passes_request_aspect_ratio_to_quantum_layou
     assert mock_parse_design_text.await_args.kwargs["cta_override"] == "CTA MANUAL"
     mock_log_credit_change.assert_awaited()
     mock_optimize_quantum_layout.assert_awaited_once_with(
-        "HEADLINE MANUAL", "SUB MANUAL", "CTA MANUAL", ratio="9:16"
+        "HEADLINE MANUAL", "SUB MANUAL", "CTA MANUAL", ratio="9:16", num_variations=3
     )
 
 

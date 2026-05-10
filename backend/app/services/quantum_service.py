@@ -9,7 +9,7 @@ import json
 import logging
 from typing import Optional
 
-from app.services.composition_contract import build_composition_contract
+from app.services.composition_contract import build_composition_contract, build_composition_variations
 
 
 async def optimize_quantum_layout(
@@ -17,18 +17,26 @@ async def optimize_quantum_layout(
     parsed_sub_headline: Optional[str],
     parsed_cta: Optional[str],
     ratio: str = "1:1",
+    num_variations: int = 3,
 ) -> Optional[str]:
     """
     Compute optimal layout for text elements using the local placement engine.
+
+    When num_variations > 1, uses build_composition_variations() to produce
+    multiple distinct layout sets (different copy-space sides).
 
     Returns a JSON string compatible with the frontend's ``templateEngine.ts``
     expectations::
 
         {
           "variations": [
-            [{"role": "headline", "x": <px>, "y": <px>}, ...]
+            [{"role": "headline", "x": <px>, "y": <px>}, ...],
+            ...
           ],
-          "image_prompt_modifier": "<string appended to visual_prompt>"
+          "image_prompt_modifier": "<string appended to visual_prompt>",
+          "composition": {...},
+          "selected_set": <int>,
+          "copy_space_side": "<str>"
         }
 
     ``x`` / ``y`` are **pixel** values in a 1024×1024 logical canvas, adjusted
@@ -45,38 +53,51 @@ async def optimize_quantum_layout(
         return None
 
     try:
-        contract = build_composition_contract(
-            ratio=ratio,
-            has_headline=has_headline,
-            has_sub=has_sub,
-            has_cta=has_cta,
-            text_length_headline=len(parsed_headline) if parsed_headline else 0,
-        )
+        text_len = len(parsed_headline) if parsed_headline else 0
+        if num_variations > 1:
+            contracts = build_composition_variations(
+                ratio=ratio,
+                has_headline=has_headline,
+                has_sub=has_sub,
+                has_cta=has_cta,
+                num_variations=num_variations,
+                text_length_headline=text_len,
+            )
+        else:
+            contracts = [build_composition_contract(
+                ratio=ratio,
+                has_headline=has_headline,
+                has_sub=has_sub,
+                has_cta=has_cta,
+                text_length_headline=text_len,
+            )]
 
         canvas_size = 1024
         el_width = int(canvas_size * 0.8)  # matches templateEngine elWidth
 
-        variation: list[dict] = []
-        for el in contract["layout_elements"]:
-            # Convert proportional → pixel, adjusting for alignment so
-            # templateEngine receives a ready-to-use left-edge x coordinate.
-            x_center_px = el["x"] * canvas_size
-            if el["text_align"] == "center":
-                x_px = int(x_center_px - el_width / 2)
-            elif el["text_align"] == "right":
-                x_px = int(x_center_px - el_width)
-            else:  # "left"
-                x_px = int(x_center_px)
+        all_variations: list[list[dict]] = []
+        for contract in contracts:
+            variation: list[dict] = []
+            for el in contract["layout_elements"]:
+                x_center_px = el["x"] * canvas_size
+                if el["text_align"] == "center":
+                    x_px = int(x_center_px - el_width / 2)
+                elif el["text_align"] == "right":
+                    x_px = int(x_center_px - el_width)
+                else:  # "left"
+                    x_px = int(x_center_px)
+                y_px = int(el["y"] * canvas_size)
+                variation.append({"role": el["role"], "x": x_px, "y": y_px})
+            all_variations.append(variation)
 
-            y_px = int(el["y"] * canvas_size)
-            variation.append({"role": el["role"], "x": x_px, "y": y_px})
-
+        # Use the first contract for top-level metadata
+        first = contracts[0]
         result = {
-            "variations": [variation],
-            "image_prompt_modifier": contract["image_prompt_modifier"],
-            "composition": contract["composition"],
-            "selected_set": contract["set_num"],
-            "copy_space_side": contract["composition"]["copy_space_side"],
+            "variations": all_variations,
+            "image_prompt_modifier": first["image_prompt_modifier"],
+            "composition": first["composition"],
+            "selected_set": first["set_num"],
+            "copy_space_side": first["composition"]["copy_space_side"],
         }
         return json.dumps(result)
 

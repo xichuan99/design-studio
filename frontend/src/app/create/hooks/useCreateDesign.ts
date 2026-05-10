@@ -16,6 +16,7 @@ import {
     ManualCopyOverrides,
     normalizeOptionalCopyValue,
     ParsedDesignData,
+    VariationResult,
     VisualPromptPart,
     BriefQuestion,
     MAX_FILE_SIZE,
@@ -43,6 +44,8 @@ export interface SavedCreateState {
     userIntent: UserIntent;
     selectedModelTier: ModelTier;
     manualCopyOverrides?: ManualCopyOverrides;
+    variationResults?: VariationResult[];
+    selectedVariationIndex?: number;
 }
 
 function parseBooleanString(value: string | boolean | undefined): boolean | undefined {
@@ -174,6 +177,8 @@ export function useCreateDesign() {
     // Image History State
     const [imageHistory, setImageHistory] = useState<{ url: string; prompt: string }[]>([]);
     const [activeImageIndex, setActiveImageIndex] = useState(0);
+    const [variationResults, setVariationResults] = useState<VariationResult[]>([]);
+    const [selectedVariationIndex, setSelectedVariationIndex] = useState(0);
     const [showManualRef, setShowManualRef] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isInitialized, setIsInitialized] = useState(false);
@@ -213,6 +218,8 @@ export function useCreateDesign() {
                 setCopyVariations(parsed.copyVariations || []);
                 setUserIntent(parsed.userIntent || null);
                 setSelectedModelTier(parsed.selectedModelTier || "auto");
+                setVariationResults(parsed.variationResults || []);
+                setSelectedVariationIndex(parsed.selectedVariationIndex || 0);
             } catch (e) {
                 console.error("Failed to parse saved state", e);
             }
@@ -299,6 +306,8 @@ export function useCreateDesign() {
             parsedData,
             imageHistory,
             activeImageIndex,
+            variationResults,
+            selectedVariationIndex,
             integratedText,
             removeProductBg,
             briefQuestions,
@@ -311,7 +320,7 @@ export function useCreateDesign() {
         localStorage.setItem('smartdesign_create_state', JSON.stringify(stateToSave));
     }, [
         isInitialized, rawText, aspectRatio, currentStep, createMode, redesignStrength,
-        parsedData, imageHistory, activeImageIndex, integratedText, removeProductBg,
+        parsedData, imageHistory, activeImageIndex, variationResults, selectedVariationIndex, integratedText, removeProductBg,
         briefQuestions, briefAnswers, copyVariations, userIntent, selectedModelTier, manualCopyOverrides
     ]);
 
@@ -335,6 +344,8 @@ export function useCreateDesign() {
             setParsedData(null);
             setImageHistory([]);
             setActiveImageIndex(0);
+            setVariationResults([]);
+            setSelectedVariationIndex(0);
             setBriefQuestions([]);
             setBriefAnswers({});
             setManualCopyOverrides(DEFAULT_MANUAL_COPY_OVERRIDES);
@@ -482,6 +493,71 @@ export function useCreateDesign() {
         }
     }, [rawText, createMode, clarifyUnified, handleGeneratePrompt, brandKitEnabled, posthog]);
 
+    // Helper to populate variation state from API response
+    const _populateVariationState = useCallback((statusData: {
+        result_url?: string | null;
+        quantum_layout?: string | null;
+        variation_results?: string | null;
+    }, finalPrompt: string) => {
+        const newUrl = statusData.result_url!;
+        
+        // Parse variation_results from API
+        let parsedVariations: VariationResult[] = [];
+        try {
+            if (statusData.variation_results) {
+                parsedVariations = JSON.parse(statusData.variation_results);
+            }
+        } catch { /* keep empty */ }
+
+        // Fallback: legacy single-result → synthetic 1-variation bundle
+        if (parsedVariations.length === 0 && newUrl) {
+            parsedVariations = [{
+                set_num: 1,
+                result_url: newUrl,
+                composition: { set_num: 1, ratio: "1:1", copy_space_side: "auto" },
+                image_prompt_modifier: "",
+                layout_elements: [],
+            }];
+        }
+
+        setVariationResults(parsedVariations);
+        setSelectedVariationIndex(0);
+
+        // Populate imageHistory from variation bundle for backward compat
+        const historyItems = parsedVariations
+            .filter(v => v.result_url)
+            .map(v => ({ url: v.result_url!, prompt: finalPrompt }));
+        
+        setImageHistory(prev => {
+            const newHistory = [...prev, ...historyItems];
+            setActiveImageIndex(newHistory.length > 0 ? newHistory.length - 1 : 0);
+            return newHistory;
+        });
+
+        setParsedData(prev => prev ? {
+            ...prev,
+            generated_image_url: newUrl,
+            quantum_layout: statusData.quantum_layout || undefined,
+            variation_results: parsedVariations.length > 0 ? parsedVariations : undefined,
+        } : {
+            layout_instruction: "Placeholder layout",
+            visual_prompt: finalPrompt,
+            image_caption: "Generated design", 
+            indonesian_translation: finalPrompt,
+            generated_image_url: newUrl,
+            quantum_layout: statusData.quantum_layout || undefined,
+            variation_results: parsedVariations.length > 0 ? parsedVariations : undefined,
+        });
+        setCurrentStep('preview');
+        posthog?.capture('create_generation_success', { create_mode: createMode });
+        posthog?.capture('design_generated', {
+            create_mode: createMode,
+            aspect_ratio: normalizeAspectRatio(aspectRatio),
+            quality: selectedModelTier,
+        });
+        recordDesignGenerated();
+    }, [aspectRatio, selectedModelTier, createMode, posthog, recordDesignGenerated]);
+
     const handleGenerateImage = useCallback(async () => {
         if (!parsedData && createMode !== 'redesign') return;
         
@@ -577,33 +653,7 @@ export function useCreateDesign() {
             if (jobData.status === "completed") {
                 const statusData = await getJobStatus(jobId);
                 if (statusData.status === "completed" && statusData.result_url) {
-                    const newUrl = statusData.result_url;
-                    setImageHistory(prev => {
-                        const newHistory = [...prev, { url: newUrl, prompt: finalPrompt }];
-                        setActiveImageIndex(newHistory.length);
-                        return newHistory;
-                    });
-                    
-                    setParsedData(prev => prev ? {
-                        ...prev,
-                        generated_image_url: newUrl,
-                        quantum_layout: statusData.quantum_layout || undefined
-                    } : {
-                        layout_instruction: "Placeholder layout",
-                        visual_prompt: finalPrompt,
-                        image_caption: "Redesign from reference",
-                        indonesian_translation: finalPrompt,
-                        generated_image_url: newUrl,
-                        quantum_layout: statusData.quantum_layout || undefined
-                    });
-                    setCurrentStep('preview');
-                    posthog?.capture('create_generation_success', { create_mode: createMode });
-                    posthog?.capture('design_generated', {
-                        create_mode: createMode,
-                        aspect_ratio: normalizeAspectRatio(aspectRatio),
-                        quality: selectedModelTier,
-                    });
-                    recordDesignGenerated();
+                    _populateVariationState(statusData, finalPrompt);
                 } else {
                     throw new Error(statusData.error_message || "Generation failed");
                 }
@@ -618,33 +668,7 @@ export function useCreateDesign() {
 
                     if (statusData.status === "completed" && statusData.result_url) {
                         isComplete = true;
-                        const newUrl = statusData.result_url;
-                        setImageHistory(prev => {
-                            const newHistory = [...prev, { url: newUrl, prompt: finalPrompt }];
-                            setActiveImageIndex(newHistory.length);
-                            return newHistory;
-                        });
-
-                        setParsedData(prev => prev ? {
-                            ...prev,
-                            generated_image_url: newUrl,
-                            quantum_layout: statusData.quantum_layout || undefined
-                        } : {
-                            layout_instruction: "Placeholder layout",
-                            visual_prompt: finalPrompt,
-                            image_caption: "Redesign from reference",
-                            indonesian_translation: finalPrompt,
-                            generated_image_url: newUrl,
-                            quantum_layout: statusData.quantum_layout || undefined
-                        });
-                        setCurrentStep('preview');
-                        posthog?.capture('create_generation_success', { create_mode: createMode });
-                        posthog?.capture('design_generated', {
-                            create_mode: createMode,
-                            aspect_ratio: normalizeAspectRatio(aspectRatio),
-                            quality: selectedModelTier,
-                        });
-                        recordDesignGenerated();
+                        _populateVariationState(statusData, finalPrompt);
                     } else if (statusData.status === "completed") {
                         throw new Error("Generation completed without image result");
                     } else if (statusData.status === "failed") {
@@ -731,7 +755,7 @@ export function useCreateDesign() {
         } finally {
             setIsGeneratingImage(false);
         }
-    }, [parsedData, rawText, referenceFile, aspectRatio, integratedText, removeProductBg, manualCopyOverrides, activeBrandKit, brandKitEnabled, createMode, redesignStrength, selectedModelTier, getStorageUsage, uploadImage, generateDesign, redesignFromReference, getJobStatus, router, posthog, recordDesignGenerated]);
+    }, [parsedData, rawText, referenceFile, aspectRatio, integratedText, removeProductBg, manualCopyOverrides, activeBrandKit, brandKitEnabled, createMode, redesignStrength, selectedModelTier, getStorageUsage, uploadImage, generateDesign, redesignFromReference, getJobStatus, router, posthog, _populateVariationState]);
 
     const handleProceedToEditor = useCallback(async () => {
         if (!parsedData) return;
@@ -797,7 +821,8 @@ export function useCreateDesign() {
                     [],
                     1024,
                     1024,
-                    parsedData.quantum_layout ? JSON.parse(parsedData.quantum_layout) : undefined
+                    parsedData.quantum_layout ? JSON.parse(parsedData.quantum_layout) : undefined,
+                    selectedVariationIndex,
                 );
 
             const getDynamicTitleFallback = (prompt: string) => {
@@ -842,7 +867,7 @@ export function useCreateDesign() {
             toast.error('Gagal melanjutkan ke editor. Silakan coba lagi.');
             setIsSaving(false);
         }
-    }, [parsedData, imageHistory, activeImageIndex, aspectRatio, integratedText, rawText, generateProjectTitle, saveProject, router, copyVariations, createMode, posthog, userIntent, generateMultiFormat]);
+    }, [parsedData, imageHistory, activeImageIndex, aspectRatio, integratedText, rawText, generateProjectTitle, saveProject, router, copyVariations, createMode, posthog, userIntent, generateMultiFormat, selectedVariationIndex]);
 
     return {
         rawText, setRawText,
@@ -871,6 +896,8 @@ export function useCreateDesign() {
         activeBrandKit, setActiveBrandKit,
         imageHistory, setImageHistory,
         activeImageIndex, setActiveImageIndex,
+        variationResults, setVariationResults,
+        selectedVariationIndex, setSelectedVariationIndex,
         showManualRef, setShowManualRef,
         fileInputRef,
         isInputLocked,

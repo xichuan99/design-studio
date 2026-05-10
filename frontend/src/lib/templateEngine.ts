@@ -36,6 +36,8 @@ export interface TemplateLayer {
 /**
  * Creates CanvasElements mapped from the AI text parsing using template layouts or AI dynamic layouts.
  * Priority: Template Layer > AI Layout Decision > Hardcoded Defaults
+ * 
+ * @param selectedVariationIndex — when > 0, picks that specific variation from quantumLayout
  */
 export function generateCanvasElementsFromTemplate(
     parsedData: AIParsedData,
@@ -44,7 +46,8 @@ export function generateCanvasElementsFromTemplate(
     canvasLogicalWidth: number = 1024,
     canvasLogicalHeight: number = 1024,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    quantumLayout?: any
+    quantumLayout?: any,
+    selectedVariationIndex: number = 0,
 ): CanvasElement[] {
     const elements: CanvasElement[] = [];
 
@@ -101,7 +104,7 @@ export function generateCanvasElementsFromTemplate(
         // Extract direct absolute coordinates if Quantum Layout is provided
         let usedQuantum = false;
         if (quantumLayout && quantumLayout.variations && quantumLayout.variations.length > 0) {
-            const variant = quantumLayout.variations[0];
+            const variant = quantumLayout.variations[selectedVariationIndex] || quantumLayout.variations[0];
             const qEl = variant.find((v: { role: string; x: number; y: number }) => v.role === role);
             if (qEl) {
                 x = qEl.x;

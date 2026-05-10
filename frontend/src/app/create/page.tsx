@@ -76,6 +76,8 @@ function LegacyCreatePage() {
         activeBrandKit,
         imageHistory,
         activeImageIndex, setActiveImageIndex,
+        variationResults,
+        selectedVariationIndex, setSelectedVariationIndex,
         showManualRef, setShowManualRef,
         userIntent,
         fileInputRef,
@@ -307,6 +309,9 @@ function LegacyCreatePage() {
                             imageHistory={imageHistory}
                             activeImageIndex={activeImageIndex}
                             setActiveImageIndex={setActiveImageIndex}
+                            variationResults={variationResults}
+                            selectedVariationIndex={selectedVariationIndex}
+                            setSelectedVariationIndex={setSelectedVariationIndex}
                             isSaving={isSaving}
                             onProceedToEditor={handleProceedToEditor}
                             onTogglePromptPart={handleTogglePromptPart}

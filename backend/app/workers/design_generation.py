@@ -65,6 +65,7 @@ async def _execute_pipeline(
     charged_credits: int = 40,
     current_retry: int = 0,
     max_retries: int = 0,
+    num_variations: int = 3,
 ):
     """Execute the full generation pipeline."""
     try:
@@ -128,11 +129,11 @@ async def _execute_pipeline(
             import json as _json
 
             quantum_layout = await optimize_quantum_layout(
-                parsed_headline, parsed_sub_headline, parsed_cta, ratio=aspect_ratio
+                parsed_headline, parsed_sub_headline, parsed_cta,
+                ratio=aspect_ratio,
+                num_variations=num_variations,
             )
             if quantum_layout:
-                import json as _json
-
                 variation_results = None
                 await _update_job_status(job_id, quantum_layout=quantum_layout)
                 try:
@@ -140,18 +141,18 @@ async def _execute_pipeline(
                     modifier = ql_data.get("image_prompt_modifier")
                     if modifier:
                         visual_prompt_final = f"{visual_prompt_final} {modifier}"
-                    if ql_data.get("composition"):
-                        variation_results = _json.dumps(
-                            [
-                                {
-                                    "set_num": ql_data.get("selected_set") or ql_data["composition"].get("set_num"),
-                                    "result_url": None,
-                                    "composition": ql_data["composition"],
-                                    "image_prompt_modifier": ql_data.get("image_prompt_modifier"),
-                                    "layout_elements": (ql_data.get("variations") or [[]])[0],
-                                }
-                            ]
-                        )
+
+                    bundle: list[dict] = []
+                    var_list = ql_data.get("variations") or [[]]
+                    for i, layout_els in enumerate(var_list):
+                        bundle.append({
+                            "set_num": (ql_data.get("selected_set") or 1) + i,
+                            "result_url": None,
+                            "composition": ql_data.get("composition"),
+                            "image_prompt_modifier": ql_data.get("image_prompt_modifier"),
+                            "layout_elements": layout_els,
+                        })
+                    variation_results = _json.dumps(bundle)
                 except Exception:
                     variation_results = None
                 if variation_results:
@@ -165,30 +166,50 @@ async def _execute_pipeline(
                 prep["resized_bytes"], prefix="references"
             )
 
-        result = await generate_background(
-            visual_prompt=visual_prompt_final,
-            reference_image_url=upload_ref_url,
-            reference_focus=reference_focus,
-            style=style,
-            aspect_ratio=aspect_ratio,
-            integrated_text=integrated_text,
-            seed=seed,
-        )
+        # Sequential multi-image generation
+        generated_urls: list[str] = []
+        for var_idx in range(num_variations):
+            try:
+                var_prompt = visual_prompt_final if var_idx == 0 else f"{visual_prompt_final} [variant seed {var_idx}]"
+                result = await generate_background(
+                    visual_prompt=var_prompt,
+                    reference_image_url=upload_ref_url,
+                    reference_focus=reference_focus,
+                    style=style,
+                    aspect_ratio=aspect_ratio,
+                    integrated_text=integrated_text,
+                    seed=seed,
+                )
+                gen_bytes = await download_image(result["image_url"])
+                permanent_url = await upload_image(
+                    gen_bytes,
+                    content_type=result.get("content_type", "image/jpeg"),
+                    prefix="generated",
+                )
+                generated_urls.append(permanent_url)
+            except Exception:
+                pass  # skip failed variation
 
-        gen_bytes = await download_image(result["image_url"])
-        permanent_url = await upload_image(
-            gen_bytes,
-            content_type=result.get("content_type", "image/jpeg"),
-            prefix="generated",
-        )
+        if generated_urls:
+            # Patch variation_results with real URLs
+            import json as _json
+            try:
+                checkpoint2 = await _get_job_checkpoint(job_id)
+                bundle = _json.loads(checkpoint2.get("variation_results") or "[]")
+                for i, item in enumerate(bundle):
+                    if i < len(generated_urls):
+                        item["result_url"] = generated_urls[i]
+                await _update_job_status(job_id, variation_results=_json.dumps(bundle))
+            except Exception:
+                pass
 
-        await _update_job_status(
-            job_id,
-            status="completed",
-            result_url=permanent_url,
-            file_size=len(gen_bytes),
+            await _update_job_status(
+                job_id,
+                status="completed",
+            result_url=generated_urls[0],
+            file_size=len(generated_urls[0].encode()) if isinstance(generated_urls[0], str) else 0,
             completed_at=datetime.now(timezone.utc),
-        )
+            )
         logger.info(f"Design generation completed successfully | Job: {job_id}")
 
     except Exception as e:
@@ -267,6 +288,7 @@ def generate_design_task(self, *args, **kwargs):
     use_ai_copy_assist = payload.get("use_ai_copy_assist", True)
     seed = payload.get("seed")
     charged_credits = int(payload.get("charged_credits", 40))
+    num_variations = int(payload.get("num_variations", 3))
 
     try:
         _run_async(
@@ -286,6 +308,7 @@ def generate_design_task(self, *args, **kwargs):
                 product_name,
                 offer_text,
                 use_ai_copy_assist,
+                num_variations=num_variations,
                 seed=seed,
                 charged_credits=charged_credits,
                 current_retry=task_ctx.request.retries,

@@ -15,6 +15,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+from app.services.style_mapping import resolve_style_preset
+
 
 @dataclass
 class StylePreset:
@@ -202,7 +204,8 @@ class PromptBuilder:
 
     @staticmethod
     def get_preset(style_key: str) -> StylePreset:
-        preset = STYLE_PRESETS.get(style_key)
+        mapped_style_key = resolve_style_preset(style_key)
+        preset = STYLE_PRESETS.get(mapped_style_key)
         if preset is None:
             logger.warning(f"Unknown style key '{style_key}', falling back to 'auto'.")
             preset = STYLE_PRESETS["auto"]

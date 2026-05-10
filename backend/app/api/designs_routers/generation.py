@@ -443,13 +443,16 @@ async def generate_design(
         job.visual_prompt = visual_prompt_final
         job.status = "processing"
 
+        num_variations = getattr(request, "num_variations", 3)
         # Step 2.5: Quantum Layout Optimization (Synchronous Fallback route)
         if settings.QUANTUM_LAYOUT_ENABLED:
             import json as _json
             from app.services.quantum_service import optimize_quantum_layout
 
             quantum_layout = await optimize_quantum_layout(
-                parsed.headline, parsed.sub_headline, parsed.cta, ratio=request.aspect_ratio
+                parsed.headline, parsed.sub_headline, parsed.cta,
+                ratio=request.aspect_ratio,
+                num_variations=num_variations,
             )
             if quantum_layout:
                 job.quantum_layout = quantum_layout
@@ -458,32 +461,30 @@ async def generate_design(
                     modifier = ql_data.get("image_prompt_modifier")
                     if modifier:
                         visual_prompt_final = f"{visual_prompt_final} {modifier}"
-                    if ql_data.get("composition"):
-                        job.variation_results = _json.dumps(
-                            [
-                                {
-                                    "set_num": ql_data.get("selected_set") or ql_data["composition"].get("set_num"),
-                                    "result_url": None,
-                                    "composition": ql_data["composition"],
-                                    "image_prompt_modifier": ql_data.get("image_prompt_modifier"),
-                                    "layout_elements": (ql_data.get("variations") or [[]])[0],
-                                }
-                            ]
-                        )
+
+                    bundle: list[dict] = []
+                    var_list = ql_data.get("variations") or [[]]
+                    for i, layout_els in enumerate(var_list):
+                        bundle.append({
+                            "set_num": (ql_data.get("selected_set") or 1) + i,
+                            "result_url": None,
+                            "composition": ql_data.get("composition"),
+                            "image_prompt_modifier": ql_data.get("image_prompt_modifier"),
+                            "layout_elements": layout_els,
+                        })
+                    job.variation_results = _json.dumps(bundle)
                 except Exception:
                     pass
 
         await db.commit()
 
         # Generate image with Fal.ai providers
-        from app.services.image_service import STYLE_SUFFIXES, generate_background
+        from app.services.image_service import generate_background
         from app.services.prompt_builder import PromptBuilder
 
-        style_key = request.style_preference if request.style_preference else "auto"
-        if style_key not in STYLE_SUFFIXES:
-            import logging
-            logging.warning(f"Unrecognized style preference: '{style_key}'. Falling back to 'auto'.")
-            style_key = "auto"
+        style_raw = request.style_preference if request.style_preference else "auto"
+        preset = PromptBuilder.get_preset(style_raw)
+        style_key = preset.key
 
         # Fal.ai-only image pipeline.
         model_name = "fal-ai"
@@ -564,54 +565,80 @@ async def generate_design(
             img_resp.raise_for_status()
             image_bytes = img_resp.content
 
-        if image_bytes:
-            # --- Flow A: Product Composite Logic ---
-            if getattr(request, "remove_product_bg", False) and getattr(
-                request, "product_image_url", None
-            ):
-                try:
-                    # Download the product image locally
-                    async with httpx.AsyncClient() as http_client:
-                        product_resp = await http_client.get(request.product_image_url)
-                        product_resp.raise_for_status()
-                        product_bytes = product_resp.content
+        # --- Sequential multi-image generation ---
+        generated_urls: list[str] = []
+        for var_idx in range(num_variations):
+            try:
+                # Slight prompt perturbation to get visual diversity
+                if var_idx > 0:
+                    var_prompt = f"{enhanced_prompt} [variant seed {var_idx}]"
+                else:
+                    var_prompt = enhanced_prompt
 
-                    # 1. Remove background from product
-                    from app.services.bg_removal_service import (
-                        remove_background,
-                        composite_product_on_background,
+                if use_ultra:
+                    var_fal = await generate_background_ultra(
+                        visual_prompt=var_prompt,
+                        aspect_ratio=request.aspect_ratio,
+                    )
+                else:
+                    var_fal = await generate_background(
+                        visual_prompt=var_prompt,
+                        reference_image_url=effective_reference_image_url,
+                        reference_focus=reference_focus,
+                        model_tier=selected_model_tier,
+                        style=style_key,
+                        aspect_ratio=request.aspect_ratio,
+                        integrated_text=request.integrated_text,
+                        preserve_product=bool(getattr(request, "remove_product_bg", False)),
+                        seed=getattr(request, "seed", None),
                     )
 
-                    product_nobg_bytes = await remove_background(product_bytes)
+                async with httpx.AsyncClient() as http_client:
+                    img_resp = await http_client.get(var_fal["image_url"], timeout=30.0)
+                    img_resp.raise_for_status()
+                    var_bytes = img_resp.content
 
-                    # 2. Composite the isolated product on top of the newly generated Imagen background
-                    image_bytes = await composite_product_on_background(
-                        product_nobg_bytes, image_bytes
+                if var_bytes:
+                    if getattr(request, "remove_product_bg", False) and getattr(
+                        request, "product_image_url", None
+                    ):
+                        from app.services.bg_removal_service import (
+                            composite_product_on_background,
+                        )
+                        var_bytes = await composite_product_on_background(
+                            product_nobg_bytes, var_bytes
+                        ) if 'product_nobg_bytes' in dir() else var_bytes
+
+                    from app.services.storage_service import upload_image_tracked
+                    if getattr(request, "brand_kit_id", None):
+                        var_bytes = await _apply_brand_kit_logo_if_exists(
+                            db, current_user.id, request.brand_kit_id, var_bytes
+                        )
+                    var_url = await upload_image_tracked(
+                        var_bytes,
+                        user_id=current_user.id,
+                        db=db,
+                        content_type="image/png"
+                        if not getattr(request, "remove_product_bg", False)
+                        else "image/jpeg",
+                        prefix="generated",
                     )
-                except Exception as comp_e:
-                    import logging
+                    generated_urls.append(var_url)
+            except Exception:
+                pass  # skip failed variation
 
-                    logging.exception(
-                        f"Failed product composite during generation, falling back to raw background: {str(comp_e)}"
-                    )
-                    # We fallback to the raw background image if compositing fails
+        if generated_urls:
+            # Patch variation_results with real URLs
+            try:
+                bundle = _json.loads(job.variation_results or "[]")
+                for i, item in enumerate(bundle):
+                    if i < len(generated_urls):
+                        item["result_url"] = generated_urls[i]
+                job.variation_results = _json.dumps(bundle)
+            except Exception:
+                pass
 
-            from app.services.storage_service import upload_image_tracked
-
-            if getattr(request, "brand_kit_id", None):
-                image_bytes = await _apply_brand_kit_logo_if_exists(
-                    db, current_user.id, request.brand_kit_id, image_bytes
-                )
-
-            result_url = await upload_image_tracked(
-                image_bytes,
-                user_id=current_user.id,
-                db=db,
-                content_type="image/png"
-                if not getattr(request, "remove_product_bg", False)
-                else "image/jpeg",
-                prefix="generated",
-            )
+            result_url = generated_urls[0]
             job.result_url = result_url
             job.file_size = len(image_bytes)
             job.status = "completed"

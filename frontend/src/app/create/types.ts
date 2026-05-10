@@ -15,6 +15,29 @@ export interface ParsedDesignData {
     suggested_colors?: string[];
     generated_image_url?: string;
     quantum_layout?: string;
+    variation_results?: VariationResult[];
+}
+
+export interface VariationResult {
+    set_num: number;
+    result_url: string | null;
+    composition: {
+        set_num: number;
+        ratio: string;
+        copy_space_side: string;
+        layout_name?: string;
+        validation_flags?: string[];
+    };
+    image_prompt_modifier: string;
+    layout_elements: {
+        role: string;
+        x: number;
+        y: number;
+        font_size?: number;
+        font_weight?: string;
+        text_align?: string;
+        outline?: boolean;
+    }[];
 }
 
 export interface BriefQuestion {

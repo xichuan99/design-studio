@@ -58,7 +58,7 @@ class DesignGenerationRequest(BaseModel):
         json_schema_extra={"example": ["#FF5733", "#1A1A2E"]},
     )
     num_variations: int = Field(
-        2, ge=1, le=4, description="Number of variations to generate"
+        3, ge=1, le=4, description="Number of variations to generate"
     )
     integrated_text: bool = Field(
         False,

@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from app.services.layout_validation import autocorrect_layout, validate_layout
-from app.services.placement_engine import select_and_place
+from app.services.placement_engine import get_compatible_sets, select_and_place
 
 
 LAYOUT_NAMES = {
@@ -15,24 +15,7 @@ LAYOUT_NAMES = {
 }
 
 
-def build_composition_contract(
-    *,
-    ratio: str,
-    has_headline: bool,
-    has_sub: bool,
-    has_cta: bool,
-    exclude_sets: list[int] | None = None,
-    text_length_headline: int = 0,
-) -> dict[str, Any]:
-    placement = select_and_place(
-        ratio,
-        has_headline,
-        has_sub,
-        has_cta,
-        exclude_sets=exclude_sets,
-        text_length_headline=text_length_headline,
-    )
-
+def _serialize_placement(placement) -> dict[str, Any]:
     layout_elements = [
         {
             "role": el.role,
@@ -80,3 +63,54 @@ def build_composition_contract(
         "image_prompt_modifier": placement.image_prompt_modifier,
         "layout_elements": layout_elements,
     }
+
+
+
+def build_composition_contract(
+    *,
+    ratio: str,
+    has_headline: bool,
+    has_sub: bool,
+    has_cta: bool,
+    exclude_sets: list[int] | None = None,
+    text_length_headline: int = 0,
+) -> dict[str, Any]:
+    placement = select_and_place(
+        ratio,
+        has_headline,
+        has_sub,
+        has_cta,
+        exclude_sets=exclude_sets,
+        text_length_headline=text_length_headline,
+    )
+    return _serialize_placement(placement)
+
+
+
+def build_composition_variations(
+    *,
+    ratio: str,
+    has_headline: bool,
+    has_sub: bool,
+    has_cta: bool,
+    num_variations: int = 3,
+    text_length_headline: int = 0,
+) -> list[dict[str, Any]]:
+    target = max(1, min(num_variations, len(get_compatible_sets(ratio))))
+    exclude_sets: list[int] = []
+    variations: list[dict[str, Any]] = []
+
+    for _ in range(target):
+        placement = select_and_place(
+            ratio,
+            has_headline,
+            has_sub,
+            has_cta,
+            exclude_sets=exclude_sets,
+            text_length_headline=text_length_headline,
+        )
+        variations.append(_serialize_placement(placement))
+        if placement.set_num not in exclude_sets:
+            exclude_sets.append(placement.set_num)
+
+    return variations
