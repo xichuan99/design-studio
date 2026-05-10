@@ -61,11 +61,12 @@ async def submit_testimonial(
     )
     existing = existing_result.scalar_one_or_none()
 
-    is_pending_update = existing is not None and existing.status == "pending"
+    updating_pending_submission = existing is not None and existing.status == "pending"
 
-    if is_pending_update:
+    if updating_pending_submission:
         item = existing
         _apply_testimonial_payload(item, payload)
+        item.reviewed_at = None
         item.reviewer_notes = None
     else:
         item = Testimonial(
@@ -77,17 +78,16 @@ async def submit_testimonial(
         )
         db.add(item)
 
-    if existing is not None and existing.status in {"approved", "rejected"}:
-        item.status = "pending"
-        item.reviewed_at = None
-        item.reviewer_notes = None
-
     await db.commit()
     await db.refresh(item)
 
     return TestimonialSubmitResponse(
         item=TestimonialResponseItem.model_validate(item),
-        is_update=is_pending_update,
-        message="Testimoni berhasil dikirim dan menunggu review."
+        is_update=updating_pending_submission,
+        message=(
+            "Perubahan testimoni berhasil disimpan dan menunggu review."
+            if updating_pending_submission
+            else "Testimoni berhasil dikirim dan menunggu review."
+        ),
     )
 

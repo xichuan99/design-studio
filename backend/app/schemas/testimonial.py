@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import List
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -16,7 +17,7 @@ class TestimonialCreateRequest(BaseModel):
 
 
 class TestimonialResponseItem(BaseModel):
-    id: str
+    id: UUID
     name: str
     role: str
     quote: str
@@ -27,7 +28,7 @@ class TestimonialResponseItem(BaseModel):
 
 
 class PublicTestimonialItem(BaseModel):
-    id: str
+    id: UUID
     name: str
     role: str
     quote: str

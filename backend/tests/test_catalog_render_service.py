@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import pytest
 
+from app.core.exceptions import InsufficientCreditsError
 from app.schemas.catalog import (
     CatalogPagePlan,
     CatalogRenderOptions,
@@ -218,6 +219,7 @@ async def test_start_catalog_render_job_creates_and_dispatches():
     user.credits_remaining = 100
 
     db = AsyncMock()
+    db.add = MagicMock()
 
     request = CatalogRenderStartRequest(
         final_plan=_make_finalize_plan(3),
@@ -226,14 +228,19 @@ async def test_start_catalog_render_job_creates_and_dispatches():
 
     with (
         patch("app.services.catalog_render_service.create_job", new=AsyncMock(return_value=(mock_job, True))),
-        patch("app.services.catalog_render_service.log_credit_change", new=AsyncMock()),
-        patch("app.services.catalog_render_service.asyncio.create_task") as mock_create_task,
+        patch("app.services.catalog_render_service.log_credit_change", new=AsyncMock()) as mock_credit,
+        patch(
+            "app.services.catalog_render_service.asyncio.create_task",
+            side_effect=lambda coro: coro.close(),
+        ) as mock_create_task,
     ):
         result = await start_catalog_render_job(db=db, current_user=user, request=request)
 
     assert result["job_id"] == str(mock_job.id)
     assert result["total_pages"] == 3
     assert result["status"] == "queued"
+    assert mock_job.payload_json["_charged_credits"] == 3
+    mock_credit.assert_awaited_once_with(db, user, -3, "Catalog render async: 3 pages")
     mock_create_task.assert_called_once()
 
 
@@ -255,6 +262,7 @@ async def test_start_catalog_render_job_reuses_existing_job():
     user.credits_remaining = 100
 
     db = AsyncMock()
+    db.add = MagicMock()
 
     request = CatalogRenderStartRequest(
         final_plan=_make_finalize_plan(3),
@@ -271,3 +279,75 @@ async def test_start_catalog_render_job_reuses_existing_job():
     mock_credit.assert_not_awaited()
     mock_task.assert_not_called()
     assert result["status"] == "processing"
+
+
+@pytest.mark.asyncio
+async def test_start_catalog_render_job_rejects_insufficient_credits_before_job_creation():
+    from uuid import uuid4
+
+    from app.services.catalog_render_service import start_catalog_render_job
+
+    user = MagicMock()
+    user.id = uuid4()
+    user.credits_remaining = 1
+
+    db = AsyncMock()
+    db.add = MagicMock()
+    request = CatalogRenderStartRequest(
+        final_plan=_make_finalize_plan(3),
+        options=CatalogRenderOptions(),
+    )
+
+    create_job_mock = AsyncMock()
+
+    with patch("app.services.catalog_render_service.create_job", new=create_job_mock):
+        with pytest.raises(InsufficientCreditsError, match="Insufficient credits"):
+            await start_catalog_render_job(db=db, current_user=user, request=request)
+
+    create_job_mock.assert_not_awaited()
+    db.commit.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_start_catalog_render_job_refunds_when_dispatch_fails():
+    from uuid import uuid4
+
+    from app.services.catalog_render_service import start_catalog_render_job
+
+    mock_job = MagicMock()
+    mock_job.id = uuid4()
+    mock_job.status = "queued"
+    mock_job.created_at = None
+    mock_job.payload_json = {}
+
+    user = MagicMock()
+    user.id = uuid4()
+    user.credits_remaining = 100
+
+    db = AsyncMock()
+    db.add = MagicMock()
+    request = CatalogRenderStartRequest(
+        final_plan=_make_finalize_plan(3),
+        options=CatalogRenderOptions(),
+    )
+
+    with (
+        patch("app.services.catalog_render_service.create_job", new=AsyncMock(return_value=(mock_job, True))),
+        patch("app.services.catalog_render_service.log_credit_change", new=AsyncMock()) as mock_credit,
+        patch(
+            "app.services.catalog_render_service.asyncio.create_task",
+            side_effect=RuntimeError("dispatch boom"),
+        ),
+    ):
+        with pytest.raises(RuntimeError, match="Gagal memulai render katalog"):
+            await start_catalog_render_job(db=db, current_user=user, request=request)
+
+    assert mock_job.status == "failed"
+    assert mock_job.error_message == "Gagal memulai render katalog."
+    assert mock_job.phase_message == "Render katalog gagal dimulai"
+    assert mock_job.payload_json["_charged_credits"] == 3
+    assert mock_job.payload_json["_refunded"] is True
+    assert mock_credit.await_args_list == [
+        call(db, user, -3, "Catalog render async: 3 pages"),
+        call(db, user, 3, "Refund: dispatch catalog render gagal"),
+    ]
