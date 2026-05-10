@@ -14,7 +14,7 @@ from app.core.config import settings
 from app.models.job import Job
 from app.services.llm_client import LLMRateLimitError
 from app.services.image_service import generate_background
-from app.services.llm_service import parse_design_text
+from app.services.llm_service import apply_copy_overrides, parse_design_text
 from app.services.preprocess import prepare_reference
 from app.services.storage_service import download_image, upload_image
 from app.workers.ai_tool_jobs_common import run_async as _run_async
@@ -55,6 +55,12 @@ async def _execute_pipeline(
     reference_focus: str = "auto",
     brand_colors: list | None = None,
     brand_typography: dict | None = None,
+    headline_override: str | None = None,
+    sub_headline_override: str | None = None,
+    cta_override: str | None = None,
+    product_name: str | None = None,
+    offer_text: str | None = None,
+    use_ai_copy_assist: bool = True,
     seed: str | None = None,
     charged_credits: int = 40,
     current_retry: int = 0,
@@ -83,6 +89,18 @@ async def _execute_pipeline(
                 integrated_text=integrated_text,
                 brand_colors=brand_colors,
                 brand_typography=brand_typography,
+                headline_override=headline_override,
+                sub_headline_override=sub_headline_override,
+                cta_override=cta_override,
+                product_name=product_name,
+                offer_text=offer_text,
+                use_ai_copy_assist=use_ai_copy_assist,
+            )
+            parsed = apply_copy_overrides(
+                parsed,
+                headline_override=headline_override,
+                sub_headline_override=sub_headline_override,
+                cta_override=cta_override,
             )
 
             if parsed.visual_prompt_parts:
@@ -221,6 +239,12 @@ def generate_design_task(self, *args, **kwargs):
         "integrated_text",
         "brand_colors",
         "brand_typography",
+        "headline_override",
+        "sub_headline_override",
+        "cta_override",
+        "product_name",
+        "offer_text",
+        "use_ai_copy_assist",
         "seed",
     ]
     payload = {name: value for name, value in zip(arg_names, args)}
@@ -235,6 +259,12 @@ def generate_design_task(self, *args, **kwargs):
     integrated_text = payload.get("integrated_text", False)
     brand_colors = payload.get("brand_colors")
     brand_typography = payload.get("brand_typography")
+    headline_override = payload.get("headline_override")
+    sub_headline_override = payload.get("sub_headline_override")
+    cta_override = payload.get("cta_override")
+    product_name = payload.get("product_name")
+    offer_text = payload.get("offer_text")
+    use_ai_copy_assist = payload.get("use_ai_copy_assist", True)
     seed = payload.get("seed")
     charged_credits = int(payload.get("charged_credits", 40))
 
@@ -250,6 +280,12 @@ def generate_design_task(self, *args, **kwargs):
                 reference_focus,
                 brand_colors,
                 brand_typography,
+                headline_override,
+                sub_headline_override,
+                cta_override,
+                product_name,
+                offer_text,
+                use_ai_copy_assist,
                 seed=seed,
                 charged_credits=charged_credits,
                 current_retry=task_ctx.request.retries,

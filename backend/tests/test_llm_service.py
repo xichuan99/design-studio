@@ -238,6 +238,30 @@ async def test_parse_design_text_uses_rules_a_and_rules_b_prompt_builder():
     assert "backend selects the final composition" in captured["system_instruction"].lower()
 
 
+@pytest.mark.asyncio
+async def test_parse_design_text_uses_manual_copy_overrides_as_source_of_truth():
+    payload = {
+        **_BASE,
+        "headline": "AI Generated Headline",
+        "sub_headline": "AI Generated Sub",
+        "cta": "AI Generated CTA",
+    }
+
+    with patch("asyncio.to_thread", new=AsyncMock(return_value=_fake_response(payload))):
+        result = await parse_design_text(
+            "Promo kopi susu kekinian",
+            headline_override="HEADLINE MANUAL",
+            sub_headline_override="SUB MANUAL",
+            cta_override="CTA MANUAL",
+        )
+
+    assert isinstance(result, ParsedTextElements)
+    assert result.headline == "HEADLINE MANUAL"
+    assert result.sub_headline == "SUB MANUAL"
+    assert result.cta == "CTA MANUAL"
+    assert result.visual_prompt == payload["visual_prompt"]
+
+
 # ---------------------------------------------------------------------------
 # modify_visual_prompt test
 # ---------------------------------------------------------------------------

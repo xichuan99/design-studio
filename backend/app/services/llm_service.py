@@ -13,6 +13,7 @@ from app.services.llm_prompts import (
 )
 
 from app.services.llm_design_service import (
+    apply_copy_overrides,
     generate_design_brief_questions,
     generate_unified_brief_questions,
     parse_design_text,
@@ -42,6 +43,7 @@ __all__ = [
     "generate_design_brief_questions",
     "generate_unified_brief_questions",
     "parse_design_text",
+    "apply_copy_overrides",
     "modify_visual_prompt",
     "generate_project_title",
     "generate_copywriting_questions",

@@ -73,6 +73,30 @@ class DesignGenerationRequest(BaseModel):
         description="User's answers to the clarification questions",
         json_schema_extra={"example": {"Target Audience": "Remaja"}},
     )
+    headline_override: Optional[str] = Field(
+        None,
+        description="Use this exact headline as the source of truth when provided.",
+    )
+    sub_headline_override: Optional[str] = Field(
+        None,
+        description="Use this exact sub-headline as the source of truth when provided.",
+    )
+    cta_override: Optional[str] = Field(
+        None,
+        description="Use this exact CTA as the source of truth when provided.",
+    )
+    product_name: Optional[str] = Field(
+        None,
+        description="Optional explicit product name to accompany the marketing brief.",
+    )
+    offer_text: Optional[str] = Field(
+        None,
+        description="Optional explicit offer text to accompany the marketing brief.",
+    )
+    use_ai_copy_assist: bool = Field(
+        True,
+        description="Whether AI may assist when explicit copy fields are incomplete.",
+    )
     brand_kit_id: Optional[str] = Field(
         None, description="Active Brand Kit ID to apply color palette"
     )

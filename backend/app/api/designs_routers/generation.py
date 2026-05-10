@@ -370,6 +370,12 @@ async def generate_design(
                 integrated_text=request.integrated_text,
                 brand_colors=brand_colors,
                 brand_typography=brand_typography,
+                headline_override=request.headline_override,
+                sub_headline_override=request.sub_headline_override,
+                cta_override=request.cta_override,
+                product_name=request.product_name,
+                offer_text=request.offer_text,
+                use_ai_copy_assist=request.use_ai_copy_assist,
                 seed=getattr(request, "seed", None),
                 charged_credits=total_charged,
             )
@@ -396,7 +402,7 @@ async def generate_design(
     logging.info("Using Fal/OpenRouter synchronous generation for image generation")
     try:
         from datetime import datetime, timezone
-        from app.services.llm_service import parse_design_text
+        from app.services.llm_service import apply_copy_overrides, parse_design_text
 
         # Parse text first (reuse existing logic)
         parsed = await parse_design_text(
@@ -404,6 +410,18 @@ async def generate_design(
             integrated_text=request.integrated_text,
             brand_colors=brand_colors,
             brand_typography=brand_typography,
+            headline_override=request.headline_override,
+            sub_headline_override=request.sub_headline_override,
+            cta_override=request.cta_override,
+            product_name=request.product_name,
+            offer_text=request.offer_text,
+            use_ai_copy_assist=request.use_ai_copy_assist,
+        )
+        parsed = apply_copy_overrides(
+            parsed,
+            headline_override=request.headline_override,
+            sub_headline_override=request.sub_headline_override,
+            cta_override=request.cta_override,
         )
 
         # Assemble visual prompt from parts if available (user might have edited/toggled them)

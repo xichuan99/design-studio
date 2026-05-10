@@ -101,6 +101,43 @@ def _normalize_parsed_text_payload(payload: object) -> dict:
     return normalized
 
 
+def _normalize_manual_copy_value(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+    cleaned = value.strip()
+    return cleaned or None
+
+
+def apply_copy_overrides(
+    parsed: ParsedTextElements,
+    headline_override: Optional[str] = None,
+    sub_headline_override: Optional[str] = None,
+    cta_override: Optional[str] = None,
+):
+    updates = {}
+
+    normalized_headline = _normalize_manual_copy_value(headline_override)
+    normalized_sub = _normalize_manual_copy_value(sub_headline_override)
+    normalized_cta = _normalize_manual_copy_value(cta_override)
+
+    if normalized_headline is not None:
+        updates["headline"] = normalized_headline
+    if normalized_sub is not None:
+        updates["sub_headline"] = normalized_sub
+    if normalized_cta is not None:
+        updates["cta"] = normalized_cta
+
+    if not updates:
+        return parsed
+
+    if hasattr(parsed, "model_copy"):
+        return parsed.model_copy(update=updates)
+
+    for key, value in updates.items():
+        setattr(parsed, key, value)
+    return parsed
+
+
 async def generate_design_brief_questions(raw_text: str) -> dict:
     """
     Generates clarifying questions based on the user's initial raw text.
@@ -356,6 +393,12 @@ async def parse_design_text(
     brand_colors: Optional[list[str]] = None,
     brand_typography: Optional[dict] = None,
     brand_memory_context: Optional[list[str]] = None,
+    headline_override: Optional[str] = None,
+    sub_headline_override: Optional[str] = None,
+    cta_override: Optional[str] = None,
+    product_name: Optional[str] = None,
+    offer_text: Optional[str] = None,
+    use_ai_copy_assist: bool = True,
 ) -> ParsedTextElements:
     """
     Parses raw text into structured design elements and a visual prompt.
@@ -394,7 +437,12 @@ async def parse_design_text(
             response = await asyncio.to_thread(lambda: None)
             try:
                 data = _normalize_parsed_text_payload(parse_llm_json(response.text))
-                return ParsedTextElements(**data)
+                return apply_copy_overrides(
+                    ParsedTextElements(**data),
+                    headline_override=headline_override,
+                    sub_headline_override=sub_headline_override,
+                    cta_override=cta_override,
+                )
             except Exception:
                 snippet = (
                     response.text[:200] + "..."
@@ -412,74 +460,79 @@ async def parse_design_text(
         )
         words = raw_text.split()
         headline = " ".join(words[:5]) if len(words) >= 5 else raw_text[:40]
-        return ParsedTextElements(
-            headline=headline.upper(),
-            sub_headline=" ".join(words[5:15])
-            if len(words) > 5
-            else "Penawaran spesial untuk Anda",
-            cta="Pesan Sekarang",
-            visual_prompt=f"Professional product photography, {raw_text[:60]}, vibrant colors, clean composition with copy space on the right side, modern aesthetic",
-            indonesian_translation=f"Fotografi produk profesional bertema '{raw_text[:40]}' dengan warna cerah, komposisi bersih, dan ruang kosong di sisi kanan untuk teks.",
-            visual_prompt_parts=[
-                {
-                    "category": "style",
-                    "label": "Gaya Visual",
-                    "value": "Professional product photography",
-                    "enabled": True,
+        return apply_copy_overrides(
+            ParsedTextElements(
+                headline=headline.upper(),
+                sub_headline=" ".join(words[5:15])
+                if len(words) > 5
+                else "Penawaran spesial untuk Anda",
+                cta="Pesan Sekarang",
+                visual_prompt=f"Professional product photography, {raw_text[:60]}, vibrant colors, clean composition with copy space on the right side, modern aesthetic",
+                indonesian_translation=f"Fotografi produk profesional bertema '{raw_text[:40]}' dengan warna cerah, komposisi bersih, dan ruang kosong di sisi kanan untuk teks.",
+                visual_prompt_parts=[
+                    {
+                        "category": "style",
+                        "label": "Gaya Visual",
+                        "value": "Professional product photography",
+                        "enabled": True,
+                    },
+                    {
+                        "category": "subject",
+                        "label": "Objek Utama",
+                        "value": raw_text[:60],
+                        "enabled": True,
+                    },
+                    {
+                        "category": "colors",
+                        "label": "Palet Warna",
+                        "value": "vibrant colors",
+                        "enabled": True,
+                    },
+                    {
+                        "category": "setting",
+                        "label": "Latar",
+                        "value": "clean composition with copy space on the right side",
+                        "enabled": True,
+                    },
+                    {
+                        "category": "extra",
+                        "label": "Estetika",
+                        "value": "modern aesthetic",
+                        "enabled": True,
+                    },
+                ],
+                suggested_colors=["#6C2BEE", "#F59E0B", "#10B981"],
+                headline_layout={
+                    "x": 0.7,
+                    "y": 0.3,
+                    "font_family": "Montserrat",
+                    "font_size": 72,
+                    "font_weight": 700,
+                    "color": "#FFFFFF",
+                    "align": "center",
                 },
-                {
-                    "category": "subject",
-                    "label": "Objek Utama",
-                    "value": raw_text[:60],
-                    "enabled": True,
+                sub_headline_layout={
+                    "x": 0.7,
+                    "y": 0.5,
+                    "font_family": "Inter",
+                    "font_size": 36,
+                    "font_weight": 400,
+                    "color": "#FFFFFF",
+                    "align": "center",
                 },
-                {
-                    "category": "colors",
-                    "label": "Palet Warna",
-                    "value": "vibrant colors",
-                    "enabled": True,
+                cta_layout={
+                    "x": 0.7,
+                    "y": 0.7,
+                    "font_family": "Inter",
+                    "font_size": 28,
+                    "font_weight": 700,
+                    "color": "#F59E0B",
+                    "align": "center",
                 },
-                {
-                    "category": "setting",
-                    "label": "Latar",
-                    "value": "clean composition with copy space on the right side",
-                    "enabled": True,
-                },
-                {
-                    "category": "extra",
-                    "label": "Estetika",
-                    "value": "modern aesthetic",
-                    "enabled": True,
-                },
-            ],
-            suggested_colors=["#6C2BEE", "#F59E0B", "#10B981"],
-            headline_layout={
-                "x": 0.7,
-                "y": 0.3,
-                "font_family": "Montserrat",
-                "font_size": 72,
-                "font_weight": 700,
-                "color": "#FFFFFF",
-                "align": "center",
-            },
-            sub_headline_layout={
-                "x": 0.7,
-                "y": 0.5,
-                "font_family": "Inter",
-                "font_size": 36,
-                "font_weight": 400,
-                "color": "#FFFFFF",
-                "align": "center",
-            },
-            cta_layout={
-                "x": 0.7,
-                "y": 0.7,
-                "font_family": "Inter",
-                "font_size": 28,
-                "font_weight": 700,
-                "color": "#F59E0B",
-                "align": "center",
-            },
+            ),
+            headline_override=headline_override,
+            sub_headline_override=sub_headline_override,
+            cta_override=cta_override,
         )
 
     # Initialize client lazily to prevent global collection crashes during testing
@@ -502,7 +555,12 @@ async def parse_design_text(
     # We parse the response text instead of using dynamic decoding structure, though the types are standard JSON
     try:
         data = _normalize_parsed_text_payload(parse_llm_json(response.text))
-        return ParsedTextElements(**data)
+        return apply_copy_overrides(
+            ParsedTextElements(**data),
+            headline_override=headline_override,
+            sub_headline_override=sub_headline_override,
+            cta_override=cta_override,
+        )
     except Exception as e:
         import logging
         snippet = response.text[:200] + "..." if len(response.text) > 200 else response.text

@@ -173,6 +173,65 @@ def test_generate_design_task_uses_retry_after_for_rate_limit(
 
 
 @pytest.mark.asyncio
+@patch("app.workers.design_generation._get_job_checkpoint", new_callable=AsyncMock)
+@patch("app.workers.design_generation._update_job_status", new_callable=AsyncMock)
+@patch("app.workers.design_generation.upload_image", new_callable=AsyncMock)
+@patch("app.workers.design_generation.download_image", new_callable=AsyncMock)
+@patch("app.workers.design_generation.generate_background", new_callable=AsyncMock)
+@patch("app.services.quantum_service.optimize_quantum_layout", new_callable=AsyncMock)
+@patch("app.workers.design_generation.parse_design_text", new_callable=AsyncMock)
+async def test_execute_pipeline_honors_manual_copy_overrides(
+    mock_parse_design_text,
+    mock_optimize_quantum_layout,
+    mock_generate_background,
+    mock_download_image,
+    mock_upload_image,
+    mock_update_job_status,
+    mock_get_job_checkpoint,
+):
+    mock_get_job_checkpoint.return_value = {}
+    mock_parse_design_text.return_value = SimpleNamespace(
+        headline="AI Headline",
+        sub_headline="AI Sub",
+        cta="AI CTA",
+        visual_prompt="prompt final",
+        visual_prompt_parts=None,
+    )
+    mock_optimize_quantum_layout.return_value = None
+    mock_generate_background.return_value = {
+        "image_url": "https://cdn.example.com/generated.jpg",
+        "content_type": "image/jpeg",
+    }
+    mock_download_image.return_value = b"abc123"
+    mock_upload_image.return_value = "https://cdn.example.com/permanent.jpg"
+
+    await _execute_pipeline(
+        job_id="job-override",
+        raw_text="Buat desain",
+        aspect_ratio="1:1",
+        style="auto",
+        reference_url=None,
+        integrated_text=False,
+        headline_override="HEADLINE MANUAL",
+        sub_headline_override="SUB MANUAL",
+        cta_override="CTA MANUAL",
+    )
+
+    assert mock_parse_design_text.await_args.kwargs["headline_override"] == "HEADLINE MANUAL"
+    assert mock_parse_design_text.await_args.kwargs["sub_headline_override"] == "SUB MANUAL"
+    assert mock_parse_design_text.await_args.kwargs["cta_override"] == "CTA MANUAL"
+    assert any(
+        call.kwargs.get("parsed_headline") == "HEADLINE MANUAL"
+        and call.kwargs.get("parsed_sub_headline") == "SUB MANUAL"
+        and call.kwargs.get("parsed_cta") == "CTA MANUAL"
+        for call in mock_update_job_status.await_args_list
+    )
+    mock_optimize_quantum_layout.assert_awaited_once_with(
+        "HEADLINE MANUAL", "SUB MANUAL", "CTA MANUAL", ratio="1:1"
+    )
+
+
+@pytest.mark.asyncio
 @patch("app.api.designs_routers.generation.httpx.AsyncClient")
 @patch("app.services.credit_service.log_credit_change", new_callable=AsyncMock)
 @patch("app.services.storage_service.upload_image_tracked", new_callable=AsyncMock)
@@ -235,6 +294,9 @@ async def test_generate_design_sync_passes_request_aspect_ratio_to_quantum_layou
         aspect_ratio="9:16",
         style_preference="bold",
         integrated_text=False,
+        headline_override="HEADLINE MANUAL",
+        sub_headline_override="SUB MANUAL",
+        cta_override="CTA MANUAL",
     )
 
     response = await generate_design(request=request, db=mock_db, current_user=user)
@@ -242,12 +304,18 @@ async def test_generate_design_sync_passes_request_aspect_ratio_to_quantum_layou
     assert response["status"] == "completed"
     assert created_jobs, "expected a Job instance to be added to the session"
     assert created_jobs[0].aspect_ratio == "9:16"
+    assert created_jobs[0].parsed_headline == "HEADLINE MANUAL"
+    assert created_jobs[0].parsed_sub_headline == "SUB MANUAL"
+    assert created_jobs[0].parsed_cta == "CTA MANUAL"
     assert created_jobs[0].variation_results is not None
     assert '"set_num": 4' in created_jobs[0].variation_results
     assert '"ratio": "9:16"' in created_jobs[0].variation_results
+    assert mock_parse_design_text.await_args.kwargs["headline_override"] == "HEADLINE MANUAL"
+    assert mock_parse_design_text.await_args.kwargs["sub_headline_override"] == "SUB MANUAL"
+    assert mock_parse_design_text.await_args.kwargs["cta_override"] == "CTA MANUAL"
     mock_log_credit_change.assert_awaited()
     mock_optimize_quantum_layout.assert_awaited_once_with(
-        "Headline", "Sub", "CTA", ratio="9:16"
+        "HEADLINE MANUAL", "SUB MANUAL", "CTA MANUAL", ratio="9:16"
     )
 
 
