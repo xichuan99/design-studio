@@ -565,6 +565,21 @@ async def generate_design(
             img_resp.raise_for_status()
             image_bytes = img_resp.content
 
+        # Pre-process product image for bg removal (once before loop)
+        product_nobg_bytes = None
+        if getattr(request, "remove_product_bg", False) and getattr(
+            request, "product_image_url", None
+        ):
+            try:
+                async with httpx.AsyncClient() as http_client:
+                    product_resp = await http_client.get(request.product_image_url)
+                    product_resp.raise_for_status()
+                    product_bytes = product_resp.content
+                from app.services.bg_removal_service import remove_background
+                product_nobg_bytes = await remove_background(product_bytes)
+            except Exception:
+                pass
+
         # --- Sequential multi-image generation ---
         generated_urls: list[str] = []
         for var_idx in range(num_variations):

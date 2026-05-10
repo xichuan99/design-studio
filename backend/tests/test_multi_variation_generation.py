@@ -1,7 +1,6 @@
 """Tests for multi-variation generation."""
 import json
-from unittest.mock import AsyncMock, MagicMock, patch
-from uuid import uuid4
+from unittest.mock import patch
 
 import pytest
 

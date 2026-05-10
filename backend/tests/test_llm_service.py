@@ -13,7 +13,7 @@ from app.services.llm_service import (
     modify_visual_prompt,
     parse_design_text,
 )
-from app.services.pipeline_prompt_builder import build_final_prompt, build_rules_a, build_rules_b
+from app.services.pipeline_prompt_builder import build_rules_a, build_rules_b
 from app.schemas.design import ParsedTextElements
 
 
