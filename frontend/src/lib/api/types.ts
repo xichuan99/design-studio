@@ -406,6 +406,22 @@ export interface AITextLayout {
     align: string;
 }
 
+export interface CompositionMetadata {
+    set_num: number;
+    ratio: string;
+    copy_space_side: string;
+    layout_name?: string | null;
+    validation_flags: string[];
+}
+
+export interface GeneratedVariation {
+    set_num: number;
+    composition: CompositionMetadata;
+    image_prompt_modifier?: string | null;
+    layout_elements: Array<Record<string, unknown>>;
+    result_url?: string | null;
+}
+
 export interface ParsedTextElements {
     headline: string;
     sub_headline?: string;
@@ -815,6 +831,22 @@ export interface DesignGenerationResponse {
     credits_used: number;
     credits_remaining: number;
     generation_time_ms?: number;
+}
+
+export interface DesignJobStatusResponse {
+    job_id: string;
+    status: string;
+    created_at?: string | null;
+    result_url?: string | null;
+    headline?: string | null;
+    sub_headline?: string | null;
+    cta?: string | null;
+    visual_prompt?: string | null;
+    quantum_layout?: string | null;
+    variation_results?: string | null;
+    seed?: string | null;
+    completed_at?: string | null;
+    error_message?: string | null;
 }
 
 export interface AiGeneration {

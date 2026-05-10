@@ -9,6 +9,8 @@ import json
 import logging
 from typing import Optional
 
+from app.services.composition_contract import build_composition_contract
+
 
 async def optimize_quantum_layout(
     parsed_headline: Optional[str],
@@ -43,9 +45,7 @@ async def optimize_quantum_layout(
         return None
 
     try:
-        from app.services.placement_engine import select_and_place
-
-        placement = select_and_place(
+        contract = build_composition_contract(
             ratio=ratio,
             has_headline=has_headline,
             has_sub=has_sub,
@@ -57,23 +57,26 @@ async def optimize_quantum_layout(
         el_width = int(canvas_size * 0.8)  # matches templateEngine elWidth
 
         variation: list[dict] = []
-        for el in placement.layouts:
+        for el in contract["layout_elements"]:
             # Convert proportional → pixel, adjusting for alignment so
             # templateEngine receives a ready-to-use left-edge x coordinate.
-            x_center_px = el.x * canvas_size
-            if el.text_align == "center":
+            x_center_px = el["x"] * canvas_size
+            if el["text_align"] == "center":
                 x_px = int(x_center_px - el_width / 2)
-            elif el.text_align == "right":
+            elif el["text_align"] == "right":
                 x_px = int(x_center_px - el_width)
             else:  # "left"
                 x_px = int(x_center_px)
 
-            y_px = int(el.y * canvas_size)
-            variation.append({"role": el.role, "x": x_px, "y": y_px})
+            y_px = int(el["y"] * canvas_size)
+            variation.append({"role": el["role"], "x": x_px, "y": y_px})
 
         result = {
             "variations": [variation],
-            "image_prompt_modifier": placement.image_prompt_modifier,
+            "image_prompt_modifier": contract["image_prompt_modifier"],
+            "composition": contract["composition"],
+            "selected_set": contract["set_num"],
+            "copy_space_side": contract["composition"]["copy_space_side"],
         }
         return json.dumps(result)
 

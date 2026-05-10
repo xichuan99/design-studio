@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from app.api.designs_routers.generation import generate_design
+from app.api.designs_routers.jobs import get_job_status
 from app.schemas.design import DesignGenerationRequest
 from app.services.llm_client import LLMRateLimitError
 from app.workers.design_generation import _execute_pipeline, generate_design_task
@@ -194,7 +195,13 @@ async def test_generate_design_sync_passes_request_aspect_ratio_to_quantum_layou
         visual_prompt_parts=None,
     )
     mock_parse_design_text.return_value = parsed
-    mock_optimize_quantum_layout.return_value = None
+    mock_optimize_quantum_layout.return_value = (
+        '{"variations": [[{"role": "headline", "x": 123, "y": 150}]], '
+        '"image_prompt_modifier": "copy space left", '
+        '"composition": {"set_num": 4, "ratio": "9:16", "copy_space_side": "top_bottom", "layout_name": "Center Drama", "validation_flags": []}, '
+        '"selected_set": 4, '
+        '"copy_space_side": "top_bottom"}'
+    )
     mock_generate_background.return_value = {
         "image_url": "https://cdn.example.com/generated.jpg",
         "content_type": "image/jpeg",
@@ -235,7 +242,43 @@ async def test_generate_design_sync_passes_request_aspect_ratio_to_quantum_layou
     assert response["status"] == "completed"
     assert created_jobs, "expected a Job instance to be added to the session"
     assert created_jobs[0].aspect_ratio == "9:16"
+    assert created_jobs[0].variation_results is not None
+    assert '"set_num": 4' in created_jobs[0].variation_results
+    assert '"ratio": "9:16"' in created_jobs[0].variation_results
     mock_log_credit_change.assert_awaited()
     mock_optimize_quantum_layout.assert_awaited_once_with(
         "Headline", "Sub", "CTA", ratio="9:16"
     )
+
+
+@pytest.mark.asyncio
+async def test_get_job_status_exposes_variation_results_when_completed():
+    user_id = uuid4()
+    job_id = uuid4()
+    mock_job = SimpleNamespace(
+        id=job_id,
+        user_id=user_id,
+        status="completed",
+        created_at=None,
+        result_url="https://cdn.example.com/generated.png",
+        parsed_headline="Headline",
+        parsed_sub_headline="Sub",
+        parsed_cta="CTA",
+        visual_prompt="prompt final",
+        quantum_layout='{"variations": [[{"role": "headline", "x": 123, "y": 150}]], "image_prompt_modifier": "copy space left", "composition": {"set_num": 1, "ratio": "1:1", "copy_space_side": "left", "layout_name": "Panel Kiri", "validation_flags": []}, "selected_set": 1, "copy_space_side": "left"}',
+        variation_results='[{"set_num": 1, "result_url": "https://cdn.example.com/generated.png", "composition": {"set_num": 1, "ratio": "1:1", "copy_space_side": "left", "layout_name": "Panel Kiri", "validation_flags": []}, "image_prompt_modifier": "copy space left", "layout_elements": [{"role": "headline", "x": 123, "y": 150}]}]',
+        seed="seed-1",
+        completed_at=None,
+        error_message=None,
+    )
+    exec_result = MagicMock()
+    exec_result.scalar_one_or_none.return_value = mock_job
+    mock_db = AsyncMock()
+    mock_db.execute.return_value = exec_result
+    current_user = SimpleNamespace(id=user_id)
+
+    response = await get_job_status(str(job_id), db=mock_db, current_user=current_user)
+
+    assert response["status"] == "completed"
+    assert response["variation_results"] == mock_job.variation_results
+    assert response["quantum_layout"] == mock_job.quantum_layout

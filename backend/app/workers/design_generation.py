@@ -40,6 +40,7 @@ async def _get_job_checkpoint(job_id: str) -> dict:
             "parsed_cta": job_record.parsed_cta,
             "visual_prompt": job_record.visual_prompt,
             "quantum_layout": job_record.quantum_layout,
+            "variation_results": job_record.variation_results,
             "result_url": job_record.result_url,
         }
 
@@ -112,14 +113,31 @@ async def _execute_pipeline(
                 parsed_headline, parsed_sub_headline, parsed_cta, ratio=aspect_ratio
             )
             if quantum_layout:
+                import json as _json
+
+                variation_results = None
                 await _update_job_status(job_id, quantum_layout=quantum_layout)
                 try:
                     ql_data = _json.loads(quantum_layout)
                     modifier = ql_data.get("image_prompt_modifier")
                     if modifier:
                         visual_prompt_final = f"{visual_prompt_final} {modifier}"
+                    if ql_data.get("composition"):
+                        variation_results = _json.dumps(
+                            [
+                                {
+                                    "set_num": ql_data.get("selected_set") or ql_data["composition"].get("set_num"),
+                                    "result_url": None,
+                                    "composition": ql_data["composition"],
+                                    "image_prompt_modifier": ql_data.get("image_prompt_modifier"),
+                                    "layout_elements": (ql_data.get("variations") or [[]])[0],
+                                }
+                            ]
+                        )
                 except Exception:
-                    pass
+                    variation_results = None
+                if variation_results:
+                    await _update_job_status(job_id, variation_results=variation_results)
 
         upload_ref_url = reference_url
         if reference_url:

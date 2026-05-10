@@ -1,6 +1,7 @@
 """Unit tests for backend/app/services/placement_engine.py."""
 import pytest
 
+from app.services.composition_contract import build_composition_contract
 from app.services.placement_engine import (
     CompositionResult,
     get_compatible_sets,
@@ -251,3 +252,23 @@ class TestElementLayout:
         els = {el.role: el for el in r.layouts}
         if "headline" in els and "sub_headline" in els:
             assert els["headline"].font_size > els["sub_headline"].font_size
+
+
+class TestCompositionContract:
+    def test_build_contract_contains_explicit_composition_metadata(self):
+        contract = build_composition_contract(
+            ratio="16:9",
+            has_headline=True,
+            has_sub=True,
+            has_cta=True,
+        )
+
+        assert contract["set_num"] in {1, 2, 5}
+        assert contract["composition"]["set_num"] == contract["set_num"]
+        assert contract["composition"]["ratio"] == "16:9"
+        assert contract["composition"]["copy_space_side"] in {"left", "right", "diagonal"}
+        assert contract["composition"]["layout_name"]
+        assert isinstance(contract["composition"]["validation_flags"], list)
+        assert contract["image_prompt_modifier"]
+        assert isinstance(contract["layout_elements"], list)
+        assert contract["layout_elements"]

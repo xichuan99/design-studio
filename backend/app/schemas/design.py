@@ -491,6 +491,38 @@ class ParsedTextElements(BaseModel):
     )
 
 
+class CompositionMetadata(BaseModel):
+    set_num: int
+    ratio: str
+    copy_space_side: str
+    layout_name: Optional[str] = None
+    validation_flags: List[str] = Field(default_factory=list)
+
+
+class GeneratedVariation(BaseModel):
+    set_num: int
+    composition: CompositionMetadata
+    image_prompt_modifier: Optional[str] = None
+    layout_elements: List[dict] = Field(default_factory=list)
+    result_url: Optional[str] = None
+
+
+class JobStatusResponse(BaseModel):
+    job_id: str
+    status: str
+    created_at: Optional[str] = None
+    result_url: Optional[str] = None
+    headline: Optional[str] = None
+    sub_headline: Optional[str] = None
+    cta: Optional[str] = None
+    visual_prompt: Optional[str] = None
+    quantum_layout: Optional[str] = None
+    variation_results: Optional[str] = None
+    seed: Optional[str] = None
+    completed_at: Optional[str] = None
+    error_message: Optional[str] = None
+
+
 class ModifyPromptRequest(BaseModel):
     original_prompt_parts: List[VisualPromptPart] = Field(
         ..., description="List of original prompt parts"

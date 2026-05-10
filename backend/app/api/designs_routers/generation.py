@@ -440,6 +440,18 @@ async def generate_design(
                     modifier = ql_data.get("image_prompt_modifier")
                     if modifier:
                         visual_prompt_final = f"{visual_prompt_final} {modifier}"
+                    if ql_data.get("composition"):
+                        job.variation_results = _json.dumps(
+                            [
+                                {
+                                    "set_num": ql_data.get("selected_set") or ql_data["composition"].get("set_num"),
+                                    "result_url": None,
+                                    "composition": ql_data["composition"],
+                                    "image_prompt_modifier": ql_data.get("image_prompt_modifier"),
+                                    "layout_elements": (ql_data.get("variations") or [[]])[0],
+                                }
+                            ]
+                        )
                 except Exception:
                     pass
 

@@ -153,7 +153,7 @@ export function useAiToolsEndpoints() {
             return res.json(); // returns { url: string }
         }, [API_BASE_URL, getHeaders]);
 
-    const getJobStatus = useCallback(async (jobId: string) => {
+    const getJobStatus = useCallback(async (jobId: string): Promise<Types.DesignJobStatusResponse> => {
             const res = await fetch(`${API_BASE_URL}/designs/jobs/${jobId}`, {
                 headers: getHeaders(),
             });

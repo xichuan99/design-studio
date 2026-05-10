@@ -48,6 +48,7 @@ class Job(Base):
     parsed_cta = Column(Text, nullable=True)
     visual_prompt = Column(Text, nullable=True)
     quantum_layout = Column(Text, nullable=True)
+    variation_results = Column(Text, nullable=True)
 
     error_message = Column(Text, nullable=True)
 
