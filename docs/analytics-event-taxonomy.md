@@ -28,4 +28,4 @@ Canonical frontend events are typed in `frontend/src/lib/analytics/events.ts`. U
 
 - Keep existing feature-specific events when useful for local diagnostics, but add the canonical funnel event when the action maps to acquisition, activation, monetization, retention, or feedback.
 - `first_*` events should be emitted once per browser profile using local storage until backend lifecycle analytics are available.
-- `credits_consumed` should move to backend or an `ai_usage_events` table once cost/provider attribution is implemented.
+- `credits_consumed` can remain as a lightweight client funnel event, but authoritative provider/model/cost attribution now lives in backend `ai_usage_events`.

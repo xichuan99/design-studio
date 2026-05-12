@@ -2,6 +2,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    ENVIRONMENT: str = "development"
+    REQUIRE_PRODUCTION_SECRETS: bool = False
+
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://dev:devpass@localhost:5433/designstudio"
 
@@ -58,3 +61,47 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+
+def missing_required_runtime_settings(config: Settings = settings) -> list[str]:
+    """Return required settings missing for staging/production runtime."""
+    environment = (config.ENVIRONMENT or "").strip().lower()
+    strict_runtime = config.REQUIRE_PRODUCTION_SECRETS or environment in {
+        "production",
+        "staging",
+    }
+    if not strict_runtime:
+        return []
+
+    required = {
+        "DATABASE_URL": config.DATABASE_URL,
+        "REDIS_URL": config.REDIS_URL,
+        "NEXTAUTH_SECRET": config.NEXTAUTH_SECRET,
+        "FAL_KEY": config.FAL_KEY,
+        "OPENROUTER_API_KEY": config.OPENROUTER_API_KEY,
+        "S3_ENDPOINT": config.S3_ENDPOINT,
+        "S3_BUCKET": config.S3_BUCKET,
+        "S3_ACCESS_KEY": config.S3_ACCESS_KEY,
+        "S3_SECRET_KEY": config.S3_SECRET_KEY,
+        "S3_PUBLIC_URL": config.S3_PUBLIC_URL,
+        "INTERNAL_METRICS_TOKEN": config.INTERNAL_METRICS_TOKEN,
+    }
+    if config.STORAGE_PAYMENT_ENABLED:
+        required.update(
+            {
+                "MIDTRANS_SERVER_KEY": config.MIDTRANS_SERVER_KEY,
+                "STORAGE_WEBHOOK_SECRET": config.STORAGE_WEBHOOK_SECRET,
+                "STORAGE_CHECKOUT_URL_BASE": config.STORAGE_CHECKOUT_URL_BASE,
+            }
+        )
+
+    return [name for name, value in required.items() if not str(value or "").strip()]
+
+
+def validate_required_runtime_settings(config: Settings = settings) -> None:
+    missing = missing_required_runtime_settings(config)
+    if missing:
+        raise RuntimeError(
+            "Missing required runtime settings for staging/production: "
+            + ", ".join(sorted(missing))
+        )

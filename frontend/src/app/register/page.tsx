@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { GOOGLE_OAUTH_ENABLED } from "@/lib/feature-flags";
 import { trackEvent } from "@/lib/analytics/events";
+import { PublicLegalLinks } from "@/components/legal/PublicLegalLinks";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
@@ -214,6 +215,11 @@ export default function RegisterPage() {
                         Masuk di sini
                     </Link>
                 </p>
+
+                <div className="mt-8 flex flex-col items-center gap-3 text-sm text-slate-500">
+                    <PublicLegalLinks className="justify-center gap-4 text-xs" linkClassName="hover:text-white" />
+                    <p>© 2026 SmartDesign Studio</p>
+                </div>
             </div>
         </div>
     );

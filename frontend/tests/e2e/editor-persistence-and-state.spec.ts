@@ -36,9 +36,9 @@ test.describe('Editor Persistence And State', () => {
     await expect(page.getByText(/Tersimpan/i)).toBeVisible({ timeout: 10000 });
 
     await page.goto('/projects');
-    await expect(page.getByRole('heading', { name: /Semua Desain/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Library|Semua Desain/i })).toBeVisible();
 
-    const searchInput = page.getByPlaceholder('Cari desain...');
+    const searchInput = page.getByPlaceholder(/Cari (desain|proyek)\.\.\./i);
     await searchInput.fill(renamedTitle);
     await expect(page.getByText(renamedTitle).first()).toBeVisible({ timeout: 10000 });
 

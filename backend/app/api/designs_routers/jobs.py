@@ -1,16 +1,39 @@
 from app.core.exceptions import NotFoundError, ValidationError
 from app.schemas.error import ERROR_RESPONSES
 from fastapi import APIRouter, Depends, Query, status
+from pydantic import BaseModel, Field
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import desc
 from app.core.database import get_db
 from app.models.job import Job
+from app.models.project import Project
 from app.api.deps import get_current_user
 from app.models.user import User
 
 router = APIRouter(tags=["Designs - Jobs"])
+
+
+class ExportFeedbackRequest(BaseModel):
+    design_id: Optional[str] = None
+    job_id: Optional[str] = None
+    rating: int = Field(ge=1, le=5)
+    helpful: Optional[bool] = None
+    note: Optional[str] = Field(default=None, max_length=1000)
+    export_format: Optional[str] = Field(default=None, max_length=20)
+    source: str = Field(default="export", max_length=40)
+
+
+def _uuid_or_none(value: Optional[str], field_name: str):
+    if not value:
+        return None
+    try:
+        import uuid
+
+        return uuid.UUID(value)
+    except ValueError:
+        raise ValidationError(detail=f"Invalid {field_name} format")
 
 
 @router.get(
@@ -118,6 +141,65 @@ async def get_job_status(
         response["error_message"] = job.error_message
 
     return response
+
+
+@router.post(
+    "/export-feedback",
+    response_model=dict,
+    status_code=status.HTTP_201_CREATED,
+    summary="Capture Export Feedback",
+    description="Records lightweight feedback after a user exports a design.",
+    responses=ERROR_RESPONSES,
+)
+async def create_export_feedback(
+    request: ExportFeedbackRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Capture the post-export "hasil ini membantu?" signal for beta review."""
+    design_uuid = _uuid_or_none(request.design_id, "design_id")
+    job_uuid = _uuid_or_none(request.job_id, "job_id")
+
+    if design_uuid:
+        result = await db.execute(
+            select(Project.id).where(
+                Project.id == design_uuid,
+                Project.user_id == current_user.id,
+            )
+        )
+        if result.scalar_one_or_none() is None:
+            raise NotFoundError(detail="Design not found")
+
+    if job_uuid:
+        result = await db.execute(
+            select(Job.id).where(
+                Job.id == job_uuid,
+                Job.user_id == current_user.id,
+            )
+        )
+        if result.scalar_one_or_none() is None:
+            raise NotFoundError(detail="Job not found")
+
+    from app.models.design_feedback import DesignFeedback
+
+    feedback = DesignFeedback(
+        user_id=current_user.id,
+        design_id=design_uuid,
+        job_id=job_uuid,
+        source=request.source or "export",
+        rating=request.rating,
+        helpful=request.helpful,
+        note=request.note.strip() if request.note else None,
+        export_format=(request.export_format or "").strip().lower() or None,
+    )
+    db.add(feedback)
+    await db.commit()
+    await db.refresh(feedback)
+
+    return {
+        "id": str(feedback.id),
+        "status": "recorded",
+    }
 
 
 @router.delete(

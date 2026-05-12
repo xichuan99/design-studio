@@ -1,28 +1,21 @@
 import { test, expect } from '@playwright/test';
+import { loginAsDemoUser } from './utils/auth';
 
-async function mockAuthenticatedSession(page: import('@playwright/test').Page) {
-  await page.route('**/api/auth/session', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        user: {
-          name: 'Demo User',
-          email: 'demo@example.com',
-          image: null,
-        },
-        expires: '2099-01-01T00:00:00.000Z',
-        accessToken: 'mock-token',
-      }),
-    });
-  });
+async function continueIfAuthInterstitial(page: import('@playwright/test').Page) {
+  const continueLink = page.getByRole('link', { name: /Lanjutkan/i });
+  const visibleContinueLink = continueLink.first();
+  if (await visibleContinueLink.waitFor({ state: 'visible', timeout: 15000 }).then(() => true).catch(() => false)) {
+    await visibleContinueLink.click();
+    await page.waitForLoadState('domcontentloaded');
+  }
 }
 
 const SEEDED_PREVIEW_IMAGE = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024"><rect width="1024" height="1024" fill="%23f3f4f6"/><circle cx="512" cy="430" r="180" fill="%23f59e0b"/><rect x="280" y="650" width="464" height="140" rx="28" fill="%23111827"/></svg>';
 
 test.describe('Create Preview Handoff', () => {
+  test.describe.configure({ mode: 'serial' });
   test.beforeEach(async ({ page }) => {
-    await mockAuthenticatedSession(page);
+    await loginAsDemoUser(page);
   });
 
   test('restores manual copy overrides in legacy create sidebar', async ({ page, isMobile }) => {
@@ -36,6 +29,7 @@ test.describe('Create Preview Handoff', () => {
     const manualOffer = 'Gratis ongkir seluruh Indonesia';
 
     await page.goto('/create?legacy=1');
+    await continueIfAuthInterstitial(page);
     await page.evaluate(
       ({ manualHeadline, manualSubHeadline, manualCta, manualProductName, manualOffer }) => {
         localStorage.setItem(
@@ -111,6 +105,7 @@ test.describe('Create Preview Handoff', () => {
     });
 
     await page.goto('/create?legacy=1');
+    await continueIfAuthInterstitial(page);
     await page.evaluate((seededPreviewImage) => {
       localStorage.setItem(
         'smartdesign_create_state',

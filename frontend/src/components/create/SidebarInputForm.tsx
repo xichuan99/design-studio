@@ -265,7 +265,7 @@ export function SidebarInputForm() {
                     <div className="space-y-1">
                         <label className="text-sm font-semibold text-foreground">Copy final (opsional)</label>
                         <p className="text-xs leading-relaxed text-muted-foreground">
-                            Isi jika lo sudah punya headline/sub-headline/CTA final. Warning di bawah hanya saran layout, bukan blocker.
+                            Isi jika Kamu sudah punya headline/sub-headline/CTA final. Peringatan di bawah hanya saran layout, bukan blocker.
                         </p>
                     </div>
 

@@ -14,6 +14,7 @@ from app.models.ai_usage_event import AiUsageEvent
 
 
 TERMINAL_USAGE_STATUSES = {"succeeded", "failed", "refunded", "canceled"}
+REFUNDED_USAGE_STATUSES = {"refunded", "canceled"}
 
 
 def _decimal_or_none(value: Decimal | float | int | str | None) -> Decimal | None:
@@ -139,6 +140,19 @@ async def update_usage_for_job(
 ) -> AiUsageEvent | None:
     event = await get_usage_event_for_job(db, job_id=job_id, ai_tool_job_id=ai_tool_job_id)
     return await update_ai_usage_event(db, event, **updates)
+
+
+async def is_usage_refunded(
+    db: AsyncSession,
+    *,
+    job_id: UUID | str | None = None,
+    ai_tool_job_id: UUID | str | None = None,
+) -> bool:
+    """Return whether the AI usage ledger already has a terminal refund marker."""
+    event = await get_usage_event_for_job(db, job_id=job_id, ai_tool_job_id=ai_tool_job_id)
+    if event is None:
+        return False
+    return bool(event.refund_transaction_id or event.status in REFUNDED_USAGE_STATUSES)
 
 
 async def mark_ai_tool_usage_from_status(

@@ -33,7 +33,7 @@ const STYLE_PRESETS = [
 ];
 
 export const AIPromptPanel: React.FC = () => {
-    const { setBackgroundUrl, addElement } = useCanvasStore();
+    const { setBackgroundUrl, addElement, setLastJobId } = useCanvasStore();
     const { generateDesign, getJobStatus, getBrandKits, getTemplates, uploadImage, getMyGenerations, upscaleImage, removeBackground } = useProjectApi();
 
     const [activeTab, setActiveTab] = useState("generate");
@@ -94,6 +94,7 @@ export const AIPromptPanel: React.FC = () => {
     const [isGenerating, setIsGenerating] = useState(false);
     const [isProcessingImage, setIsProcessingImage] = useState(false);
     const [generatedUrl, setGeneratedUrl] = useState<string | null>(null);
+    const [generatedJobId, setGeneratedJobId] = useState<string | null>(null);
 
     const [aspectRatio, setAspectRatio] = useState('1:1');
     const [style, setStyle] = useState('auto');
@@ -119,6 +120,7 @@ export const AIPromptPanel: React.FC = () => {
         setIsGenerating(true);
         setInlineError(null);
         setGeneratedUrl(null);
+        setGeneratedJobId(null);
 
         try {
             // Step 1: Start generation job via existing API
@@ -134,6 +136,7 @@ export const AIPromptPanel: React.FC = () => {
                 seed: seed ? seed : undefined,
             });
             const jobId = jobData.job_id;
+            setGeneratedJobId(jobId);
 
             // Step 2: If already completed synchronously (Gemini path)
             if (jobData.status === 'completed') {
@@ -171,6 +174,7 @@ export const AIPromptPanel: React.FC = () => {
             }
         } catch (err: unknown) {
             console.error('Generation error:', err);
+            setGeneratedJobId(null);
             const msg = err instanceof Error ? err.message : 'Terjadi kesalahan saat generate';
             
             if (msg.toLowerCase().includes("pelanggaran") || msg.toLowerCase().includes("safety") || msg.toLowerCase().includes("nsfw")) {
@@ -216,8 +220,12 @@ export const AIPromptPanel: React.FC = () => {
 
     const handleSetAsBackground = () => {
         if (!generatedUrl) return;
+        if (generatedJobId) {
+            setLastJobId(generatedJobId);
+        }
         setBackgroundUrl(generatedUrl);
         setGeneratedUrl(null);
+        setGeneratedJobId(null);
         setPrompt('');
     };
 
@@ -256,7 +264,11 @@ export const AIPromptPanel: React.FC = () => {
             rotation: 0,
             label: 'Visual AI',
         });
+        if (generatedJobId) {
+            setLastJobId(generatedJobId);
+        }
         setGeneratedUrl(null);
+        setGeneratedJobId(null);
         setPrompt('');
     };
 
@@ -266,6 +278,7 @@ export const AIPromptPanel: React.FC = () => {
 
     const handleDiscard = () => {
         setGeneratedUrl(null);
+        setGeneratedJobId(null);
         setInlineError(null);
     };
 
@@ -727,6 +740,7 @@ export const AIPromptPanel: React.FC = () => {
                                             }}>Pakai Prompt & Seed</Button>
                                             <Button size="sm" variant="default" className="w-full text-[10px] h-7" onClick={() => {
                                                 setBackgroundUrl(item.result_url);
+                                                setLastJobId(item.id);
                                             }}>Jadikan BG</Button>
                                         </div>
                                     </div>

@@ -1,5 +1,7 @@
 import { Brush, Gift, Mail, ArrowRight, CheckCircle2 } from "lucide-react";
 
+import { PublicLegalLinks } from "@/components/legal/PublicLegalLinks";
+
 interface WaitlistResult {
   position: number;
   is_new: boolean;
@@ -130,10 +132,7 @@ export function LandingFooter({
 
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 pt-8 border-t border-white/10 text-slate-500 text-sm px-4">
         <p>© 2026 SmartDesign Studio. Seluruh hak cipta dilindungi.</p>
-        <div className="flex gap-6">
-          <a className="hover:text-white transition-colors" href="#">Syarat & Ketentuan</a>
-          <a className="hover:text-white transition-colors" href="#">Kebijakan Privasi</a>
-        </div>
+        <PublicLegalLinks className="gap-6" linkClassName="text-slate-500 hover:text-white" />
       </div>
     </footer>
   );

@@ -60,9 +60,11 @@ def test_operator_summary_returns_paid_beta_snapshot(monkeypatch):
             patch("app.api.internal_metrics._count_by_status", new_callable=AsyncMock) as count_by_status,
             patch("app.api.internal_metrics._ai_usage_by_operation", new_callable=AsyncMock) as by_operation,
             patch("app.api.internal_metrics._recent_failures", new_callable=AsyncMock) as recent_failures,
+            patch("app.api.internal_metrics._recent_feedback", new_callable=AsyncMock) as recent_feedback,
+            patch("app.api.internal_metrics._weekly_beta_review", new_callable=AsyncMock) as weekly_beta_review,
         ):
-            scalar_int.side_effect = [12, 3, 8, 320, 400, 80, 149000]
-            scalar_float.side_effect = [1.25, 2.5]
+            scalar_int.side_effect = [12, 3, 8, 320, 400, 80, 149000, 4]
+            scalar_float.side_effect = [1.25, 2.5, 4.5]
             count_by_status.side_effect = [
                 {"completed": 5, "failed": 1},
                 {"queued": 2, "completed": 4},
@@ -79,6 +81,23 @@ def test_operator_summary_returns_paid_beta_snapshot(monkeypatch):
                 }
             ]
             recent_failures.return_value = []
+            recent_feedback.return_value = []
+            weekly_beta_review.return_value = {
+                "window_days": 7,
+                "funnel": {
+                    "visitor_to_signup": {"count": None, "rate_percent": None, "note": "Use PostHog"},
+                    "signup_to_first_design": {"count": 2, "rate_percent": 66.67},
+                    "first_design_to_generation": {"count": 2, "rate_percent": 100.0},
+                    "generation_to_export": {"count": 1, "rate_percent": 50.0},
+                    "export_to_payment": {"count": 1, "rate_percent": 100.0},
+                    "payment_to_repeat_use": {"count": 1, "rate_percent": 50.0},
+                },
+                "cost": {
+                    "ai_actual_cost_7d": 1.25,
+                    "paying_users_30d": 2,
+                    "ai_cost_per_paying_user": 0.625,
+                },
+            }
 
             response = client.get(
                 "/api/internal/operator-summary",
@@ -93,5 +112,8 @@ def test_operator_summary_returns_paid_beta_snapshot(monkeypatch):
         assert data["ai_usage"]["last_7d"]["credits_charged"] == 320
         assert data["ai_usage"]["last_7d"]["by_operation"][0]["operation"] == "generate_design"
         assert data["payments"]["storage_revenue_30d_idr"] == 149000
+        assert data["feedback"]["count_7d"] == 4
+        assert data["feedback"]["average_rating_7d"] == 4.5
+        assert data["weekly_beta_review"]["funnel"]["signup_to_first_design"]["count"] == 2
     finally:
         app.dependency_overrides.clear()

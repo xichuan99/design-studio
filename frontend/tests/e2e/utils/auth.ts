@@ -4,23 +4,20 @@ const DEMO_USER_EMAIL = 'demo@example.com';
 const DEMO_USER_PASSWORD = 'password123';
 
 export async function loginAsDemoUser(page: Page) {
+  const hasStableSession = async () => {
+    try {
+      const res = await page.request.get('/api/auth/session');
+      if (!res.ok()) return false;
+      const data = await res.json();
+      return Boolean(data?.user?.email);
+    } catch {
+      // Retry on transient network resets while local dev server stabilizes.
+      return false;
+    }
+  };
+
   const waitForStableSession = async () => {
-    await expect
-      .poll(
-        async () => {
-          try {
-            const res = await page.request.get('/api/auth/session');
-            if (!res.ok()) return false;
-            const data = await res.json();
-            return Boolean(data?.user?.email);
-          } catch {
-            // Retry on transient network resets while local dev server stabilizes.
-            return false;
-          }
-        },
-        { timeout: 20000 }
-      )
-      .toBe(true);
+    await expect.poll(hasStableSession, { timeout: 20000 }).toBe(true);
   };
 
   const ensureProjectsAccess = async () => {
@@ -30,8 +27,9 @@ export async function loginAsDemoUser(page: Page) {
   };
 
   if (await ensureProjectsAccess()) {
-    await waitForStableSession();
-    return;
+    if (await hasStableSession()) {
+      return;
+    }
   }
 
   for (let attempt = 1; attempt <= 3; attempt++) {

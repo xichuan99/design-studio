@@ -9,6 +9,7 @@ from uuid import UUID
 
 from app.core.database import get_db
 from app.api.deps import get_current_user
+from app.api.rate_limit import rate_limit_dependency
 from app.models.user import User
 from app.models.brand_kit import BrandKit
 from app.schemas.brand_kit import (
@@ -168,7 +169,7 @@ async def extract_brand_from_url(
 )
 async def extract_brand_colors(
     file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(rate_limit_dependency),
 ):
     """
     Extracts exactly 5 dominant brand colors from an uploaded logo or image.
@@ -409,7 +410,7 @@ async def delete_brand_kit(
 async def upload_brand_guidelines(
     kit_id: UUID,
     file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(rate_limit_dependency),
     db: AsyncSession = Depends(get_db),
 ):
     import logging
@@ -431,6 +432,11 @@ async def upload_brand_guidelines(
 
     try:
         file_bytes = await file.read()
+        if len(file_bytes) > 10 * 1024 * 1024:
+            raise ValidationError(detail="PDF file too large. Maximum size is 10MB.")
+        if not file_bytes.startswith(b"%PDF-"):
+            raise ValidationError(detail="Invalid PDF file.")
+
         raw_text = await extract_text_from_pdf(file_bytes)
 
         if not raw_text.strip():
@@ -444,6 +450,8 @@ async def upload_brand_guidelines(
         )
 
         return {"status": "success", "chunks_stored": chunks_stored}
+    except ValidationError:
+        raise
     except Exception as e:
         logging.exception(f"Exception uploading guidelines: {e}")
         from app.core.exceptions import InternalServerError

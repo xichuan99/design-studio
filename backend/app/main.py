@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
+from app.core.config import validate_required_runtime_settings
 from app.core.database import get_db
 
 from app.api.auth import router as auth_router
@@ -40,6 +41,7 @@ from app.middleware.logging import StructuredLoggingMiddleware
 from app.core.logging_config import setup_logging
 
 setup_logging()
+validate_required_runtime_settings()
 
 
 # Read version

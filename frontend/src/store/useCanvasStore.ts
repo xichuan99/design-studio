@@ -59,6 +59,7 @@ export interface CanvasState {
     selectedElementIds: string[];
     highlightElementId: string | null;
     backgroundUrl: string | null;
+    lastJobId: string | null;
     backgroundColor: string;
     projectTitle: string;
     originalPrompt: string | null;
@@ -108,6 +109,7 @@ interface CanvasActions {
 
     // Global
     setBackgroundUrl: (url: string | null) => void;
+    setLastJobId: (jobId: string | null) => void;
     setBackgroundColor: (color: string) => void;
     setProjectTitle: (title: string) => void;
     setCanvasDimensions: (width: number, height: number) => void;
@@ -141,6 +143,7 @@ export const useCanvasStore = create<CanvasState & CanvasActions>()((set, get) =
     selectedElementIds: [],
     highlightElementId: null,
     backgroundUrl: null,
+    lastJobId: null,
     backgroundColor: '#ffffff',
     projectTitle: 'Untitled Design',
     originalPrompt: null,
@@ -457,6 +460,8 @@ export const useCanvasStore = create<CanvasState & CanvasActions>()((set, get) =
 
     setBackgroundUrl: (url) => set({ backgroundUrl: url }),
 
+    setLastJobId: (jobId) => set({ lastJobId: jobId }),
+
     setBackgroundColor: (color) => set({ backgroundColor: color }),
 
     setProjectTitle: (title) => set({ projectTitle: title }),
@@ -464,6 +469,7 @@ export const useCanvasStore = create<CanvasState & CanvasActions>()((set, get) =
     loadState: (elements, backgroundUrl, title, backgroundColor, originalPrompt) => set({
         elements,
         backgroundUrl,
+        lastJobId: null,
         backgroundColor: backgroundColor || '#ffffff',
         projectTitle: title || 'Untitled Design',
         originalPrompt: originalPrompt || null,

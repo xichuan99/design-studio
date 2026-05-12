@@ -6,6 +6,7 @@ import { Suspense, useState } from "react";
 import { Brush, LogIn, Mail, Loader2, AlertCircle, Lock, Eye, EyeOff, Info } from "lucide-react";
 import Link from "next/link";
 import { GOOGLE_OAUTH_ENABLED } from "@/lib/feature-flags";
+import { PublicLegalLinks } from "@/components/legal/PublicLegalLinks";
 
 function LoginForm() {
     const { data: session, status } = useSession();
@@ -212,8 +213,10 @@ export default function LoginPage() {
                 <LoginForm />
             </Suspense>
 
-            {/* Footer */}
-            <p className="mt-10 text-sm text-slate-600">© 2026 SmartDesign Studio</p>
+            <div className="mt-10 flex flex-col items-center gap-3 text-sm text-slate-600">
+                <PublicLegalLinks className="justify-center gap-4 text-xs text-slate-500" linkClassName="hover:text-white" />
+                <p>© 2026 SmartDesign Studio</p>
+            </div>
         </div>
     );
 }

@@ -24,7 +24,11 @@ from app.services.ai_tool_job_service import (
 )
 from app.core.config import settings
 from app.services.credit_service import log_credit_change
-from app.services.ai_usage_service import record_ai_usage_charge, update_usage_for_job
+from app.services.ai_usage_service import (
+    is_usage_refunded,
+    record_ai_usage_charge,
+    update_usage_for_job,
+)
 from app.services.storage_service import download_image
 from app.services.subject_classifier_service import (
     build_product_scene_policy_result,
@@ -319,7 +323,7 @@ async def cancel_tool_job(
     if job.status == "canceled":
         payload = dict(job.payload_json or {})
         charged = int(payload.get("_charged_credits", 0) or 0)
-        already_refunded = bool(payload.get("_refunded", False))
+        already_refunded = await is_usage_refunded(db, ai_tool_job_id=job.id)
         if charged > 0 and not already_refunded:
             refund_tx = await log_credit_change(db, current_user, charged, f"Refund: job {job.tool_name} dibatalkan")
             payload["_refunded"] = True
@@ -332,6 +336,12 @@ async def cancel_tool_job(
                 refund_transaction_id=refund_tx.id if refund_tx else None,
                 error_message=f"Refund: job {job.tool_name} dibatalkan",
             )
+            await db.commit()
+            await db.refresh(job)
+        elif charged > 0 and already_refunded and not payload.get("_refunded"):
+            payload["_refunded"] = True
+            job.payload_json = payload
+            db.add(job)
             await db.commit()
             await db.refresh(job)
 

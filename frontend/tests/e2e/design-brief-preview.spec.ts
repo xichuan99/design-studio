@@ -1,27 +1,12 @@
 import { test, expect } from '@playwright/test';
 import { DESIGN_BRIEF_SESSION_KEY } from '../../src/lib/design-brief-session';
-
-async function mockAuthenticatedSession(page: import('@playwright/test').Page) {
-  await page.route('**/api/auth/session', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        user: {
-          name: 'Demo User',
-          email: 'demo@example.com',
-          image: null,
-        },
-        expires: '2099-01-01T00:00:00.000Z',
-      }),
-    });
-  });
-}
+import { loginAsDemoUser } from './utils/auth';
 
 async function continueIfAuthInterstitial(page: import('@playwright/test').Page) {
   const continueLink = page.getByRole('link', { name: /Lanjutkan/i });
-  if (await continueLink.count()) {
-    await continueLink.first().click();
+  const visibleContinueLink = continueLink.first();
+  if (await visibleContinueLink.waitFor({ state: 'visible', timeout: 15000 }).then(() => true).catch(() => false)) {
+    await visibleContinueLink.click();
     await page.waitForLoadState('domcontentloaded');
   }
 }
@@ -122,10 +107,11 @@ async function seedPreviewBrief(page: import('@playwright/test').Page, payload: 
 }
 
 test.describe('Design Brief Flow — Interview & Preview', () => {
+  test.describe.configure({ mode: 'serial' });
   test.skip(({ browserName }) => browserName === 'webkit', 'WebKit session redirect race on protected design routes in CI');
 
   test.beforeEach(async ({ page }) => {
-    await mockAuthenticatedSession(page);
+    await loginAsDemoUser(page);
     await mockCatalogBuilderEndpoints(page);
   });
 

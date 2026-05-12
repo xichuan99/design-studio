@@ -22,7 +22,7 @@ interface EditorTopBarProps {
 }
 
 export const EditorTopBar: React.FC<EditorTopBarProps> = ({ projectId, saveStatus = 'idle', onSave }) => {
-    const { undo, redo, history, historyIndex, elements, backgroundUrl, backgroundColor, stageRef, projectTitle, setProjectTitle, originalPrompt } = useCanvasStore();
+    const { undo, redo, history, historyIndex, elements, backgroundUrl, backgroundColor, stageRef, projectTitle, setProjectTitle, originalPrompt, lastJobId } = useCanvasStore();
     const { saveProject } = useProjectApi();
     const [saving, setSaving] = useState(false);
     const [exportOpen, setExportOpen] = useState(false);
@@ -213,6 +213,8 @@ export const EditorTopBar: React.FC<EditorTopBarProps> = ({ projectId, saveStatu
                     open={exportOpen}
                     onOpenChange={setExportOpen}
                     title={projectTitle || (projectId ? "Proyek_Smart_Design" : "Desain_Tanpa_Judul")}
+                    projectId={projectId}
+                    jobId={lastJobId || undefined}
                     onAutoResizeClick={() => {
                         setExportOpen(false);
                         setAutoResizeOpen(true);

@@ -8,6 +8,14 @@ interface DimensionPresetsProps {
     isInputLocked: boolean;
 }
 
+const QUICK_TARGET_PRESETS: Array<{ label: string; value: string }> = [
+    { label: "Multi-format", value: "all" },
+    { label: "Shopee", value: "1:1-shopee" },
+    { label: "Tokopedia", value: "1:1-tokped" },
+    { label: "Instagram", value: "4:5" },
+    { label: "WhatsApp", value: "9:16-wa" },
+];
+
 export function DimensionPresets({
     aspectRatio,
     setAspectRatio,
@@ -15,6 +23,28 @@ export function DimensionPresets({
 }: DimensionPresetsProps) {
     return (
         <div className="space-y-4">
+            <div>
+                <Label className="text-sm font-medium mb-2 block">Target Channel</Label>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {QUICK_TARGET_PRESETS.map((preset) => {
+                        const isSelected = aspectRatio === preset.value;
+                        return (
+                            <button
+                                key={preset.value}
+                                type="button"
+                                disabled={isInputLocked}
+                                onClick={() => setAspectRatio(preset.value)}
+                                className={`rounded-md border px-3 py-2 text-xs font-semibold transition-colors ${isSelected
+                                    ? "border-primary bg-primary/10 text-primary"
+                                    : "border-border bg-background text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                                    }`}
+                            >
+                                {preset.label}
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
             <div>
                 <Label className="text-sm font-medium mb-1 block">Format</Label>
                 <Select value={aspectRatio} onValueChange={setAspectRatio} disabled={isInputLocked}>

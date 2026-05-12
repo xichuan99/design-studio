@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-import { AlertCircle, Bot, CreditCard, Loader2, RefreshCw, Users, WalletCards } from "lucide-react";
+import { AlertCircle, Bot, CreditCard, Loader2, MessageSquare, RefreshCw, Users, WalletCards } from "lucide-react";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,42 @@ interface RecentFailure {
   error_code: string | null;
   error_message: string | null;
   created_at: string | null;
+}
+
+interface RecentFeedback {
+  id: string;
+  user_id: string;
+  design_id: string | null;
+  job_id: string | null;
+  rating: number;
+  helpful: boolean | null;
+  source: string;
+  export_format: string | null;
+  note: string | null;
+  created_at: string | null;
+}
+
+interface WeeklyFunnelMetric {
+  count: number | null;
+  rate_percent: number | null;
+  note?: string;
+}
+
+interface WeeklyBetaReview {
+  window_days: number;
+  funnel: {
+    visitor_to_signup: WeeklyFunnelMetric;
+    signup_to_first_design: WeeklyFunnelMetric;
+    first_design_to_generation: WeeklyFunnelMetric;
+    generation_to_export: WeeklyFunnelMetric;
+    export_to_payment: WeeklyFunnelMetric;
+    payment_to_repeat_use: WeeklyFunnelMetric;
+  };
+  cost: {
+    ai_actual_cost_7d: number;
+    paying_users_30d: number;
+    ai_cost_per_paying_user: number;
+  };
 }
 
 interface OperatorSummary {
@@ -63,6 +99,12 @@ interface OperatorSummary {
     storage_by_status: StatusMap;
     storage_revenue_30d_idr: number;
   };
+  feedback: {
+    count_7d: number;
+    average_rating_7d: number;
+    recent: RecentFeedback[];
+  };
+  weekly_beta_review: WeeklyBetaReview;
 }
 
 const TOKEN_STORAGE_KEY = "smartdesign_operator_token";
@@ -126,6 +168,13 @@ function StatusList({ items }: { items: StatusMap }) {
       ))}
     </div>
   );
+}
+
+function formatRate(value: number | null): string {
+  if (value === null || Number.isNaN(value)) {
+    return "-";
+  }
+  return `${value.toFixed(2)}%`;
 }
 
 export default function OperatorDashboardPage() {
@@ -224,7 +273,7 @@ export default function OperatorDashboardPage() {
           </div>
         ) : (
           <div className="mt-8 space-y-8">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
               <StatTile
                 label="Users"
                 value={formatNumber(summary.users.total)}
@@ -248,6 +297,12 @@ export default function OperatorDashboardPage() {
                 value={formatCurrencyIdr(summary.payments.storage_revenue_30d_idr)}
                 helper={generatedAt ? `Updated ${generatedAt}` : undefined}
                 icon={CreditCard}
+              />
+              <StatTile
+                label="Feedback 7D"
+                value={formatNumber(summary.feedback.count_7d)}
+                helper={`Avg ${summary.feedback.average_rating_7d.toFixed(1)} / 5`}
+                icon={MessageSquare}
               />
             </div>
 
@@ -280,6 +335,54 @@ export default function OperatorDashboardPage() {
                 </div>
               </section>
             </div>
+
+            <section className="rounded-lg border bg-card p-5">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="text-sm font-semibold">Weekly Beta Review Funnel</h2>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Ringkasan konversi utama untuk review mingguan beta.
+                  </p>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  AI Cost/Paying User: {formatUsd(summary.weekly_beta_review.cost.ai_cost_per_paying_user)}
+                </p>
+              </div>
+              <div className="mt-4 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b text-left text-xs text-muted-foreground">
+                      <th className="pb-2 pr-4 font-medium">Metric</th>
+                      <th className="pb-2 pr-4 font-medium">Count</th>
+                      <th className="pb-2 pr-4 font-medium">Rate</th>
+                      <th className="pb-2 font-medium">Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      ["Visitor -> Signup", summary.weekly_beta_review.funnel.visitor_to_signup],
+                      ["Signup -> First Design", summary.weekly_beta_review.funnel.signup_to_first_design],
+                      ["First Design -> Generation", summary.weekly_beta_review.funnel.first_design_to_generation],
+                      ["Generation -> Export", summary.weekly_beta_review.funnel.generation_to_export],
+                      ["Export -> Payment", summary.weekly_beta_review.funnel.export_to_payment],
+                      ["Payment -> Repeat Use", summary.weekly_beta_review.funnel.payment_to_repeat_use],
+                    ].map(([label, metric]) => {
+                      const funnelMetric = metric as WeeklyFunnelMetric;
+                      return (
+                        <tr key={label} className="border-b last:border-0">
+                          <td className="py-3 pr-4 font-medium">{label}</td>
+                          <td className="py-3 pr-4 text-muted-foreground">
+                            {funnelMetric.count === null ? "-" : formatNumber(funnelMetric.count)}
+                          </td>
+                          <td className="py-3 pr-4 text-muted-foreground">{formatRate(funnelMetric.rate_percent)}</td>
+                          <td className="py-3 text-muted-foreground">{funnelMetric.note || "-"}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </section>
 
             <section className="rounded-lg border bg-card p-5">
               <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
@@ -354,6 +457,45 @@ export default function OperatorDashboardPage() {
                     {summary.ai_usage.recent_failures.length === 0 ? (
                       <tr>
                         <td className="py-4 text-muted-foreground" colSpan={5}>Belum ada failure/refund terbaru.</td>
+                      </tr>
+                    ) : null}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section className="rounded-lg border bg-card p-5">
+              <h2 className="text-sm font-semibold">Recent Export Feedback</h2>
+              <div className="mt-4 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b text-left text-xs text-muted-foreground">
+                      <th className="pb-2 pr-4 font-medium">When</th>
+                      <th className="pb-2 pr-4 font-medium">Rating</th>
+                      <th className="pb-2 pr-4 font-medium">Helpful</th>
+                      <th className="pb-2 pr-4 font-medium">Format</th>
+                      <th className="pb-2 font-medium">Note</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {summary.feedback.recent.map((item) => (
+                      <tr key={item.id} className="border-b last:border-0">
+                        <td className="py-3 pr-4 text-muted-foreground">
+                          {item.created_at ? new Date(item.created_at).toLocaleString("id-ID") : "-"}
+                        </td>
+                        <td className="py-3 pr-4 font-medium">{item.rating}/5</td>
+                        <td className="py-3 pr-4 text-muted-foreground">
+                          {item.helpful === null ? "-" : item.helpful ? "yes" : "no"}
+                        </td>
+                        <td className="py-3 pr-4 text-muted-foreground">{item.export_format || "-"}</td>
+                        <td className="max-w-md py-3 text-muted-foreground">
+                          <span className="line-clamp-2">{item.note || "-"}</span>
+                        </td>
+                      </tr>
+                    ))}
+                    {summary.feedback.recent.length === 0 ? (
+                      <tr>
+                        <td className="py-4 text-muted-foreground" colSpan={5}>Belum ada feedback export.</td>
                       </tr>
                     ) : null}
                   </tbody>

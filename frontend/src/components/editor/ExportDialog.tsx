@@ -2,12 +2,14 @@
 
 import React, { useState } from "react";
 import { jsPDF } from "jspdf";
-import { Download, Loader2, Layers } from "lucide-react";
+import { Download, Loader2, Layers, ThumbsDown, ThumbsUp } from "lucide-react";
 import { usePostHog } from "posthog-js/react";
 import { useCanvasStore } from "@/store/useCanvasStore";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { trackEvent } from "@/lib/analytics/events";
+import { useApiCore } from "@/lib/api";
 import {
     Dialog,
     DialogContent,
@@ -22,14 +24,34 @@ interface ExportDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     title: string;
+    projectId?: string;
+    jobId?: string;
     onAutoResizeClick?: () => void;
 }
 
-export const ExportDialog: React.FC<ExportDialogProps> = ({ open, onOpenChange, title, onAutoResizeClick }) => {
+export const ExportDialog: React.FC<ExportDialogProps> = ({ open, onOpenChange, title, projectId, jobId, onAutoResizeClick }) => {
     const { stageRef } = useCanvasStore();
     const posthog = usePostHog();
+    const { API_BASE_URL, getHeaders } = useApiCore();
     const [format, setFormat] = useState<"png" | "jpeg" | "pdf">("png");
     const [isExporting, setIsExporting] = useState(false);
+    const [exportCompleted, setExportCompleted] = useState(false);
+    const [feedbackRating, setFeedbackRating] = useState<number | null>(null);
+    const [feedbackHelpful, setFeedbackHelpful] = useState<boolean | null>(null);
+    const [feedbackNote, setFeedbackNote] = useState("");
+    const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+    const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+
+    const handleOpenChange = (nextOpen: boolean) => {
+        if (!nextOpen) {
+            setExportCompleted(false);
+            setFeedbackRating(null);
+            setFeedbackHelpful(null);
+            setFeedbackNote("");
+            setFeedbackSubmitted(false);
+        }
+        onOpenChange(nextOpen);
+    };
 
     const handleExport = async () => {
         if (!stageRef) return;
@@ -81,7 +103,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({ open, onOpenChange, 
                 document.body.removeChild(link);
             }
 
-            onOpenChange(false);
+            setExportCompleted(true);
             if (localStorage.getItem("smartdesign_first_export_v1") !== "1") {
                 trackEvent(posthog, "first_export", {
                     source: "editor",
@@ -99,8 +121,51 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({ open, onOpenChange, 
         }
     };
 
+    const handleSubmitFeedback = async () => {
+        if (!feedbackRating) {
+            toast.error("Pilih rating dulu.");
+            return;
+        }
+
+        setFeedbackSubmitting(true);
+        try {
+            const response = await fetch(`${API_BASE_URL}/designs/export-feedback`, {
+                method: "POST",
+                headers: getHeaders(),
+                body: JSON.stringify({
+                    design_id: projectId,
+                    job_id: jobId,
+                    rating: feedbackRating,
+                    helpful: feedbackHelpful,
+                    note: feedbackNote,
+                    export_format: format,
+                    source: "export",
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to submit export feedback");
+            }
+
+            trackEvent(posthog, "feedback_submitted", {
+                source: "export",
+                rating: feedbackRating,
+                design_id: projectId,
+                job_id: jobId,
+                helpful: feedbackHelpful ?? undefined,
+            });
+            setFeedbackSubmitted(true);
+            toast.success("Terima kasih, feedback tersimpan.");
+        } catch (err) {
+            console.error("Failed to submit export feedback:", err);
+            toast.error("Feedback belum tersimpan.");
+        } finally {
+            setFeedbackSubmitting(false);
+        }
+    };
+
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
                     <DialogTitle>Ekspor Desain</DialogTitle>
@@ -124,6 +189,67 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({ open, onOpenChange, 
                             <Label htmlFor="r-pdf" className="flex-1 cursor-pointer text-foreground">PDF (Format Dokumen)</Label>
                         </div>
                     </RadioGroup>
+
+                    {exportCompleted && (
+                        <div className="space-y-3 rounded-md border bg-muted/30 p-3">
+                            <div className="flex items-center justify-between gap-3">
+                                <Label className="text-sm font-medium">Hasil ini membantu?</Label>
+                                <div className="flex gap-2">
+                                    <Button
+                                        type="button"
+                                        variant={feedbackHelpful === true ? "default" : "outline"}
+                                        size="icon"
+                                        className="h-8 w-8"
+                                        onClick={() => setFeedbackHelpful(true)}
+                                        title="Membantu"
+                                    >
+                                        <ThumbsUp className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant={feedbackHelpful === false ? "default" : "outline"}
+                                        size="icon"
+                                        className="h-8 w-8"
+                                        onClick={() => setFeedbackHelpful(false)}
+                                        title="Kurang membantu"
+                                    >
+                                        <ThumbsDown className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                            <div className="flex gap-1">
+                                {[1, 2, 3, 4, 5].map((rating) => (
+                                    <Button
+                                        key={rating}
+                                        type="button"
+                                        variant={feedbackRating === rating ? "default" : "outline"}
+                                        size="sm"
+                                        className="h-8 w-8 p-0"
+                                        onClick={() => setFeedbackRating(rating)}
+                                    >
+                                        {rating}
+                                    </Button>
+                                ))}
+                            </div>
+                            <Textarea
+                                value={feedbackNote}
+                                onChange={(event) => setFeedbackNote(event.target.value)}
+                                maxLength={1000}
+                                placeholder="Catatan singkat"
+                                className="min-h-20 text-sm"
+                            />
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="secondary"
+                                onClick={handleSubmitFeedback}
+                                disabled={feedbackSubmitting || feedbackSubmitted}
+                                className="w-full"
+                            >
+                                {feedbackSubmitting ? "Menyimpan..." : feedbackSubmitted ? "Feedback tersimpan" : "Kirim feedback"}
+                            </Button>
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex justify-end pt-4 border-t">
@@ -135,7 +261,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({ open, onOpenChange, 
                 {onAutoResizeClick && (
                     <div className="pt-4 border-t mt-2 flex flex-col items-center gap-3">
                         <p className="text-sm text-muted-foreground text-center">
-                            Butuh desain ini dalam berbagai ukuran?
+                            Butuh versi Shopee, Tokopedia, Instagram, dan WhatsApp sekaligus?
                         </p>
                         <Button 
                             variant="secondary" 
@@ -143,7 +269,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({ open, onOpenChange, 
                             onClick={onAutoResizeClick}
                         >
                             <Layers className="mr-2 w-4 h-4" />
-                            Auto-Resize untuk Sosmed
+                            Auto-Resize Multi-Channel
                         </Button>
                     </div>
                 )}

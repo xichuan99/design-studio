@@ -5,6 +5,7 @@ import { Mail, Loader2, ArrowLeft, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { Brush } from "lucide-react";
 import { API_BASE_URL } from "@/lib/api/coreApi";
+import { PublicLegalLinks } from "@/components/legal/PublicLegalLinks";
 
 export default function ForgotPasswordPage() {
     const [email, setEmail] = useState("");
@@ -114,7 +115,10 @@ export default function ForgotPasswordPage() {
                 )}
             </div>
 
-            <p className="mt-10 text-sm text-slate-600">© 2026 SmartDesign Studio</p>
+            <div className="mt-10 flex flex-col items-center gap-3 text-sm text-slate-600">
+                <PublicLegalLinks className="justify-center gap-4 text-xs text-slate-500" linkClassName="hover:text-white" />
+                <p>© 2026 SmartDesign Studio</p>
+            </div>
         </div>
     );
 }

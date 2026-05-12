@@ -8,6 +8,7 @@ import threading
 from datetime import datetime, timezone
 
 from sqlalchemy import update
+from sqlalchemy.exc import IntegrityError
 
 from app.core.database import AsyncSessionLocal
 from app.models.ai_tool_job import AiToolJob
@@ -59,13 +60,27 @@ async def update_ai_tool_job(job_id: str, **fields):
 async def refund_ai_tool_job_if_needed(session, job: AiToolJob, reason: str):
     payload = dict(job.payload_json or {})
     charged = int(payload.get("_charged_credits", 0) or 0)
-    already_refunded = bool(payload.get("_refunded", False))
-    if charged <= 0 or already_refunded:
+    if charged <= 0:
         return
 
     from app.models.user import User
-    from app.services.ai_usage_service import update_usage_for_job
+    from app.services.ai_usage_service import is_usage_refunded, update_usage_for_job
     from app.services.credit_service import log_credit_change
+
+    if await is_usage_refunded(session, ai_tool_job_id=job.id):
+        payload["_refunded"] = True
+        job.payload_json = payload
+        session.add(job)
+        return
+
+    if bool(payload.get("_refunded", False)):
+        await update_usage_for_job(
+            session,
+            ai_tool_job_id=job.id,
+            status="canceled" if job.status == "canceled" else "refunded",
+            error_message=reason,
+        )
+        return
 
     user_record = await session.get(User, job.user_id)
     if user_record:
@@ -73,13 +88,23 @@ async def refund_ai_tool_job_if_needed(session, job: AiToolJob, reason: str):
         payload["_refunded"] = True
         job.payload_json = payload
         session.add(job)
-        await update_usage_for_job(
-            session,
-            ai_tool_job_id=job.id,
-            status="canceled" if job.status == "canceled" else "refunded",
-            refund_transaction_id=refund_tx.id if refund_tx else None,
-            error_message=reason,
-        )
+        try:
+            await update_usage_for_job(
+                session,
+                ai_tool_job_id=job.id,
+                status="canceled" if job.status == "canceled" else "refunded",
+                refund_transaction_id=refund_tx.id if refund_tx else None,
+                error_message=reason,
+            )
+        except IntegrityError:
+            # DB UNIQUE constraint on refund_transaction_id was violated —
+            # a concurrent refund already committed for this job. Roll back
+            # only the usage update; the credit already returned above will be
+            # caught by the outer session rollback in the worker error handler.
+            logger.warning(
+                "Duplicate refund attempt blocked by DB constraint for job %s", job.id
+            )
+            await session.rollback()
 
 
 async def set_ai_tool_job_canceled(
