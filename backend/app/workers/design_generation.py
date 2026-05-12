@@ -45,6 +45,22 @@ async def _get_job_checkpoint(job_id: str) -> dict:
         }
 
 
+async def _mark_job_usage_best_effort(job_id: str, **updates) -> None:
+    """Update the AI usage ledger without making generation depend on audit writes."""
+    try:
+        async with AsyncSessionLocal() as session:
+            from app.services.ai_usage_service import update_usage_for_job
+
+            await update_usage_for_job(session, job_id=job_id, **updates)
+            await session.commit()
+    except Exception:
+        logger.warning(
+            "Failed to update AI usage ledger for design job %s",
+            job_id,
+            exc_info=True,
+        )
+
+
 async def _execute_pipeline(
     job_id: str,
     raw_text: str,
@@ -237,18 +253,13 @@ async def _execute_pipeline(
             file_size=len(generated_urls[0].encode()) if isinstance(generated_urls[0], str) else 0,
             completed_at=datetime.now(timezone.utc),
             )
-            async with AsyncSessionLocal() as session:
-                from app.services.ai_usage_service import update_usage_for_job
-
-                await update_usage_for_job(
-                    session,
-                    job_id=job_id,
-                    status="succeeded",
-                    provider="fal.ai",
-                    model="fal-ai",
-                    credits_charged=charged_credits,
-                )
-                await session.commit()
+            await _mark_job_usage_best_effort(
+                job_id,
+                status="succeeded",
+                provider="fal.ai",
+                model="fal-ai",
+                credits_charged=charged_credits,
+            )
         logger.info(f"Design generation completed successfully | Job: {job_id}")
 
     except Exception as e:
@@ -256,6 +267,7 @@ async def _execute_pipeline(
 
         if is_final_attempt:
             logger.exception(f"Design generation failed permanently | Job: {job_id}")
+            refund_transaction_id = None
             async with AsyncSessionLocal() as session:
                 job_record = await session.get(Job, job_id)
                 if job_record:
@@ -272,18 +284,16 @@ async def _execute_pipeline(
                         refund_tx = await log_credit_change(
                             session, user_record, charged_credits, "Refund: server task gagal"
                         )
-                        from app.services.ai_usage_service import update_usage_for_job
-
-                        await update_usage_for_job(
-                            session,
-                            job_id=job_id,
-                            status="refunded",
-                            refund_transaction_id=refund_tx.id if refund_tx else None,
-                            error_code="worker_failed",
-                            error_message=str(e),
-                            credits_charged=charged_credits,
-                        )
+                        refund_transaction_id = refund_tx.id if refund_tx else None
                 await session.commit()
+            await _mark_job_usage_best_effort(
+                job_id,
+                status="refunded",
+                refund_transaction_id=refund_transaction_id,
+                error_code="worker_failed",
+                error_message=str(e),
+                credits_charged=charged_credits,
+            )
         else:
             logger.warning(f"Design generation failed. Will retry (Attempt {current_retry}/{max_retries}). Error: {str(e)} | Job: {job_id}")
 
