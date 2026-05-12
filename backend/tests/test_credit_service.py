@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 from app.services.credit_service import log_credit_change
 from app.models.user import User
@@ -8,7 +8,9 @@ from app.models.credit_transaction import CreditTransaction
 
 @pytest.fixture
 def mock_db():
-    return MagicMock()
+    db = MagicMock()
+    db.flush = AsyncMock()
+    return db
 
 
 @pytest.fixture
@@ -18,7 +20,7 @@ def test_user():
 
 @pytest.mark.asyncio
 async def test_log_credit_change_addition(mock_db, test_user):
-    await log_credit_change(mock_db, test_user, 5, "Added credits")
+    transaction = await log_credit_change(mock_db, test_user, 5, "Added credits")
 
     assert test_user.credits_remaining == 105
 
@@ -38,6 +40,8 @@ async def test_log_credit_change_addition(mock_db, test_user):
     assert transaction_obj.amount == 5
     assert transaction_obj.balance_after == 105
     assert transaction_obj.description == "Added credits"
+    assert transaction is transaction_obj
+    mock_db.flush.assert_awaited_once()
 
 
 @pytest.mark.asyncio

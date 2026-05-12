@@ -9,6 +9,7 @@ from app.models.brand_kit import BrandKit as BrandKit
 from app.models.credit_transaction import CreditTransaction as CreditTransaction
 from app.models.ai_tool_result import AiToolResult as AiToolResult
 from app.models.ai_tool_job import AiToolJob as AiToolJob
+from app.models.ai_usage_event import AiUsageEvent as AiUsageEvent
 from app.models.template_submission import TemplateSubmission as TemplateSubmission
 from app.models.template_review import TemplateReview as TemplateReview
 from app.models.template_version import TemplateVersion as TemplateVersion

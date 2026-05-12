@@ -23,6 +23,7 @@ import {
     UserIntent,
 } from "@/app/create/types";
 import { usePostHog } from 'posthog-js/react';
+import { trackEvent } from "@/lib/analytics/events";
 
 export type CreateStep = 'input' | 'brief' | 'results' | 'generating' | 'preview';
 export type CreateMode = 'generate' | 'redesign';
@@ -72,6 +73,8 @@ export function useCreateDesign() {
 
     const GENERATED_COUNT_STORAGE_KEY = "smartdesign_generated_count_v1";
     const TESTIMONIAL_SUBMITTED_STORAGE_KEY = "smartdesign_testimonial_submitted_v1";
+    const FIRST_IMAGE_UPLOAD_STORAGE_KEY = "smartdesign_first_image_uploaded_v1";
+    const FIRST_DESIGN_CREATED_STORAGE_KEY = "smartdesign_first_design_created_v1";
 
     const [rawText, setRawText] = useState("");
     const [aspectRatio, setAspectRatio] = useState("1:1");
@@ -368,12 +371,20 @@ export function useCreateDesign() {
             return;
         }
         setReferenceFile(file);
+        if (localStorage.getItem(FIRST_IMAGE_UPLOAD_STORAGE_KEY) !== "1") {
+            trackEvent(posthog, "first_image_uploaded", {
+                source: "create_flow",
+                file_type: file.type || "unknown",
+                file_size_mb: Number((file.size / (1024 * 1024)).toFixed(2)),
+            });
+            localStorage.setItem(FIRST_IMAGE_UPLOAD_STORAGE_KEY, "1");
+        }
         const reader = new FileReader();
         reader.onloadend = () => {
             setReferencePreview(reader.result as string);
         };
         reader.readAsDataURL(file);
-    }, []);
+    }, [posthog]);
 
     const handleFileInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -408,6 +419,12 @@ export function useCreateDesign() {
         setIsParsing(true);
         setBriefAnswers(answers);
         posthog?.capture('create_brief_submitted', { create_mode: createMode });
+        trackEvent(posthog, "prompt_submitted", {
+            source: "create_flow",
+            create_mode: createMode,
+            has_brand_kit: brandKitEnabled,
+            has_reference_image: Boolean(referenceFile),
+        });
         const normalizedHeadlineOverride = normalizeOptionalCopyValue(manualCopyOverrides.headlineOverride);
         const normalizedSubHeadlineOverride = normalizeOptionalCopyValue(manualCopyOverrides.subHeadlineOverride);
         const normalizedCtaOverride = normalizeOptionalCopyValue(manualCopyOverrides.ctaOverride);
@@ -463,7 +480,7 @@ export function useCreateDesign() {
         } finally {
             setIsParsing(false);
         }
-    }, [rawText, aspectRatio, integratedText, manualCopyOverrides, activeBrandKit, brandKitEnabled, parseDesignText, generateCopywriting, createMode, posthog]);
+    }, [rawText, aspectRatio, integratedText, manualCopyOverrides, activeBrandKit, brandKitEnabled, parseDesignText, generateCopywriting, createMode, posthog, referenceFile]);
 
     const handleAnalyze = useCallback(async () => {
         if (!rawText.trim()) return;
@@ -555,6 +572,23 @@ export function useCreateDesign() {
             aspect_ratio: normalizeAspectRatio(aspectRatio),
             quality: selectedModelTier,
         });
+        trackEvent(posthog, "generation_succeeded", {
+            source: "create_flow",
+            create_mode: createMode,
+            aspect_ratio: normalizeAspectRatio(aspectRatio),
+            quality: selectedModelTier,
+            result_count: parsedVariations.length || 1,
+            status: "success",
+        });
+        if (localStorage.getItem(FIRST_DESIGN_CREATED_STORAGE_KEY) !== "1") {
+            trackEvent(posthog, "first_design_created", {
+                source: "create_flow",
+                create_mode: createMode,
+                aspect_ratio: normalizeAspectRatio(aspectRatio),
+                quality: selectedModelTier,
+            });
+            localStorage.setItem(FIRST_DESIGN_CREATED_STORAGE_KEY, "1");
+        }
         recordDesignGenerated();
     }, [aspectRatio, selectedModelTier, createMode, posthog, recordDesignGenerated]);
 
@@ -683,6 +717,14 @@ export function useCreateDesign() {
             console.error(error);
             const errorMessage = error instanceof Error ? error.message : "Gagal memproses desain.";
             posthog?.capture('create_generation_failed', { create_mode: createMode, error_message: errorMessage });
+            trackEvent(posthog, "generation_failed", {
+                source: "create_flow",
+                create_mode: createMode,
+                aspect_ratio: normalizeAspectRatio(aspectRatio),
+                quality: selectedModelTier,
+                error_message: errorMessage,
+                status: "failed",
+            });
             
             // For redesign mode, parsedData is null so 'results' step would fall through
             // to the home screen. Instead, go back to 'input' to keep the form visible.

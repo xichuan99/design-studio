@@ -281,6 +281,7 @@ async def test_generate_design_sync_passes_request_aspect_ratio_to_quantum_layou
 
     mock_db = MagicMock()
     mock_db.add.side_effect = _capture_add
+    mock_db.flush = AsyncMock()
     mock_db.commit = AsyncMock()
     mock_db.refresh = AsyncMock()
 

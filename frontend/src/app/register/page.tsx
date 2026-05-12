@@ -2,15 +2,18 @@
 
 import { signIn } from "next-auth/react";
 import { useState } from "react";
+import { usePostHog } from "posthog-js/react";
 import { Brush, UserPlus, Mail, User, Loader2, AlertCircle, Lock, Info } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { GOOGLE_OAUTH_ENABLED } from "@/lib/feature-flags";
+import { trackEvent } from "@/lib/analytics/events";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
 export default function RegisterPage() {
     const router = useRouter();
+    const posthog = usePostHog();
     const [email, setEmail] = useState("");
     const [name, setName] = useState("");
     const [password, setPassword] = useState("");
@@ -34,6 +37,7 @@ export default function RegisterPage() {
         }
 
         setLoading(true);
+        trackEvent(posthog, "signup_started", { auth_method: "credentials", source: "register_page" });
         try {
             const res = await fetch(`${API_BASE_URL}/auth/register`, {
                 method: "POST",
@@ -57,8 +61,14 @@ export default function RegisterPage() {
                 throw new Error("Gagal login otomatis setelah mendaftar");
             }
 
+            trackEvent(posthog, "signup_completed", { auth_method: "credentials", source: "register_page" });
             router.push("/projects");
         } catch (err: unknown) {
+            posthog?.capture("signup_failed", {
+                auth_method: "credentials",
+                source: "register_page",
+                error_message: err instanceof Error ? err.message : "Unknown registration error",
+            });
             if (err instanceof Error) {
                 setError(err.message || "Terjadi kesalahan yang tidak terduga");
             } else {
@@ -70,6 +80,7 @@ export default function RegisterPage() {
     };
 
     const handleGoogleLogin = () => {
+        trackEvent(posthog, "signup_started", { auth_method: "google", source: "register_page" });
         signIn("google", { callbackUrl: "/projects" });
     };
 

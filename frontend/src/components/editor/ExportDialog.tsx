@@ -3,9 +3,11 @@
 import React, { useState } from "react";
 import { jsPDF } from "jspdf";
 import { Download, Loader2, Layers } from "lucide-react";
+import { usePostHog } from "posthog-js/react";
 import { useCanvasStore } from "@/store/useCanvasStore";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { trackEvent } from "@/lib/analytics/events";
 import {
     Dialog,
     DialogContent,
@@ -25,6 +27,7 @@ interface ExportDialogProps {
 
 export const ExportDialog: React.FC<ExportDialogProps> = ({ open, onOpenChange, title, onAutoResizeClick }) => {
     const { stageRef } = useCanvasStore();
+    const posthog = usePostHog();
     const [format, setFormat] = useState<"png" | "jpeg" | "pdf">("png");
     const [isExporting, setIsExporting] = useState(false);
 
@@ -79,6 +82,15 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({ open, onOpenChange, 
             }
 
             onOpenChange(false);
+            if (localStorage.getItem("smartdesign_first_export_v1") !== "1") {
+                trackEvent(posthog, "first_export", {
+                    source: "editor",
+                    format,
+                    canvas_width: stage.width(),
+                    canvas_height: stage.height(),
+                });
+                localStorage.setItem("smartdesign_first_export_v1", "1");
+            }
         } catch (err) {
             console.error("Export failed:", err);
             toast.error("Gagal mengekspor desain.");

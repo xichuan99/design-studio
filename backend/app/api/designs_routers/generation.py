@@ -257,7 +257,7 @@ async def generate_design(
     from app.services.credit_service import log_credit_change
 
     total_charged = COST_GENERATE_DESIGN
-    await log_credit_change(db, current_user, -COST_GENERATE_DESIGN, "Generate desain")
+    credit_tx = await log_credit_change(db, current_user, -COST_GENERATE_DESIGN, "Generate desain")
 
     # Catalog flow may upload the image as product_image_url without remove_product_bg.
     # Treat it as reference image so i2i path can follow the real subject.
@@ -278,6 +278,27 @@ async def generate_design(
         status="queued",
     )
     db.add(job)
+    await db.flush()
+
+    from app.services.ai_usage_service import record_ai_usage_charge, update_usage_for_job
+
+    requested_quality_for_ledger = (getattr(request, "quality", "auto") or "auto").lower()
+    await record_ai_usage_charge(
+        db,
+        user_id=current_user.id,
+        job_id=job.id,
+        operation="generate_design",
+        source="create_flow",
+        credits_charged=total_charged,
+        credit_transaction_id=credit_tx.id if credit_tx else None,
+        provider="fal.ai",
+        quality=requested_quality_for_ledger,
+        metadata={
+            "aspect_ratio": str(request.aspect_ratio),
+            "has_reference_image": bool(effective_reference_image_url),
+            "integrated_text": bool(request.integrated_text),
+        },
+    )
     await db.commit()
     await db.refresh(job)
 
@@ -389,8 +410,16 @@ async def generate_design(
             job.error_message = f"Failed to dispatch task: {str(e)}"
             from app.services.credit_service import log_credit_change
 
-            await log_credit_change(
+            refund_tx = await log_credit_change(
                 db, current_user, total_charged, "Refund: gagal generate desain"
+            )
+            await update_usage_for_job(
+                db,
+                job_id=job.id,
+                status="refunded",
+                refund_transaction_id=refund_tx.id if refund_tx else None,
+                error_code="dispatch_failed",
+                error_message=str(e),
             )
             await db.commit()
             raise InternalServerError(
@@ -541,8 +570,16 @@ async def generate_design(
             extra_cost = COST_GENERATE_DESIGN_ULTRA - COST_GENERATE_DESIGN
             if current_user.credits_remaining < extra_cost:
                 raise InsufficientCreditsError(detail="Insufficient credits for ultra quality")
-            await log_credit_change(db, current_user, -extra_cost, "Generate desain (ultra surcharge)")
+            ultra_tx = await log_credit_change(db, current_user, -extra_cost, "Generate desain (ultra surcharge)")
             total_charged = COST_GENERATE_DESIGN_ULTRA  # full 80
+            await update_usage_for_job(
+                db,
+                job_id=job.id,
+                credits_charged=total_charged,
+                quality=selected_model_tier,
+                model="gpt-image-2",
+                metadata={"ultra_surcharge_transaction_id": str(ultra_tx.id) if ultra_tx else None},
+            )
             fal_result = await generate_background_ultra(
                 visual_prompt=enhanced_prompt,
                 aspect_ratio=request.aspect_ratio,
@@ -686,6 +723,15 @@ async def generate_design(
             job.file_size = len(image_bytes)
             job.status = "completed"
             job.completed_at = datetime.now(timezone.utc)
+            await update_usage_for_job(
+                db,
+                job_id=job.id,
+                status="succeeded",
+                provider="fal.ai",
+                model=model_name,
+                quality=selected_model_tier,
+                credits_charged=total_charged,
+            )
         else:
             job.status = "failed"
             job.error_message = "Desain ditolak oleh sistem keamanan AI karena mengandung unsur yang dilindungi hak cipta (misal: nama tokoh terkenal, karakter kartun, atau brand spesifik seperti 'Avengers', 'Disney', dll) atau konten sensitif lainnya. Mohon ubah deskripsi Anda menggunakan kata-kata yang lebih umum."
@@ -693,8 +739,17 @@ async def generate_design(
             # Refund credit
             from app.services.credit_service import log_credit_change
 
-            await log_credit_change(
+            refund_tx = await log_credit_change(
                 db, current_user, total_charged, "Refund: prompt ditolak AI"
+            )
+            await update_usage_for_job(
+                db,
+                job_id=job.id,
+                status="refunded",
+                refund_transaction_id=refund_tx.id if refund_tx else None,
+                error_code="ai_safety_rejected",
+                error_message=job.error_message,
+                credits_charged=total_charged,
             )
 
         await db.commit()
@@ -711,8 +766,17 @@ async def generate_design(
         job.error_message = str(e)
         from app.services.credit_service import log_credit_change
 
-        await log_credit_change(
+        refund_tx = await log_credit_change(
             db, current_user, total_charged, "Refund: sistem error"
+        )
+        await update_usage_for_job(
+            db,
+            job_id=job.id,
+            status="refunded",
+            refund_transaction_id=refund_tx.id if refund_tx else None,
+            error_code="system_error",
+            error_message=str(e),
+            credits_charged=total_charged,
         )
         await db.commit()
         raise InternalServerError(detail=f"Image generation failed: {str(e)}")
@@ -771,7 +835,7 @@ async def redesign_image(
         )
 
     # Deduct credit
-    await log_credit_change(
+    credit_tx = await log_credit_change(
         db,
         current_user,
         -credit_cost,
@@ -788,6 +852,25 @@ async def redesign_image(
         status="processing",  # we do it synchronously but still record processing
     )
     db.add(job)
+    await db.flush()
+    from app.services.ai_usage_service import record_ai_usage_charge, update_usage_for_job
+
+    await record_ai_usage_charge(
+        db,
+        user_id=current_user.id,
+        job_id=job.id,
+        operation="redesign",
+        source="create_flow",
+        credits_charged=credit_cost,
+        credit_transaction_id=credit_tx.id if credit_tx else None,
+        provider="fal.ai",
+        model="gpt-image-2" if selected_model_tier == "ultra" else "flux",
+        quality=selected_model_tier,
+        metadata={
+            "aspect_ratio": str(request.aspect_ratio),
+            "preserve_product": bool(request.preserve_product),
+        },
+    )
     await db.commit()
     await db.refresh(job)
 
@@ -881,6 +964,15 @@ async def redesign_image(
         job.file_size = len(image_bytes)
         job.status = "completed"
         job.completed_at = datetime.now(timezone.utc)
+        await update_usage_for_job(
+            db,
+            job_id=job.id,
+            status="succeeded",
+            provider="fal.ai",
+            model="gpt-image-2" if selected_model_tier == "ultra" else "flux",
+            quality=selected_model_tier,
+            credits_charged=credit_cost,
+        )
         await db.commit()
         await db.refresh(job)
 
@@ -901,13 +993,22 @@ async def redesign_image(
         job.completed_at = datetime.now(timezone.utc)
 
         # Refund credit
-        await log_credit_change(
+        refund_tx = await log_credit_change(
             db,
             current_user,
             credit_cost,
             "Refund: sistem error pada redesign ultra"
             if selected_model_tier == "ultra"
-            else "Refund: sistem error pada redesign",
+                else "Refund: sistem error pada redesign",
+        )
+        await update_usage_for_job(
+            db,
+            job_id=job.id,
+            status="refunded",
+            refund_transaction_id=refund_tx.id if refund_tx else None,
+            error_code="redesign_failed",
+            error_message=str(e),
+            credits_charged=credit_cost,
         )
         await db.commit()
 

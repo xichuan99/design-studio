@@ -24,6 +24,7 @@ from app.services.ai_tool_job_service import (
 )
 from app.core.config import settings
 from app.services.credit_service import log_credit_change
+from app.services.ai_usage_service import record_ai_usage_charge, update_usage_for_job
 from app.services.storage_service import download_image
 from app.services.subject_classifier_service import (
     build_product_scene_policy_result,
@@ -211,11 +212,28 @@ async def create_tool_job(
                 await db.commit()
                 raise InsufficientCreditsError(detail="Insufficient credits")
 
-            await log_credit_change(db, current_user, -cost, f"AI Tools async: {request.tool_name}")
+            credit_tx = await log_credit_change(db, current_user, -cost, f"AI Tools async: {request.tool_name}")
             payload = dict(job.payload_json or {})
             payload["_charged_credits"] = cost
             job.payload_json = payload
             db.add(job)
+            await record_ai_usage_charge(
+                db,
+                user_id=current_user.id,
+                ai_tool_job_id=job.id,
+                operation=request.tool_name if request.tool_name != "batch" else f"batch:{operation or 'unknown'}",
+                source="ai_tool_job",
+                credits_charged=cost,
+                credit_transaction_id=credit_tx.id if credit_tx else None,
+                provider="fal.ai",
+                model="gpt-image-2" if request.quality == "ultra" else None,
+                quality=request.quality,
+                metadata={
+                    "tool_name": request.tool_name,
+                    "idempotency_key": request.idempotency_key,
+                    "batch_file_count": file_count if request.tool_name == "batch" else None,
+                },
+            )
             await db.commit()
             await db.refresh(job)
 
@@ -303,10 +321,17 @@ async def cancel_tool_job(
         charged = int(payload.get("_charged_credits", 0) or 0)
         already_refunded = bool(payload.get("_refunded", False))
         if charged > 0 and not already_refunded:
-            await log_credit_change(db, current_user, charged, f"Refund: job {job.tool_name} dibatalkan")
+            refund_tx = await log_credit_change(db, current_user, charged, f"Refund: job {job.tool_name} dibatalkan")
             payload["_refunded"] = True
             job.payload_json = payload
             db.add(job)
+            await update_usage_for_job(
+                db,
+                ai_tool_job_id=job.id,
+                status="canceled",
+                refund_transaction_id=refund_tx.id if refund_tx else None,
+                error_message=f"Refund: job {job.tool_name} dibatalkan",
+            )
             await db.commit()
             await db.refresh(job)
 

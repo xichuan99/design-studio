@@ -3,6 +3,8 @@
 > Status: Draft v1  
 > Last updated: 2026-03-23
 
+> Launch-readiness note (2026-05-12): bagian yang menyebut `quantum-engine` sebagai service/container aktif sudah tidak sesuai dengan runtime Docker Compose saat ini. `docker-compose.yml` hanya menjalankan Postgres, Redis, backend, Celery, dan frontend; layout optimization berjalan di backend process. Gunakan `README.md`, `docker-compose.yml`, dan `LAUNCH_READINESS.md` sebagai sumber status deployment terbaru sampai dokumen ini direvisi penuh.
+
 Dokumen ini menjelaskan topologi deployment SmartDesign Studio untuk dua konteks utama:
 - **local development topology**
 - **target production topology**

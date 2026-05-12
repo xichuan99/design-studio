@@ -43,6 +43,16 @@ async def update_ai_tool_job(job_id: str, **fields):
         await session.execute(
             update(AiToolJob).where(AiToolJob.id == job_id).values(**fields)
         )
+        status = fields.get("status")
+        if status in {"completed", "failed", "canceled"}:
+            from app.services.ai_usage_service import mark_ai_tool_usage_from_status
+
+            await mark_ai_tool_usage_from_status(
+                session,
+                ai_tool_job_id=job_id,
+                status=status,
+                error_message=fields.get("error_message"),
+            )
         await session.commit()
 
 
@@ -54,14 +64,22 @@ async def refund_ai_tool_job_if_needed(session, job: AiToolJob, reason: str):
         return
 
     from app.models.user import User
+    from app.services.ai_usage_service import update_usage_for_job
     from app.services.credit_service import log_credit_change
 
     user_record = await session.get(User, job.user_id)
     if user_record:
-        await log_credit_change(session, user_record, charged, reason)
+        refund_tx = await log_credit_change(session, user_record, charged, reason)
         payload["_refunded"] = True
         job.payload_json = payload
         session.add(job)
+        await update_usage_for_job(
+            session,
+            ai_tool_job_id=job.id,
+            status="canceled" if job.status == "canceled" else "refunded",
+            refund_transaction_id=refund_tx.id if refund_tx else None,
+            error_message=reason,
+        )
 
 
 async def set_ai_tool_job_canceled(

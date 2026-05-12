@@ -14,13 +14,19 @@ from app.workers.ai_tool_jobs_common import (
 
 @pytest.mark.asyncio
 @patch("app.services.credit_service.log_credit_change", new_callable=AsyncMock)
-async def test_refund_ai_tool_job_if_needed_refunds_once(mock_log_credit_change):
+@patch("app.services.ai_usage_service.update_usage_for_job", new_callable=AsyncMock)
+async def test_refund_ai_tool_job_if_needed_refunds_once(
+    mock_update_usage_for_job,
+    mock_log_credit_change,
+):
     session = AsyncMock()
     session.add = MagicMock()
     session.get = AsyncMock(return_value=SimpleNamespace(id="user-1"))
 
     job = SimpleNamespace(
+        id="job-1",
         user_id="user-1",
+        status="failed",
         payload_json={"_charged_credits": 40},
     )
 
@@ -34,6 +40,7 @@ async def test_refund_ai_tool_job_if_needed_refunds_once(mock_log_credit_change)
     )
     assert job.payload_json.get("_refunded") is True
     session.add.assert_called_once_with(job)
+    mock_update_usage_for_job.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -76,7 +83,9 @@ async def test_refund_ai_tool_job_if_needed_skips_when_no_charge(mock_log_credit
 
 @pytest.mark.asyncio
 @patch("app.services.credit_service.log_credit_change", new_callable=AsyncMock)
+@patch("app.services.ai_usage_service.update_usage_for_job", new_callable=AsyncMock)
 async def test_set_ai_tool_job_canceled_sets_terminal_fields_and_refunds(
+    mock_update_usage_for_job,
     mock_log_credit_change,
 ):
     session = AsyncMock()
@@ -84,6 +93,7 @@ async def test_set_ai_tool_job_canceled_sets_terminal_fields_and_refunds(
     session.get = AsyncMock(return_value=SimpleNamespace(id="user-1"))
 
     job = SimpleNamespace(
+        id="job-1",
         user_id="user-1",
         status="processing",
         phase_message="",
@@ -107,3 +117,4 @@ async def test_set_ai_tool_job_canceled_sets_terminal_fields_and_refunds(
     )
     # Called at least once for status update and once for refund payload update.
     assert session.add.call_count >= 1
+    mock_update_usage_for_job.assert_awaited_once()

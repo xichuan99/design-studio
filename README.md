@@ -125,7 +125,7 @@ nano frontend/.env.local   # Fill in API keys & URLs
 docker compose up -d --build
 ```
 
-This starts **6 containers**: PostgreSQL, Redis, Backend API, Celery Worker, Quantum Engine, and Frontend.
+This starts **5 containers**: PostgreSQL, Redis, Backend API, Celery Worker, and Frontend.
 
 Untuk development yang lebih ringan, workflow lokal yang paling umum adalah:
 
@@ -217,7 +217,7 @@ source .venv310/bin/activate   # atau aktifkan virtualenv backend Anda sendiri
 pytest tests/ -v
 ```
 
-Backend juga diuji di CI bersama linting Ruff dan test suite quantum-engine.
+Backend juga diuji di CI bersama linting Ruff dan test suite untuk layout/AI pipeline in-process.
 
 ### Frontend
 
@@ -249,8 +249,8 @@ GitHub Actions automatically runs on every push/PR to `main` using the unified `
 **Stages:**
 1. **Backend Test & Lint**: `ruff`, `pytest`, migrasi Alembic, dan seed template.
 2. **Frontend Lint & Build**: `npm run lint` dan `npm run build`.
-3. **Quantum Test**: test suite untuk service quantum-engine.
-4. **Build & Push Images**: backend, frontend, dan quantum-engine ke GHCR pada push ke `main`.
+3. **Layout/AI Pipeline Tests**: test suite untuk placement engine dan pipeline generasi.
+4. **Build & Push Images**: backend dan frontend ke GHCR pada push ke `main`.
 5. **Deploy**: deploy ke VPS via SSH, pull image GHCR, `docker compose up -d`, lalu jalankan migrasi.
 
 ---
@@ -261,7 +261,7 @@ GitHub Actions automatically runs on every push/PR to `main` using the unified `
 design-studio/
 ├── .env.example                    # Environment template
 ├── .github/workflows/cicd.yml      # Unified CI/CD pipeline (Test, Build, Deploy, Release Please)
-├── docker-compose.yml              # Local stack (Postgres, Redis, Backend, Celery, Quantum, Frontend)
+├── docker-compose.yml              # Local stack (Postgres, Redis, Backend, Celery, Frontend)
 │
 ├── backend/
 │   ├── alembic/                    # Database migrations
@@ -308,9 +308,7 @@ design-studio/
 │   ├── tests/e2e/                  # Playwright end-to-end tests
 │   └── next.config.ts              # Next.js config
 │
-├── quantum-engine/
-│   ├── app/                        # Separate FastAPI service
-│   └── tests/                      # Quantum engine tests
+├── quantum-engine/                 # Legacy optimizer service kept for reference/tests; not part of docker-compose
 ```
 
 ---
@@ -327,7 +325,6 @@ design-studio/
 | Redis 7 | `design-studio-redis-1` | 6380 | 6379 |
 | Backend (FastAPI) | `design-studio-backend-1` | 8000 | 8000 |
 | Celery Worker | `design-studio-celery-1` | — | — |
-| Quantum Engine | `design-studio-quantum-engine-1` | 8001 | 8001 |
 | Frontend (Next.js) | `design-studio-frontend-1` | 3000 | 3000 |
 
 ### Nginx Reverse Proxy
