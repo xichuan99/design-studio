@@ -40,10 +40,11 @@ async def log_credit_change(
             description=description,
         )
         db.add(transaction)
+        await db.flush()
+        return transaction
 
     except Exception as e:
         logger.exception(f"Failed to log credit change for user {user.id}")
         # We raise here because failing to log a credit transaction (especially a deduction)
         # might leave the system in an inconsistent state.
         raise e
-

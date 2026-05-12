@@ -3,6 +3,8 @@
 > Status: Draft v1  
 > Last updated: 2026-03-23
 
+> Launch-readiness note (2026-05-12): beberapa bagian dokumen ini masih mencerminkan arsitektur lama yang memakai `quantum-engine` sebagai microservice aktif. Runtime Docker Compose saat ini tidak lagi menjalankan container tersebut; layout optimization utama berjalan in-process melalui backend services seperti `backend/app/services/placement_engine.py` dan `backend/app/services/quantum_service.py`. Gunakan `README.md`, `docker-compose.yml`, dan `LAUNCH_READINESS.md` sebagai sumber status runtime terbaru sampai dokumen ini direvisi penuh.
+
 Dokumen ini merangkum arsitektur sistem saat ini berdasarkan implementasi yang ada di repository, terutama dari:
 - `docker-compose.yml`
 - `backend/app/main.py`

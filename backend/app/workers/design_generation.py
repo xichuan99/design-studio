@@ -237,6 +237,18 @@ async def _execute_pipeline(
             file_size=len(generated_urls[0].encode()) if isinstance(generated_urls[0], str) else 0,
             completed_at=datetime.now(timezone.utc),
             )
+            async with AsyncSessionLocal() as session:
+                from app.services.ai_usage_service import update_usage_for_job
+
+                await update_usage_for_job(
+                    session,
+                    job_id=job_id,
+                    status="succeeded",
+                    provider="fal.ai",
+                    model="fal-ai",
+                    credits_charged=charged_credits,
+                )
+                await session.commit()
         logger.info(f"Design generation completed successfully | Job: {job_id}")
 
     except Exception as e:
@@ -257,8 +269,19 @@ async def _execute_pipeline(
                     if user_record:
                         from app.services.credit_service import log_credit_change
 
-                        await log_credit_change(
+                        refund_tx = await log_credit_change(
                             session, user_record, charged_credits, "Refund: server task gagal"
+                        )
+                        from app.services.ai_usage_service import update_usage_for_job
+
+                        await update_usage_for_job(
+                            session,
+                            job_id=job_id,
+                            status="refunded",
+                            refund_transaction_id=refund_tx.id if refund_tx else None,
+                            error_code="worker_failed",
+                            error_message=str(e),
+                            credits_charged=charged_credits,
                         )
                 await session.commit()
         else:

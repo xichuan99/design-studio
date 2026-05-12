@@ -1,7 +1,8 @@
 import type { PostHog } from "posthog-js";
+import { trackEvent } from "@/lib/analytics/events";
 
 export function trackLandingViewed(posthog: PostHog | null | undefined, variant: string): void {
-  posthog?.capture("landing_viewed", { variant });
+  trackEvent(posthog, "landing_viewed", { variant });
 }
 
 export function trackWaitlistSubmitted(
@@ -13,7 +14,7 @@ export function trackWaitlistSubmitted(
     position: number | null;
   },
 ): void {
-  posthog?.capture("waitlist_submitted", payload);
+  trackEvent(posthog, "waitlist_submitted", payload);
 }
 
 export function trackLandingCtaClicked(
@@ -24,5 +25,5 @@ export function trackLandingCtaClicked(
     cta_location: string;
   },
 ): void {
-  posthog?.capture("landing_cta_clicked", payload);
+  trackEvent(posthog, "landing_cta_clicked", payload);
 }

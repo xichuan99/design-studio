@@ -3,6 +3,8 @@
 > Status: Draft v1  
 > Last updated: 2026-03-23
 
+> Launch-readiness note (2026-05-12): sequence di bawah masih memuat istilah `Quantum Engine` dari arsitektur lama. Runtime saat ini tidak memanggil container `quantum-engine` di Docker Compose; layout optimization berjalan melalui backend services in-process. Perlakukan diagram/urutan yang menyebut external Quantum Engine sebagai historical detail sampai dokumen ini direvisi penuh.
+
 Dokumen ini memetakan urutan proses fitur `generate design` berdasarkan implementasi saat ini, terutama dari:
 - `backend/app/api/designs_routers/generation.py`
 - `backend/app/workers/tasks.py`

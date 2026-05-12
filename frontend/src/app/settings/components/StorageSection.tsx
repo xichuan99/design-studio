@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
+import { usePostHog } from "posthog-js/react";
 import { useProjectApi, StorageAddon, StorageUsage } from "@/lib/api";
 import { StoragePurchaseItem } from "@/lib/api/types";
 import { SettingsSection } from "./SettingsSection";
@@ -10,6 +11,7 @@ import { HardDrive, Loader2, AlertCircle, CheckCircle2, XCircle, Clock } from "l
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { trackEvent } from "@/lib/analytics/events";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -113,10 +115,27 @@ function PurchaseHistoryTable({ purchases }: { purchases: StoragePurchaseItem[] 
 
 const POLL_INTERVAL_MS = 4000;
 const POLL_MAX_DURATION_MS = 3 * 60 * 1000; // 3 minutes
+const FALLBACK_ADDONS: StorageAddon[] = [
+    {
+        code: "storage_plus_5gb",
+        label: "Tambah 5 GB",
+        bytes_added: 5 * 1024 * 1024 * 1024,
+        amount: 49000,
+        currency: "IDR",
+    },
+    {
+        code: "storage_plus_20gb",
+        label: "Tambah 20 GB",
+        bytes_added: 20 * 1024 * 1024 * 1024,
+        amount: 149000,
+        currency: "IDR",
+    },
+];
 
 export function StorageSection() {
     const api = useProjectApi();
     const searchParams = useSearchParams();
+    const posthog = usePostHog();
 
     const [storageInfo, setStorageInfo] = useState<StorageUsage | null>(null);
     const [storageAddons, setStorageAddons] = useState<StorageAddon[]>([]);
@@ -130,23 +149,6 @@ export function StorageSection() {
     const pollingPurchaseId = useRef<string | null>(null);
     const pollStartTime = useRef<number | null>(null);
     const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    const fallbackAddons: StorageAddon[] = [
-        {
-            code: "storage_plus_5gb",
-            label: "Tambah 5 GB",
-            bytes_added: 5 * 1024 * 1024 * 1024,
-            amount: 49000,
-            currency: "IDR",
-        },
-        {
-            code: "storage_plus_20gb",
-            label: "Tambah 20 GB",
-            bytes_added: 20 * 1024 * 1024 * 1024,
-            amount: 149000,
-            currency: "IDR",
-        },
-    ];
 
     const fetchStorageInfo = useCallback(async () => {
         setStorageError(null);
@@ -205,9 +207,27 @@ export function StorageSection() {
             if (target && target.status !== "pending") {
                 stopPolling();
                 if (target.status === "paid") {
+                    trackEvent(posthog, "payment_succeeded", {
+                        source: "storage_settings",
+                        product_code: target.addon_code,
+                        amount: target.amount,
+                        currency: target.currency,
+                        purchase_id: target.id,
+                        status: "succeeded",
+                    });
                     toast.success("Pembayaran berhasil! Storage kamu sudah ditambahkan.");
                     await fetchStorageInfo();
                 } else {
+                    const failureStatus =
+                        target.status === "expired" || target.status === "canceled" ? target.status : "failed";
+                    trackEvent(posthog, "payment_failed", {
+                        source: "storage_settings",
+                        product_code: target.addon_code,
+                        amount: target.amount,
+                        currency: target.currency,
+                        purchase_id: target.id,
+                        status: failureStatus,
+                    });
                     toast.error(`Pembayaran ${target.status === "expired" ? "kedaluwarsa" : "gagal"}. Silakan coba lagi.`);
                 }
                 return;
@@ -219,7 +239,7 @@ export function StorageSection() {
         // Schedule next poll
         pollTimerRef.current = setTimeout(pollOnce, POLL_INTERVAL_MS);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [stopPolling, fetchStorageInfo]);
+    }, [stopPolling, fetchStorageInfo, posthog]);
 
     const startPolling = useCallback(
         (purchaseId: string) => {
@@ -271,17 +291,34 @@ export function StorageSection() {
 
     const handleUpgrade = useCallback(async (addonCode: string) => {
         setIsProcessingUpgrade(addonCode);
+        const addon = (storageAddons.length > 0 ? storageAddons : FALLBACK_ADDONS).find((item) => item.code === addonCode);
         try {
+            if (addon) {
+                trackEvent(posthog, "payment_started", {
+                    source: "storage_settings",
+                    product_code: addon.code,
+                    amount: addon.amount,
+                    currency: addon.currency,
+                });
+            }
             const intent = await api.createStoragePurchaseIntent({ addon_code: addonCode as "storage_plus_5gb" | "storage_plus_20gb" });
             toast.success("Checkout siap. Mengarahkan ke halaman pembayaran...");
             window.location.href = intent.checkout_url;
         } catch (err) {
             const message = err instanceof Error ? err.message : "Gagal membuat sesi pembayaran storage.";
+            trackEvent(posthog, "payment_failed", {
+                source: "storage_settings",
+                product_code: addon?.code,
+                amount: addon?.amount,
+                currency: addon?.currency,
+                status: "failed",
+                error_message: message,
+            });
             toast.error(message);
         } finally {
             setIsProcessingUpgrade(null);
         }
-    }, [api]);
+    }, [api, posthog, storageAddons]);
 
     return (
         <SettingsSection
@@ -376,7 +413,7 @@ export function StorageSection() {
                                     <p className="text-xs text-muted-foreground">Aktif segera setelah pembayaran terkonfirmasi.</p>
                                 </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    {(storageAddons.length > 0 ? storageAddons : fallbackAddons).map((addon, index) => (
+                                    {(storageAddons.length > 0 ? storageAddons : FALLBACK_ADDONS).map((addon, index) => (
                                         <Button
                                             key={addon.code}
                                             variant={index === 0 ? "outline" : "default"}
@@ -412,4 +449,3 @@ export function StorageSection() {
         </SettingsSection>
     );
 }
-
