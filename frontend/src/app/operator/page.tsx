@@ -359,15 +359,16 @@ export default function OperatorDashboardPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {[
-                      ["Visitor -> Signup", summary.weekly_beta_review.funnel.visitor_to_signup],
-                      ["Signup -> First Design", summary.weekly_beta_review.funnel.signup_to_first_design],
-                      ["First Design -> Generation", summary.weekly_beta_review.funnel.first_design_to_generation],
-                      ["Generation -> Export", summary.weekly_beta_review.funnel.generation_to_export],
-                      ["Export -> Payment", summary.weekly_beta_review.funnel.export_to_payment],
-                      ["Payment -> Repeat Use", summary.weekly_beta_review.funnel.payment_to_repeat_use],
-                    ].map(([label, metric]) => {
-                      const funnelMetric = metric as WeeklyFunnelMetric;
+                    {(
+                      [
+                        ["Visitor -> Signup", summary.weekly_beta_review.funnel.visitor_to_signup],
+                        ["Signup -> First Design", summary.weekly_beta_review.funnel.signup_to_first_design],
+                        ["First Design -> Generation", summary.weekly_beta_review.funnel.first_design_to_generation],
+                        ["Generation -> Export", summary.weekly_beta_review.funnel.generation_to_export],
+                        ["Export -> Payment", summary.weekly_beta_review.funnel.export_to_payment],
+                        ["Payment -> Repeat Use", summary.weekly_beta_review.funnel.payment_to_repeat_use],
+                      ] as [string, WeeklyFunnelMetric][]
+                    ).map(([label, funnelMetric]) => {
                       return (
                         <tr key={label} className="border-b last:border-0">
                           <td className="py-3 pr-4 font-medium">{label}</td>
