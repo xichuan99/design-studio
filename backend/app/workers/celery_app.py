@@ -24,6 +24,10 @@ celery_app.conf.update(
             "task": "app.workers.storage_reconcile.reconcile_pending_storage_purchases",
             "schedule": crontab(minute="*/10"),
         },
+        "reconcile-credit-every-10-min": {
+            "task": "app.workers.credit_reconcile.reconcile_pending_credit_purchases",
+            "schedule": crontab(minute="*/10"),
+        },
     },
 )
 

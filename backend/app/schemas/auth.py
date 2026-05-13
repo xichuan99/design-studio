@@ -22,6 +22,11 @@ class RegisterRequest(BaseModel):
         description="Password must be at least 8 characters long",
         json_schema_extra={"example": "securePassword123!"},
     )
+    invite_code: Optional[str] = Field(
+        None,
+        description="Optional beta invite code (if beta gating is enabled)",
+        json_schema_extra={"example": "BETA2026WAVE1"},
+    )
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -29,6 +34,7 @@ class RegisterRequest(BaseModel):
                 "name": "Budi Santoso",
                 "email": "budi@example.com",
                 "password": "securePassword123!",
+                "invite_code": "BETA2026WAVE1",
             }
         }
     )

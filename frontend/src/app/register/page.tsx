@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { GOOGLE_OAUTH_ENABLED } from "@/lib/feature-flags";
 import { trackEvent } from "@/lib/analytics/events";
+import { getAnalyticsVisitorId, markBackendSignupCompletedLogged, trackBackendFunnelEvent } from "@/lib/analytics/backend";
 import { PublicLegalLinks } from "@/components/legal/PublicLegalLinks";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
@@ -19,6 +20,7 @@ export default function RegisterPage() {
     const [name, setName] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
+    const [inviteCode, setInviteCode] = useState("");
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -43,7 +45,12 @@ export default function RegisterPage() {
             const res = await fetch(`${API_BASE_URL}/auth/register`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name, email, password }),
+                body: JSON.stringify({ 
+                    name, 
+                    email, 
+                    password,
+                    ...(inviteCode && { invite_code: inviteCode }),
+                }),
             });
 
             if (!res.ok) {
@@ -63,6 +70,15 @@ export default function RegisterPage() {
             }
 
             trackEvent(posthog, "signup_completed", { auth_method: "credentials", source: "register_page" });
+            void trackBackendFunnelEvent(posthog?.get_distinct_id?.(), "signup_completed", {
+                auth_method: "credentials",
+                source: "register_page",
+                properties: {
+                    visitor_id: getAnalyticsVisitorId(posthog?.get_distinct_id?.()),
+                    email_domain: email.split("@")[1] || null,
+                },
+            });
+            markBackendSignupCompletedLogged();
             router.push("/projects");
         } catch (err: unknown) {
             posthog?.capture("signup_failed", {
@@ -82,7 +98,7 @@ export default function RegisterPage() {
 
     const handleGoogleLogin = () => {
         trackEvent(posthog, "signup_started", { auth_method: "google", source: "register_page" });
-        signIn("google", { callbackUrl: "/projects" });
+        signIn("google", { callbackUrl: "/projects?signup_completed=1&auth_method=google" });
     };
 
     return (
@@ -188,6 +204,17 @@ export default function RegisterPage() {
                                 placeholder="Konfirmasi Password"
                                 required
                                 minLength={8}
+                                className="w-full h-12 pl-11 pr-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-slate-500 text-sm focus:outline-none focus:border-purple-500/50 focus:bg-white/10 transition-all"
+                            />
+                        </div>
+
+                        <div className="relative group">
+                            <Info className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500 group-focus-within:text-purple-400 transition-colors" />
+                            <input
+                                type="text"
+                                value={inviteCode}
+                                onChange={(e) => setInviteCode(e.target.value)}
+                                placeholder="Kode Undangan (opsional)"
                                 className="w-full h-12 pl-11 pr-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-slate-500 text-sm focus:outline-none focus:border-purple-500/50 focus:bg-white/10 transition-all"
                             />
                         </div>

@@ -1,25 +1,27 @@
 # Launch Readiness
 
-Last audited: 2026-05-12
+Last audited: 2026-05-13
 
 This file is the paid-beta operating snapshot for SmartDesign Studio. It focuses on whether the product can run a controlled 30-50 seller beta with enough measurement, billing discipline, admin visibility, security, and documentation hygiene.
 
 ## Executive Summary
 
-Status: **P0 launch-readiness baseline is now implemented for a controlled paid beta, with P1 workflow polish and legal/PDP packaging still required before a wider launch.**
+Status: **Phase 1, Phase 2, and Phase 3 complete. Ready to move into Phase 4: Seller-First Activation.**
 
-The repo now has the operating baseline needed for a small 30-50 seller beta: typed funnel analytics, an AI usage/cost ledger, operator dashboard visibility, export feedback capture, upload audit coverage, production secret guardrails, and architecture docs that match the current Docker Compose runtime.
+Monetization core (credit packs with Midtrans, idempotent webhook fulfillment, operator revenue reporting), beta control plane (allowlist gating, invite-source tracking, support runbook), and funnel truth measurement (backend export event, backend-owned visitor-to-signup, cohort retention, repeat purchases) are implemented and tested. All 23 tests passing. 
+
+Next: Seller-first activation work, especially channel-specific onboarding and the first-value experience.
 
 ## Current State
 
 | Area | Status | Evidence | Beta risk |
 | --- | --- | --- | --- |
 | Core seller workflow | Partial | Create/editor/tools routes exist under `frontend/src/app`, backend design/tool APIs exist under `backend/app/api` | Flow may be feature-rich but not yet measured as one seller funnel from upload to export |
-| Analytics | Ready for beta | Canonical taxonomy in `docs/analytics-event-taxonomy.md`; typed frontend wrapper in `frontend/src/lib/analytics/events.ts`; acquisition, activation, export, payment, and feedback events wired | Backend-owned retention cohorts still need weekly analysis/querying |
+| Analytics | Ready for beta | Canonical taxonomy in `docs/analytics-event-taxonomy.md`; typed frontend wrapper in `frontend/src/lib/analytics/events.ts`; acquisition, activation, export, payment, and feedback events wired | Landing + signup now also land in backend `analytics_events`, but broader product analytics still remain partially PostHog-backed |
 | Credits/billing | Ready for beta | `credit_transactions` plus `ai_usage_events` link user, job/tool job, provider/model, cost fields, credit charge, status, error, and refund transaction | Actual provider costs still depend on providers returning reliable cost metadata |
 | AI jobs | Ready for beta | Async job status plus `ai_usage_events`; refund lifecycle is mirrored into the ledger and async refunds check the ledger before issuing another refund | Legacy `_charged_credits` and `_refunded` payload markers remain for backward compatibility |
-| Payments | Ready for beta | Storage payments and paid/refund summary are visible in `/api/internal/operator-summary` and `/operator` | Credit top-up products beyond storage are still future work |
-| Admin/operator dashboard | Ready for beta | Token-protected `/api/internal/operator-summary` and `/operator` show users, jobs, AI usage/cost, credits, payments, failures/refunds, and export feedback | Fine-grained admin actions are intentionally not included yet |
+| Payments | Ready for beta | Storage payments and credit-pack revenue/fulfillment are visible in `/api/internal/operator-summary` and `/operator` | Shared operator auth and broader payment ops hardening remain for post-beta |
+| Admin/operator dashboard | Ready for founder-led beta | Token-protected `/api/internal/operator-summary` and `/operator` show users, jobs, AI usage/cost, credits, payments, failures/refunds, and export feedback | Shared internal token stored by the browser should be replaced with role-based/session auth before a larger team uses it |
 | Upload/security | Ready for beta | `docs/upload-security-audit.md` covers every `UploadFile` endpoint; PDF brand-guidelines upload now has size/magic-byte checks and action rate limiting | Malware scanning, signed private URLs, and retention automation remain post-beta hardening |
 | Legal/PDP baseline | Ready for beta | Product-facing `/terms`, `/privacy`, and `/privacy#penghapusan-data` now disclose paid-beta terms, third-party AI providers, and account/data deletion handling | Formal legal review is still recommended before scaling beyond controlled beta |
 | Documentation | Ready for beta | `README.md`, `LAUNCH_READINESS.md`, and `docs/architecture/*` now describe the current backend in-process layout runtime and operator baseline | Long-form feature docs may still include historical planning notes |
@@ -45,6 +47,8 @@ The repo now has the operating baseline needed for a small 30-50 seller beta: ty
 - Some historical feature docs are still planning docs and should not be treated as runtime source of truth.
 - Legal/PDP pages are now visible, but formal legal review is still recommended before scaling beyond controlled beta.
 - Marketplace/template docs exist, but marketplace should remain deferred until repeat use and paid willingness are proven.
+- Credit-pack pricing is visible on the landing page, but backend payment fulfillment and operator revenue reporting are still storage-centric.
+- Invite-only beta gating is not yet the main control plane for onboarding the first 30-50 sellers.
 
 ## P0 Launch-Readiness Checklist
 
@@ -87,6 +91,12 @@ The repo now has the operating baseline needed for a small 30-50 seller beta: ty
 
 ## P1 Paid-Beta Workflow Checklist
 
+- [ ] Make credit top-up checkout first-class:
+  - Define credit pack catalog that matches landing pricing.
+  - Create Midtrans checkout intent for credit packs, separate from storage add-ons.
+  - Fulfill paid notifications into `credit_transactions` exactly once.
+  - Show credit revenue, successful purchases, failed purchases, and repeat purchases in `/operator`.
+  - Add reconciliation tests for paid, pending, failed, expired, and duplicate webhook events.
 - [ ] Polish the seller workflow as the primary path:
   - Upload product photo
   - Choose Shopee/Tokopedia/Instagram/WhatsApp target
@@ -98,6 +108,9 @@ The repo now has the operating baseline needed for a small 30-50 seller beta: ty
 - [ ] Prepare 20-50 internal templates for F&B, fashion, beauty, hampers, and discount campaigns.
 - [ ] Add invite-only beta access using allowlisted emails or referral codes.
 - [ ] Give beta users initial free credits and expose remaining credits clearly.
+- [ ] Add an authoritative export event that does not depend on feedback submission.
+- [x] Pull or mirror `visitor_to_signup` from backend analytics into the weekly operator review.
+- [ ] Replace shared operator token storage with session/role-based admin access before adding non-founder operators.
 - [x] Add weekly beta review dashboard/query. **Completed 2026-05-12:** internal `/api/internal/operator-summary` now includes `weekly_beta_review` funnel/cost block; operational query pack documented in `docs/weekly-beta-review-dashboard.md`.
   - visitor to signup
   - signup to first design
@@ -115,13 +128,139 @@ The repo now has the operating baseline needed for a small 30-50 seller beta: ty
 - Adding more AI models before cost attribution is first-class.
 - Large public launch before paid-beta funnel and billing are observable.
 
-## Suggested 2-Week Sprint
+## Execution Plan From 2026-05-13
 
-1. Day 1-2: Finalize analytics taxonomy and add typed tracking wrapper. **Started 2026-05-12:** added `docs/analytics-event-taxonomy.md`, typed wrapper, and core funnel wiring for signup, create upload, prompt submit, generation success/fail, first export, and storage payment events.
-2. Day 3-5: Add AI usage/cost ledger fields or table; wire generation success/fail/refund events. **Started 2026-05-12:** added `ai_usage_events` model/migration/service, linked credit transactions, and wired create generation, redesign, async AI tool job charge/status/refund paths.
-3. Day 6-7: Build minimal admin/operator dashboard and internal API. **Started 2026-05-12:** added internal operator summary API plus frontend `/operator` dashboard protected by `X-Internal-Token`.
-4. Day 8-9: Harden upload endpoints and production env validation.
-5. Day 10: Clean remaining docs drift and write beta runbook with rollback steps. **Docs drift completed 2026-05-12; beta runbook/rollback wording remains a P1 operations doc.**
+This plan assumes the next goal is a **controlled paid beta with 30-50 invited Indonesian sellers**, not a public launch. Work should bias toward proving paid activation, repeat usage, credit margin, and support load before expanding traffic.
+
+### Phase 1: Monetization Core (Week 1) ✅ COMPLETE
+
+Goal: make the credit-pack promise on the landing page real end-to-end. **Status: DONE (2026-05-13)**
+
+- [x] Add a credit-pack catalog that maps product IDs to credits, price, label, and bonus/daily-claim policy.
+- [x] Add backend credit-purchase intent creation using Midtrans, separate from storage purchases.
+- [x] Process Midtrans notifications into `credit_transactions` with idempotency protection.
+- [x] Add reconciliation for pending credit purchases, matching the existing storage reconciliation pattern where practical.
+- [x] Update `/api/internal/operator-summary` and `/operator` to show credit revenue, credit purchases by status, repeat purchase count, and revenue per paying user.
+- [x] Update privacy/payment wording if credit purchases use different refund or fulfillment rules than storage add-ons.
+
+Acceptance criteria:
+
+- [x] A user can buy a credit pack and see the balance increase without manual admin work.
+- [x] Duplicate webhook delivery does not grant duplicate credits.
+- [x] Operator can distinguish storage revenue from credit-pack revenue.
+- [x] Tests cover paid, pending, failed, expired, duplicate, and reconciliation paths. (15 tests, all passing)
+
+**Completion Evidence:**
+- Backend: `credit_purchases` table, `credit_payment_service.py`, Midtrans Snap integration, webhook processing with SHA512 signature verification
+- Idempotency: `paid_event_id` unique constraint + `process_webhook_event()` SELECT FOR UPDATE row locking
+- Reconciliation: `credit_reconcile.py` Celery beat task every 10 minutes
+- Frontend: `CreditPackSection.tsx` in settings page with catalog, checkout, status polling, purchase history
+- Operator metrics: 5 new fields in `/api/internal/operator-summary` for credit revenue, status breakdown, repeat purchasers
+- Tests: 15 passing covering all Midtrans statuses (paid/pending/failed/expired/canceled/capture/settlement/fraud challenge)
+
+### Phase 2: Beta Control Plane (Week 2) ✅ COMPLETE
+
+Goal: keep the first beta small, measurable, and supportable. **Status: DONE (2026-05-13)**
+
+- [x] Add allowlisted email or invite-code gating to signup/onboarding.
+- [x] Decide whether beta users receive initial free credits, and implement the grant once per user.
+- [x] Add an admin-visible source field for invite code, referral code, or allowlist cohort.
+- [x] Create a short beta support runbook: refund, failed generation, payment pending, provider outage, deploy rollback.
+- [x] Keep public acquisition pointed to waitlist until the invite gate is intentionally relaxed.
+
+Acceptance criteria:
+
+- [x] Non-invited users cannot enter the paid beta flow.
+- [x] Invited users can onboard without founder intervention.
+- [x] Operator can see which cohort/invite source a user came from.
+- [x] Support has written steps for the top five likely beta incidents.
+
+**Completion Evidence:**
+- Backend: `BetaAllowlist` model with email/code entry_type, status, usage tracking; `beta_allowlist_service.py` with check/create/update/list functions
+- Gating: `register()` endpoint validates allowlist when `BETA_GATING_ENABLED=true`; conditional credit grants via `allowlist.initial_credits_grant`
+- Tracking: `user.invite_source` field records signup method (email_allowlist, code_allowlist, credentials); operator-summary shows `signups_by_invite_source_7d` breakdown
+- Operator APIs: POST/GET/PATCH/GET stats endpoints under `/api/internal/beta-allowlist/*` (require internal token)
+- Support: `/docs/beta-support-runbook.md` with 5 major incident types (signup failure, failed generation, stuck payment, export failure, provider outage)
+- Migrations: `f2e8d7c6b5a4` creates beta_allowlist table + invite_source column
+- Frontend: Register page now accepts optional `invite_code` parameter
+- Tests: 5 tests passing in operator-summary covering new fields
+
+### Phase 3: Funnel Truth (Week 2-3) ✅ COMPLETE
+
+Goal: remove the two biggest measurement blind spots. **Status: DONE (2026-05-13)**
+
+- [x] Add a backend-owned export event or signed export callback so `generation_to_export` is not inferred from feedback.
+- [x] Pull `visitor_to_signup` into the weekly review from backend analytics events.
+- [x] Add D1/D7 cohort queries based on signup date and later generation/export activity.
+- [x] Track repeat purchase within 30 days after first payment.
+
+Acceptance criteria:
+
+- [x] Weekly review can answer: visitors, signups, first design, first generation, first export, first payment, repeat use, repeat purchase.
+- [x] Export rate does not depend on users submitting feedback.
+- [x] Retention and repeat purchase are visible by cohort.
+
+**Completion Evidence So Far:**
+- Backend-owned export tracking endpoint: `/api/designs/{design_id}/export-event`
+- Weekly review now prefers backend export events over feedback proxy for `generation_to_export`
+- Visitor-to-signup is now backed by backend `analytics_events` for `landing_viewed` and `signup_completed`
+- Retention query now groups signup cohorts and measures D1/D7 activity from upload/generation/export signals
+- Repeat purchase metric now counts users with 2+ paid credit purchases inside a 30-day window
+- Validation: Phase 3 metrics helpers covered by `tests/test_phase3_metrics.py` and backend suite passing
+
+### Phase 4: Seller-First Activation (Week 3-5)
+
+Goal: make the first value moment obvious for the target seller.
+
+- Make marketplace/social targets first-class choices: Shopee, Tokopedia, Instagram feed/story, WhatsApp catalog/status.
+- Prepare 20-50 internal templates across F&B, fashion, beauty, hampers, discount campaigns, and new-arrival promos.
+- Reduce blank-canvas decisions in onboarding by starting from category, channel, product photo, and promotion type.
+- Keep marketplace/community template supply deferred until repeat usage is proven.
+
+Acceptance criteria:
+
+- A seller can complete upload -> choose channel -> answer short brief -> generate -> light edit -> export without help.
+- At least 20 templates are usable in production data, not only design mockups.
+- The first design experience is optimized for Indonesian seller copy and channels.
+
+### Phase 5: Operator And Security Hardening (Week 5-6)
+
+Goal: make internal operations safe enough for more than one founder/operator.
+
+- Replace browser-stored shared operator token with authenticated admin/session access.
+- Add role checks for `/operator` and internal operator APIs.
+- Review asset access policy for private/signed URLs and retention cleanup.
+- Decide whether malware scanning is required before opening beyond controlled beta.
+- Tombstone or archive remaining legacy `quantum-engine` repo artifacts so new contributors do not treat them as active runtime services.
+
+Acceptance criteria:
+
+- Operator access is tied to a real admin identity, not a pasted shared token.
+- Internal dashboards are not exposed to normal users.
+- Legacy runtime references clearly say inactive/deprecated.
+- Asset privacy and retention risks have a documented owner and schedule.
+
+## Beta Metrics Targets
+
+These are decision thresholds for the controlled beta. They are not current measured values.
+
+| Metric | Target | Decision use |
+| --- | --- | --- |
+| Signup -> first design | >= 45% | Onboarding clarity |
+| First design -> generation | >= 70% | Value moment reached |
+| Generation -> export | >= 50% | Output usefulness |
+| Export feedback response rate | >= 30% of exporters | Quality signal strength |
+| Activated beta users -> first payment | >= 10% | Paid willingness |
+| Paying users -> repeat purchase in 30d | >= 15% | Repeatable demand |
+| Gross margin on standard generation | >= 60% | Pricing safety |
+| Silent credit loss | 0 incidents | Trust and billing safety |
+
+## Go/No-Go Gates
+
+- **Go for controlled paid beta:** credit checkout works end-to-end, invite gating is active, operator can reconcile credits/revenue/refunds, and failed generation refunds are observable.
+- **Continue beta, do not launch publicly:** paid activation exists but repeat purchase, D7 retention, or generation->export are weak.
+- **Go for wider launch:** repeat purchase is visible, standard generation margin is healthy, support load is manageable, operator auth is hardened, and legal/payment wording has had a final review.
+- **No-go:** duplicate credit grants, silent credit loss, unmeasured export flow, or inability to reconcile AI provider cost against credits consumed.
 
 ## Beta Acceptance Criteria
 

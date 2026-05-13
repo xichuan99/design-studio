@@ -16,7 +16,7 @@
 | Monitoring | - |
 | Backend | FastAPI 0.115+, SQLAlchemy, Alembic |
 | Database | PostgreSQL |
-| AI/Worker | Quantum Engine (FastAPI terpisah), Celery, fal_client |
+| AI/Worker | Backend placement engine (in-process), Celery, fal_client |
 | Infra | Docker, docker-compose |
 | Testing | Playwright (E2E), pytest, Storybook |
 | CI/CD | GitHub Actions |

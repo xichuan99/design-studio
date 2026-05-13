@@ -7,6 +7,7 @@ from app.models.job import Job as Job
 from app.models.design_history import DesignHistory as DesignHistory
 from app.models.brand_kit import BrandKit as BrandKit
 from app.models.credit_transaction import CreditTransaction as CreditTransaction
+from app.models.credit_purchase import CreditPurchase as CreditPurchase
 from app.models.ai_tool_result import AiToolResult as AiToolResult
 from app.models.ai_tool_job import AiToolJob as AiToolJob
 from app.models.ai_usage_event import AiUsageEvent as AiUsageEvent
@@ -25,3 +26,6 @@ from app.models.waitlist_entry import WaitlistEntry as WaitlistEntry
 from app.models.testimonial import Testimonial as Testimonial
 from app.models.comparison_session import ComparisonSession as ComparisonSession
 from app.models.referral import Referral as Referral
+from app.models.beta_allowlist import BetaAllowlist as BetaAllowlist
+from app.models.design_export import DesignExport as DesignExport
+from app.models.analytics_event import AnalyticsEvent as AnalyticsEvent

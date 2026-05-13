@@ -13,9 +13,13 @@ Pastikan event berikut sudah masuk ke PostHog:
 1. `landing_viewed` dengan properti `variant`.
 2. `waitlist_submitted` dengan properti `variant`, `source`, `is_new`, `position`.
 3. `landing_cta_clicked` dengan properti `variant`, `cta_name`, `cta_location`.
-4. `compare_models_started`.
-5. `compare_models_completed`.
-6. `comparison_shared`.
+4. `signup_completed` dengan properti `auth_method`, `source`.
+5. `compare_models_started`.
+6. `compare_models_completed`.
+7. `comparison_shared`.
+
+Catatan:
+1. `landing_viewed` dan `signup_completed` juga dicerminkan ke backend analytics sink untuk weekly review, jadi PostHog berperan sebagai mirror/experiment layer, bukan satu-satunya source of truth.
 
 ---
 
@@ -48,6 +52,21 @@ Attribution:
 
 Tujuan:
 1. Menentukan uplift conversion per varian.
+
+### Panel B2 — Signup conversion by variant
+
+Funnel:
+1. `landing_viewed`
+2. `signup_completed`
+
+Breakdown:
+1. `variant` jika assignment landing dipakai pada sesi yang sama
+
+Attribution:
+1. First touch
+
+Tujuan:
+1. Menilai apakah landing traffic yang datang benar-benar lanjut ke akun yang dibuat.
 
 ### Panel C — Compare adoption
 

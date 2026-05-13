@@ -110,6 +110,52 @@ export function useUserEndpoints() {
         [API_BASE_URL, getHeaders]
     );
 
+    const getCreditPackCatalog = useCallback(async (): Promise<Types.CreditPackListResponse> => {
+            const res = await fetch(`${API_BASE_URL}/users/me/credits/packs`, {
+                headers: getHeaders(),
+            });
+            if (!res.ok) {
+                const errBody = await res.json().catch(() => ({}));
+                throw new Error(errBody.detail || 'Failed to fetch credit pack catalog');
+            }
+            return res.json();
+        }, [API_BASE_URL, getHeaders]);
+
+    const createCreditPurchaseIntent = useCallback(
+        async (payload: Types.CreditPurchaseIntentRequest): Promise<Types.CreditPurchaseIntentResponse> => {
+            const res = await fetch(`${API_BASE_URL}/users/me/credits/purchase-intent`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(payload),
+            });
+            if (!res.ok) {
+                const errBody = await res.json().catch(() => ({}));
+                throw new Error(errBody.detail || 'Failed to create credit purchase intent');
+            }
+            return res.json();
+        },
+        [API_BASE_URL, getHeaders]
+    );
+
+    const getCreditPurchases = useCallback(
+        async (limit: number = 20, offset: number = 0): Promise<Types.CreditPurchaseListResponse> => {
+            const qs = new URLSearchParams({
+                limit: limit.toString(),
+                offset: offset.toString(),
+            }).toString();
+
+            const res = await fetch(`${API_BASE_URL}/users/me/credits/purchases?${qs}`, {
+                headers: getHeaders(),
+            });
+            if (!res.ok) {
+                const errBody = await res.json().catch(() => ({}));
+                throw new Error(errBody.detail || 'Failed to fetch credit purchases');
+            }
+            return res.json();
+        },
+        [API_BASE_URL, getHeaders]
+    );
+
     const applyReferralCode = useCallback(
         async (payload: Types.ReferralApplyRequest): Promise<Types.ReferralApplyResponse> => {
             const res = await fetch(`${API_BASE_URL}/referrals/apply`, {
@@ -146,6 +192,9 @@ export function useUserEndpoints() {
         getStorageAddons,
         createStoragePurchaseIntent,
         getStoragePurchases,
+        getCreditPackCatalog,
+        createCreditPurchaseIntent,
+        getCreditPurchases,
         applyReferralCode,
         getReferralStatus,
     };

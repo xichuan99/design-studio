@@ -308,7 +308,7 @@ design-studio/
 │   ├── tests/e2e/                  # Playwright end-to-end tests
 │   └── next.config.ts              # Next.js config
 │
-├── quantum-engine/                 # Legacy optimizer service kept for reference/tests; not part of docker-compose
+├── quantum-engine/                 # Archived legacy optimizer service; reference/tests only
 ```
 
 ---

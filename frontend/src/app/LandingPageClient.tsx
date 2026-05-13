@@ -17,6 +17,7 @@ import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
 import { useEffect, useState } from "react";
 import { usePostHog } from "posthog-js/react";
 import { resolveLandingExperimentVariantWithOptions } from "@/lib/experiments";
+import { getAnalyticsVisitorId, trackBackendFunnelEvent } from "@/lib/analytics/backend";
 import {
   trackLandingCtaClicked,
   trackLandingViewed,
@@ -65,6 +66,14 @@ export default function LandingPage() {
     });
     setLandingVariant(variant);
     trackLandingViewed(posthog, variant);
+    void trackBackendFunnelEvent(posthog?.get_distinct_id?.(), "landing_viewed", {
+      variant,
+      source: "landing_page",
+      properties: {
+        variant,
+        visitor_id: getAnalyticsVisitorId(posthog?.get_distinct_id?.()),
+      },
+    });
 
     const loadWaitlistCount = async () => {
       try {

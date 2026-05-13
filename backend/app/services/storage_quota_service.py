@@ -90,7 +90,7 @@ async def check_quota(user_id, incoming_size: int, db: AsyncSession) -> None:
         used_mb = round(used / (1024 * 1024), 1)
         quota_mb = round(quota / (1024 * 1024), 1)
         raise AppException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
             detail=(
                 f"Storage penuh. Anda sudah menggunakan {used_mb} MB "
                 f"dari {quota_mb} MB. Hapus file lama atau upgrade plan."

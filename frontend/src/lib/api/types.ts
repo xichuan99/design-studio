@@ -359,6 +359,52 @@ export interface StorageAddonListResponse {
     items: StorageAddon[];
 }
 
+// --- Credit Pack Types ---
+export type CreditPackCode = 'credit_pack_starter' | 'credit_pack_pro' | 'credit_pack_business';
+
+export interface CreditPack {
+    code: CreditPackCode;
+    label: string;
+    credits: number;
+    amount: number;
+    currency: string;
+}
+
+export interface CreditPackListResponse {
+    items: CreditPack[];
+}
+
+export interface CreditPurchaseIntentRequest {
+    pack_code: CreditPackCode;
+}
+
+export interface CreditPurchaseIntentResponse {
+    purchase_id: string;
+    status: 'pending' | 'paid' | 'failed' | 'expired' | 'canceled';
+    checkout_url: string;
+    pack_code: CreditPackCode;
+    credits_added: number;
+    amount: number;
+    currency: string;
+}
+
+export interface CreditPurchaseItem {
+    id: string;
+    pack_code: string;
+    credits_added: number;
+    amount: number;
+    currency: string;
+    provider: string;
+    status: string;
+    created_at: string;
+    paid_at?: string | null;
+}
+
+export interface CreditPurchaseListResponse {
+    items: CreditPurchaseItem[];
+    total_count: number;
+}
+
 // --- Copywriting Types ---
 export interface CopywritingClarifyRequest {
     product_description: string;

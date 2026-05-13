@@ -1,6 +1,8 @@
 # ⚛️ Quantum Layout Engine
 
-Standalone microservice untuk SmartDesign Studio yang mengoptimasi posisi elemen desain menggunakan **Quantum QAOA** (pyQPanda).
+Status: archived/reference only.
+
+Service ini tidak lagi menjadi bagian dari runtime aktif Design Studio. Optimasi layout sekarang berjalan in-process di backend, dan folder ini dipertahankan hanya untuk referensi sejarah, eksperimen lama, dan tes legacy.
 
 ## Stack
 - **Runtime**: Python 3.10
@@ -10,12 +12,14 @@ Standalone microservice untuk SmartDesign Studio yang mengoptimasi posisi elemen
 
 ## Quick Start
 
+Gunakan bagian ini hanya jika kamu memang perlu menjalankan legacy service untuk eksperimen lokal atau investigasi historis.
+
 ```bash
-# Build & run via Docker
+# Build & run via Docker (legacy only)
 docker build -t quantum-engine .
 docker run -p 8001:8001 quantum-engine
 
-# Atau via docker-compose (dari root project)
+# Atau via docker-compose (legacy only, tidak dipakai di deployment aktif)
 docker-compose up quantum-engine
 ```
 

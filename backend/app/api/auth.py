@@ -38,8 +38,19 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
     """
     Registers a new user with email and password.
     If the email already exists, returns a 400 error.
-    Otherwise, creates the user, hashes the password, and logs 10 bonus credits for signing up.
+    Otherwise, creates the user, hashes the password, and logs bonus credits for signing up.
+
+    If beta gating is enabled:
+    - User email must be on the allowlist, OR
+    - User must provide a valid invite code
     """
+    from app.core.config import settings
+    from app.services.beta_allowlist_service import (
+        check_email_allowed,
+        check_invite_code_allowed,
+        mark_allowlist_entry_used,
+    )
+
     # Check if user already exists
     normalized_email = data.email.strip().lower()
     result = await db.execute(select(User).where(func.lower(User.email) == normalized_email))
@@ -50,6 +61,32 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
             detail="Email is already registered",
         )
 
+    # Check beta gating
+    allowlist_entry = None
+    invite_source = "credentials"  # default invite source
+    extra_credits = 0
+
+    if settings.BETA_GATING_ENABLED:
+        email_allowed, email_entry = await check_email_allowed(normalized_email, db)
+        code_allowed = False
+        code_entry = None
+
+        if data.invite_code:
+            code_allowed, code_entry = await check_invite_code_allowed(data.invite_code, db)
+
+        if not email_allowed and not code_allowed:
+            raise ValidationError(
+                detail="Email or invite code is not on the beta allowlist. Please check your invitation.",
+            )
+
+        # Determine which allowlist entry was used
+        if email_allowed:
+            allowlist_entry = email_entry
+            invite_source = "email_allowlist"
+        elif code_allowed:
+            allowlist_entry = code_entry
+            invite_source = "code_allowlist"
+
     # Create new user
     hashed_password = get_password_hash(data.password)
     user = User(
@@ -57,7 +94,12 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
         name=data.name,
         password_hash=hashed_password,
         provider="credentials",
+        invite_source=invite_source,
     )
+
+    # Grant extra credits from allowlist if applicable
+    if allowlist_entry:
+        extra_credits = allowlist_entry.initial_credits_grant
 
     db.add(user)
 
@@ -67,7 +109,13 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
     from app.services.credit_service import log_credit_change
     from app.core.credit_costs import SIGNUP_BONUS
 
-    await log_credit_change(db, user, SIGNUP_BONUS, "Bonus pendaftaran")
+    # Log signup bonus + any allowlist extra credits
+    total_bonus = SIGNUP_BONUS + extra_credits
+    await log_credit_change(db, user, total_bonus, f"Bonus pendaftaran ({invite_source})")
+
+    # Mark allowlist entry as used
+    if allowlist_entry:
+        await mark_allowlist_entry_used(allowlist_entry.id, db)
 
     waitlist_result = await db.execute(
         select(WaitlistEntry).where(

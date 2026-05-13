@@ -46,10 +46,12 @@ export default function TermsPage() {
       <section className="space-y-3">
         <h2 className="text-xl font-semibold text-white">4. Kredit, pembayaran, dan refund</h2>
         <ul className="space-y-2 text-sm leading-7 text-slate-300 sm:text-base">
-          <li>Setiap operasi AI dapat mengonsumsi kredit sesuai biaya yang ditampilkan di produk.</li>
-          <li>Pembelian storage atau add-on berbayar mengikuti harga dan status checkout yang tampil saat transaksi.</li>
-          <li>Jika proses AI gagal karena error sistem, SmartDesign Studio akan berupaya mengembalikan kredit sesuai ledger internal.</li>
-          <li>Riwayat biaya, refund, dan status job dapat dipantau secara internal untuk rekonsiliasi paid beta.</li>
+          <li><strong className="text-white">Kredit yang tersedia:</strong> Kredit signup gratis diberikan sekali per akun. Bonus kredit tambahan dapat diberikan melalui program beta atau referral.</li>
+          <li><strong className="text-white">Pembelian kredit pack:</strong> Paket kredit dijual melalui Midtrans dengan harga tertera saat transaksi. Pembelian kredit pack adalah <strong>final dan tidak dapat dikembalikan (non-refundable)</strong>, kecuali jika ada kegagalan teknis pada sistem pembayaran kami.</li>
+          <li><strong className="text-white">Penggunaan kredit:</strong> Setiap operasi AI mengonsumsi kredit sesuai biaya yang ditampilkan. Kredit yang dikonsumsi tidak dapat dikembalikan kecuali operasi AI tersebut gagal karena error sistem SmartDesign Studio.</li>
+          <li><strong className="text-white">Refund untuk kegagalan:</strong> Jika proses AI gagal karena error sistem kami, kredit yang dihabiskan akan dikembalikan ke akun Anda secara otomatis. Refund dapat dilihat di histori transaksi kredit.</li>
+          <li><strong className="text-white">Transaksi pembayaran storage:</strong> Pembelian storage quota mengikuti harga dan syarat yang tampil saat checkout. Riwayat biaya dapat dipantau di halaman pembayaran dan operator summary untuk rekonsiliasi.</li>
+          <li><strong className="text-white">Riwayat kredit dan transaksi:</strong> Semua pembelian kredit, penggunaan, refund, dan transaksi lain tersedia di halaman riwayat untuk verifikasi pengguna dan paid beta auditing.</li>
         </ul>
       </section>
 

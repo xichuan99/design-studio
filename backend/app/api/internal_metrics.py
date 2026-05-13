@@ -1,17 +1,22 @@
 import secrets
-from datetime import datetime, timedelta, timezone
+from collections import defaultdict
+from datetime import date, datetime, time, timedelta, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Header
+from fastapi import APIRouter, Depends, Header, status
 from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.core.exceptions import ForbiddenError, UnauthorizedError
+from app.core.exceptions import ForbiddenError, UnauthorizedError, ValidationError, NotFoundError
 from app.models.ai_tool_job import AiToolJob
 from app.models.ai_usage_event import AiUsageEvent
+from app.models.analytics_event import AnalyticsEvent
+from app.models.beta_allowlist import BetaAllowlist
 from app.models.credit_transaction import CreditTransaction
+from app.models.credit_purchase import CreditPurchase
+from app.models.design_export import DesignExport
 from app.models.design_feedback import DesignFeedback
 from app.models.job import Job
 from app.models.project import Project
@@ -51,6 +56,27 @@ async def _count_by_status(db: AsyncSession, model) -> dict[str, int]:
         select(model.status, func.count()).group_by(model.status)
     )
     return {str(status): int(count) for status, count in result.all()}
+
+
+async def _signups_by_invite_source(db: AsyncSession, since: datetime) -> dict[str, int]:
+    result = await db.execute(
+        select(User.invite_source, func.count(User.id))
+        .where(User.created_at >= since)
+        .group_by(User.invite_source)
+    )
+    return {str(source or "unknown"): int(count) for source, count in result.all()}
+
+
+async def _count_repeat_purchasers(db: AsyncSession, model, since: datetime) -> int:
+    repeat_users = (
+        select(model.user_id)
+        .where(model.status == "paid", model.created_at >= since)
+        .group_by(model.user_id)
+        .having(func.count(model.id) > 1)
+        .subquery()
+    )
+    result = await db.execute(select(func.count()).select_from(repeat_users))
+    return int(result.scalar() or 0)
 
 
 async def _ai_usage_by_operation(db: AsyncSession, since: datetime) -> list[dict]:
@@ -132,6 +158,174 @@ def _safe_rate(numerator: int, denominator: int) -> float:
     return round((numerator / denominator) * 100, 2)
 
 
+async def _count_users_with_export_events(db: AsyncSession, since: datetime) -> int:
+    """Count distinct users with at least one successful export event."""
+    result = await db.execute(
+        select(func.count(func.distinct(DesignExport.user_id)))
+        .where(
+            DesignExport.created_at >= since,
+            DesignExport.success.is_(True),
+        )
+    )
+    return int(result.scalar() or 0)
+
+
+async def _visitor_to_signup_metrics(db: AsyncSession, since: datetime) -> dict[str, int]:
+    visitors_subquery = (
+        select(AnalyticsEvent.visitor_id)
+        .where(
+            AnalyticsEvent.event_name == "landing_viewed",
+            AnalyticsEvent.created_at >= since,
+        )
+        .distinct()
+        .subquery()
+    )
+    signups_subquery = (
+        select(AnalyticsEvent.visitor_id)
+        .where(
+            AnalyticsEvent.event_name == "signup_completed",
+            AnalyticsEvent.created_at >= since,
+        )
+        .distinct()
+        .subquery()
+    )
+
+    visitors = await _scalar_int(db, select(func.count()).select_from(visitors_subquery))
+    signups = await _scalar_int(db, select(func.count()).select_from(signups_subquery))
+    converted = await _scalar_int(
+        db,
+        select(func.count()).select_from(
+            visitors_subquery.join(
+                signups_subquery,
+                visitors_subquery.c.visitor_id == signups_subquery.c.visitor_id,
+            )
+        ),
+    )
+
+    return {"visitors": visitors, "signups": signups, "converted": converted}
+
+
+def _cohort_date_value(value: object) -> date:
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    return date.fromisoformat(str(value))
+
+
+async def _count_active_users_in_window(
+    db: AsyncSession,
+    cohort_user_ids: set,
+    activity_start: datetime,
+    activity_end: datetime,
+) -> int:
+    if not cohort_user_ids:
+        return 0
+
+    active_user_ids: set = set()
+
+    project_result = await db.execute(
+        select(Project.user_id).where(
+            Project.user_id.in_(cohort_user_ids),
+            Project.created_at >= activity_start,
+            Project.created_at < activity_end,
+        )
+    )
+    active_user_ids.update(row[0] for row in project_result.all())
+
+    usage_result = await db.execute(
+        select(AiUsageEvent.user_id).where(
+            AiUsageEvent.user_id.in_(cohort_user_ids),
+            AiUsageEvent.created_at >= activity_start,
+            AiUsageEvent.created_at < activity_end,
+            AiUsageEvent.status.in_(["charged", "succeeded", "completed", "refunded"]),
+        )
+    )
+    active_user_ids.update(row[0] for row in usage_result.all())
+
+    export_result = await db.execute(
+        select(DesignExport.user_id).where(
+            DesignExport.user_id.in_(cohort_user_ids),
+            DesignExport.created_at >= activity_start,
+            DesignExport.created_at < activity_end,
+            DesignExport.success.is_(True),
+        )
+    )
+    active_user_ids.update(row[0] for row in export_result.all())
+
+    return len(active_user_ids)
+
+
+async def _get_cohort_d1_d7_retention(db: AsyncSession) -> dict:
+    """Calculate D1 and D7 retention based on signup cohorts.
+
+    Returns dict with cohort dates and their D0/D1/D7 retention metrics.
+    """
+    # Get users who signed up and their first action day
+    cohort_query = select(
+        func.date(User.created_at).label("cohort_date"),
+        func.count(func.distinct(User.id)).label("d0_users"),
+    ).group_by(func.date(User.created_at)).order_by(desc(func.date(User.created_at))).limit(4)
+
+    result = await db.execute(cohort_query)
+    cohorts = result.all()
+
+    cohort_data = {}
+    for cohort_date, d0_users in cohorts:
+        cohort_day = _cohort_date_value(cohort_date)
+        cohort_start = datetime.combine(cohort_day, time.min).replace(tzinfo=timezone.utc)
+        cohort_end = cohort_start + timedelta(days=1)
+        d1_start = cohort_start + timedelta(days=1)
+        d1_end = d1_start + timedelta(days=1)
+        d7_start = cohort_start + timedelta(days=7)
+        d7_end = d7_start + timedelta(days=1)
+
+        cohort_users_result = await db.execute(
+            select(User.id).where(
+                User.created_at >= cohort_start,
+                User.created_at < cohort_end,
+            )
+        )
+        cohort_user_ids = {row[0] for row in cohort_users_result.all()}
+
+        d1_users = await _count_active_users_in_window(db, cohort_user_ids, d1_start, d1_end)
+        d7_users = await _count_active_users_in_window(db, cohort_user_ids, cohort_start, d7_end)
+
+        cohort_data[cohort_day.isoformat()] = {
+            "d0_users": d0_users,
+            "d1_users": d1_users,
+            "d7_users": d7_users,
+            "d1_retention_percent": _safe_rate(d1_users, d0_users),
+            "d7_retention_percent": _safe_rate(d7_users, d0_users),
+        }
+
+    return cohort_data
+
+
+async def _count_repeat_purchasers_within_30d(db: AsyncSession, since_30d: datetime) -> int:
+    """Count users who made 2+ credit purchases within a 30-day window."""
+    result = await db.execute(
+        select(CreditPurchase.user_id, CreditPurchase.paid_at).where(
+            CreditPurchase.status == "paid",
+            CreditPurchase.paid_at >= since_30d,
+        )
+    )
+    purchases_by_user: dict = defaultdict(list)
+    for user_id, paid_at in result.all():
+        if user_id is not None and paid_at is not None:
+            purchases_by_user[user_id].append(paid_at)
+
+    repeat_users = 0
+    for purchase_times in purchases_by_user.values():
+        if len(purchase_times) < 2:
+            continue
+        purchase_times.sort()
+        if purchase_times[-1] - purchase_times[0] <= timedelta(days=30):
+            repeat_users += 1
+
+    return repeat_users
+
+
 async def _weekly_beta_review(db: AsyncSession, since_7d: datetime, since_30d: datetime) -> dict:
     signup_users_7d = await _scalar_int(
         db,
@@ -161,17 +355,8 @@ async def _weekly_beta_review(db: AsyncSession, since_7d: datetime, since_30d: d
         ),
     )
 
-    users_with_export_feedback_7d = await _scalar_int(
-        db,
-        select(func.count(func.distinct(DesignFeedback.user_id)))
-        .select_from(User)
-        .join(DesignFeedback, DesignFeedback.user_id == User.id)
-        .where(
-            User.created_at >= since_7d,
-            DesignFeedback.created_at >= since_7d,
-            DesignFeedback.source == "export",
-        ),
-    )
+    users_with_export_events_7d = await _count_users_with_export_events(db, since_7d)
+    visitor_signup = await _visitor_to_signup_metrics(db, since_7d)
 
     paying_users_30d = await _scalar_int(
         db,
@@ -184,14 +369,16 @@ async def _weekly_beta_review(db: AsyncSession, since_7d: datetime, since_30d: d
     paying_users_after_export_30d = await _scalar_int(
         db,
         select(func.count(func.distinct(StoragePurchase.user_id)))
-        .join(DesignFeedback, DesignFeedback.user_id == StoragePurchase.user_id)
+        .join(DesignExport, DesignExport.user_id == StoragePurchase.user_id)
         .where(
             StoragePurchase.status == "paid",
             StoragePurchase.paid_at >= since_30d,
-            DesignFeedback.created_at >= since_7d,
-            DesignFeedback.source == "export",
+            DesignExport.created_at >= since_7d,
+            DesignExport.success.is_(True),
         ),
     )
+
+    repeat_purchasers_30d = await _count_repeat_purchasers_within_30d(db, since_30d)
 
     repeat_use_subquery = (
         select(AiUsageEvent.user_id)
@@ -212,6 +399,8 @@ async def _weekly_beta_review(db: AsyncSession, since_7d: datetime, since_30d: d
         select(func.count()).select_from(repeat_use_subquery),
     )
 
+    cohort_retention = await _get_cohort_d1_d7_retention(db)
+
     ai_actual_cost_7d = await _scalar_float(
         db,
         select(func.coalesce(func.sum(AiUsageEvent.actual_cost), 0)).where(
@@ -223,9 +412,11 @@ async def _weekly_beta_review(db: AsyncSession, since_7d: datetime, since_30d: d
         "window_days": 7,
         "funnel": {
             "visitor_to_signup": {
-                "count": None,
-                "rate_percent": None,
-                "note": "Gunakan query PostHog untuk visitor->signup; data visitor tidak disimpan di Postgres backend.",
+                "count": visitor_signup["converted"],
+                "rate_percent": _safe_rate(visitor_signup["converted"], visitor_signup["visitors"]),
+                "visitors": visitor_signup["visitors"],
+                "signups": visitor_signup["signups"],
+                "note": "Backend-owned visitor and signup events stored in analytics_events.",
             },
             "signup_to_first_design": {
                 "count": users_with_first_design_7d,
@@ -236,24 +427,33 @@ async def _weekly_beta_review(db: AsyncSession, since_7d: datetime, since_30d: d
                 "rate_percent": _safe_rate(users_with_generation_7d, users_with_first_design_7d),
             },
             "generation_to_export": {
-                "count": users_with_export_feedback_7d,
-                "rate_percent": _safe_rate(users_with_export_feedback_7d, users_with_generation_7d),
-                "note": "Proxy menggunakan export feedback submission sebagai sinyal export berhasil.",
+                "count": users_with_export_events_7d,
+                "rate_percent": _safe_rate(users_with_export_events_7d, users_with_generation_7d),
+                "note": "Backend-owned export events (tidak depend pada user feedback submission).",
             },
             "export_to_payment": {
                 "count": paying_users_after_export_30d,
-                "rate_percent": _safe_rate(paying_users_after_export_30d, users_with_export_feedback_7d),
-                "note": "Window payment menggunakan 30 hari agar conversion payment lebih realistis.",
+                "rate_percent": _safe_rate(paying_users_after_export_30d, users_with_export_events_7d),
+                "note": "Window payment uses backend export events as the source of truth.",
             },
             "payment_to_repeat_use": {
                 "count": repeat_use_paying_users_30d,
                 "rate_percent": _safe_rate(repeat_use_paying_users_30d, paying_users_30d),
+            },
+            "payment_to_repeat_purchase": {
+                "count": repeat_purchasers_30d,
+                "rate_percent": _safe_rate(repeat_purchasers_30d, paying_users_30d),
             },
         },
         "cost": {
             "ai_actual_cost_7d": round(ai_actual_cost_7d, 4),
             "paying_users_30d": paying_users_30d,
             "ai_cost_per_paying_user": round(ai_actual_cost_7d / paying_users_30d, 4) if paying_users_30d > 0 else 0.0,
+        },
+        "retention": cohort_retention,
+        "repeat_purchase_30d": {
+            "count": repeat_purchasers_30d,
+            "note": "Users dengan 2+ credit purchases dalam 30 hari.",
         },
     }
 
@@ -277,6 +477,9 @@ async def get_operator_summary(
     users_new_7d = await _scalar_int(
         db, select(func.count(User.id)).where(User.created_at >= since_7d)
     )
+
+    # Signups by invite source (last 7 days)
+    signups_by_invite_source = await _signups_by_invite_source(db, since_7d)
 
     design_jobs_by_status = await _count_by_status(db, Job)
     ai_tool_jobs_by_status = await _count_by_status(db, AiToolJob)
@@ -328,6 +531,35 @@ async def get_operator_summary(
             StoragePurchase.paid_at >= since_30d,
         ),
     )
+    credit_payment_status = await _count_by_status(db, CreditPurchase)
+    credit_revenue_30d_idr = await _scalar_int(
+        db,
+        select(func.coalesce(func.sum(CreditPurchase.amount), 0)).where(
+            CreditPurchase.status == "paid",
+            CreditPurchase.paid_at >= since_30d,
+        ),
+    )
+    credit_purchases_30d = await _scalar_int(
+        db,
+        select(func.count(CreditPurchase.id)).where(
+            CreditPurchase.created_at >= since_30d,
+        ),
+    )
+    credit_paid_30d = await _scalar_int(
+        db,
+        select(func.count(CreditPurchase.id)).where(
+            CreditPurchase.status == "paid",
+            CreditPurchase.paid_at >= since_30d,
+        ),
+    )
+    credit_failed_30d = await _scalar_int(
+        db,
+        select(func.count(CreditPurchase.id)).where(
+            CreditPurchase.status.in_(["failed", "expired", "canceled"]),
+            CreditPurchase.created_at >= since_30d,
+        ),
+    )
+    credit_repeat_purchasers_30d = await _count_repeat_purchasers(db, CreditPurchase, since_30d)
     feedback_count_7d = await _scalar_int(
         db,
         select(func.count(DesignFeedback.id)).where(
@@ -354,6 +586,7 @@ async def get_operator_summary(
         "users": {
             "total": users_total,
             "new_7d": users_new_7d,
+            "signups_by_invite_source_7d": signups_by_invite_source,
         },
         "jobs": {
             "design_by_status": design_jobs_by_status,
@@ -378,6 +611,12 @@ async def get_operator_summary(
         "payments": {
             "storage_by_status": payment_status,
             "storage_revenue_30d_idr": storage_revenue_30d_idr,
+            "credit_by_status": credit_payment_status,
+            "credit_revenue_30d_idr": credit_revenue_30d_idr,
+            "credit_purchases_30d": credit_purchases_30d,
+            "credit_paid_30d": credit_paid_30d,
+            "credit_failed_30d": credit_failed_30d,
+            "credit_repeat_purchasers_30d": credit_repeat_purchasers_30d,
         },
         "feedback": {
             "count_7d": feedback_count_7d,
@@ -385,4 +624,184 @@ async def get_operator_summary(
             "recent": await _recent_feedback(db),
         },
         "weekly_beta_review": await _weekly_beta_review(db, since_7d, since_30d),
+    }
+
+
+# ===============================
+# Beta Allowlist Management
+# ===============================
+
+@router.post(
+    "/beta-allowlist/add",
+    status_code=status.HTTP_201_CREATED,
+    summary="Add beta allowlist entry",
+    description="Add an email or invite code to the beta allowlist.",
+)
+async def add_allowlist_entry(
+    payload: dict,  # {entry_type, entry_value, beta_cohort?, initial_credits_grant?, notes?}
+    _: None = Depends(require_internal_token),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Add a new allowlist entry for beta gating.
+    entry_type: 'email' or 'code'
+    """
+    from app.services.beta_allowlist_service import create_allowlist_entry
+
+    entry_type = payload.get("entry_type", "").strip()
+    entry_value = payload.get("entry_value", "").strip()
+
+    if not entry_type or entry_type not in ("email", "code"):
+        raise ValidationError(detail="entry_type must be 'email' or 'code'")
+    if not entry_value:
+        raise ValidationError(detail="entry_value is required")
+
+    entry = await create_allowlist_entry(
+        entry_type=entry_type,
+        entry_value=entry_value,
+        initial_credits_grant=payload.get("initial_credits_grant", 0),
+        beta_cohort=payload.get("beta_cohort"),
+        created_by=payload.get("created_by", "operator"),
+        notes=payload.get("notes"),
+        db=db,
+    )
+    await db.commit()
+
+    return {
+        "id": str(entry.id),
+        "entry_type": entry.entry_type,
+        "entry_value": entry.entry_value,
+        "status": entry.status,
+        "message": f"{entry_type.capitalize()} added to allowlist",
+    }
+
+
+@router.get(
+    "/beta-allowlist/list",
+    status_code=status.HTTP_200_OK,
+    summary="List beta allowlist entries",
+)
+async def list_allowlist_entries(
+    limit: int = 50,
+    offset: int = 0,
+    entry_type: Optional[str] = None,
+    status_filter: Optional[str] = None,
+    _: None = Depends(require_internal_token),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    List allowlist entries with optional filtering.
+    """
+    from app.services.beta_allowlist_service import list_allowlist_entries
+
+    items, total_count = await list_allowlist_entries(
+        db=db,
+        limit=limit,
+        offset=offset,
+        entry_type=entry_type,
+        status=status_filter,
+    )
+
+    return {
+        "items": [
+            {
+                "id": str(item.id),
+                "entry_type": item.entry_type,
+                "entry_value": item.entry_value,
+                "status": item.status,
+                "beta_cohort": item.beta_cohort,
+                "initial_credits_grant": item.initial_credits_grant,
+                "used_count": item.used_count,
+                "last_used_at": item.last_used_at.isoformat() if item.last_used_at else None,
+                "created_at": item.created_at.isoformat(),
+                "created_by": item.created_by,
+                "notes": item.notes,
+            }
+            for item in items
+        ],
+        "total_count": total_count,
+    }
+
+
+@router.patch(
+    "/beta-allowlist/{entry_id}",
+    status_code=status.HTTP_200_OK,
+    summary="Update beta allowlist entry",
+)
+async def update_allowlist_entry(
+    entry_id: str,
+    payload: dict,  # {status?, initial_credits_grant?, notes?}
+    _: None = Depends(require_internal_token),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Update an allowlist entry (status, credits, or notes).
+    """
+    from app.services.beta_allowlist_service import update_allowlist_entry
+    from uuid import UUID
+
+    entry = await update_allowlist_entry(
+        entry_id=UUID(entry_id),
+        status=payload.get("status"),
+        initial_credits_grant=payload.get("initial_credits_grant"),
+        notes=payload.get("notes"),
+        db=db,
+    )
+
+    if not entry:
+        raise NotFoundError(detail="Allowlist entry not found")
+
+    await db.commit()
+
+    return {
+        "id": str(entry.id),
+        "entry_type": entry.entry_type,
+        "entry_value": entry.entry_value,
+        "status": entry.status,
+        "message": "Allowlist entry updated",
+    }
+
+
+@router.get(
+    "/beta-allowlist/stats",
+    status_code=status.HTTP_200_OK,
+    summary="Get beta allowlist statistics",
+)
+async def get_allowlist_stats(
+    _: None = Depends(require_internal_token),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get allowlist statistics: total entries, active entries, used entries, etc.
+    """
+    total = await _scalar_int(
+        db,
+        select(func.count(BetaAllowlist.id)),
+    )
+    active = await _scalar_int(
+        db,
+        select(func.count(BetaAllowlist.id)).where(BetaAllowlist.status == "active"),
+    )
+    used = await _scalar_int(
+        db,
+        select(func.count(BetaAllowlist.id)).where(BetaAllowlist.used_count > 0),
+    )
+    total_uses = await _scalar_int(
+        db,
+        select(func.sum(BetaAllowlist.used_count)),
+    )
+
+    result = await db.execute(
+        select(BetaAllowlist.beta_cohort, func.count(BetaAllowlist.id))
+        .where(BetaAllowlist.status == "active")
+        .group_by(BetaAllowlist.beta_cohort)
+    )
+    by_cohort = {str(cohort): int(count) for cohort, count in result.all()}
+
+    return {
+        "total_entries": total,
+        "active_entries": active,
+        "used_entries": used,
+        "total_uses": total_uses,
+        "by_cohort": by_cohort,
     }

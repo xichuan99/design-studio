@@ -82,7 +82,7 @@ export function generateCanvasElementsFromTemplate(
         };
         const defaults = defaultPositions[role] || { x: 0.5, y: 0.5 };
 
-        // Priority 0: Quantum Engine, Priority 1: Template Layer, Priority 2: AI Layout, Priority 3: Defaults
+        // Priority 0: Local placement engine, Priority 1: Template Layer, Priority 2: AI Layout, Priority 3: Defaults
         
         const xProp = layer?.x ?? aiLayout?.x ?? defaults.x;
         const yProp = layer?.y ?? aiLayout?.y ?? defaults.y;

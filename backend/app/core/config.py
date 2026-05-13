@@ -44,12 +44,22 @@ class Settings(BaseSettings):
     STORAGE_CHECKOUT_URL_BASE: str = ""
     STORAGE_ADDON_CATALOG_JSON: str = ""
 
+    # Credit pack payment
+    CREDIT_CHECKOUT_URL_BASE: str = ""
+    CREDIT_PACK_CATALOG_JSON: str = ""
+
     # Midtrans payment provider
     MIDTRANS_SERVER_KEY: str = ""
     MIDTRANS_IS_PRODUCTION: bool = False
 
     # Feature flag: enable paid storage upgrade flow
     STORAGE_PAYMENT_ENABLED: bool = True
+
+    # Feature flag: enable paid credit-pack flow
+    CREDIT_PAYMENT_ENABLED: bool = True
+
+    # Feature flag: enable beta allowlist gating for signups
+    BETA_GATING_ENABLED: bool = False
 
     # Optional extra CA bundle for internal HTTPS assets/services.
     INTERNAL_CA_BUNDLE_PATH: str = ""
@@ -86,10 +96,16 @@ def missing_required_runtime_settings(config: Settings = settings) -> list[str]:
         "S3_PUBLIC_URL": config.S3_PUBLIC_URL,
         "INTERNAL_METRICS_TOKEN": config.INTERNAL_METRICS_TOKEN,
     }
-    if config.STORAGE_PAYMENT_ENABLED:
+    if config.STORAGE_PAYMENT_ENABLED or config.CREDIT_PAYMENT_ENABLED:
         required.update(
             {
                 "MIDTRANS_SERVER_KEY": config.MIDTRANS_SERVER_KEY,
+            }
+        )
+
+    if config.STORAGE_PAYMENT_ENABLED:
+        required.update(
+            {
                 "STORAGE_WEBHOOK_SECRET": config.STORAGE_WEBHOOK_SECRET,
                 "STORAGE_CHECKOUT_URL_BASE": config.STORAGE_CHECKOUT_URL_BASE,
             }

@@ -11,6 +11,13 @@ from app.core.database import get_db
 from app.models.credit_transaction import CreditTransaction
 from app.models.user import User
 from app.schemas.credit import CreditHistoryResponse
+from app.schemas.credit_purchase import (
+    CreditPack,
+    CreditPackListResponse,
+    CreditPurchaseIntentRequest,
+    CreditPurchaseIntentResponse,
+    CreditPurchaseListResponse,
+)
 from app.schemas.storage_payment import (
     StorageAddon,
     StorageAddonListResponse,
@@ -268,3 +275,95 @@ async def get_my_storage_purchases(
     )
 
     return StoragePurchaseListResponse(items=items, total_count=total_count)
+
+
+@router.get(
+    "/me/credits/packs",
+    response_model=CreditPackListResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get Credit Pack Catalog",
+    description="Returns available credit packs for the current user.",
+    responses=ERROR_RESPONSES,
+)
+async def get_my_credit_packs(
+    current_user: User = Depends(get_current_user),
+):
+    from app.services.credit_payment_service import get_credit_pack_catalog
+
+    _ = current_user
+    catalog = get_credit_pack_catalog()
+    items = [
+        CreditPack(
+            code=code,
+            label=str(data.get("label", code)),
+            credits_added=int(data.get("credits_added", 0)),
+            amount=int(data.get("amount", 0)),
+            currency=str(data.get("currency", "IDR")),
+        )
+        for code, data in catalog.items()
+    ]
+
+    return CreditPackListResponse(items=items)
+
+
+@router.post(
+    "/me/credits/purchase-intent",
+    response_model=CreditPurchaseIntentResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create Credit Purchase Intent",
+    description="Creates a pending credit pack purchase and returns checkout URL.",
+    responses=ERROR_RESPONSES,
+)
+async def create_my_credit_purchase_intent(
+    payload: CreditPurchaseIntentRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.core.config import settings as _settings
+    from app.services.credit_payment_service import create_purchase_intent
+
+    if not _settings.CREDIT_PAYMENT_ENABLED:
+        raise AppException(status_code=503, detail="Credit pack purchase is temporarily unavailable.")
+
+    purchase = await create_purchase_intent(
+        user_id=current_user.id,
+        pack_code=payload.pack_code,
+        db=db,
+        customer_name=current_user.name,
+    )
+
+    return CreditPurchaseIntentResponse(
+        purchase_id=purchase.id,
+        status=purchase.status,
+        checkout_url=purchase.checkout_url or "/settings?upgrade=credits",
+        pack_code=purchase.pack_code,
+        credits_added=purchase.credits_added,
+        amount=purchase.amount,
+        currency=purchase.currency,
+    )
+
+
+@router.get(
+    "/me/credits/purchases",
+    response_model=CreditPurchaseListResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get Credit Purchase History",
+    description="Returns the current user's credit pack purchase history.",
+    responses=ERROR_RESPONSES,
+)
+async def get_my_credit_purchases(
+    limit: int = 20,
+    offset: int = 0,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.services.credit_payment_service import list_purchases
+
+    items, total_count = await list_purchases(
+        user_id=current_user.id,
+        db=db,
+        limit=limit,
+        offset=offset,
+    )
+
+    return CreditPurchaseListResponse(items=items, total_count=total_count)

@@ -101,7 +101,7 @@ async def test_check_quota_exceeded(mock_db, test_user):
 
     with pytest.raises(AppException) as exc_info:
         await check_quota("user_123", 5 * 1024 * 1024, mock_db)
-    assert exc_info.value.status_code == status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
+    assert exc_info.value.status_code == status.HTTP_413_CONTENT_TOO_LARGE
     assert "Storage penuh" in exc_info.value.detail
 
 

@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { FolderSidebar } from "@/components/projects/FolderSidebar";
 import { Folder } from "@/lib/api/types";
+import { getAnalyticsVisitorId, hasLoggedBackendSignupCompleted, markBackendSignupCompletedLogged, trackBackendFunnelEvent } from "@/lib/analytics/backend";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -66,6 +67,29 @@ export default function ProjectsPage() {
     if (status === "unauthenticated") {
         redirect("/");
     }
+
+    useEffect(() => {
+        if (status !== "authenticated") {
+            return;
+        }
+
+        const searchParams = new URLSearchParams(window.location.search);
+        const signupCompletedFlag = searchParams.get("signup_completed") === "1";
+        if (!signupCompletedFlag || hasLoggedBackendSignupCompleted()) {
+            return;
+        }
+
+        const authMethod = searchParams.get("auth_method") || "google";
+        void trackBackendFunnelEvent(undefined, "signup_completed", {
+            auth_method: authMethod,
+            source: "projects_callback",
+            properties: {
+                visitor_id: getAnalyticsVisitorId(),
+                auth_method: authMethod,
+            },
+        });
+        markBackendSignupCompletedLogged();
+    }, [status]);
 
     useEffect(() => {
         if (status === "loading") return;

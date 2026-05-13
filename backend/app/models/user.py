@@ -16,6 +16,7 @@ class User(Base):
     name = Column(String, nullable=False)
     avatar_url = Column(String, nullable=True)
     provider = Column(String, nullable=False, default="google")
+    invite_source = Column(String, nullable=True, index=True)  # e.g., 'email', 'code', 'waitlist', 'google', 'referral'
     password_hash = Column(String, nullable=True)
     from app.core.credit_costs import DEFAULT_CREDITS
     referral_code = Column(

@@ -16,17 +16,17 @@ Target metrik weekly review:
 
 ## Data Sources
 
-- PostHog event stream: visitor to signup.
+- Backend analytics event stream: `landing_viewed` -> `signup_completed`.
 - Postgres backend: users/projects/ai usage/payment/export feedback.
 - API internal dashboard: `GET /api/internal/operator-summary`.
 
 ## Dashboard Layout (Recommended)
 
 1. Funnel card (weekly):
-- Visitor -> Signup (PostHog)
+- Visitor -> Signup (backend analytics + PostHog mirror)
 - Signup -> First Design (backend)
 - First Design -> Generation (backend)
-- Generation -> Export (backend proxy)
+- Generation -> Export (backend-owned export event)
 - Export -> Payment (backend)
 - Payment -> Repeat Use (backend)
 
@@ -36,24 +36,45 @@ Target metrik weekly review:
 - AI cost per paying user
 
 3. QA notes card:
-- Export di backend saat ini diproxykan dari `design_feedback` source `export`.
-- Visitor disediakan dari PostHog karena event landing tidak disimpan di Postgres.
+- Export di backend sekarang dibaca dari `design_exports`.
+- Visitor disediakan dari `analytics_events` backend, dengan mirror PostHog tetap aktif untuk landing experiment.
 
-## Query A: PostHog (Visitor -> Signup)
+## Query A: Backend Analytics (Visitor -> Signup)
 
-Gunakan HogQL Insight query berikut:
+Gunakan query Postgres berikut:
 
 ```sql
+WITH visitors AS (
+  SELECT DISTINCT visitor_id
+  FROM analytics_events
+  WHERE event_name = 'landing_viewed'
+    AND created_at >= now() - interval '7 days'
+),
+signups AS (
+  SELECT DISTINCT visitor_id
+  FROM analytics_events
+  WHERE event_name = 'signup_completed'
+    AND created_at >= now() - interval '7 days'
+),
+converted AS (
+  SELECT DISTINCT v.visitor_id
+  FROM visitors v
+  JOIN signups s ON s.visitor_id = v.visitor_id
+)
 SELECT
-  toStartOfWeek(timestamp, 1) AS week_start,
-  countIf(event = 'landing_viewed') AS visitors,
-  countIf(event = 'signup_completed') AS signups,
-  round(100.0 * countIf(event = 'signup_completed') / nullIf(countIf(event = 'landing_viewed'), 0), 2) AS visitor_to_signup_rate
-FROM events
-WHERE timestamp >= now() - INTERVAL 8 WEEK
-GROUP BY week_start
-ORDER BY week_start DESC;
+  (SELECT count(*) FROM visitors) AS visitors,
+  (SELECT count(*) FROM signups) AS signups,
+  (SELECT count(*) FROM converted) AS converted,
+  round(100.0 * (SELECT count(*) FROM converted) / nullif((SELECT count(*) FROM visitors), 0), 2) AS visitor_to_signup_rate;
 ```
+
+Catatan operasional:
+1. `landing_viewed` dikirim dari landing page ke backend analytics sink dan tetap dicerminkan ke PostHog untuk eksperimen landing.
+2. `signup_completed` dikirim dari register page untuk credentials, atau dari callback `/projects` setelah Google OAuth berhasil.
+3. Jika weekly review dijalankan tanpa akses dashboard, ambil angka `visitors`, `signups`, `converted`, dan `visitor_to_signup_rate` dari query ini atau dari `GET /api/internal/operator-summary`.
+
+Catatan tambahan:
+1. Untuk review mingguan, backend analytics event stream adalah source of truth; PostHog tetap dipakai untuk eksperimen landing dan observability tambahan.
 
 ## Query B: Postgres (Weekly Funnel + Cost)
 
