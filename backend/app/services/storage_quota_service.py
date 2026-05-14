@@ -19,6 +19,16 @@ from sqlalchemy.future import select
 from app.models.user import User
 
 
+def _resolve_http_413_too_large() -> int:
+    content_too_large = getattr(status, "HTTP_413_CONTENT_TOO_LARGE", None)
+    if content_too_large is not None:
+        return content_too_large
+    return status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
+
+
+HTTP_413_TOO_LARGE = _resolve_http_413_too_large()
+
+
 def _collect_brand_kit_logo_urls(brand_kits: list) -> list[str]:
     """Collect logo URLs from BrandKit.logo_url and BrandKit.logos JSON list."""
     urls: list[str] = []
@@ -90,7 +100,7 @@ async def check_quota(user_id, incoming_size: int, db: AsyncSession) -> None:
         used_mb = round(used / (1024 * 1024), 1)
         quota_mb = round(quota / (1024 * 1024), 1)
         raise AppException(
-            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+            status_code=HTTP_413_TOO_LARGE,
             detail=(
                 f"Storage penuh. Anda sudah menggunakan {used_mb} MB "
                 f"dari {quota_mb} MB. Hapus file lama atau upgrade plan."
