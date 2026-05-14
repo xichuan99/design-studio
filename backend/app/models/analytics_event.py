@@ -6,6 +6,7 @@ funnel.
 """
 
 import uuid
+from datetime import datetime, timezone
 
 from sqlalchemy import Column, DateTime, JSON, String
 from sqlalchemy.dialects.postgresql import UUID
@@ -24,4 +25,4 @@ class AnalyticsEvent(Base):
     variant = Column(String(64), nullable=True, index=True)
     auth_method = Column(String(32), nullable=True, index=True)
     event_properties = Column(JSON, nullable=False, default=dict)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), server_default=func.now(), nullable=False, index=True)
