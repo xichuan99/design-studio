@@ -323,5 +323,6 @@ jobs:
               docker compose up -d --remove-orphans
 
             docker compose exec -T backend alembic upgrade head
+            docker compose exec -T backend python -m scripts.seed_templates
 
             echo "✅ Deploy selesai! Commit: ${{ github.sha }}"
