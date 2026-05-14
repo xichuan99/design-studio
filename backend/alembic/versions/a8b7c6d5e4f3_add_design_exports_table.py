@@ -34,7 +34,7 @@ def upgrade() -> None:
             sa.DateTime(timezone=True),
             nullable=False,
         ),
-        sa.ForeignKeyConstraint(["design_id"], ["designs.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["design_id"], ["projects.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["job_id"], ["ai_tool_jobs.id"], ondelete="SET NULL"),
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
