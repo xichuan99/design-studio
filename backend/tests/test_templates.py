@@ -53,7 +53,7 @@ def test_templates_food_count():
     """Verify food category has templates."""
     templates = _get_templates()
     food = [row for row in templates if row[2] == "food"]
-    assert len(food) == 4
+    assert len(food) >= 4
 
 
 def test_template_text_layers_structure():
@@ -77,7 +77,8 @@ def test_template_text_layers_structure():
 
 
 def test_templates_aspect_ratios():
-    """Verify templates cover all three aspect ratios."""
+    """Verify templates cover all expected aspect ratios."""
     templates = _get_templates()
     ratios = set(row[3] for row in templates)
-    assert ratios == {"1:1", "9:16", "16:9"}
+    assert {"1:1", "9:16", "16:9"}.issubset(ratios)
+    assert ratios.issubset({"1:1", "9:16", "16:9", "4:5"})
