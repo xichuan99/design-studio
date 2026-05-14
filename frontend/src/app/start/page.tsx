@@ -6,12 +6,12 @@ import { useEffect, useState } from "react";
 import { redirect } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { usePostHog } from "posthog-js/react";
-import { ArrowRight, GitCompare, Layers, Loader2, Sparkles, Wand2 } from "lucide-react";
+import { ArrowRight, GitCompare, Layers, Loader2, ShoppingBag, Sparkles, Wand2 } from "lucide-react";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useProjectApi } from "@/lib/api";
-import { COMPARE_MODELS_ENABLED, START_HUB_ENABLED } from "@/lib/feature-flags";
+import { COMPARE_MODELS_ENABLED, SELLER_FIRST_V1, START_HUB_ENABLED } from "@/lib/feature-flags";
 import { featuredToolItems } from "@/lib/tool-catalog";
 
 interface ProjectSummary {
@@ -86,6 +86,33 @@ export default function StartPage() {
                         </p>
                     </div>
                 </section>
+
+                {SELLER_FIRST_V1 && (
+                <section className="rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/5 via-background to-muted/30 px-6 py-6 md:px-8 md:py-8">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                        <div className="flex items-start gap-4">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/20 text-primary">
+                                <ShoppingBag className="h-6 w-6" />
+                            </div>
+                            <div className="space-y-1">
+                                <h2 className="text-lg font-semibold text-foreground">Buat Desain untuk Marketplace &amp; Sosial</h2>
+                                <p className="text-sm text-muted-foreground max-w-lg">
+                                    Pilih platform (Shopee, Tokopedia, Instagram, WhatsApp) dan jenis promosi — ukuran + brief otomatis disiapkan.
+                                </p>
+                            </div>
+                        </div>
+                        <Button asChild size="lg" className="rounded-xl shrink-0 justify-between gap-2 w-full md:w-auto">
+                            <Link
+                                href="/design/new/seller"
+                                onClick={() => posthog?.capture("start_hub_intent_selected", { intent: "seller_first" })}
+                            >
+                                Mulai dari Platform
+                                <ArrowRight className="h-4 w-4" />
+                            </Link>
+                        </Button>
+                    </div>
+                </section>
+                )}
 
                 <section className="grid gap-4 lg:grid-cols-2">
                     <Card className="group relative overflow-hidden border-primary/20 bg-card shadow-sm hover:border-primary/50 transition-all duration-500 hover:shadow-md flex flex-col">

@@ -40,6 +40,11 @@ export const COMPARE_MODELS_ENABLED = (
   "true"
 ).toLowerCase() === "true";
 
+export const SELLER_FIRST_V1 = (
+  process.env.NEXT_PUBLIC_SELLER_FIRST_V1 ??
+  "true"
+).toLowerCase() === "true";
+
 export const LANDING_EXPERIMENT_VARIANT = (
   process.env.NEXT_PUBLIC_LANDING_EXPERIMENT_VARIANT ??
   "control"

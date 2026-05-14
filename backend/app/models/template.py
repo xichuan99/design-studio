@@ -15,3 +15,4 @@ class Template(Base):
     default_text_layers = Column(JSON, nullable=False)
     prompt_suffix = Column(String, nullable=True)
     thumbnail_url = Column(String, nullable=True)
+    platform = Column(String(50), nullable=True, index=True)

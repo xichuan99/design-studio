@@ -101,6 +101,7 @@ export default function DesignInterviewPage() {
         finalizeCatalogPlan,
     } = useProjectApi();
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const hasHydratedPrefillRef = useRef(false);
     const [goal, setGoal] = useState("");
     const [productType, setProductType] = useState("");
     const [customProductType, setCustomProductType] = useState("");
@@ -148,6 +149,104 @@ export default function DesignInterviewPage() {
             }
         };
     }, [productPreview]);
+
+    useEffect(() => {
+        if (status !== "authenticated") return;
+        if (hasHydratedPrefillRef.current) return;
+
+        const saved = window.sessionStorage.getItem(DESIGN_BRIEF_SESSION_KEY);
+        hasHydratedPrefillRef.current = true;
+        if (!saved) return;
+
+        try {
+            const prefilled = JSON.parse(saved) as import("@/lib/design-brief-session").DesignBriefSessionState;
+
+            if (!goal && prefilled.goal) {
+                setGoal(prefilled.goal);
+            }
+
+            if (!productType && prefilled.productType) {
+                const matchedProductType = productTypes.includes(prefilled.productType)
+                    ? prefilled.productType
+                    : "Lainnya";
+                setProductType(matchedProductType);
+                if (matchedProductType === "Lainnya") {
+                    setCustomProductType(prefilled.customProductType || prefilled.productType);
+                }
+            }
+
+            if (!style && prefilled.style) {
+                setStyle(prefilled.style);
+            }
+
+            if (!channel && prefilled.channel) {
+                setChannel(prefilled.channel);
+            }
+
+            if (!copyTone && prefilled.copyTone) {
+                setCopyTone(prefilled.copyTone);
+            }
+
+            if (!notes && prefilled.notes) {
+                setNotes(prefilled.notes);
+            }
+
+            if (headlineOverride === DEFAULT_MANUAL_COPY_OVERRIDES.headlineOverride && prefilled.headlineOverride) {
+                setHeadlineOverride(prefilled.headlineOverride);
+            }
+
+            if (subHeadlineOverride === DEFAULT_MANUAL_COPY_OVERRIDES.subHeadlineOverride && prefilled.subHeadlineOverride) {
+                setSubHeadlineOverride(prefilled.subHeadlineOverride);
+            }
+
+            if (ctaOverride === DEFAULT_MANUAL_COPY_OVERRIDES.ctaOverride && prefilled.ctaOverride) {
+                setCtaOverride(prefilled.ctaOverride);
+            }
+
+            if (productName === DEFAULT_MANUAL_COPY_OVERRIDES.productName && prefilled.productName) {
+                setProductName(prefilled.productName);
+            }
+
+            if (offerText === DEFAULT_MANUAL_COPY_OVERRIDES.offerText && prefilled.offerText) {
+                setOfferText(prefilled.offerText);
+            }
+
+            if (useAiCopyAssist === DEFAULT_MANUAL_COPY_OVERRIDES.useAiCopyAssist && prefilled.useAiCopyAssist !== undefined) {
+                setUseAiCopyAssist(prefilled.useAiCopyAssist);
+            }
+
+            if (!productImageUrl && prefilled.productImageUrl) {
+                setProductImageUrl(prefilled.productImageUrl);
+                setProductPreview(prefilled.productImageUrl);
+            }
+
+            if (prefilled.sellerChannel || prefilled.promoType) {
+                posthog?.capture("design_brief_interview_prefilled", {
+                    seller_channel: prefilled.sellerChannel,
+                    promo_type: prefilled.promoType,
+                    source: "seller_first",
+                });
+            }
+        } catch (error) {
+            console.error("Failed to hydrate design brief prefill", error);
+        }
+    }, [
+        ctaOverride,
+        copyTone,
+        goal,
+        headlineOverride,
+        notes,
+        offerText,
+        posthog,
+        productImageUrl,
+        productName,
+        productType,
+        status,
+        style,
+        subHeadlineOverride,
+        useAiCopyAssist,
+        channel,
+    ]);
 
     const handleRemoveProductFile = () => {
         if (productPreview && productPreview.startsWith("blob:")) {

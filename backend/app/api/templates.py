@@ -26,9 +26,10 @@ router = APIRouter(tags=["Templates"])
 async def list_templates(
     category: Optional[str] = None,
     aspect_ratio: Optional[str] = None,
+    platform: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
 ):
-    cache_key = f"templates:list:{category or 'all'}:{aspect_ratio or 'all'}"
+    cache_key = f"templates:list:{category or 'all'}:{aspect_ratio or 'all'}:{platform or 'all'}"
     if redis_client:
         cached_data = await redis_client.get(cache_key)
         if cached_data:
@@ -40,6 +41,8 @@ async def list_templates(
         query = query.where(Template.category == category)
     if aspect_ratio:
         query = query.where(Template.aspect_ratio == aspect_ratio)
+    if platform:
+        query = query.where(Template.platform == platform)
 
     result = await db.execute(query)
     templates = result.scalars().all()
@@ -54,6 +57,7 @@ async def list_templates(
             "default_text_layers": t.default_text_layers,
             "prompt_suffix": t.prompt_suffix,
             "thumbnail_url": t.thumbnail_url,
+            "platform": t.platform,
         }
         for t in templates
     ]
@@ -97,6 +101,7 @@ async def get_template(
         "default_text_layers": template.default_text_layers,
         "prompt_suffix": template.prompt_suffix,
         "thumbnail_url": template.thumbnail_url,
+        "platform": template.platform,
     }
 
     if redis_client:

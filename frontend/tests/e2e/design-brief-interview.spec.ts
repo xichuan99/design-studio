@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { DESIGN_BRIEF_SESSION_KEY } from '../../src/lib/design-brief-session';
 import { loginAsDemoUser } from './utils/auth';
 
 async function continueIfAuthInterstitial(page: import('@playwright/test').Page) {
@@ -80,6 +81,40 @@ test.describe('Design Brief Interview', () => {
   test.beforeEach(async ({ page }) => {
     await loginAsDemoUser(page);
     await mockCatalogBuilderEndpoints(page);
+  });
+
+  test('hydrates seller-first prefill from sessionStorage on first load', async ({ page }) => {
+    test.setTimeout(90000);
+
+    await page.goto('/design/new/interview');
+    await continueIfAuthInterstitial(page);
+
+    await page.evaluate(({ key, payload }) => {
+      window.sessionStorage.setItem(key, JSON.stringify(payload));
+    }, {
+      key: DESIGN_BRIEF_SESSION_KEY,
+      payload: {
+        goal: 'promo',
+        productType: 'Produk',
+        style: 'Bold marketplace',
+        channel: 'marketplace',
+        copyTone: 'Persuasif',
+        notes: 'Flash sale terbatas. Tampilkan harga coret, harga diskon, dan timer urgensi. CTA: Beli Sekarang.',
+        useAiCopyAssist: true,
+        aspectRatio: '1:1-shopee',
+        sellerChannel: 'shopee',
+        promoType: 'flash_sale',
+        updatedAt: new Date().toISOString(),
+      },
+    });
+    await page.reload();
+
+    await expect(page.getByRole('button', { name: /Promo cepat/i })).toHaveClass(/border-primary/);
+    await expect(page.getByRole('button', { name: /Bold marketplace/i })).toHaveClass(/border-primary/);
+    await expect(page.getByRole('button', { name: /^Marketplace$/i })).toHaveClass(/border-primary/);
+    await expect(page.getByRole('button', { name: /Persuasif/i })).toHaveClass(/border-primary/);
+    await expect(page.getByPlaceholder(/Fokus pada promo bundling/i)).toHaveValue(/Flash sale terbatas/i);
+    await expect(page.getByRole('button', { name: /Lanjut ke Preview/i })).toBeEnabled();
   });
 
   test('renders interview flow and navigates to preview after required selections', async ({ page }) => {

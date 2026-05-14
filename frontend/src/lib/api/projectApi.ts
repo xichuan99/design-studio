@@ -110,10 +110,11 @@ export function useProjectEndpoints() {
             return res.json();
         }, [API_BASE_URL, getHeaders]);
 
-    const getTemplates = useCallback(async (category?: string, aspectRatio?: string) => {
+    const getTemplates = useCallback(async (category?: string, aspectRatio?: string, platform?: string) => {
             const params = new URLSearchParams();
             if (category) params.set('category', category);
             if (aspectRatio) params.set('aspect_ratio', aspectRatio);
+            if (platform) params.set('platform', platform);
             const qs = params.toString() ? `?${params.toString()}` : '';
             const res = await fetch(`${API_BASE_URL}/templates/${qs}`, {
                 headers: getHeaders(),

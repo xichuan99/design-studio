@@ -1,16 +1,16 @@
 # Launch Readiness
 
-Last audited: 2026-05-13
+Last audited: 2026-05-14
 
 This file is the paid-beta operating snapshot for SmartDesign Studio. It focuses on whether the product can run a controlled 30-50 seller beta with enough measurement, billing discipline, admin visibility, security, and documentation hygiene.
 
 ## Executive Summary
 
-Status: **Phase 1, Phase 2, and Phase 3 complete. Ready to move into Phase 4: Seller-First Activation.**
+Status: **Phase 1, Phase 2, and Phase 3 complete. Phase 4 seller-first activation is now implemented in the working tree and verified for onboarding hydration, template platform filtering, lint/build, and backend tests. One final runtime seed/API sanity check is still recommended before calling Phase 4 fully closed.**
 
 Monetization core (credit packs with Midtrans, idempotent webhook fulfillment, operator revenue reporting), beta control plane (allowlist gating, invite-source tracking, support runbook), and funnel truth measurement (backend export event, backend-owned visitor-to-signup, cohort retention, repeat purchases) are implemented and tested. All 23 tests passing. 
 
-Next: Seller-first activation work, especially channel-specific onboarding and the first-value experience.
+Next: complete the final runtime seed/API sanity check, then close Phase 4 and move remaining work to Phase 5 hardening.
 
 ## Current State
 
@@ -217,11 +217,26 @@ Goal: make the first value moment obvious for the target seller.
 - Reduce blank-canvas decisions in onboarding by starting from category, channel, product photo, and promotion type.
 - Keep marketplace/community template supply deferred until repeat usage is proven.
 
+Completion evidence (2026-05-14):
+
+- Seller-first entry route exists at `/design/new/seller` and is linked from `/start` behind `SELLER_FIRST_V1`.
+- `SellerChannelWizard` pre-fills brief state with channel, promo type, style, notes, and aspect ratio mapped to seller intent.
+- Interview page now hydrates seller-first prefill from `DESIGN_BRIEF_SESSION_KEY` once after auth is ready, preserving the guided onboarding path instead of dropping users back into a blank generic form.
+- Template API supports `platform` filtering and returns `platform` in both list/detail payloads.
+- Backend template API coverage now includes explicit tests for `?platform=shopee` filtering and template detail payload shape.
+- Source template seed inventory remains above threshold with 44 entries total and platform-tagged sets for Shopee, Tokopedia, Instagram, Instagram Story, and WhatsApp.
+- Verification passed: frontend lint, frontend build, backend tests, and Playwright hydration scenario for seller-first interview prefill.
+
 Acceptance criteria:
 
 - A seller can complete upload -> choose channel -> answer short brief -> generate -> light edit -> export without help.
 - At least 20 templates are usable in production data, not only design mockups.
 - The first design experience is optimized for Indonesian seller copy and channels.
+
+Current closeout note:
+
+- The onboarding optimization and template-platform plumbing are now implemented and verified in code/tests.
+- Before declaring Phase 4 fully closed, perform one final runtime sanity check against a seeded local/runtime templates dataset so the "usable in production data" criterion is evidenced beyond source code + API tests.
 
 ### Phase 5: Operator And Security Hardening (Week 5-6)
 

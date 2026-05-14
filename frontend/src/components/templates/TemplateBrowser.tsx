@@ -15,11 +15,13 @@ interface TemplateData {
     default_text_layers: Record<string, unknown>;
     prompt_suffix?: string;
     thumbnail_url?: string;
+    platform?: string | null;
 }
 
 interface TemplateBrowserProps {
     onSelectTemplate: (template: TemplateData) => void;
     aspectRatio?: string;
+    platform?: string;
     selectedTemplateId?: string;
     compact?: boolean;
 }
@@ -41,7 +43,7 @@ const CATEGORY_LABELS: Record<string, string> = {
     'holiday': '❄️ Hari Raya',
 };
 
-export const TemplateBrowser: React.FC<TemplateBrowserProps> = ({ onSelectTemplate, aspectRatio, selectedTemplateId, compact = false }) => {
+export const TemplateBrowser: React.FC<TemplateBrowserProps> = ({ onSelectTemplate, aspectRatio, platform, selectedTemplateId, compact = false }) => {
     const { getTemplates } = useProjectApi();
     const [templates, setTemplates] = useState<TemplateData[]>([]);
     const [loading, setLoading] = useState(true);
@@ -53,7 +55,7 @@ export const TemplateBrowser: React.FC<TemplateBrowserProps> = ({ onSelectTempla
         setError(null);
         try {
             const category = selectedCategory === 'All' ? undefined : selectedCategory;
-            const data = await getTemplates(category, aspectRatio);
+            const data = await getTemplates(category, aspectRatio, platform);
             setTemplates(data);
         } catch (err) {
             console.error('Failed to load templates:', err);
@@ -66,7 +68,7 @@ export const TemplateBrowser: React.FC<TemplateBrowserProps> = ({ onSelectTempla
     useEffect(() => {
         fetchTemplates();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedCategory, aspectRatio]);
+    }, [selectedCategory, aspectRatio, platform]);
 
     return (
         <div className={`space-y-4 ${compact ? 'mt-0' : 'mt-6'}`}>

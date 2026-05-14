@@ -941,6 +941,276 @@ TEMPLATES = [
         "prompt_suffix": "fluid 3D color waves, abstract colorful liquid pattern, dynamic gradient, eye-catching graphic design, subsurface scattering, Octane render volumetric lighting",
         "thumbnail_url": "https://images.unsplash.com/photo-1557683316-973673baf926?w=800&h=450&fit=crop",
     },
+    # 🛒 Shopee — Platform-Specific
+    {
+        "name": "Shopee Flash Sale",
+        "category": "sale",
+        "aspect_ratio": "1:1",
+        "style": "bold",
+        "platform": "shopee",
+        "default_text_layers": [
+            {"role": "headline", "x": 0.5, "y": 0.18, "font_family": "Poppins", "font_weight": 900, "font_size": 56, "color": "#FFFFFF", "shadow": True},
+            {"role": "sub_headline", "x": 0.5, "y": 0.36, "font_family": "Inter", "font_weight": 500, "font_size": 26, "color": "#FEF08A"},
+            {"role": "cta", "x": 0.5, "y": 0.82, "font_family": "Poppins", "font_weight": 800, "font_size": 22, "color": "#FFFFFF", "bg_box": "rgba(238,77,45,0.95)"},
+        ],
+        "prompt_suffix": "Shopee flash sale, vibrant orange and red marketplace tones, shopping cart icons, confetti burst, bright energetic product photography, high contrast studio lighting",
+        "thumbnail_url": "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=600&h=600&fit=crop",
+    },
+    {
+        "name": "Shopee Produk Baru",
+        "category": "product",
+        "aspect_ratio": "1:1",
+        "style": "minimalist",
+        "platform": "shopee",
+        "default_text_layers": [
+            {"role": "headline", "x": 0.5, "y": 0.15, "font_family": "Poppins", "font_weight": 700, "font_size": 44, "color": "#1E293B"},
+            {"role": "sub_headline", "x": 0.5, "y": 0.28, "font_family": "Inter", "font_weight": 400, "font_size": 20, "color": "#64748B"},
+            {"role": "cta", "x": 0.5, "y": 0.85, "font_family": "Poppins", "font_weight": 700, "font_size": 18, "color": "#FFFFFF", "bg_box": "rgba(238,77,45,0.9)"},
+        ],
+        "prompt_suffix": "new product arrival, clean white product photography, Shopee marketplace listing style, soft shadow, flat lay composition, professional studio lighting 5500K, 50mm f/2.8",
+        "thumbnail_url": "https://images.unsplash.com/photo-1491553895911-0055eca6402d?w=600&h=600&fit=crop",
+    },
+    {
+        "name": "Shopee Bundle Hemat",
+        "category": "sale",
+        "aspect_ratio": "1:1",
+        "style": "playful",
+        "platform": "shopee",
+        "default_text_layers": [
+            {"role": "headline", "x": 0.5, "y": 0.15, "font_family": "Poppins", "font_weight": 800, "font_size": 48, "color": "#1E293B"},
+            {"role": "sub_headline", "x": 0.5, "y": 0.30, "font_family": "Inter", "font_weight": 500, "font_size": 22, "color": "#0F172A"},
+            {"role": "cta", "x": 0.5, "y": 0.83, "font_family": "Poppins", "font_weight": 700, "font_size": 20, "color": "#FFFFFF", "bg_box": "rgba(234,179,8,0.95)"},
+        ],
+        "prompt_suffix": "bundle deal products, multiple products arranged together, warm pastel background, cheerful playful composition, soft diffused studio lighting, 50mm product photography",
+        "thumbnail_url": "https://images.unsplash.com/photo-1585386959984-a4155224a1ad?w=600&h=600&fit=crop",
+    },
+    # 🟢 Tokopedia — Platform-Specific
+    {
+        "name": "Tokopedia Harbolnas",
+        "category": "sale",
+        "aspect_ratio": "1:1",
+        "style": "bold",
+        "platform": "tokopedia",
+        "default_text_layers": [
+            {"role": "headline", "x": 0.5, "y": 0.18, "font_family": "Poppins", "font_weight": 900, "font_size": 56, "color": "#FFFFFF", "shadow": True},
+            {"role": "sub_headline", "x": 0.5, "y": 0.36, "font_family": "Inter", "font_weight": 500, "font_size": 26, "color": "#D1FAE5"},
+            {"role": "cta", "x": 0.5, "y": 0.82, "font_family": "Poppins", "font_weight": 800, "font_size": 22, "color": "#FFFFFF", "bg_box": "rgba(5,150,105,0.95)"},
+        ],
+        "prompt_suffix": "Tokopedia Harbolnas, green and white marketplace tones, shopping celebration, confetti, vibrant commerce energy, high contrast product studio lighting",
+        "thumbnail_url": "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=600&h=600&fit=crop",
+    },
+    {
+        "name": "Tokopedia Produk Unggulan",
+        "category": "product",
+        "aspect_ratio": "1:1",
+        "style": "elegant",
+        "platform": "tokopedia",
+        "default_text_layers": [
+            {"role": "headline", "x": 0.5, "y": 0.15, "font_family": "Poppins", "font_weight": 700, "font_size": 42, "color": "#FFFFFF"},
+            {"role": "sub_headline", "x": 0.5, "y": 0.28, "font_family": "Inter", "font_weight": 400, "font_size": 20, "color": "#D1FAE5"},
+            {"role": "cta", "x": 0.5, "y": 0.85, "font_family": "Poppins", "font_weight": 600, "font_size": 18, "color": "#FFFFFF", "bg_box": "rgba(5,150,105,0.9)"},
+        ],
+        "prompt_suffix": "featured product listing, clean elegant product photography, dark green and white tones, professional marketplace style, side lighting with soft shadow, 85mm f/2.0",
+        "thumbnail_url": "https://images.unsplash.com/photo-1556742393-d75f468bfcb0?w=600&h=600&fit=crop",
+    },
+    # 📸 Instagram Feed — Platform-Specific
+    {
+        "name": "Instagram Feed Fashion",
+        "category": "product",
+        "aspect_ratio": "4:5",
+        "style": "elegant",
+        "platform": "instagram",
+        "default_text_layers": [
+            {"role": "headline", "x": 0.5, "y": 0.80, "font_family": "Playfair Display", "font_weight": 700, "font_size": 38, "color": "#FFFFFF", "shadow": True},
+            {"role": "sub_headline", "x": 0.5, "y": 0.88, "font_family": "Inter", "font_weight": 300, "font_size": 18, "color": "#F3F4F6"},
+            {"role": "cta", "x": 0.5, "y": 0.95, "font_family": "Inter", "font_weight": 500, "font_size": 14, "color": "#FFFFFF", "bg_box": "transparent"},
+        ],
+        "prompt_suffix": "editorial fashion Instagram feed post 4:5 ratio, luxury clothing, soft golden hour backlight, high fashion Vogue aesthetic, 85mm f/1.4 shallow depth of field, muted warm color grade",
+        "thumbnail_url": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=480&h=600&fit=crop",
+    },
+    {
+        "name": "Instagram Feed Beauty",
+        "category": "product",
+        "aspect_ratio": "4:5",
+        "style": "minimalist",
+        "platform": "instagram",
+        "default_text_layers": [
+            {"role": "headline", "x": 0.5, "y": 0.78, "font_family": "Poppins", "font_weight": 600, "font_size": 36, "color": "#1E293B"},
+            {"role": "sub_headline", "x": 0.5, "y": 0.87, "font_family": "Inter", "font_weight": 300, "font_size": 18, "color": "#64748B"},
+            {"role": "cta", "x": 0.5, "y": 0.94, "font_family": "Inter", "font_weight": 600, "font_size": 14, "color": "#FFFFFF", "bg_box": "rgba(244,114,182,0.85)"},
+        ],
+        "prompt_suffix": "beauty skincare product Instagram 4:5 post, pastel pink background, clean flat lay, dewey skin texture, caustic light patterns, cosmetics macro photography, 100mm f/2.8",
+        "thumbnail_url": "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=480&h=600&fit=crop",
+    },
+    # 📲 Instagram Story — Platform-Specific
+    {
+        "name": "IG Story Promo Flash Sale",
+        "category": "sale",
+        "aspect_ratio": "9:16",
+        "style": "playful",
+        "platform": "instagram_story",
+        "default_text_layers": [
+            {"role": "headline", "x": 0.5, "y": 0.15, "font_family": "Poppins", "font_weight": 900, "font_size": 54, "color": "#FFFFFF", "shadow": True},
+            {"role": "sub_headline", "x": 0.5, "y": 0.30, "font_family": "Inter", "font_weight": 500, "font_size": 24, "color": "#FEF08A"},
+            {"role": "cta", "x": 0.5, "y": 0.87, "font_family": "Poppins", "font_weight": 800, "font_size": 22, "color": "#1E293B", "bg_box": "rgba(250,204,21,0.95)"},
+        ],
+        "prompt_suffix": "Instagram story flash sale vertical 9:16, bright vivid colors, floating discount badges, confetti, energetic commerce, softbox diffused pop colors",
+        "thumbnail_url": "https://images.unsplash.com/photo-1620241608701-94efd3cb8534?w=450&h=800&fit=crop",
+    },
+    {
+        "name": "IG Story New Arrival",
+        "category": "product",
+        "aspect_ratio": "9:16",
+        "style": "elegant",
+        "platform": "instagram_story",
+        "default_text_layers": [
+            {"role": "headline", "x": 0.5, "y": 0.12, "font_family": "Playfair Display", "font_weight": 700, "font_size": 46, "color": "#FFFFFF"},
+            {"role": "sub_headline", "x": 0.5, "y": 0.24, "font_family": "Inter", "font_weight": 300, "font_size": 20, "color": "#E5E7EB"},
+            {"role": "cta", "x": 0.5, "y": 0.88, "font_family": "Inter", "font_weight": 600, "font_size": 16, "color": "#1E293B", "bg_box": "rgba(255,255,255,0.9)"},
+        ],
+        "prompt_suffix": "new arrival Instagram story vertical, elegant product on dark moody background, subtle rim lighting, luxury brand aesthetic, 85mm tilt-shift, fashion editorial",
+        "thumbnail_url": "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=450&h=800&fit=crop",
+    },
+    {
+        "name": "IG Story Hampers",
+        "category": "holiday",
+        "aspect_ratio": "9:16",
+        "style": "elegant",
+        "platform": "instagram_story",
+        "default_text_layers": [
+            {"role": "headline", "x": 0.5, "y": 0.12, "font_family": "Playfair Display", "font_weight": 700, "font_size": 44, "color": "#FFFFFF", "shadow": True},
+            {"role": "sub_headline", "x": 0.5, "y": 0.24, "font_family": "Inter", "font_weight": 300, "font_size": 20, "color": "#FDE68A"},
+            {"role": "cta", "x": 0.5, "y": 0.87, "font_family": "Inter", "font_weight": 600, "font_size": 16, "color": "#1E293B", "bg_box": "rgba(251,191,36,0.9)"},
+        ],
+        "prompt_suffix": "hampers gift basket Indonesia, festive Lebaran Eid decoration, gold ribbon, warm bokeh lights, luxurious celebration atmosphere, 85mm f/1.4, rich warm color grading",
+        "thumbnail_url": "https://images.unsplash.com/photo-1543362906-acfc16c67564?w=450&h=800&fit=crop",
+    },
+    # 💬 WhatsApp — Platform-Specific
+    {
+        "name": "WhatsApp Broadcast Promo",
+        "category": "sale",
+        "aspect_ratio": "9:16",
+        "style": "bold",
+        "platform": "whatsapp",
+        "default_text_layers": [
+            {"role": "headline", "x": 0.5, "y": 0.15, "font_family": "Poppins", "font_weight": 900, "font_size": 52, "color": "#FFFFFF", "shadow": True},
+            {"role": "sub_headline", "x": 0.5, "y": 0.32, "font_family": "Inter", "font_weight": 500, "font_size": 24, "color": "#D1FAE5"},
+            {"role": "cta", "x": 0.5, "y": 0.85, "font_family": "Poppins", "font_weight": 700, "font_size": 22, "color": "#FFFFFF", "bg_box": "rgba(37,211,102,0.95)"},
+        ],
+        "prompt_suffix": "WhatsApp broadcast promotion, green and white tones, mobile-first vertical format, clear readable text space, bold product display, bright friendly lighting",
+        "thumbnail_url": "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=450&h=800&fit=crop",
+    },
+    {
+        "name": "WhatsApp Flash Sale Status",
+        "category": "sale",
+        "aspect_ratio": "9:16",
+        "style": "playful",
+        "platform": "whatsapp",
+        "default_text_layers": [
+            {"role": "headline", "x": 0.5, "y": 0.15, "font_family": "Poppins", "font_weight": 800, "font_size": 50, "color": "#1E293B"},
+            {"role": "sub_headline", "x": 0.5, "y": 0.30, "font_family": "Inter", "font_weight": 500, "font_size": 22, "color": "#374151"},
+            {"role": "cta", "x": 0.5, "y": 0.86, "font_family": "Poppins", "font_weight": 700, "font_size": 20, "color": "#FFFFFF", "bg_box": "rgba(37,211,102,0.95)"},
+        ],
+        "prompt_suffix": "WhatsApp status flash sale, bright yellow and green cheerful palette, floating price tags, fun bouncy energy, clear mobile-readable composition, studio lighting",
+        "thumbnail_url": "https://images.unsplash.com/photo-1620241608701-94efd3cb8534?w=450&h=800&fit=crop",
+    },
+    # 🎁 Hampers / Seasonal
+    {
+        "name": "Hampers Lebaran Elegan",
+        "category": "holiday",
+        "aspect_ratio": "1:1",
+        "style": "elegant",
+        "default_text_layers": [
+            {"role": "headline", "x": 0.5, "y": 0.22, "font_family": "Playfair Display", "font_weight": 700, "font_size": 46, "color": "#FFFFFF", "shadow": True},
+            {"role": "sub_headline", "x": 0.5, "y": 0.40, "font_family": "Inter", "font_weight": 300, "font_size": 20, "color": "#FDE68A"},
+            {"role": "cta", "x": 0.5, "y": 0.82, "font_family": "Inter", "font_weight": 600, "font_size": 17, "color": "#1E293B", "bg_box": "rgba(251,191,36,0.9)"},
+        ],
+        "prompt_suffix": "Lebaran Eid hampers gift basket, luxurious gold ribbon, ketupat decoration, warm bokeh lights, dark moody elegant background, 85mm f/1.4, rich golden color grading",
+        "thumbnail_url": "https://images.unsplash.com/photo-1606914469633-bd44a5974565?w=600&h=600&fit=crop",
+    },
+    {
+        "name": "Hampers Natal",
+        "category": "holiday",
+        "aspect_ratio": "1:1",
+        "style": "elegant",
+        "default_text_layers": [
+            {"role": "headline", "x": 0.5, "y": 0.20, "font_family": "Playfair Display", "font_weight": 700, "font_size": 46, "color": "#FFFFFF", "shadow": True},
+            {"role": "sub_headline", "x": 0.5, "y": 0.36, "font_family": "Inter", "font_weight": 300, "font_size": 20, "color": "#D1FAE5"},
+            {"role": "cta", "x": 0.5, "y": 0.82, "font_family": "Inter", "font_weight": 600, "font_size": 17, "color": "#FFFFFF", "bg_box": "rgba(220,38,38,0.9)"},
+        ],
+        "prompt_suffix": "Christmas hampers gift box, red and green festive decor, pine branches, snow bokeh, warm candle light, luxurious holiday packaging, 85mm f/1.4",
+        "thumbnail_url": "https://images.unsplash.com/photo-1512389142860-9c449e58a543?w=600&h=600&fit=crop",
+    },
+    # 👗 Fashion / Apparel Seller
+    {
+        "name": "Fashion Diskon Story",
+        "category": "product",
+        "aspect_ratio": "9:16",
+        "style": "bold",
+        "platform": "instagram_story",
+        "default_text_layers": [
+            {"role": "headline", "x": 0.5, "y": 0.12, "font_family": "Poppins", "font_weight": 900, "font_size": 52, "color": "#FFFFFF", "shadow": True},
+            {"role": "sub_headline", "x": 0.5, "y": 0.25, "font_family": "Inter", "font_weight": 400, "font_size": 22, "color": "#FEF9EE"},
+            {"role": "cta", "x": 0.5, "y": 0.87, "font_family": "Poppins", "font_weight": 700, "font_size": 20, "color": "#1E293B", "bg_box": "rgba(250,204,21,0.95)"},
+        ],
+        "prompt_suffix": "fashion sale Instagram story vertical, model wearing stylish outfit, vibrant color-blocked background, bold graphic overlay, editorial fashion photography 50mm f/2",
+        "thumbnail_url": "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=450&h=800&fit=crop",
+    },
+    # 💄 Beauty / Skincare Seller
+    {
+        "name": "Beauty Skincare Square",
+        "category": "product",
+        "aspect_ratio": "1:1",
+        "style": "minimalist",
+        "default_text_layers": [
+            {"role": "headline", "x": 0.5, "y": 0.15, "font_family": "Poppins", "font_weight": 600, "font_size": 42, "color": "#374151"},
+            {"role": "sub_headline", "x": 0.5, "y": 0.27, "font_family": "Inter", "font_weight": 300, "font_size": 20, "color": "#9CA3AF"},
+            {"role": "cta", "x": 0.5, "y": 0.85, "font_family": "Inter", "font_weight": 600, "font_size": 16, "color": "#FFFFFF", "bg_box": "rgba(244,114,182,0.9)"},
+        ],
+        "prompt_suffix": "skincare product flat lay, pastel pink marble background, dropper bottles and cream jars, macro caustic light patterns, minimal clean aesthetic, 100mm f/2.8",
+        "thumbnail_url": "https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=600&h=600&fit=crop",
+    },
+    # 🍱 F&B Hampers Seller
+    {
+        "name": "Hampers Makanan Premium",
+        "category": "food",
+        "aspect_ratio": "1:1",
+        "style": "elegant",
+        "default_text_layers": [
+            {"role": "headline", "x": 0.5, "y": 0.18, "font_family": "Playfair Display", "font_weight": 700, "font_size": 44, "color": "#FFFFFF", "shadow": True},
+            {"role": "sub_headline", "x": 0.5, "y": 0.33, "font_family": "Inter", "font_weight": 300, "font_size": 20, "color": "#FDE68A"},
+            {"role": "cta", "x": 0.5, "y": 0.83, "font_family": "Inter", "font_weight": 600, "font_size": 17, "color": "#1E293B", "bg_box": "rgba(251,191,36,0.9)"},
+        ],
+        "prompt_suffix": "premium food hampers, gourmet snacks arranged beautifully, luxury basket, warm Rembrandt lighting, dark elegant background, appetizing food photography, 85mm f/2.0",
+        "thumbnail_url": "https://images.unsplash.com/photo-1606914469633-bd44a5974565?w=600&h=600&fit=crop",
+    },
+    # 📣 General Promo / Announcement
+    {
+        "name": "Diskon Persen Square",
+        "category": "sale",
+        "aspect_ratio": "1:1",
+        "style": "bold",
+        "default_text_layers": [
+            {"role": "headline", "x": 0.5, "y": 0.20, "font_family": "Poppins", "font_weight": 900, "font_size": 80, "color": "#FFFFFF", "shadow": True},
+            {"role": "sub_headline", "x": 0.5, "y": 0.42, "font_family": "Inter", "font_weight": 500, "font_size": 28, "color": "#FEF08A"},
+            {"role": "cta", "x": 0.5, "y": 0.82, "font_family": "Poppins", "font_weight": 700, "font_size": 22, "color": "#FFFFFF", "bg_box": "rgba(239,68,68,0.95)"},
+        ],
+        "prompt_suffix": "big percentage discount promo, bold numbers, vibrant red and yellow palette, dynamic energy, floating price tags, high contrast studio product lighting",
+        "thumbnail_url": "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=600&h=600&fit=crop",
+    },
+    {
+        "name": "Bundle Deal Hemat",
+        "category": "sale",
+        "aspect_ratio": "1:1",
+        "style": "playful",
+        "default_text_layers": [
+            {"role": "headline", "x": 0.5, "y": 0.15, "font_family": "Poppins", "font_weight": 800, "font_size": 48, "color": "#1E293B"},
+            {"role": "sub_headline", "x": 0.5, "y": 0.30, "font_family": "Inter", "font_weight": 500, "font_size": 22, "color": "#374151"},
+            {"role": "cta", "x": 0.5, "y": 0.83, "font_family": "Poppins", "font_weight": 700, "font_size": 20, "color": "#FFFFFF", "bg_box": "rgba(234,179,8,0.95)"},
+        ],
+        "prompt_suffix": "product bundle deal, multiple items arranged together, pastel yellow background, cheerful playful composition, clean product photography, soft diffused studio lighting",
+        "thumbnail_url": "https://images.unsplash.com/photo-1585386959984-a4155224a1ad?w=600&h=600&fit=crop",
+    },
     {
         "name": "Quotes / Motivasi",
         "category": "general",
@@ -1003,6 +1273,7 @@ async def seed():
                 tmpl.default_text_layers = tmpl_data["default_text_layers"]
                 tmpl.prompt_suffix = tmpl_data.get("prompt_suffix")
                 tmpl.thumbnail_url = tmpl_data.get("thumbnail_url")
+                tmpl.platform = tmpl_data.get("platform")
                 updated += 1
             else:
                 # Insert new template
@@ -1015,6 +1286,7 @@ async def seed():
                     default_text_layers=tmpl_data["default_text_layers"],
                     prompt_suffix=tmpl_data.get("prompt_suffix"),
                     thumbnail_url=tmpl_data.get("thumbnail_url"),
+                    platform=tmpl_data.get("platform"),
                 )
                 session.add(tmpl)
                 added += 1
